@@ -1,8 +1,53 @@
+import Mob;
+
+class BatchDraw {
+  var txt: h2d.Text;
+  var texture: h3d.mat.Texture;
+  var customGraphics: h2d.Graphics;
+
+  public function new(s2d: h2d.Scene, font) {
+    texture = new h3d.mat.Texture(s2d.height, s2d.width, [h3d.mat.Data.TextureFlags.Target]);
+    final tile = h2d.Tile.fromTexture(texture);
+    var bmp = new h2d.Bitmap(tile, s2d);
+
+    customGraphics = new h2d.Graphics(bmp);
+    customGraphics.beginFill(0xFFF);
+    for (i in 0...200) {
+      customGraphics.drawCircle(50, 50 + i, 100);
+    }
+    customGraphics.endFill();
+
+    txt = new h2d.Text(font, bmp);
+    for (i in 0...100) {
+      var t = new h2d.Text(font, bmp);
+      t.y = 400 + i * 5;
+      t.text = 'blah ${i}';
+    }
+
+    bmp.x = 50;
+
+    for (i in 0...30) {
+      txt.y = i * 10 + 200;
+      txt.text = 'hello ${i}';
+      txt.drawTo(texture);
+    }
+  }
+
+  public function update(t, dt:Float, s2d: h2d.Scene) {
+    texture.clear(0x000, 0);
+
+    txt.text = "foobar";
+    txt.y = Math.sin(t) * 30 + 100;
+  }
+}
+
 class Main extends hxd.App {
   var anim: h2d.Anim;
-  var tf: h2d.Text;
+  var debugText: h2d.Text;
   var tickCount = 0;
   var t = 0.0;
+  var batcher: BatchDraw;
+  var mob: Mob;
 
   function animate(s2d: h2d.Scene) {
     // creates three tiles with different color
@@ -24,27 +69,34 @@ class Main extends hxd.App {
     overlay.y = 0;
   }
 
-  override function init() {
-    addBackground(s2d, 0x333333);
-    animate(s2d);
-
-    var font: h2d.Font = hxd.res.DefaultFont.get();
+  function setupDebugInfo(font) {
     var debugUiMargin = 10;
-    tf = new h2d.Text(font);
-    tf.x = debugUiMargin;
-    tf.y = debugUiMargin;
+    debugText = new h2d.Text(font);
+    debugText.x = debugUiMargin;
+    debugText.y = debugUiMargin;
 
     // add to any parent, in this case we append to root
-    s2d.addChild(tf);
+    s2d.addChild(debugText);
   }
+
+  override function init() {
+    var font: h2d.Font = hxd.res.DefaultFont.get();
+
+    addBackground(s2d, 0x333333);
+    setupDebugInfo(font);
+    mob = new Mob(s2d);
+  }
+
   // on each frame
   override function update(dt:Float) {
     t += dt;
     var text = ['time: ${t}',
-                'fps: ${Math.round(1/dt)}'].join('\n');
-    // show debug info
-    tf.text = text;
+    'fps: ${Math.round(1/dt)}',
+    'drawCalls: ${engine.drawCalls}'].join('\n');
+    debugText.text = text;
+    mob.update(s2d, dt);
   }
+
   static function main() {
     new Main();
   }
