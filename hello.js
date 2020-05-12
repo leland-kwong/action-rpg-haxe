@@ -340,7 +340,7 @@ hxd_App.prototype = {
 	,__class__: hxd_App
 };
 var Main = function() {
-	this.t = 0.0;
+	this.t = 0;
 	this.tickCount = 0;
 	hxd_App.call(this);
 };
@@ -389,7 +389,7 @@ Main.prototype = $extend(hxd_App.prototype,{
 		this.mob = new Mob(this.s2d);
 	}
 	,update: function(dt) {
-		this.t += dt;
+		this.t += 1;
 		var text = ["time: " + this.t,"fps: " + Math.round(1 / dt),"drawCalls: " + this.engine.drawCalls].join("\n");
 		this.debugText.set_text(text);
 		this.mob.update(this.s2d,dt);
@@ -399,23 +399,22 @@ Main.prototype = $extend(hxd_App.prototype,{
 Math.__name__ = "Math";
 var Mob = function(s2d) {
 	this.SPRITES = [];
-	var numEntities = 50;
+	var numEntities = 500;
 	var _g = 0;
 	var _g1 = numEntities;
 	while(_g < _g1) {
 		var _ = _g++;
-		var radius = this.irnd(5,20);
-		var entity = { x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : (5 + Math.floor(20 / radius * 2)) * 30};
-		haxe_Log.trace(entity.speed,{ fileName : "src/Mob.hx", lineNumber : 54, className : "Mob", methodName : "new", customParams : [radius]});
+		var radius = this.irnd(2,4) * 2;
+		var entity = { x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : (5 + Math.floor(14 / radius * 2)) * 15};
 		Mob.ALL.push(entity);
 		var graphic = new h2d_Graphics(s2d);
 		graphic.posChanged = true;
 		graphic.x = entity.x;
 		graphic.posChanged = true;
 		graphic.y = entity.y;
-		graphic.beginFill(16777215);
+		graphic.beginFill(0);
 		graphic.drawCircle(0,0,entity.radius + 1);
-		graphic.beginFill(4095);
+		graphic.beginFill(13068228);
 		graphic.drawCircle(0,0,entity.radius);
 		graphic.endFill();
 		this.SPRITES.push(graphic);
@@ -447,28 +446,39 @@ Mob.prototype = {
 	,distance: function(ax,ay,bx,by) {
 		return Math.sqrt(this.distanceSqr(ax,ay,bx,by));
 	}
+	,createGarbage: function() {
+		var tempList = [];
+		var _g = 0;
+		while(_g < 3000) {
+			var _ = _g++;
+			tempList.push({ x : 0, y : 0});
+		}
+	}
 	,update: function(s2d,dt) {
+		this.createGarbage();
 		var target_x = s2d.get_mouseX();
 		var target_y = s2d.get_mouseY();
+		var threshold = 50;
 		var _g = 0;
 		var _g1 = Mob.ALL.length;
 		while(_g < _g1) {
 			var i = _g++;
 			var e = Mob.ALL[i];
-			var max = e.speed * dt;
-			var d_from_target = this.distance(e.x,e.y,target_x,target_y);
-			var threshold = 100;
+			var dFromTarget = this.distance(e.x,e.y,target_x,target_y);
 			var dx = 0.0;
 			var dy = 0.0;
-			if(d_from_target > threshold) {
+			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold / 2) / threshold,2)));
+			var speed = e.speed;
+			if(dFromTarget > threshold) {
 				var aToTarget = Math.atan2(target_y - e.y,target_x - e.x);
-				dx += Math.cos(aToTarget) * e.speed * dt;
-				dy += Math.sin(aToTarget) * e.speed * dt;
-			} else {
+				dx += Math.cos(aToTarget) * speedAdjust;
+				dy += Math.sin(aToTarget) * speedAdjust;
+			}
+			if(dFromTarget < threshold) {
 				var aToTarget1 = Math.atan2(target_y - e.y,target_x - e.x);
-				var conflict = threshold - d_from_target;
-				dx -= Math.cos(aToTarget1) * conflict;
-				dy -= Math.sin(aToTarget1) * conflict;
+				var conflict = threshold - dFromTarget;
+				dx -= Math.cos(aToTarget1) * conflict * 0.5;
+				dy -= Math.sin(aToTarget1) * conflict * 0.5;
 			}
 			var _g2 = 0;
 			var _g11 = Mob.ALL;
@@ -476,24 +486,25 @@ Mob.prototype = {
 				var o = _g11[_g2];
 				++_g2;
 				if(o != e) {
-					var pt = o;
-					var ept = e;
+					var pt = e;
+					var ept = o;
 					var d = this.distance(pt.x,pt.y,ept.x,ept.y);
-					var sep = 30;
+					var sep = 10 + pt.radius * 2;
 					var min = pt.radius + ept.radius + sep;
 					var isColliding = d < min;
 					if(isColliding) {
-						var conflict1 = min - d;
+						var conflict1 = (min - d) * 0.5;
 						var a = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 						var w = pt.weight / (pt.weight + e.weight);
 						var ew = e.weight / (pt.weight + e.weight);
-						dx += Math.cos(a) * conflict1 * ew;
-						dy += Math.sin(a) * conflict1 * ew;
-						pt.dx -= Math.cos(a) * conflict1 * w;
-						pt.dy -= Math.sin(a) * conflict1 * w;
+						dx -= Math.cos(a) * conflict1 * ew * speedAdjust;
+						dy -= Math.sin(a) * conflict1 * ew * speedAdjust;
+						ept.dx -= Math.cos(a) * conflict1 * w * speedAdjust;
+						ept.dy -= Math.sin(a) * conflict1 * w * speedAdjust;
 					}
 				}
 			}
+			var max = 1;
 			if(dx > max) {
 				dx = max;
 			}
@@ -506,8 +517,8 @@ Mob.prototype = {
 			if(dy < -max) {
 				dy = -max;
 			}
-			e.x += dx;
-			e.y += dy;
+			e.x += dx * speed * dt;
+			e.y += dy * speed * dt;
 			var _this = this.SPRITES[i];
 			_this.posChanged = true;
 			_this.x = e.x;

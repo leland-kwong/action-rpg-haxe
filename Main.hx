@@ -45,7 +45,7 @@ class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
   var tickCount = 0;
-  var t = 0.0;
+  var t = 0;
   var batcher: BatchDraw;
   var mob: Mob;
 
@@ -89,7 +89,7 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
-    t += dt;
+    t += 1;
     var text = ['time: ${t}',
     'fps: ${Math.round(1/dt)}',
     'drawCalls: ${engine.drawCalls}'].join('\n');
