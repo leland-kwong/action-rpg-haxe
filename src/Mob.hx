@@ -6,7 +6,7 @@ typedef Point = {
   var dx : Float;
   var dy : Float;
   var weight: Float;
-  var speed: Int;
+  var speed: Float;
   var color: Int;
 }
 
@@ -37,29 +37,18 @@ class Mob {
     return Math.sqrt( distanceSqr(ax,ay,bx,by) );
   }
 
-  function createGarbage() {
-    var tempList: Array<Dynamic> = [];
-
-    for (_ in 0...3000) {
-      tempList.push({
-        x: 0,
-        y: 0,
-      });
-    }
-  }
-
   public function new(s2d: h2d.Scene) {
     var numEntities = 500;
     var colors = [
-      2 => 0xEF476F,
-      3 => 0xF78C6B,
-      4 => 0xE9C46A,
+      2 => 0xF78C6B,
+      3 => 0xFFD166,
+      4 => 0x06D6A0,
       5 => 0x999999,
     ];
     for (index in 0...numEntities) {
       var size = irnd(2, 4);
       var radius = size * 2;
-      var speed = (5 + Math.floor(14 / radius*2))*25;
+      var speed = (5 + 2 / radius * 500) * 1.5;
       var entity = {
         id: index,
         x: rnd(0, s2d.width),
@@ -83,7 +72,7 @@ class Mob {
         dx: 0.0,
         dy: 0.0,
         weight: 1.0,
-        speed: 0,
+        speed: 0.0,
         color: 5,
       };
     }
@@ -105,11 +94,9 @@ class Mob {
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
-    createGarbage();
-
     var target = {x: s2d.mouseX, y: s2d.mouseY};
     // distance to keep from destination
-    var threshold = 100;
+    var threshold = 80;
 
     function byClosest(a, b) {
       var da = distance(a.x, a.y, target.x, target.y);
@@ -148,7 +135,7 @@ class Mob {
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(0,
                                  Math.min(1,
-                                          Math.pow((dFromTarget - (threshold / 2)) / threshold, 2)));
+                                          Math.pow((dFromTarget - threshold) / threshold, 4)));
       var speed = e.speed;
       if (dFromTarget > threshold) {
         var aToTarget = Math.atan2(target.y - e.y, target.x - e.x);
@@ -159,8 +146,8 @@ class Mob {
       if (dFromTarget < threshold) {
         var aToTarget = Math.atan2(target.y - e.y, target.x - e.x);
         var conflict = threshold - dFromTarget;
-        dx -= Math.cos(aToTarget) * conflict * Math.max(0.05, speedAdjust);
-        dy -= Math.sin(aToTarget) * conflict * Math.max(0.05, speedAdjust);
+        dx -= Math.cos(aToTarget) * conflict * speedAdjust;
+        dy -= Math.sin(aToTarget) * conflict * speedAdjust;
       }
 
       // make entities avoid each other by repulsion
@@ -169,19 +156,17 @@ class Mob {
           var pt = e;
           var ept = o;
           var d = distance(pt.x, pt.y, ept.x, ept.y);
-          var separation = pt.radius + 4;
+          var separation = pt.radius + 5 + Math.sqrt(speed / 2);
           var min = pt.radius + ept.radius + separation;
           var isColliding = d < min;
           if (isColliding) {
-            var conflict = Math.min(2, (min - d) * 40 / speed);
+            var conflict = Math.min(6, (min - d) * 40 / speed);
             var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
             var w = pt.weight / (pt.weight + ept.weight);
-            var ew = ept.weight / (pt.weight + ept.weight);
-            var multiplier = ept.speed == 0 ? 4 : 1;
+            // immobile entities have a stronger influence (obstacles such as walls, etc...)
+            var multiplier = ept.speed == 0 ? 3 : 1;
             dx -= Math.cos(a) * conflict * w * multiplier;
             dy -= Math.sin(a) * conflict * w * multiplier;
-            ept.dx += Math.cos(a) * conflict * ew;
-            ept.dy += Math.sin(a) * conflict * ew;
           }
         }
       }

@@ -409,9 +409,9 @@ var Mob = function(s2d) {
 	this.SPRITES = new haxe_ds_IntMap();
 	var numEntities = 500;
 	var colors_h = { };
-	colors_h[2] = 15681391;
-	colors_h[3] = 16223339;
-	colors_h[4] = 15320170;
+	colors_h[2] = 16223339;
+	colors_h[3] = 16765286;
+	colors_h[4] = 448160;
 	colors_h[5] = 10066329;
 	var _g1 = 0;
 	var _g2 = numEntities;
@@ -419,12 +419,12 @@ var Mob = function(s2d) {
 		var index = _g1++;
 		var size = this.irnd(2,4);
 		var radius = size * 2;
-		var speed = (5 + Math.floor(14 / radius * 2)) * 25;
+		var speed = (5 + 2 / radius * 500) * 1.5;
 		var entity = { id : index, x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : size};
 		Mob.ALL.push(entity);
 	}
 	var obstacle = function(id,x,y) {
-		return { id : id, x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0, color : 5};
+		return { id : id, x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : 5};
 	};
 	Mob.ALL.push(obstacle(99999,200.0,300.0));
 	Mob.ALL.push(obstacle(100000,s2d.width / 2,s2d.height / 2));
@@ -472,21 +472,12 @@ Mob.prototype = {
 	,distance: function(ax,ay,bx,by) {
 		return Math.sqrt(this.distanceSqr(ax,ay,bx,by));
 	}
-	,createGarbage: function() {
-		var tempList = [];
-		var _g = 0;
-		while(_g < 3000) {
-			var _ = _g++;
-			tempList.push({ x : 0, y : 0});
-		}
-	}
 	,update: function(s2d,dt) {
 		var _gthis = this;
-		this.createGarbage();
 		var target_y;
 		var target_x = s2d.get_mouseX();
 		target_y = s2d.get_mouseY();
-		var threshold = 100;
+		var threshold = 80;
 		var byClosest = function(a,b) {
 			var da = _gthis.distance(a.x,a.y,target_x,target_y);
 			var db = _gthis.distance(b.x,b.y,target_x,target_y);
@@ -515,7 +506,7 @@ Mob.prototype = {
 			var dFromTarget = this.distance(e.x,e.y,target_x,target_y);
 			var dx = e.dx;
 			var dy = e.dy;
-			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold / 2) / threshold,2)));
+			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold) / threshold,4)));
 			var speed = e.speed;
 			if(dFromTarget > threshold) {
 				var aToTarget = Math.atan2(target_y - e.y,target_x - e.x);
@@ -525,8 +516,8 @@ Mob.prototype = {
 			if(dFromTarget < threshold) {
 				var aToTarget1 = Math.atan2(target_y - e.y,target_x - e.x);
 				var conflict = threshold - dFromTarget;
-				dx -= Math.cos(aToTarget1) * conflict * Math.max(0.05,speedAdjust);
-				dy -= Math.sin(aToTarget1) * conflict * Math.max(0.05,speedAdjust);
+				dx -= Math.cos(aToTarget1) * conflict * speedAdjust;
+				dy -= Math.sin(aToTarget1) * conflict * speedAdjust;
 			}
 			var _g21 = 0;
 			var _g31 = Mob.ALL;
@@ -537,19 +528,16 @@ Mob.prototype = {
 					var pt = e;
 					var ept = o;
 					var d = this.distance(pt.x,pt.y,ept.x,ept.y);
-					var separation = pt.radius + 4;
+					var separation = pt.radius + 5 + Math.sqrt(speed / 2);
 					var min = pt.radius + ept.radius + separation;
 					var isColliding = d < min;
 					if(isColliding) {
-						var conflict1 = Math.min(2,(min - d) * 40 / speed);
+						var conflict1 = Math.min(6,(min - d) * 40 / speed);
 						var a2 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 						var w = pt.weight / (pt.weight + ept.weight);
-						var ew = ept.weight / (pt.weight + ept.weight);
-						var multiplier = ept.speed == 0 ? 4 : 1;
+						var multiplier = ept.speed == 0 ? 3 : 1;
 						dx -= Math.cos(a2) * conflict1 * w * multiplier;
 						dy -= Math.sin(a2) * conflict1 * w * multiplier;
-						ept.dx += Math.cos(a2) * conflict1 * ew;
-						ept.dy += Math.sin(a2) * conflict1 * ew;
 					}
 				}
 			}
