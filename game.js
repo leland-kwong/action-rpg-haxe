@@ -419,7 +419,7 @@ var Mob = function(s2d) {
 		var index = _g1++;
 		var size = this.irnd(2,4);
 		var radius = size * 2;
-		var speed = (5 + 2 / radius * 500) * 1.5;
+		var speed = (5 + 2 / radius * 500) * 2.0;
 		var entity = { id : index, x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : size};
 		Mob.ALL.push(entity);
 	}
@@ -515,9 +515,9 @@ Mob.prototype = {
 			}
 			if(dFromTarget < threshold) {
 				var aToTarget1 = Math.atan2(target_y - e.y,target_x - e.x);
-				var conflict = threshold - dFromTarget;
-				dx -= Math.cos(aToTarget1) * conflict * speedAdjust;
-				dy -= Math.sin(aToTarget1) * conflict * speedAdjust;
+				var conflict = Math.min(6,(threshold - dFromTarget) * 50 / speed);
+				dx -= Math.cos(aToTarget1) * conflict;
+				dy -= Math.sin(aToTarget1) * conflict;
 			}
 			var _g21 = 0;
 			var _g31 = Mob.ALL;
@@ -532,7 +532,7 @@ Mob.prototype = {
 					var min = pt.radius + ept.radius + separation;
 					var isColliding = d < min;
 					if(isColliding) {
-						var conflict1 = Math.min(6,(min - d) * 40 / speed);
+						var conflict1 = Math.min(6,(min - d) * 50 / speed);
 						var a2 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 						var w = pt.weight / (pt.weight + ept.weight);
 						var multiplier = ept.speed == 0 ? 3 : 1;

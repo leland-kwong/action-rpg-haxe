@@ -48,7 +48,7 @@ class Mob {
     for (index in 0...numEntities) {
       var size = irnd(2, 4);
       var radius = size * 2;
-      var speed = (5 + 2 / radius * 500) * 1.5;
+      var speed = (5 + 2 / radius * 500) * 2.0;
       var entity = {
         id: index,
         x: rnd(0, s2d.width),
@@ -113,11 +113,9 @@ class Mob {
       return 0;
     }
     /**
-      Sort by distance so that the agents closest to the target
-      adjust their positions during collision avoidance before
-      other entities do. This prevents inner agents from being
-      scrunched together due to all the outer agents adding all
-      their forces as a domino effect towards the inner agents.
+      Sort by closest to furtherst so that repelling forces go
+      from inside to outside to prevent inner agents from getting
+      scrunched up.
     **/
     ALL.sort(byClosest);
 
@@ -142,12 +140,13 @@ class Mob {
         dx += Math.cos(aToTarget) * speedAdjust;
         dy += Math.sin(aToTarget) * speedAdjust;
       }
+
       // if too close to target, push everything away (we can use this for things like aoe knockback)
       if (dFromTarget < threshold) {
         var aToTarget = Math.atan2(target.y - e.y, target.x - e.x);
-        var conflict = threshold - dFromTarget;
-        dx -= Math.cos(aToTarget) * conflict * speedAdjust;
-        dy -= Math.sin(aToTarget) * conflict * speedAdjust;
+        var conflict = Math.min(6, (threshold - dFromTarget) * 50 / speed);
+        dx -= Math.cos(aToTarget) * conflict;
+        dy -= Math.sin(aToTarget) * conflict;
       }
 
       // make entities avoid each other by repulsion
@@ -160,7 +159,7 @@ class Mob {
           var min = pt.radius + ept.radius + separation;
           var isColliding = d < min;
           if (isColliding) {
-            var conflict = Math.min(6, (min - d) * 40 / speed);
+            var conflict = Math.min(6, (min - d) * 50 / speed);
             var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
             var w = pt.weight / (pt.weight + ept.weight);
             // immobile entities have a stronger influence (obstacles such as walls, etc...)
