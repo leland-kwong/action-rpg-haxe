@@ -2,6 +2,6 @@
 -cp src
 
 -lib heaps
--js hello.js
+-js game.js
 -main Main
 -debug

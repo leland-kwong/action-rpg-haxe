@@ -340,7 +340,8 @@ hxd_App.prototype = {
 	,__class__: hxd_App
 };
 var Main = function() {
-	this.t = 0;
+	this.acc = 0.0;
+	this.t = 0.0;
 	this.tickCount = 0;
 	hxd_App.call(this);
 };
@@ -389,35 +390,60 @@ Main.prototype = $extend(hxd_App.prototype,{
 		this.mob = new Mob(this.s2d);
 	}
 	,update: function(dt) {
-		this.t += 1;
-		var text = ["time: " + this.t,"fps: " + Math.round(1 / dt),"drawCalls: " + this.engine.drawCalls].join("\n");
+		this.t += dt;
+		this.acc += dt;
+		var fps = Math.round(1 / dt);
+		var text = ["time: " + this.t,"fps: " + fps,"drawCalls: " + this.engine.drawCalls].join("\n");
 		this.debugText.set_text(text);
+		var frameTime = 0.0166666666666666664;
+		var isNextFrame = this.acc > frameTime;
+		if(isNextFrame) {
+			this.acc -= frameTime;
+		}
 		this.mob.update(this.s2d,dt);
 	}
 	,__class__: Main
 });
 Math.__name__ = "Math";
 var Mob = function(s2d) {
-	this.SPRITES = [];
+	this.SPRITES = new haxe_ds_IntMap();
 	var numEntities = 500;
-	var _g = 0;
-	var _g1 = numEntities;
-	while(_g < _g1) {
-		var _ = _g++;
-		var radius = this.irnd(2,4) * 2;
-		var entity = { x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : (5 + Math.floor(14 / radius * 2)) * 15};
+	var colors_h = { };
+	colors_h[2] = 15681391;
+	colors_h[3] = 16223339;
+	colors_h[4] = 15320170;
+	colors_h[5] = 10066329;
+	var _g1 = 0;
+	var _g2 = numEntities;
+	while(_g1 < _g2) {
+		var index = _g1++;
+		var size = this.irnd(2,4);
+		var radius = size * 2;
+		var speed = (5 + Math.floor(14 / radius * 2)) * 25;
+		var entity = { id : index, x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : size};
 		Mob.ALL.push(entity);
+	}
+	var obstacle = function(id,x,y) {
+		return { id : id, x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0, color : 5};
+	};
+	Mob.ALL.push(obstacle(99999,200.0,300.0));
+	Mob.ALL.push(obstacle(100000,s2d.width / 2,s2d.height / 2));
+	var _g3 = 0;
+	var _g4 = Mob.ALL;
+	while(_g3 < _g4.length) {
+		var entity1 = _g4[_g3];
+		++_g3;
 		var graphic = new h2d_Graphics(s2d);
 		graphic.posChanged = true;
-		graphic.x = entity.x;
+		graphic.x = entity1.x;
 		graphic.posChanged = true;
-		graphic.y = entity.y;
+		graphic.y = entity1.y;
 		graphic.beginFill(0);
-		graphic.drawCircle(0,0,entity.radius + 1);
-		graphic.beginFill(13068228);
-		graphic.drawCircle(0,0,entity.radius);
+		graphic.drawCircle(0,0,entity1.radius + 1);
+		graphic.beginFill(colors_h[entity1.color]);
+		graphic.drawCircle(0,0,entity1.radius);
 		graphic.endFill();
-		this.SPRITES.push(graphic);
+		this.SPRITES.h[entity1.id] = graphic;
 	}
 };
 $hxClasses["Mob"] = Mob;
@@ -455,18 +481,40 @@ Mob.prototype = {
 		}
 	}
 	,update: function(s2d,dt) {
+		var _gthis = this;
 		this.createGarbage();
+		var target_y;
 		var target_x = s2d.get_mouseX();
-		var target_y = s2d.get_mouseY();
-		var threshold = 50;
+		target_y = s2d.get_mouseY();
+		var threshold = 100;
+		var byClosest = function(a,b) {
+			var da = _gthis.distance(a.x,a.y,target_x,target_y);
+			var db = _gthis.distance(b.x,b.y,target_x,target_y);
+			if(da < db) {
+				return -1;
+			}
+			if(da > db) {
+				return 1;
+			}
+			return 0;
+		};
+		Mob.ALL.sort(byClosest);
 		var _g = 0;
-		var _g1 = Mob.ALL.length;
-		while(_g < _g1) {
-			var i = _g++;
+		var _g1 = Mob.ALL;
+		while(_g < _g1.length) {
+			var a1 = _g1[_g];
+			++_g;
+			a1.dx = 0;
+			a1.dy = 0;
+		}
+		var _g2 = 0;
+		var _g3 = Mob.ALL.length;
+		while(_g2 < _g3) {
+			var i = _g2++;
 			var e = Mob.ALL[i];
 			var dFromTarget = this.distance(e.x,e.y,target_x,target_y);
-			var dx = 0.0;
-			var dy = 0.0;
+			var dx = e.dx;
+			var dy = e.dy;
 			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold / 2) / threshold,2)));
 			var speed = e.speed;
 			if(dFromTarget > threshold) {
@@ -477,30 +525,31 @@ Mob.prototype = {
 			if(dFromTarget < threshold) {
 				var aToTarget1 = Math.atan2(target_y - e.y,target_x - e.x);
 				var conflict = threshold - dFromTarget;
-				dx -= Math.cos(aToTarget1) * conflict * 0.5;
-				dy -= Math.sin(aToTarget1) * conflict * 0.5;
+				dx -= Math.cos(aToTarget1) * conflict * Math.max(0.05,speedAdjust);
+				dy -= Math.sin(aToTarget1) * conflict * Math.max(0.05,speedAdjust);
 			}
-			var _g2 = 0;
-			var _g11 = Mob.ALL;
-			while(_g2 < _g11.length) {
-				var o = _g11[_g2];
-				++_g2;
+			var _g21 = 0;
+			var _g31 = Mob.ALL;
+			while(_g21 < _g31.length) {
+				var o = _g31[_g21];
+				++_g21;
 				if(o != e) {
 					var pt = e;
 					var ept = o;
 					var d = this.distance(pt.x,pt.y,ept.x,ept.y);
-					var sep = 10 + pt.radius * 2;
-					var min = pt.radius + ept.radius + sep;
+					var separation = pt.radius + 4;
+					var min = pt.radius + ept.radius + separation;
 					var isColliding = d < min;
 					if(isColliding) {
-						var conflict1 = (min - d) * 0.5;
-						var a = Math.atan2(ept.y - pt.y,ept.x - pt.x);
-						var w = pt.weight / (pt.weight + e.weight);
-						var ew = e.weight / (pt.weight + e.weight);
-						dx -= Math.cos(a) * conflict1 * ew * speedAdjust;
-						dy -= Math.sin(a) * conflict1 * ew * speedAdjust;
-						ept.dx -= Math.cos(a) * conflict1 * w * speedAdjust;
-						ept.dy -= Math.sin(a) * conflict1 * w * speedAdjust;
+						var conflict1 = Math.min(2,(min - d) * 40 / speed);
+						var a2 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
+						var w = pt.weight / (pt.weight + ept.weight);
+						var ew = ept.weight / (pt.weight + ept.weight);
+						var multiplier = ept.speed == 0 ? 4 : 1;
+						dx -= Math.cos(a2) * conflict1 * w * multiplier;
+						dy -= Math.sin(a2) * conflict1 * w * multiplier;
+						ept.dx += Math.cos(a2) * conflict1 * ew;
+						ept.dy += Math.sin(a2) * conflict1 * ew;
 					}
 				}
 			}
@@ -519,10 +568,11 @@ Mob.prototype = {
 			}
 			e.x += dx * speed * dt;
 			e.y += dy * speed * dt;
-			var _this = this.SPRITES[i];
+			var id = e.id;
+			var _this = this.SPRITES.h[id];
 			_this.posChanged = true;
 			_this.x = e.x;
-			var _this1 = this.SPRITES[i];
+			var _this1 = this.SPRITES.h[id];
 			_this1.posChanged = true;
 			_this1.y = e.y;
 		}
@@ -64280,4 +64330,4 @@ hxsl_SharedShader.UNROLL_LOOPS = false;
 }
 })(typeof window != "undefined" ? window : typeof global != "undefined" ? global : typeof self != "undefined" ? self : this);
 
-//# sourceMappingURL=hello.js.map
+//# sourceMappingURL=game.js.map
