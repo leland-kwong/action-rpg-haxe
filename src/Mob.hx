@@ -8,12 +8,14 @@ typedef Point = {
   var weight: Float;
   var speed: Float;
   var color: Int;
+  var avoidOthers: Bool;
 }
 
 class Mob {
   public static var ALL: Array<Point> = [];
 
   var SPRITES: Map<Int, h2d.Graphics> = new Map();
+  var target: Point;
 
   function rnd(min:Float, max:Float, ?sign=false) {
     if( sign )
@@ -44,13 +46,19 @@ class Mob {
       3 => 0xFFD166,
       4 => 0x06D6A0,
       5 => 0x999999,
+      6 => 0x118AB2,
     ];
-    for (index in 0...numEntities) {
+
+    function makeId() {
+      return Std.random(9999999);
+    }
+
+    for (_ in 0...numEntities) {
       var size = irnd(2, 4);
       var radius = size * 2;
-      var speed = (5 + 2 / radius * 500) * 2.0;
+      var speed = (5 + 2 / radius * 500) * 3.0;
       var entity = {
-        id: index,
+        id: makeId(),
         x: rnd(0, s2d.width),
         y: rnd(0, s2d.height),
         radius: radius,
@@ -59,13 +67,14 @@ class Mob {
         weight: 1.0,
         speed: speed,
         color: size,
+        avoidOthers: true,
       };
       ALL.push(entity);
     }
 
-    function obstacle(id, x, y) {
+    function obstacle(x, y) {
       return {
-        id: id,
+        id: makeId(),
         x: x,
         y: y,
         radius: 20,
@@ -74,10 +83,25 @@ class Mob {
         weight: 1.0,
         speed: 0.0,
         color: 5,
+        avoidOthers: false,
       };
     }
-    ALL.push(obstacle(99999, 200.0, 300.0));
-    ALL.push(obstacle(99999 + 1, s2d.width / 2, s2d.height / 2));
+    ALL.push(obstacle(200.0, 300.0));
+    ALL.push(obstacle(s2d.width / 2, s2d.height / 2));
+
+    target = {
+      id: makeId(),
+      x: 0.0,
+      y: 0.0,
+      radius: 30,
+      dx: 0.0,
+      dy: 0.0,
+      weight: 1.0,
+      speed: 0.0,
+      color: 6,
+      avoidOthers: false,
+    }
+    ALL.push(target);
 
     for (entity in ALL) {
       var graphic = new h2d.Graphics(s2d);
@@ -94,7 +118,9 @@ class Mob {
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
-    var target = {x: s2d.mouseX, y: s2d.mouseY};
+    target.x = s2d.mouseX;
+    target.y = s2d.mouseY;
+
     // distance to keep from destination
     var threshold = 80;
 
@@ -125,7 +151,7 @@ class Mob {
       a.dy = 0;
     }
 
-    for( i in 0...ALL.length ) {
+    for(i in 0...ALL.length) {
       var e = ALL[i];
       var dFromTarget = distance(e.x, e.y, target.x, target.y);
       var dx = e.dx;
@@ -141,31 +167,26 @@ class Mob {
         dy += Math.sin(aToTarget) * speedAdjust;
       }
 
-      // if too close to target, push everything away (we can use this for things like aoe knockback)
-      if (dFromTarget < threshold) {
-        var aToTarget = Math.atan2(target.y - e.y, target.x - e.x);
-        var conflict = Math.min(6, (threshold - dFromTarget) * 50 / speed);
-        dx -= Math.cos(aToTarget) * conflict;
-        dy -= Math.sin(aToTarget) * conflict;
-      }
-
-      // make entities avoid each other by repulsion
-      for (o in ALL) {
-        if (o != e) {
-          var pt = e;
-          var ept = o;
-          var d = distance(pt.x, pt.y, ept.x, ept.y);
-          var separation = pt.radius + 5 + Math.sqrt(speed / 2);
-          var min = pt.radius + ept.radius + separation;
-          var isColliding = d < min;
-          if (isColliding) {
-            var conflict = Math.min(6, (min - d) * 50 / speed);
-            var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-            var w = pt.weight / (pt.weight + ept.weight);
-            // immobile entities have a stronger influence (obstacles such as walls, etc...)
-            var multiplier = ept.speed == 0 ? 3 : 1;
-            dx -= Math.cos(a) * conflict * w * multiplier;
-            dy -= Math.sin(a) * conflict * w * multiplier;
+      if (e.avoidOthers) {
+        // make entities avoid each other by repulsion
+        for (o in ALL) {
+          if (o != e) {
+            var pt = e;
+            var ept = o;
+            var d = distance(pt.x, pt.y, ept.x, ept.y);
+            var separation = pt.radius + 5 + Math.sqrt(speed / 2);
+            var min = pt.radius + ept.radius + separation;
+            var isColliding = d < min;
+            if (isColliding) {
+              var conflict = min - d;
+              var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
+              var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
+              var w = pt.weight / (pt.weight + ept.weight);
+              // immobile entities have a stronger influence (obstacles such as walls, etc...)
+              var multiplier = ept.speed == 0 ? 3 : 1;
+              dx -= Math.cos(a) * adjustedConflict * w * multiplier;
+              dy -= Math.sin(a) * adjustedConflict * w * multiplier;
+            }
           }
         }
       }
