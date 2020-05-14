@@ -85,6 +85,7 @@ class Main extends hxd.App {
 
     addBackground(s2d, 0x333333);
     setupDebugInfo(font);
+
     mob = new Mob(s2d);
   }
 
@@ -104,6 +105,7 @@ class Main extends hxd.App {
     if (isNextFrame) {
       acc -= frameTime;
     }
+
     mob.update(s2d, dt);
   }
 

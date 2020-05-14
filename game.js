@@ -423,16 +423,16 @@ var Mob = function(s2d) {
 		var _ = _g1++;
 		var size = this.irnd(2,4);
 		var radius = size * 2;
-		var speed = (5 + 2 / radius * 500) * 3.0;
-		var entity = { id : makeId(), x : this.rnd(0,s2d.width), y : this.rnd(0,s2d.height), radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : size, avoidOthers : true};
+		var speed = 5 + 2 / radius * 500;
+		var entity = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : size, avoidOthers : true, forceMultiplier : 1.0};
 		Mob.ALL.push(entity);
 	}
 	var obstacle = function(x,y) {
-		return { id : makeId(), x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : 5, avoidOthers : false};
+		return { id : makeId(), x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : 5, avoidOthers : false, forceMultiplier : 3.0};
 	};
 	Mob.ALL.push(obstacle(200.0,300.0));
 	Mob.ALL.push(obstacle(s2d.width / 2,s2d.height / 2));
-	this.target = { id : makeId(), x : 0.0, y : 0.0, radius : 30, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : 6, avoidOthers : false};
+	this.target = { id : makeId(), x : 0.0, y : 0.0, radius : 25, dx : 0.0, dy : 0.0, weight : 1.0, speed : 250.0, color : 6, avoidOthers : false, forceMultiplier : 3.0};
 	Mob.ALL.push(this.target);
 	var _g3 = 0;
 	var _g4 = Mob.ALL;
@@ -478,11 +478,32 @@ Mob.prototype = {
 	,distance: function(ax,ay,bx,by) {
 		return Math.sqrt(this.distanceSqr(ax,ay,bx,by));
 	}
+	,moveTarget: function(target,dt,s2d) {
+		var Key = hxd_Key;
+		var dx = 0;
+		var dy = 0;
+		if(Key.isDown(65)) {
+			dx = -1;
+		}
+		if(Key.isDown(68)) {
+			dx = 1;
+		}
+		if(Key.isDown(87)) {
+			dy = -1;
+		}
+		if(Key.isDown(83)) {
+			dy = 1;
+		}
+		var magnitude = Math.sqrt(dx * dx + dy * dy);
+		var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
+		var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
+		target.x += dxNormalized * target.speed * dt;
+		target.y += dyNormalized * target.speed * dt;
+	}
 	,update: function(s2d,dt) {
 		var _gthis = this;
-		this.target.x = s2d.get_mouseX();
-		this.target.y = s2d.get_mouseY();
-		var threshold = 80;
+		this.moveTarget(this.target,dt,s2d);
+		var threshold = this.target.radius + 30;
 		var byClosest = function(a,b) {
 			var da = _gthis.distance(a.x,a.y,_gthis.target.x,_gthis.target.y);
 			var db = _gthis.distance(b.x,b.y,_gthis.target.x,_gthis.target.y);
@@ -528,17 +549,25 @@ Mob.prototype = {
 						var pt = e;
 						var ept = o;
 						var d = this.distance(pt.x,pt.y,ept.x,ept.y);
-						var separation = pt.radius + 5 + Math.sqrt(speed / 2);
+						var separation = pt.radius + 10 + Math.sqrt(speed / 2);
 						var min = pt.radius + ept.radius + separation;
 						var isColliding = d < min;
 						if(isColliding) {
 							var conflict = min - d;
-							var adjustedConflict = Math.min(conflict,conflict * 50 / speed);
+							var adjustedConflict = conflict * 0.2;
 							var a2 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 							var w = pt.weight / (pt.weight + ept.weight);
-							var multiplier = ept.speed == 0 ? 3 : 1;
-							dx -= Math.cos(a2) * adjustedConflict * w * multiplier;
-							dy -= Math.sin(a2) * adjustedConflict * w * multiplier;
+							var multiplier = ept.forceMultiplier;
+							var avoidX = Math.cos(a2) * adjustedConflict * w * multiplier;
+							var avoidY = Math.sin(a2) * adjustedConflict * w * multiplier;
+							if(avoidX == 0) {
+								avoidX = 0.001;
+							}
+							if(avoidY == 0) {
+								avoidY = 0.001;
+							}
+							dx -= avoidX;
+							dy -= avoidY;
 						}
 					}
 				}

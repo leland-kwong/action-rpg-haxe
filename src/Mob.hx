@@ -9,6 +9,7 @@ typedef Point = {
   var speed: Float;
   var color: Int;
   var avoidOthers: Bool;
+  var forceMultiplier: Float;
 }
 
 class Mob {
@@ -56,11 +57,11 @@ class Mob {
     for (_ in 0...numEntities) {
       var size = irnd(2, 4);
       var radius = size * 2;
-      var speed = (5 + 2 / radius * 500) * 3.0;
+      var speed = (5 + 2 / radius * 500) * 1.0;
       var entity = {
         id: makeId(),
-        x: rnd(0, s2d.width),
-        y: rnd(0, s2d.height),
+        x: s2d.width * 0.5,
+        y: s2d.height * 0.5,
         radius: radius,
         dx: 0.0,
         dy: 0.0,
@@ -68,6 +69,7 @@ class Mob {
         speed: speed,
         color: size,
         avoidOthers: true,
+        forceMultiplier: 1.0,
       };
       ALL.push(entity);
     }
@@ -84,6 +86,7 @@ class Mob {
         speed: 0.0,
         color: 5,
         avoidOthers: false,
+        forceMultiplier: 3.0,
       };
     }
     ALL.push(obstacle(200.0, 300.0));
@@ -93,13 +96,14 @@ class Mob {
       id: makeId(),
       x: 0.0,
       y: 0.0,
-      radius: 30,
+      radius: 25,
       dx: 0.0,
       dy: 0.0,
       weight: 1.0,
-      speed: 0.0,
+      speed: 250.0,
       color: 6,
       avoidOthers: false,
+      forceMultiplier: 3.0,
     }
     ALL.push(target);
 
@@ -117,12 +121,37 @@ class Mob {
     }
   }
 
+  function moveTarget(target: Point, dt: Float, s2d: h2d.Scene) {
+    var Key = hxd.Key;
+    var dx = 0;
+    var dy = 0;
+
+    if (Key.isDown(Key.A)) {
+      dx = -1;
+    }
+    if (Key.isDown(Key.D)) {
+      dx = 1;
+    }
+    if (Key.isDown(Key.W)) {
+      dy = -1;
+    }
+    if (Key.isDown(Key.S)) {
+      dy = 1;
+    }
+
+    var magnitude = Math.sqrt(dx * dx + dy * dy);
+    var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
+    var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
+
+    target.x += dxNormalized * target.speed * dt;
+    target.y += dyNormalized * target.speed * dt;
+  }
+
   public function update(s2d: h2d.Scene, dt: Float) {
-    target.x = s2d.mouseX;
-    target.y = s2d.mouseY;
+    moveTarget(target, dt, s2d);
 
     // distance to keep from destination
-    var threshold = 80;
+    var threshold = target.radius + 30;
 
     function byClosest(a, b) {
       var da = distance(a.x, a.y, target.x, target.y);
@@ -174,18 +203,29 @@ class Mob {
             var pt = e;
             var ept = o;
             var d = distance(pt.x, pt.y, ept.x, ept.y);
-            var separation = pt.radius + 5 + Math.sqrt(speed / 2);
+            var separation = pt.radius + 10 + Math.sqrt(speed / 2);
             var min = pt.radius + ept.radius + separation;
             var isColliding = d < min;
             if (isColliding) {
               var conflict = min - d;
-              var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
+              var adjustedConflict = conflict * 0.2;
               var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
               var w = pt.weight / (pt.weight + ept.weight);
               // immobile entities have a stronger influence (obstacles such as walls, etc...)
-              var multiplier = ept.speed == 0 ? 3 : 1;
-              dx -= Math.cos(a) * adjustedConflict * w * multiplier;
-              dy -= Math.sin(a) * adjustedConflict * w * multiplier;
+              var multiplier = ept.forceMultiplier;
+              var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
+              var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
+
+              if (avoidX == 0) {
+                avoidX = 0.001;
+              }
+
+              if (avoidY == 0) {
+                avoidY = 0.001;
+              }
+
+              dx -= avoidX;
+              dy -= avoidY;
             }
           }
         }
