@@ -16,7 +16,10 @@ class Mob {
   public static var ALL: Array<Point> = [];
 
   var SPRITES: Map<Int, h2d.Graphics> = new Map();
-  var target: Point;
+  var player: Point;
+  var target: h2d.Object;
+  var TARGET_RADIUS = 20.0;
+  var targetSprite: h2d.Graphics;
 
   function rnd(min:Float, max:Float, ?sign=false) {
     if( sign )
@@ -50,6 +53,11 @@ class Mob {
       6 => 0x118AB2,
     ];
 
+    target = new h2d.Object(s2d);
+    targetSprite = new h2d.Graphics(target);
+    targetSprite.beginFill(0xffffff, 0.3);
+    targetSprite.drawCircle(0, 0, TARGET_RADIUS);
+
     function makeId() {
       return Std.random(9999999);
     }
@@ -57,7 +65,7 @@ class Mob {
     for (_ in 0...numEntities) {
       var size = irnd(2, 4);
       var radius = size * 2;
-      var speed = (5 + 2 / radius * 500) * 1.0;
+      var speed = (5 + 2 / radius * 500) * 1.4;
       var entity = {
         id: makeId(),
         x: s2d.width * 0.5,
@@ -67,7 +75,7 @@ class Mob {
         dy: 0.0,
         weight: 1.0,
         speed: speed,
-        color: size,
+        color: colors[size],
         avoidOthers: true,
         forceMultiplier: 1.0,
       };
@@ -84,7 +92,7 @@ class Mob {
         dy: 0.0,
         weight: 1.0,
         speed: 0.0,
-        color: 5,
+        color: colors[5],
         avoidOthers: false,
         forceMultiplier: 3.0,
       };
@@ -92,7 +100,7 @@ class Mob {
     ALL.push(obstacle(200.0, 300.0));
     ALL.push(obstacle(s2d.width / 2, s2d.height / 2));
 
-    target = {
+    player = {
       id: makeId(),
       x: 0.0,
       y: 0.0,
@@ -100,12 +108,12 @@ class Mob {
       dx: 0.0,
       dy: 0.0,
       weight: 1.0,
-      speed: 250.0,
-      color: 6,
+      speed: 500.0,
+      color: colors[6],
       avoidOthers: false,
       forceMultiplier: 3.0,
     }
-    ALL.push(target);
+    ALL.push(player);
 
     for (entity in ALL) {
       var graphic = new h2d.Graphics(s2d);
@@ -114,14 +122,28 @@ class Mob {
       // make outline
       graphic.beginFill(0x000000);
       graphic.drawCircle(0, 0, entity.radius + 1);
-      graphic.beginFill(colors[entity.color]);
+      graphic.beginFill(entity.color);
       graphic.drawCircle(0, 0, entity.radius);
       graphic.endFill();
       SPRITES[entity.id] = graphic;
     }
   }
 
-  function moveTarget(target: Point, dt: Float, s2d: h2d.Scene) {
+  function agentCollide(agents: Array<Point>, sprites: Map<Int, h2d.Graphics>, target: h2d.Object, TARGET_RADIUS) {
+    for (a in agents) {
+      var s = sprites[a.id];
+      s.color.set(1, 1, 1);
+
+      var d = distance(target.x, target.y, a.x, a.y);
+      var min = TARGET_RADIUS + a.radius * 1.0;
+      var isConflict = d < min;
+      if (isConflict) {
+        s.color.set(255, 255, 255);
+      }
+    }
+  }
+
+  function movePlayer(player: Point, dt: Float, s2d: h2d.Scene) {
     var Key = hxd.Key;
     var dx = 0;
     var dy = 0;
@@ -143,19 +165,25 @@ class Mob {
     var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
     var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
 
-    target.x += dxNormalized * target.speed * dt;
-    target.y += dyNormalized * target.speed * dt;
+    player.x += dxNormalized * player.speed * dt;
+    player.y += dyNormalized * player.speed * dt;
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
-    moveTarget(target, dt, s2d);
+    movePlayer(player, dt, s2d);
+    agentCollide(ALL, SPRITES, target, TARGET_RADIUS);
+
+    target.x = s2d.mouseX;
+    target.y = s2d.mouseY;
+
+    var follow = player;
 
     // distance to keep from destination
-    var threshold = target.radius + 30;
+    var threshold = player.radius + 30;
 
     function byClosest(a, b) {
-      var da = distance(a.x, a.y, target.x, target.y);
-      var db = distance(b.x, b.y, target.x, target.y);
+      var da = distance(a.x, a.y, follow.x, follow.y);
+      var db = distance(b.x, b.y, follow.x, follow.y);
 
       if (da < db) {
         return -1;
@@ -182,7 +210,7 @@ class Mob {
 
     for(i in 0...ALL.length) {
       var e = ALL[i];
-      var dFromTarget = distance(e.x, e.y, target.x, target.y);
+      var dFromTarget = distance(e.x, e.y, follow.x, follow.y);
       var dx = e.dx;
       var dy = e.dy;
       // exponential drop-off as agent approaches destination
@@ -191,7 +219,7 @@ class Mob {
                                           Math.pow((dFromTarget - threshold) / threshold, 4)));
       var speed = e.speed;
       if (dFromTarget > threshold) {
-        var aToTarget = Math.atan2(target.y - e.y, target.x - e.x);
+        var aToTarget = Math.atan2(follow.y - e.y, follow.x - e.x);
         dx += Math.cos(aToTarget) * speedAdjust;
         dy += Math.sin(aToTarget) * speedAdjust;
       }
@@ -208,7 +236,7 @@ class Mob {
             var isColliding = d < min;
             if (isColliding) {
               var conflict = min - d;
-              var adjustedConflict = conflict * 0.2;
+              var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
               var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
               var w = pt.weight / (pt.weight + ept.weight);
               // immobile entities have a stronger influence (obstacles such as walls, etc...)

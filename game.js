@@ -392,20 +392,21 @@ Main.prototype = $extend(hxd_App.prototype,{
 	,update: function(dt) {
 		this.t += dt;
 		this.acc += dt;
-		var fps = Math.round(1 / dt);
-		var text = ["time: " + this.t,"fps: " + fps,"drawCalls: " + this.engine.drawCalls].join("\n");
-		this.debugText.set_text(text);
 		var frameTime = 0.0166666666666666664;
-		var isNextFrame = this.acc > frameTime;
+		var isNextFrame = this.acc >= frameTime;
 		if(isNextFrame) {
 			this.acc -= frameTime;
+			this.mob.update(this.s2d,frameTime);
+			var fps = Math.round(1 / frameTime);
+			var text = ["time: " + this.t,"fps: " + fps,"drawCalls: " + this.engine.drawCalls].join("\n");
+			this.debugText.set_text(text);
 		}
-		this.mob.update(this.s2d,dt);
 	}
 	,__class__: Main
 });
 Math.__name__ = "Math";
 var Mob = function(s2d) {
+	this.TARGET_RADIUS = 20.0;
 	this.SPRITES = new haxe_ds_IntMap();
 	var numEntities = 500;
 	var colors_h = { };
@@ -414,6 +415,10 @@ var Mob = function(s2d) {
 	colors_h[4] = 448160;
 	colors_h[5] = 10066329;
 	colors_h[6] = 1149618;
+	this.target = new h2d_Object(s2d);
+	this.targetSprite = new h2d_Graphics(this.target);
+	this.targetSprite.beginFill(16777215,0.3);
+	this.targetSprite.drawCircle(0,0,this.TARGET_RADIUS);
 	var makeId = function() {
 		return Std.random(9999999);
 	};
@@ -423,17 +428,17 @@ var Mob = function(s2d) {
 		var _ = _g1++;
 		var size = this.irnd(2,4);
 		var radius = size * 2;
-		var speed = 5 + 2 / radius * 500;
-		var entity = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : size, avoidOthers : true, forceMultiplier : 1.0};
+		var speed = (5 + 2 / radius * 500) * 1.5;
+		var entity = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0};
 		Mob.ALL.push(entity);
 	}
 	var obstacle = function(x,y) {
-		return { id : makeId(), x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : 5, avoidOthers : false, forceMultiplier : 3.0};
+		return { id : makeId(), x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0};
 	};
 	Mob.ALL.push(obstacle(200.0,300.0));
 	Mob.ALL.push(obstacle(s2d.width / 2,s2d.height / 2));
-	this.target = { id : makeId(), x : 0.0, y : 0.0, radius : 25, dx : 0.0, dy : 0.0, weight : 1.0, speed : 250.0, color : 6, avoidOthers : false, forceMultiplier : 3.0};
-	Mob.ALL.push(this.target);
+	this.player = { id : makeId(), x : 0.0, y : 0.0, radius : 25, dx : 0.0, dy : 0.0, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0};
+	Mob.ALL.push(this.player);
 	var _g3 = 0;
 	var _g4 = Mob.ALL;
 	while(_g3 < _g4.length) {
@@ -446,7 +451,7 @@ var Mob = function(s2d) {
 		graphic.y = entity1.y;
 		graphic.beginFill(0);
 		graphic.drawCircle(0,0,entity1.radius + 1);
-		graphic.beginFill(colors_h[entity1.color]);
+		graphic.beginFill(entity1.color);
 		graphic.drawCircle(0,0,entity1.radius);
 		graphic.endFill();
 		this.SPRITES.h[entity1.id] = graphic;
@@ -478,7 +483,54 @@ Mob.prototype = {
 	,distance: function(ax,ay,bx,by) {
 		return Math.sqrt(this.distanceSqr(ax,ay,bx,by));
 	}
-	,moveTarget: function(target,dt,s2d) {
+	,agentCollide: function(agents,sprites,target,TARGET_RADIUS) {
+		var _g = 0;
+		while(_g < agents.length) {
+			var a = agents[_g];
+			++_g;
+			var s = sprites.h[a.id];
+			var _this = s.color;
+			var x = 1;
+			var y = 1;
+			var z = 1;
+			if(z == null) {
+				z = 0.;
+			}
+			if(y == null) {
+				y = 0.;
+			}
+			if(x == null) {
+				x = 0.;
+			}
+			_this.x = x;
+			_this.y = y;
+			_this.z = z;
+			_this.w = 1.;
+			var d = this.distance(target.x,target.y,a.x,a.y);
+			var min = TARGET_RADIUS + a.radius * 1.0;
+			var isConflict = d < min;
+			if(isConflict) {
+				var _this1 = s.color;
+				var x1 = 255;
+				var y1 = 255;
+				var z1 = 255;
+				if(z1 == null) {
+					z1 = 0.;
+				}
+				if(y1 == null) {
+					y1 = 0.;
+				}
+				if(x1 == null) {
+					x1 = 0.;
+				}
+				_this1.x = x1;
+				_this1.y = y1;
+				_this1.z = z1;
+				_this1.w = 1.;
+			}
+		}
+	}
+	,movePlayer: function(player,dt,s2d) {
 		var Key = hxd_Key;
 		var dx = 0;
 		var dy = 0;
@@ -497,16 +549,26 @@ Mob.prototype = {
 		var magnitude = Math.sqrt(dx * dx + dy * dy);
 		var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
 		var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
-		target.x += dxNormalized * target.speed * dt;
-		target.y += dyNormalized * target.speed * dt;
+		player.x += dxNormalized * player.speed * dt;
+		player.y += dyNormalized * player.speed * dt;
 	}
 	,update: function(s2d,dt) {
 		var _gthis = this;
-		this.moveTarget(this.target,dt,s2d);
-		var threshold = this.target.radius + 30;
+		this.movePlayer(this.player,dt,s2d);
+		this.agentCollide(Mob.ALL,this.SPRITES,this.target,this.TARGET_RADIUS);
+		var _this = this.target;
+		var v = s2d.get_mouseX();
+		_this.posChanged = true;
+		_this.x = v;
+		var _this1 = this.target;
+		var v1 = s2d.get_mouseY();
+		_this1.posChanged = true;
+		_this1.y = v1;
+		var follow = this.player;
+		var threshold = this.player.radius + 30;
 		var byClosest = function(a,b) {
-			var da = _gthis.distance(a.x,a.y,_gthis.target.x,_gthis.target.y);
-			var db = _gthis.distance(b.x,b.y,_gthis.target.x,_gthis.target.y);
+			var da = _gthis.distance(a.x,a.y,follow.x,follow.y);
+			var db = _gthis.distance(b.x,b.y,follow.x,follow.y);
 			if(da < db) {
 				return -1;
 			}
@@ -529,13 +591,13 @@ Mob.prototype = {
 		while(_g2 < _g3) {
 			var i = _g2++;
 			var e = Mob.ALL[i];
-			var dFromTarget = this.distance(e.x,e.y,this.target.x,this.target.y);
+			var dFromTarget = this.distance(e.x,e.y,follow.x,follow.y);
 			var dx = e.dx;
 			var dy = e.dy;
 			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold) / threshold,4)));
 			var speed = e.speed;
 			if(dFromTarget > threshold) {
-				var aToTarget = Math.atan2(this.target.y - e.y,this.target.x - e.x);
+				var aToTarget = Math.atan2(follow.y - e.y,follow.x - e.x);
 				dx += Math.cos(aToTarget) * speedAdjust;
 				dy += Math.sin(aToTarget) * speedAdjust;
 			}
@@ -554,7 +616,7 @@ Mob.prototype = {
 						var isColliding = d < min;
 						if(isColliding) {
 							var conflict = min - d;
-							var adjustedConflict = conflict * 0.2;
+							var adjustedConflict = Math.min(conflict,conflict * 50 / speed);
 							var a2 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 							var w = pt.weight / (pt.weight + ept.weight);
 							var multiplier = ept.forceMultiplier;
@@ -588,12 +650,12 @@ Mob.prototype = {
 			e.x += dx * speed * dt;
 			e.y += dy * speed * dt;
 			var id = e.id;
-			var _this = this.SPRITES.h[id];
-			_this.posChanged = true;
-			_this.x = e.x;
-			var _this1 = this.SPRITES.h[id];
-			_this1.posChanged = true;
-			_this1.y = e.y;
+			var _this2 = this.SPRITES.h[id];
+			_this2.posChanged = true;
+			_this2.x = e.x;
+			var _this3 = this.SPRITES.h[id];
+			_this3.posChanged = true;
+			_this3.y = e.y;
 		}
 	}
 	,__class__: Mob

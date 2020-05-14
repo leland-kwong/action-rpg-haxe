@@ -93,20 +93,20 @@ class Main extends hxd.App {
   override function update(dt:Float) {
     t += dt;
     acc += dt;
-    var fps = Math.round(1/dt);
-    var text = ['time: ${t}',
-                'fps: ${fps}',
-                'drawCalls: ${engine.drawCalls}'].join('\n');
-    debugText.text = text;
 
     var frameTime = 1/60;
-    var isNextFrame = acc > frameTime;
+    var isNextFrame = acc >= frameTime;
     // handle fixed dt here
     if (isNextFrame) {
       acc -= frameTime;
-    }
+      mob.update(s2d, frameTime);
 
-    mob.update(s2d, dt);
+      var fps = Math.round(1/frameTime);
+      var text = ['time: ${t}',
+                  'fps: ${fps}',
+                  'drawCalls: ${engine.drawCalls}'].join('\n');
+      debugText.text = text;
+    }
   }
 
   static function main() {
