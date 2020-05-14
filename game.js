@@ -428,7 +428,7 @@ var Mob = function(s2d) {
 		var _ = _g1++;
 		var size = this.irnd(2,4);
 		var radius = size * 2;
-		var speed = (5 + 2 / radius * 500) * 1.5;
+		var speed = (5 + 2 / radius * 500) * 1.4;
 		var entity = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0};
 		Mob.ALL.push(entity);
 	}
@@ -436,8 +436,8 @@ var Mob = function(s2d) {
 		return { id : makeId(), x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0};
 	};
 	Mob.ALL.push(obstacle(200.0,300.0));
-	Mob.ALL.push(obstacle(s2d.width / 2,s2d.height / 2));
-	this.player = { id : makeId(), x : 0.0, y : 0.0, radius : 25, dx : 0.0, dy : 0.0, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0};
+	Mob.ALL.push(obstacle(s2d.width - 100.0,s2d.height / 2));
+	this.player = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : 25, dx : 0.0, dy : 0.0, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0};
 	Mob.ALL.push(this.player);
 	var _g3 = 0;
 	var _g4 = Mob.ALL;
@@ -622,12 +622,6 @@ Mob.prototype = {
 							var multiplier = ept.forceMultiplier;
 							var avoidX = Math.cos(a2) * adjustedConflict * w * multiplier;
 							var avoidY = Math.sin(a2) * adjustedConflict * w * multiplier;
-							if(avoidX == 0) {
-								avoidX = 0.001;
-							}
-							if(avoidY == 0) {
-								avoidY = 0.001;
-							}
 							dx -= avoidX;
 							dy -= avoidY;
 						}

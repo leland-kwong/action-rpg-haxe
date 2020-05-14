@@ -98,12 +98,12 @@ class Mob {
       };
     }
     ALL.push(obstacle(200.0, 300.0));
-    ALL.push(obstacle(s2d.width / 2, s2d.height / 2));
+    ALL.push(obstacle(s2d.width - 100.0, s2d.height / 2));
 
     player = {
       id: makeId(),
-      x: 0.0,
-      y: 0.0,
+      x: s2d.width * 0.5,
+      y: s2d.height * 0.5,
       radius: 25,
       dx: 0.0,
       dy: 0.0,
@@ -243,14 +243,6 @@ class Mob {
               var multiplier = ept.forceMultiplier;
               var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
               var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
-
-              if (avoidX == 0) {
-                avoidX = 0.001;
-              }
-
-              if (avoidY == 0) {
-                avoidY = 0.001;
-              }
 
               dx -= avoidX;
               dy -= avoidY;
