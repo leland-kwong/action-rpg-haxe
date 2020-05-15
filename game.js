@@ -1677,9 +1677,30 @@ Entity.prototype = $extend(h2d_Object.prototype,{
 				}
 			}
 		}
+		if(this.speed != 0) {
+			var max = 1;
+			if(this.dx > max) {
+				this.dx = max;
+			}
+			if(this.dx < -max) {
+				this.dx = -max;
+			}
+			if(this.dy > max) {
+				this.dy = max;
+			}
+			if(this.dy < -max) {
+				this.dy = -max;
+			}
+			var _g1 = this;
+			_g1.posChanged = true;
+			_g1.x += this.dx * this.speed * dt;
+			var _g11 = this;
+			_g11.posChanged = true;
+			_g11.y += this.dy * this.speed * dt;
+		}
 		this.hovered = false;
 	}
-	,findNearest: function(x,y) {
+	,findNearest: function(x,y,range,filter) {
 		var item = null;
 		var prevDist = 999999.0;
 		var _g = 0;
@@ -1687,9 +1708,9 @@ Entity.prototype = $extend(h2d_Object.prototype,{
 		while(_g < _g1.length) {
 			var e = _g1[_g];
 			++_g;
-			if(e != this) {
+			if(e != this && e.type == filter) {
 				var d = Utils.distance(x,y,e.x,e.y);
-				if(d < prevDist) {
+				if(d <= range && d < prevDist) {
 					item = e;
 					prevDist = d;
 				}
@@ -1700,12 +1721,20 @@ Entity.prototype = $extend(h2d_Object.prototype,{
 	,__class__: Entity
 });
 var Bullet = function(x1,y1,x2,y2) {
-	this.lifeTime = 1.0;
-	this.damage = 1.0;
-	Entity.call(this,{ x : this.x, y : this.y, radius : 10, health : 1, forceMultiplier : 1.0, color : 16777215, speed : 200.0, avoidOthers : false, weight : 0.0});
-	var magnitude = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
-	var dxNormalized = magnitude == 0 ? this.dx : this.dx / magnitude;
-	var dyNormalized = magnitude == 0 ? this.dy : this.dy / magnitude;
+	this.lifeTime = 10.0;
+	this.damage = 10;
+	Entity.call(this,{ x : x1, y : y1, radius : 10, health : 1, forceMultiplier : 0.0, color : 16777215, speed : 200.0, avoidOthers : false, weight : 0.0});
+	var sprite = new h2d_Graphics();
+	this.addChild(sprite);
+	sprite.beginFill(16777215);
+	sprite.drawCircle(0,0,this.radius);
+	sprite.endFill();
+	var aToTarget = Math.atan2(y2 - y1,x2 - x1);
+	var _dx = Math.cos(aToTarget);
+	var _dy = Math.sin(aToTarget);
+	var magnitude = Math.sqrt(_dx * _dx + _dy * _dy);
+	var dxNormalized = magnitude == 0 ? _dx : _dx / magnitude;
+	var dyNormalized = magnitude == 0 ? _dy : _dy / magnitude;
 	this.dx = dxNormalized;
 	this.dy = dyNormalized;
 };
@@ -1714,14 +1743,32 @@ Bullet.__name__ = "Bullet";
 Bullet.__super__ = Entity;
 Bullet.prototype = $extend(Entity.prototype,{
 	update: function(dt) {
+		Entity.prototype.update.call(this,dt);
 		this.lifeTime -= dt;
 		if(this.lifeTime <= 0) {
 			this.health = 0;
+		}
+		var _g = 0;
+		var _g1 = Entity.ALL;
+		while(_g < _g1.length) {
+			var a = _g1[_g];
+			++_g;
+			if(a.type == "ENEMY") {
+				var d = Utils.distance(this.x,this.y,a.x,a.y);
+				var min = this.radius + a.radius * 1.0;
+				var isConflict = d < min;
+				if(isConflict) {
+					this.health = 0;
+					a.health -= this.damage;
+					a.hovered = true;
+				}
+			}
 		}
 	}
 	,__class__: Bullet
 });
 var Turret = function(x,y) {
+	this.range = 300;
 	Entity.call(this,{ x : x, y : y, radius : 20, health : 100, forceMultiplier : 1.0, color : 16737170, speed : 0.0, avoidOthers : false, weight : 0.0});
 	this.cds = new Cooldown();
 };
@@ -1733,17 +1780,30 @@ Turret.prototype = $extend(Entity.prototype,{
 		Entity.prototype.update.call(this,dt);
 		this.cds.update(dt);
 		if(!this.cds.has("attack")) {
-			this.cds.set("attack",1.0);
-			var nearest = this.findNearest(this.x,this.y);
-			new Bullet(this.x,this.y,nearest.x,nearest.y);
+			this.cds.set("attack",0.2);
+			var nearest = this.findNearest(this.x,this.y,this.range,"ENEMY");
+			if(nearest != null) {
+				var b = new Bullet(this.x,this.y,nearest.x,nearest.y);
+				this.parent.addChild(b);
+			}
 		}
 	}
 	,__class__: Turret
 });
+var Enemy = function(props) {
+	Entity.call(this,props);
+	this.type = "ENEMY";
+};
+$hxClasses["Enemy"] = Enemy;
+Enemy.__name__ = "Enemy";
+Enemy.__super__ = Entity;
+Enemy.prototype = $extend(Entity.prototype,{
+	__class__: Enemy
+});
 var Mob = function(s2d) {
 	this.TARGET_RADIUS = 20.0;
 	this.turret = new Turret(250,150);
-	var numEntities = 2;
+	var numEntities = 100;
 	var colors_h = { };
 	colors_h[2] = 16223339;
 	colors_h[3] = 16765286;
@@ -1761,7 +1821,8 @@ var Mob = function(s2d) {
 		var size = this.irnd(2,4);
 		var radius = size * 2;
 		var speed = (5 + 2 / radius * 500) * 1.4;
-		new Entity({ x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0, health : 100});
+		var e = new Enemy({ x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0, health : 100});
+		s2d.addChild(e);
 	}
 	var obstacle = function(x,y) {
 		return new Entity({ x : x, y : y, radius : 20, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0, health : 99999});
@@ -1891,20 +1952,16 @@ Mob.prototype = {
 		};
 		ALL.sort(byClosest);
 		var _g1 = 0;
-		while(_g1 < ALL.length) {
-			var a4 = ALL[_g1];
-			++_g1;
-			a4.dx = 0;
-			a4.dy = 0;
-		}
-		var _g2 = 0;
-		var _g3 = ALL.length;
-		while(_g2 < _g3) {
-			var i1 = _g2++;
+		var _g2 = ALL.length;
+		while(_g1 < _g2) {
+			var i1 = _g1++;
 			var e = ALL[i1];
+			if(e.type != "ENEMY") {
+				continue;
+			}
 			var dFromTarget = Utils.distance(e.x,e.y,follow.x,follow.y);
-			var dx = e.dx;
-			var dy = e.dy;
+			var dx = 0.0;
+			var dy = 0.0;
 			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold) / threshold,4)));
 			var speed = e.speed;
 			if(dFromTarget > threshold) {
@@ -1913,11 +1970,11 @@ Mob.prototype = {
 				dy += Math.sin(aToTarget) * speedAdjust;
 			}
 			if(e.avoidOthers) {
-				var _g21 = 0;
-				while(_g21 < ALL.length) {
-					var o = ALL[_g21];
-					++_g21;
-					if(o != e) {
+				var _g11 = 0;
+				while(_g11 < ALL.length) {
+					var o = ALL[_g11];
+					++_g11;
+					if(o != e && o.forceMultiplier > 0) {
 						var pt = e;
 						var ept = o;
 						var d = Utils.distance(pt.x,pt.y,ept.x,ept.y);
@@ -1927,11 +1984,11 @@ Mob.prototype = {
 						if(isColliding) {
 							var conflict = min - d;
 							var adjustedConflict = Math.min(conflict,conflict * 50 / speed);
-							var a5 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
+							var a4 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 							var w = pt.weight / (pt.weight + ept.weight);
 							var multiplier = ept.forceMultiplier;
-							var avoidX = Math.cos(a5) * adjustedConflict * w * multiplier;
-							var avoidY = Math.sin(a5) * adjustedConflict * w * multiplier;
+							var avoidX = Math.cos(a4) * adjustedConflict * w * multiplier;
+							var avoidY = Math.sin(a4) * adjustedConflict * w * multiplier;
 							dx -= avoidX;
 							dy -= avoidY;
 						}
@@ -1951,12 +2008,12 @@ Mob.prototype = {
 			if(dy < -max) {
 				dy = -max;
 			}
-			var _g22 = e;
-			_g22.posChanged = true;
-			_g22.x += dx * speed * dt;
-			var _g23 = e;
-			_g23.posChanged = true;
-			_g23.y += dy * speed * dt;
+			var _g12 = e;
+			_g12.posChanged = true;
+			_g12.x += dx * speed * dt;
+			var _g13 = e;
+			_g13.posChanged = true;
+			_g13.y += dy * speed * dt;
 		}
 	}
 	,__class__: Mob

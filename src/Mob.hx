@@ -46,6 +46,7 @@ class Entity extends h2d.Object {
 
   public static var ALL: Array<Entity> = [];
   public var id: Int;
+  public var type: String;
   public var radius: Int;
   public var dx = 0.0;
   public var dy = 0.0;
@@ -74,7 +75,7 @@ class Entity extends h2d.Object {
     ALL.push(this);
   }
 
-  public function update(dt) {
+  public function update(dt: Float) {
     for (child in iterator()) {
       // NOTE: ask in discord whether theres a more idiomatic way
       // for checking multiple types
@@ -89,17 +90,35 @@ class Entity extends h2d.Object {
       }
     }
 
+    if (speed != 0) {
+      var max = 1;
+      if (dx > max) {
+        dx = max;
+      }
+      if (dx < -max) {
+        dx = -max;
+      }
+      if (dy > max) {
+        dy = max;
+      }
+      if (dy < -max) {
+        dy = -max;
+      }
+      x += dx * speed * dt;
+      y += dy * speed * dt;
+    }
+
     hovered = false;
   }
 
-  public function findNearest(x, y) {
+  public function findNearest(x, y, range, filter: String) {
     var item = null;
     var prevDist = 999999.0;
 
     for (e in ALL) {
-      if (e != this) {
+      if (e != this && e.type == filter) {
         var d = Utils.distance(x, y, e.x, e.y);
-        if (d < prevDist) {
+        if (d <= range && d < prevDist) {
           item = e;
           prevDist = d;
         }
@@ -111,40 +130,66 @@ class Entity extends h2d.Object {
 }
 
 class Bullet extends Entity {
-  var damage = 1.0;
-  var lifeTime = 1.0;
+  var damage = 10;
+  var lifeTime = 10.0;
 
-  public function new(x1, y1, x2, y2) {
+  public function new(x1: Float, y1: Float, x2: Float, y2: Float) {
     super({
-      x: x,
-      y: y,
+      x: x1,
+      y: y1,
       radius: 10,
       health: 1,
-      forceMultiplier: 1.0,
+      forceMultiplier: 0.0,
       color: 0xffffff,
       speed: 200.0,
       avoidOthers: false,
       weight: 0.0,
     });
 
-    var magnitude = Math.sqrt(dx * dx + dy * dy);
-    var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
-    var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
+    var sprite = new h2d.Graphics();
+    addChild(sprite);
+
+    sprite.beginFill(0xFFFFFF);
+    sprite.drawCircle(0, 0, radius);
+    sprite.endFill();
+
+    var aToTarget = Math.atan2(y2 - y1, x2 - x1);
+    var _dx = Math.cos(aToTarget);
+    var _dy = Math.sin(aToTarget);
+    var magnitude = Math.sqrt(_dx * _dx + _dy * _dy);
+    var dxNormalized = magnitude == 0 ? _dx : _dx / magnitude;
+    var dyNormalized = magnitude == 0 ? _dy : _dy / magnitude;
     dx = dxNormalized;
     dy = dyNormalized;
   }
 
   public override function update(dt: Float) {
+    super.update(dt);
+
     lifeTime -= dt;
 
     if (lifeTime <= 0) {
       health = 0;
+    }
+
+    for (a in Entity.ALL) {
+      if (a.type == 'ENEMY') {
+        var d = Utils.distance(x, y, a.x, a.y);
+        var min = radius + a.radius * 1.0;
+        var isConflict = d < min;
+        if (isConflict) {
+          health = 0;
+          a.health -= damage;
+          a.hovered = true;
+        }
+      }
     }
   }
 }
 
 class Turret extends Entity {
   var cds: Cooldown;
+  var range = 300;
 
   public function new(x, y) {
     super({
@@ -168,12 +213,21 @@ class Turret extends Entity {
     cds.update(dt);
 
     if (!cds.has('attack')) {
-      cds.set('attack', 1.0);
+      cds.set('attack', 0.2);
 
-      var nearest = findNearest(x, y);
-      // trace(nearest.x, nearest.y);
-      new Bullet(x, y, nearest.x, nearest.y);
+      var nearest = findNearest(x, y, range, 'ENEMY');
+      if (nearest != null) {
+        var b = new Bullet(x, y, nearest.x, nearest.y);
+        parent.addChild(b);
+      }
     }
+  }
+}
+
+class Enemy extends Entity {
+  public function new(props) {
+    super(props);
+    type = 'ENEMY';
   }
 }
 
@@ -204,7 +258,7 @@ class Mob {
       150
     );
 
-    var numEntities = 2;
+    var numEntities = 100;
     var colors = [
       2 => 0xF78C6B,
       3 => 0xFFD166,
@@ -222,7 +276,7 @@ class Mob {
       var size = irnd(2, 4);
       var radius = size * 2;
       var speed = (5 + 2 / radius * 500) * 1.4;
-      new Entity({
+      var e = new Enemy({
         x: s2d.width * 0.5,
         y: s2d.height * 0.5,
         radius: radius,
@@ -233,6 +287,7 @@ class Mob {
         forceMultiplier: 1.0,
         health: 100,
       });
+      s2d.addChild(e);
     }
 
     function obstacle(x, y) {
@@ -376,17 +431,16 @@ class Mob {
     **/
     ALL.sort(byClosest);
 
-    // reset deltas
-    for (a in ALL) {
-      a.dx = 0;
-      a.dy = 0;
-    }
-
     for(i in 0...ALL.length) {
       var e = ALL[i];
+
+      if (e.type != 'ENEMY') {
+        continue;
+      }
+
       var dFromTarget = Utils.distance(e.x, e.y, follow.x, follow.y);
-      var dx = e.dx;
-      var dy = e.dy;
+      var dx = 0.0;
+      var dy = 0.0;
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(0,
                                  Math.min(1,
@@ -401,7 +455,7 @@ class Mob {
       if (e.avoidOthers) {
         // make entities avoid each other by repulsion
         for (o in ALL) {
-          if (o != e) {
+          if (o != e && o.forceMultiplier > 0) {
             var pt = e;
             var ept = o;
             var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
