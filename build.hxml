@@ -10,4 +10,4 @@
 -lib hlsdl
 
 # output
--hl bin/game.hl
+-hl bin/hlboot.dat

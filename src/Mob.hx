@@ -82,30 +82,36 @@ class Entity extends h2d.Object {
       var c:Dynamic = child;
 
       if (Type.getClass(child) == h2d.Graphics) {
-        c.color.set(1, 1, 1);
+        c.color.set(1, 1, 1, 1);
 
         if (hovered) {
-          c.color.set(255, 255, 255);
+          c.color.set(255, 255, 255, 1);
         }
       }
     }
 
     if (speed != 0) {
       var max = 1;
-      if (dx > max) {
-        dx = max;
+
+      if (dx != 0) {
+        if (dx > max) {
+          dx = max;
+        }
+        if (dx < -max) {
+          dx = -max;
+        }
+        x += dx * speed * dt;
       }
-      if (dx < -max) {
-        dx = -max;
+
+      if (dy != 0) {
+        if (dy > max) {
+          dy = max;
+        }
+        if (dy < -max) {
+          dy = -max;
+        }
+        y += dy * speed * dt;
       }
-      if (dy > max) {
-        dy = max;
-      }
-      if (dy < -max) {
-        dy = -max;
-      }
-      x += dx * speed * dt;
-      y += dy * speed * dt;
     }
 
     hovered = false;
@@ -181,6 +187,7 @@ class Bullet extends Entity {
           health = 0;
           a.health -= damage;
           a.hovered = true;
+          break;
         }
       }
     }
@@ -258,7 +265,7 @@ class Mob {
       150
     );
 
-    var numEntities = 100;
+    var numEntities = 400;
     var colors = [
       2 => 0xF78C6B,
       3 => 0xFFD166,
@@ -269,7 +276,7 @@ class Mob {
 
     target = new h2d.Object(s2d);
     targetSprite = new h2d.Graphics(target);
-    targetSprite.beginFill(0xffffff, 0.3);
+    targetSprite.beginFill(0xffda3d, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
 
     for (_ in 0...numEntities) {
@@ -375,7 +382,7 @@ class Mob {
   public function update(s2d: h2d.Scene, dt: Float) {
     var ALL = Entity.ALL;
 
-    // cleanup disposed agents first
+    // cleanup/update agents first
     {
       var i = 0;
       while (i < ALL.length) {
@@ -385,14 +392,10 @@ class Mob {
           ALL.splice(i, 1);
           a.remove();
         } else {
+          a.update(dt);
           i += 1;
         }
       }
-    }
-
-    // reset agent states
-    for (a in ALL) {
-      a.update(dt);
     }
 
     movePlayer(player, dt, s2d);
@@ -431,9 +434,7 @@ class Mob {
     **/
     ALL.sort(byClosest);
 
-    for(i in 0...ALL.length) {
-      var e = ALL[i];
-
+    for(e in ALL) {
       if (e.type != 'ENEMY') {
         continue;
       }

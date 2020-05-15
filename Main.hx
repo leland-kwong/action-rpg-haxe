@@ -49,6 +49,7 @@ class Main extends hxd.App {
   var acc = 0.0;
   var batcher: BatchDraw;
   var mob: Mob;
+  var background: h2d.Bitmap;
 
   function animate(s2d: h2d.Scene) {
     // creates three tiles with different color
@@ -65,9 +66,7 @@ class Main extends hxd.App {
   function addBackground(s2d: h2d.Scene, color) {
     // background
     var overlayTile = h2d.Tile.fromColor(color, s2d.width, s2d.height);
-    var overlay = new h2d.Bitmap(overlayTile, s2d);
-    overlay.x = 0;
-    overlay.y = 0;
+    return new h2d.Bitmap(overlayTile, s2d);
   }
 
   function setupDebugInfo(font) {
@@ -83,7 +82,7 @@ class Main extends hxd.App {
   override function init() {
     var font: h2d.Font = hxd.res.DefaultFont.get();
 
-    addBackground(s2d, 0x333333);
+    background = addBackground(s2d, 0x333333);
     setupDebugInfo(font);
 
     mob = new Mob(s2d);
@@ -95,18 +94,21 @@ class Main extends hxd.App {
     acc += dt;
 
     var frameTime = dt;
+    var fps = Math.round(1/dt);
+    var text = ['time: ${t}',
+                'fps: ${fps}',
+                'drawCalls: ${engine.drawCalls}'].join('\n');
+    debugText.text = text;
+
     var isNextFrame = acc >= frameTime;
     // handle fixed dt here
     if (isNextFrame) {
       acc -= frameTime;
       mob.update(s2d, frameTime);
-
-      var fps = Math.round(1/frameTime);
-      var text = ['time: ${t}',
-                  'fps: ${fps}',
-                  'drawCalls: ${engine.drawCalls}'].join('\n');
-      debugText.text = text;
     }
+
+    background.width = s2d.width;
+    background.height = s2d.height;
   }
 
   static function main() {

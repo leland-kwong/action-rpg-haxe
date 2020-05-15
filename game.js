@@ -393,13 +393,13 @@ Main.prototype = $extend(hxd_App.prototype,{
 		this.t += dt;
 		this.acc += dt;
 		var frameTime = dt;
+		var fps = Math.round(1 / dt);
+		var text = ["time: " + this.t,"fps: " + fps,"drawCalls: " + this.engine.drawCalls].join("\n");
+		this.debugText.set_text(text);
 		var isNextFrame = this.acc >= frameTime;
 		if(isNextFrame) {
 			this.acc -= frameTime;
 			this.mob.update(this.s2d,frameTime);
-			var fps = Math.round(1 / frameTime);
-			var text = ["time: " + this.t,"fps: " + fps,"drawCalls: " + this.engine.drawCalls].join("\n");
-			this.debugText.set_text(text);
 		}
 	}
 	,__class__: Main
@@ -1671,32 +1671,36 @@ Entity.prototype = $extend(h2d_Object.prototype,{
 			var child = _g_a[_g_i++];
 			var c = child;
 			if(js_Boot.getClass(child) == h2d_Graphics) {
-				c.color.set(1,1,1);
+				c.color.set(1,1,1,1);
 				if(this.hovered) {
-					c.color.set(255,255,255);
+					c.color.set(255,255,255,1);
 				}
 			}
 		}
 		if(this.speed != 0) {
 			var max = 1;
-			if(this.dx > max) {
-				this.dx = max;
+			if(this.dx != 0) {
+				if(this.dx > max) {
+					this.dx = max;
+				}
+				if(this.dx < -max) {
+					this.dx = -max;
+				}
+				var _g1 = this;
+				_g1.posChanged = true;
+				_g1.x += this.dx * this.speed * dt;
 			}
-			if(this.dx < -max) {
-				this.dx = -max;
+			if(this.dy != 0) {
+				if(this.dy > max) {
+					this.dy = max;
+				}
+				if(this.dy < -max) {
+					this.dy = -max;
+				}
+				var _g11 = this;
+				_g11.posChanged = true;
+				_g11.y += this.dy * this.speed * dt;
 			}
-			if(this.dy > max) {
-				this.dy = max;
-			}
-			if(this.dy < -max) {
-				this.dy = -max;
-			}
-			var _g1 = this;
-			_g1.posChanged = true;
-			_g1.x += this.dx * this.speed * dt;
-			var _g11 = this;
-			_g11.posChanged = true;
-			_g11.y += this.dy * this.speed * dt;
 		}
 		this.hovered = false;
 	}
@@ -1761,6 +1765,7 @@ Bullet.prototype = $extend(Entity.prototype,{
 					this.health = 0;
 					a.health -= this.damage;
 					a.hovered = true;
+					break;
 				}
 			}
 		}
@@ -1803,7 +1808,7 @@ Enemy.prototype = $extend(Entity.prototype,{
 var Mob = function(s2d) {
 	this.TARGET_RADIUS = 20.0;
 	this.turret = new Turret(250,150);
-	var numEntities = 100;
+	var numEntities = 400;
 	var colors_h = { };
 	colors_h[2] = 16223339;
 	colors_h[3] = 16765286;
@@ -1915,18 +1920,13 @@ Mob.prototype = {
 					a.parent.removeChild(a);
 				}
 			} else {
+				a.update(dt);
 				++i;
 			}
 		}
-		var _g = 0;
-		while(_g < ALL.length) {
-			var a1 = ALL[_g];
-			++_g;
-			a1.update(dt);
-		}
 		this.movePlayer(this.player,dt,s2d);
-		var onAgentHover = function(a2) {
-			a2.hovered = true;
+		var onAgentHover = function(a1) {
+			a1.hovered = true;
 		};
 		this.agentCollide(ALL,this.target,this.TARGET_RADIUS,onAgentHover);
 		var _this = this.target;
@@ -1939,8 +1939,8 @@ Mob.prototype = {
 		_this1.y = v1;
 		var follow = this.player;
 		var threshold = this.player.radius + 30;
-		var byClosest = function(a3,b) {
-			var da = Utils.distance(a3.x,a3.y,follow.x,follow.y);
+		var byClosest = function(a2,b) {
+			var da = Utils.distance(a2.x,a2.y,follow.x,follow.y);
 			var db = Utils.distance(b.x,b.y,follow.x,follow.y);
 			if(da < db) {
 				return -1;
@@ -1951,11 +1951,10 @@ Mob.prototype = {
 			return 0;
 		};
 		ALL.sort(byClosest);
-		var _g1 = 0;
-		var _g2 = ALL.length;
-		while(_g1 < _g2) {
-			var i1 = _g1++;
-			var e = ALL[i1];
+		var _g = 0;
+		while(_g < ALL.length) {
+			var e = ALL[_g];
+			++_g;
 			if(e.type != "ENEMY") {
 				continue;
 			}
@@ -1970,10 +1969,10 @@ Mob.prototype = {
 				dy += Math.sin(aToTarget) * speedAdjust;
 			}
 			if(e.avoidOthers) {
-				var _g11 = 0;
-				while(_g11 < ALL.length) {
-					var o = ALL[_g11];
-					++_g11;
+				var _g1 = 0;
+				while(_g1 < ALL.length) {
+					var o = ALL[_g1];
+					++_g1;
 					if(o != e && o.forceMultiplier > 0) {
 						var pt = e;
 						var ept = o;
@@ -1984,11 +1983,11 @@ Mob.prototype = {
 						if(isColliding) {
 							var conflict = min - d;
 							var adjustedConflict = Math.min(conflict,conflict * 50 / speed);
-							var a4 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
+							var a3 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 							var w = pt.weight / (pt.weight + ept.weight);
 							var multiplier = ept.forceMultiplier;
-							var avoidX = Math.cos(a4) * adjustedConflict * w * multiplier;
-							var avoidY = Math.sin(a4) * adjustedConflict * w * multiplier;
+							var avoidX = Math.cos(a3) * adjustedConflict * w * multiplier;
+							var avoidY = Math.sin(a3) * adjustedConflict * w * multiplier;
 							dx -= avoidX;
 							dy -= avoidY;
 						}
@@ -2008,12 +2007,12 @@ Mob.prototype = {
 			if(dy < -max) {
 				dy = -max;
 			}
-			var _g12 = e;
-			_g12.posChanged = true;
-			_g12.x += dx * speed * dt;
-			var _g13 = e;
-			_g13.posChanged = true;
-			_g13.y += dy * speed * dt;
+			var _g2 = e;
+			_g2.posChanged = true;
+			_g2.x += dx * speed * dt;
+			var _g3 = e;
+			_g3.posChanged = true;
+			_g3.y += dy * speed * dt;
 		}
 	}
 	,__class__: Mob
