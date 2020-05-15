@@ -1,5 +1,13 @@
+class Utils {
+  public static function distanceSqr(ax:Float,ay:Float,bx:Float,by:Float) : Float {
+    return (ax-bx)*(ax-bx) + (ay-by)*(ay-by);
+  }
+
+  public static function distance(ax:Float,ay:Float, bx:Float,by:Float) : Float {
+    return Math.sqrt( distanceSqr(ax,ay,bx,by) );
+  }
+}
 typedef Point = {
-  var id: Int;
   var x : Float;
   var y : Float;
   var radius: Int;
@@ -11,7 +19,32 @@ typedef Point = {
   var health: Int;
 }
 
+class Cooldown {
+  var cds: Map<String, Float>;
+
+  public function new() {
+    cds = new Map();
+  }
+
+  public function set(key, value) {
+    cds[key] = value;
+  }
+
+  public function has(key) {
+    return cds.exists(key) && cds[key] > 0.0;
+  }
+
+  public function update(dt: Float) {
+    for (key => value in cds) {
+      cds[key] = value - dt;
+    }
+  }
+}
+
 class Entity extends h2d.Object {
+  static var idGenerated = 0;
+
+  public static var ALL: Array<Entity> = [];
   public var id: Int;
   public var radius: Int;
   public var dx = 0.0;
@@ -22,13 +55,14 @@ class Entity extends h2d.Object {
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var health = 1;
+  public var hovered = false;
 
   public function new(props: Point) {
     super();
 
     x = props.x;
     y = props.y;
-    id = props.id;
+    id = idGenerated++;
     radius = props.radius;
     weight = props.weight;
     speed = props.speed;
@@ -36,17 +70,119 @@ class Entity extends h2d.Object {
     avoidOthers = props.avoidOthers;
     forceMultiplier = props.forceMultiplier;
     health = props.health;
+
+    ALL.push(this);
+  }
+
+  public function update(dt) {
+    for (child in iterator()) {
+      // NOTE: ask in discord whether theres a more idiomatic way
+      // for checking multiple types
+      var c:Dynamic = child;
+
+      if (Type.getClass(child) == h2d.Graphics) {
+        c.color.set(1, 1, 1);
+
+        if (hovered) {
+          c.color.set(255, 255, 255);
+        }
+      }
+    }
+
+    hovered = false;
+  }
+
+  public function findNearest(x, y) {
+    var item = null;
+    var prevDist = 999999.0;
+
+    for (e in ALL) {
+      if (e != this) {
+        var d = Utils.distance(x, y, e.x, e.y);
+        if (d < prevDist) {
+          item = e;
+          prevDist = d;
+        }
+      }
+    }
+
+    return item;
+  }
+}
+
+class Bullet extends Entity {
+  var damage = 1.0;
+  var lifeTime = 1.0;
+
+  public function new(x1, y1, x2, y2) {
+    super({
+      x: x,
+      y: y,
+      radius: 10,
+      health: 1,
+      forceMultiplier: 1.0,
+      color: 0xffffff,
+      speed: 200.0,
+      avoidOthers: false,
+      weight: 0.0,
+    });
+
+    var magnitude = Math.sqrt(dx * dx + dy * dy);
+    var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
+    var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
+    dx = dxNormalized;
+    dy = dyNormalized;
+  }
+
+  public override function update(dt: Float) {
+    lifeTime -= dt;
+
+    if (lifeTime <= 0) {
+      health = 0;
+    }
+  }
+}
+
+class Turret extends Entity {
+  var cds: Cooldown;
+
+  public function new(x, y) {
+    super({
+      x: x,
+      y: y,
+      radius: 20,
+      health: 100,
+      forceMultiplier: 1.0,
+      color: 0xff6392,
+      speed: 0.0,
+      avoidOthers: false,
+      weight: 0.0,
+    });
+
+    cds = new Cooldown();
+  }
+
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    cds.update(dt);
+
+    if (!cds.has('attack')) {
+      cds.set('attack', 1.0);
+
+      var nearest = findNearest(x, y);
+      // trace(nearest.x, nearest.y);
+      new Bullet(x, y, nearest.x, nearest.y);
+    }
   }
 }
 
 class Mob {
-  public static var ALL: Array<Entity> = [];
-
-  var SPRITES: Map<Int, h2d.Graphics> = new Map();
   var player: Entity;
   var target: h2d.Object;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
+  var turret: Turret;
 
   function rnd(min:Float, max:Float, ?sign=false) {
     if( sign )
@@ -62,16 +198,13 @@ class Mob {
       return min + Std.random(max-min+1);
   }
 
-  function distanceSqr(ax:Float,ay:Float,bx:Float,by:Float) : Float {
-    return (ax-bx)*(ax-bx) + (ay-by)*(ay-by);
-  }
-
-  function distance(ax:Float,ay:Float, bx:Float,by:Float) : Float {
-    return Math.sqrt( distanceSqr(ax,ay,bx,by) );
-  }
-
   public function new(s2d: h2d.Scene) {
-    var numEntities = 100;
+    turret = new Turret(
+      250,
+      150
+    );
+
+    var numEntities = 2;
     var colors = [
       2 => 0xF78C6B,
       3 => 0xFFD166,
@@ -85,16 +218,11 @@ class Mob {
     targetSprite.beginFill(0xffffff, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
 
-    function makeId() {
-      return Std.random(9999999);
-    }
-
     for (_ in 0...numEntities) {
       var size = irnd(2, 4);
       var radius = size * 2;
       var speed = (5 + 2 / radius * 500) * 1.4;
-      var entity = new Entity({
-        id: makeId(),
+      new Entity({
         x: s2d.width * 0.5,
         y: s2d.height * 0.5,
         radius: radius,
@@ -105,12 +233,10 @@ class Mob {
         forceMultiplier: 1.0,
         health: 100,
       });
-      ALL.push(entity);
     }
 
     function obstacle(x, y) {
       return new Entity({
-        id: makeId(),
         x: x,
         y: y,
         radius: 20,
@@ -122,11 +248,10 @@ class Mob {
         health: 99999,
       });
     }
-    ALL.push(obstacle(200.0, 300.0));
-    ALL.push(obstacle(s2d.width - 100.0, s2d.height / 2));
+    obstacle(200.0, 300.0);
+    obstacle(s2d.width - 100.0, s2d.height / 2);
 
     player = new Entity({
-      id: makeId(),
       x: s2d.width * 0.5,
       y: s2d.height * 0.5,
       radius: 25,
@@ -137,9 +262,8 @@ class Mob {
       forceMultiplier: 3.0,
       health: 100,
     });
-    ALL.push(player);
 
-    for (entity in ALL) {
+    for (entity in Entity.ALL) {
       var graphic = new h2d.Graphics(entity);
       // make outline
       graphic.beginFill(0x000000);
@@ -147,7 +271,6 @@ class Mob {
       graphic.beginFill(entity.color);
       graphic.drawCircle(0, 0, entity.radius);
       graphic.endFill();
-      SPRITES[entity.id] = graphic;
       s2d.addChild(entity);
     }
   }
@@ -159,7 +282,7 @@ class Mob {
     onCollide: (a: Entity) -> Void
   ) {
     for (a in agents) {
-      var d = distance(target.x, target.y, a.x, a.y);
+      var d = Utils.distance(target.x, target.y, a.x, a.y);
       var min = TARGET_RADIUS + a.radius * 1.0;
       var isConflict = d < min;
       if (isConflict) {
@@ -195,12 +318,14 @@ class Mob {
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
+    var ALL = Entity.ALL;
+
     // cleanup disposed agents first
     {
       var i = 0;
       while (i < ALL.length) {
         var a = ALL[i];
-        var isDisposed = a.health == 0;
+        var isDisposed = a.health <= 0;
         if (isDisposed) {
           ALL.splice(i, 1);
           a.remove();
@@ -212,16 +337,13 @@ class Mob {
 
     // reset agent states
     for (a in ALL) {
-      var s = SPRITES[a.id];
-      s.color.set(1, 1, 1);
+      a.update(dt);
     }
 
     movePlayer(player, dt, s2d);
 
     function onAgentHover(a) {
-      var s = SPRITES[a.id];
-      s.color.set(255, 255, 255);
-      a.health = 0;
+      a.hovered = true;
     }
     agentCollide(ALL, target, TARGET_RADIUS, onAgentHover);
 
@@ -234,8 +356,8 @@ class Mob {
     var threshold = player.radius + 30;
 
     function byClosest(a, b) {
-      var da = distance(a.x, a.y, follow.x, follow.y);
-      var db = distance(b.x, b.y, follow.x, follow.y);
+      var da = Utils.distance(a.x, a.y, follow.x, follow.y);
+      var db = Utils.distance(b.x, b.y, follow.x, follow.y);
 
       if (da < db) {
         return -1;
@@ -262,7 +384,7 @@ class Mob {
 
     for(i in 0...ALL.length) {
       var e = ALL[i];
-      var dFromTarget = distance(e.x, e.y, follow.x, follow.y);
+      var dFromTarget = Utils.distance(e.x, e.y, follow.x, follow.y);
       var dx = e.dx;
       var dy = e.dy;
       // exponential drop-off as agent approaches destination
@@ -282,7 +404,7 @@ class Mob {
           if (o != e) {
             var pt = e;
             var ept = o;
-            var d = distance(pt.x, pt.y, ept.x, ept.y);
+            var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
             var separation = pt.radius + 10 + Math.sqrt(speed / 2);
             var min = pt.radius + ept.radius + separation;
             var isColliding = d < min;

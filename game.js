@@ -405,6 +405,55 @@ Main.prototype = $extend(hxd_App.prototype,{
 	,__class__: Main
 });
 Math.__name__ = "Math";
+var Utils = function() { };
+$hxClasses["Utils"] = Utils;
+Utils.__name__ = "Utils";
+Utils.distanceSqr = function(ax,ay,bx,by) {
+	return (ax - bx) * (ax - bx) + (ay - by) * (ay - by);
+};
+Utils.distance = function(ax,ay,bx,by) {
+	return Math.sqrt(Utils.distanceSqr(ax,ay,bx,by));
+};
+var Cooldown = function() {
+	this.cds = new haxe_ds_StringMap();
+};
+$hxClasses["Cooldown"] = Cooldown;
+Cooldown.__name__ = "Cooldown";
+Cooldown.prototype = {
+	set: function(key,value) {
+		var _this = this.cds;
+		if(__map_reserved[key] != null) {
+			_this.setReserved(key,value);
+		} else {
+			_this.h[key] = value;
+		}
+	}
+	,has: function(key) {
+		var _this = this.cds;
+		if(__map_reserved[key] != null ? _this.existsReserved(key) : _this.h.hasOwnProperty(key)) {
+			var _this1 = this.cds;
+			return (__map_reserved[key] != null ? _this1.getReserved(key) : _this1.h[key]) > 0.0;
+		} else {
+			return false;
+		}
+	}
+	,update: function(dt) {
+		var _g = new haxe_iterators_MapKeyValueIterator(this.cds);
+		while(_g.hasNext()) {
+			var _g1 = _g.next();
+			var key = _g1.key;
+			var value = _g1.value;
+			var v = value - dt;
+			var _this = this.cds;
+			if(__map_reserved[key] != null) {
+				_this.setReserved(key,v);
+			} else {
+				_this.h[key] = v;
+			}
+		}
+	}
+	,__class__: Cooldown
+};
 var h2d_Object = function(parent) {
 	this.alpha = 1.;
 	this.matA = 1;
@@ -1587,6 +1636,7 @@ h2d_Object.prototype = {
 	,__class__: h2d_Object
 };
 var Entity = function(props) {
+	this.hovered = false;
 	this.health = 1;
 	this.forceMultiplier = 1.0;
 	this.avoidOthers = false;
@@ -1599,7 +1649,7 @@ var Entity = function(props) {
 	this.x = props.x;
 	this.posChanged = true;
 	this.y = props.y;
-	this.id = props.id;
+	this.id = Entity.idGenerated++;
 	this.radius = props.radius;
 	this.weight = props.weight;
 	this.speed = props.speed;
@@ -1607,17 +1657,93 @@ var Entity = function(props) {
 	this.avoidOthers = props.avoidOthers;
 	this.forceMultiplier = props.forceMultiplier;
 	this.health = props.health;
+	Entity.ALL.push(this);
 };
 $hxClasses["Entity"] = Entity;
 Entity.__name__ = "Entity";
 Entity.__super__ = h2d_Object;
 Entity.prototype = $extend(h2d_Object.prototype,{
-	__class__: Entity
+	update: function(dt) {
+		var _g_i = 0;
+		var _g_a = this.children;
+		var _g_l = _g_a.length;
+		while(_g_i < _g_l) {
+			var child = _g_a[_g_i++];
+			var c = child;
+			if(js_Boot.getClass(child) == h2d_Graphics) {
+				c.color.set(1,1,1);
+				if(this.hovered) {
+					c.color.set(255,255,255);
+				}
+			}
+		}
+		this.hovered = false;
+	}
+	,findNearest: function(x,y) {
+		var item = null;
+		var prevDist = 999999.0;
+		var _g = 0;
+		var _g1 = Entity.ALL;
+		while(_g < _g1.length) {
+			var e = _g1[_g];
+			++_g;
+			if(e != this) {
+				var d = Utils.distance(x,y,e.x,e.y);
+				if(d < prevDist) {
+					item = e;
+					prevDist = d;
+				}
+			}
+		}
+		return item;
+	}
+	,__class__: Entity
+});
+var Bullet = function(x1,y1,x2,y2) {
+	this.lifeTime = 1.0;
+	this.damage = 1.0;
+	Entity.call(this,{ x : this.x, y : this.y, radius : 10, health : 1, forceMultiplier : 1.0, color : 16777215, speed : 200.0, avoidOthers : false, weight : 0.0});
+	var magnitude = Math.sqrt(this.dx * this.dx + this.dy * this.dy);
+	var dxNormalized = magnitude == 0 ? this.dx : this.dx / magnitude;
+	var dyNormalized = magnitude == 0 ? this.dy : this.dy / magnitude;
+	this.dx = dxNormalized;
+	this.dy = dyNormalized;
+};
+$hxClasses["Bullet"] = Bullet;
+Bullet.__name__ = "Bullet";
+Bullet.__super__ = Entity;
+Bullet.prototype = $extend(Entity.prototype,{
+	update: function(dt) {
+		this.lifeTime -= dt;
+		if(this.lifeTime <= 0) {
+			this.health = 0;
+		}
+	}
+	,__class__: Bullet
+});
+var Turret = function(x,y) {
+	Entity.call(this,{ x : x, y : y, radius : 20, health : 100, forceMultiplier : 1.0, color : 16737170, speed : 0.0, avoidOthers : false, weight : 0.0});
+	this.cds = new Cooldown();
+};
+$hxClasses["Turret"] = Turret;
+Turret.__name__ = "Turret";
+Turret.__super__ = Entity;
+Turret.prototype = $extend(Entity.prototype,{
+	update: function(dt) {
+		Entity.prototype.update.call(this,dt);
+		this.cds.update(dt);
+		if(!this.cds.has("attack")) {
+			this.cds.set("attack",1.0);
+			var nearest = this.findNearest(this.x,this.y);
+			new Bullet(this.x,this.y,nearest.x,nearest.y);
+		}
+	}
+	,__class__: Turret
 });
 var Mob = function(s2d) {
 	this.TARGET_RADIUS = 20.0;
-	this.SPRITES = new haxe_ds_IntMap();
-	var numEntities = 100;
+	this.turret = new Turret(250,150);
+	var numEntities = 2;
 	var colors_h = { };
 	colors_h[2] = 16223339;
 	colors_h[3] = 16765286;
@@ -1628,9 +1754,6 @@ var Mob = function(s2d) {
 	this.targetSprite = new h2d_Graphics(this.target);
 	this.targetSprite.beginFill(16777215,0.3);
 	this.targetSprite.drawCircle(0,0,this.TARGET_RADIUS);
-	var makeId = function() {
-		return Std.random(9999999);
-	};
 	var _g1 = 0;
 	var _g2 = numEntities;
 	while(_g1 < _g2) {
@@ -1638,29 +1761,26 @@ var Mob = function(s2d) {
 		var size = this.irnd(2,4);
 		var radius = size * 2;
 		var speed = (5 + 2 / radius * 500) * 1.4;
-		var entity = new Entity({ id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0, health : 100});
-		Mob.ALL.push(entity);
+		new Entity({ x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0, health : 100});
 	}
 	var obstacle = function(x,y) {
-		return new Entity({ id : makeId(), x : x, y : y, radius : 20, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0, health : 99999});
+		return new Entity({ x : x, y : y, radius : 20, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0, health : 99999});
 	};
-	Mob.ALL.push(obstacle(200.0,300.0));
-	Mob.ALL.push(obstacle(s2d.width - 100.0,s2d.height / 2));
-	this.player = new Entity({ id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : 25, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0, health : 100});
-	Mob.ALL.push(this.player);
+	obstacle(200.0,300.0);
+	obstacle(s2d.width - 100.0,s2d.height / 2);
+	this.player = new Entity({ x : s2d.width * 0.5, y : s2d.height * 0.5, radius : 25, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0, health : 100});
 	var _g3 = 0;
-	var _g4 = Mob.ALL;
+	var _g4 = Entity.ALL;
 	while(_g3 < _g4.length) {
-		var entity1 = _g4[_g3];
+		var entity = _g4[_g3];
 		++_g3;
-		var graphic = new h2d_Graphics(entity1);
+		var graphic = new h2d_Graphics(entity);
 		graphic.beginFill(0);
-		graphic.drawCircle(0,0,entity1.radius + 1);
-		graphic.beginFill(entity1.color);
-		graphic.drawCircle(0,0,entity1.radius);
+		graphic.drawCircle(0,0,entity.radius + 1);
+		graphic.beginFill(entity.color);
+		graphic.drawCircle(0,0,entity.radius);
 		graphic.endFill();
-		this.SPRITES.h[entity1.id] = graphic;
-		s2d.addChild(entity1);
+		s2d.addChild(entity);
 	}
 };
 $hxClasses["Mob"] = Mob;
@@ -1683,18 +1803,12 @@ Mob.prototype = {
 			return min + Std.random(max - min + 1);
 		}
 	}
-	,distanceSqr: function(ax,ay,bx,by) {
-		return (ax - bx) * (ax - bx) + (ay - by) * (ay - by);
-	}
-	,distance: function(ax,ay,bx,by) {
-		return Math.sqrt(this.distanceSqr(ax,ay,bx,by));
-	}
 	,agentCollide: function(agents,target,TARGET_RADIUS,onCollide) {
 		var _g = 0;
 		while(_g < agents.length) {
 			var a = agents[_g];
 			++_g;
-			var d = this.distance(target.x,target.y,a.x,a.y);
+			var d = Utils.distance(target.x,target.y,a.x,a.y);
 			var min = TARGET_RADIUS + a.radius * 1.0;
 			var isConflict = d < min;
 			if(isConflict) {
@@ -1729,13 +1843,13 @@ Mob.prototype = {
 		_g1.y += dyNormalized * player.speed * dt;
 	}
 	,update: function(s2d,dt) {
-		var _gthis = this;
+		var ALL = Entity.ALL;
 		var i = 0;
-		while(i < Mob.ALL.length) {
-			var a = Mob.ALL[i];
-			var isDisposed = a.health == 0;
+		while(i < ALL.length) {
+			var a = ALL[i];
+			var isDisposed = a.health <= 0;
 			if(isDisposed) {
-				Mob.ALL.splice(i,1);
+				ALL.splice(i,1);
 				if(a != null && a.parent != null) {
 					a.parent.removeChild(a);
 				}
@@ -1744,65 +1858,29 @@ Mob.prototype = {
 			}
 		}
 		var _g = 0;
-		var _g1 = Mob.ALL;
-		while(_g < _g1.length) {
-			var a1 = _g1[_g];
+		while(_g < ALL.length) {
+			var a1 = ALL[_g];
 			++_g;
-			var s = this.SPRITES.h[a1.id];
-			var _this = s.color;
-			var x = 1;
-			var y = 1;
-			var z = 1;
-			if(z == null) {
-				z = 0.;
-			}
-			if(y == null) {
-				y = 0.;
-			}
-			if(x == null) {
-				x = 0.;
-			}
-			_this.x = x;
-			_this.y = y;
-			_this.z = z;
-			_this.w = 1.;
+			a1.update(dt);
 		}
 		this.movePlayer(this.player,dt,s2d);
 		var onAgentHover = function(a2) {
-			var s1 = _gthis.SPRITES.h[a2.id];
-			var _this1 = s1.color;
-			var x1 = 255;
-			var y1 = 255;
-			var z1 = 255;
-			if(z1 == null) {
-				z1 = 0.;
-			}
-			if(y1 == null) {
-				y1 = 0.;
-			}
-			if(x1 == null) {
-				x1 = 0.;
-			}
-			_this1.x = x1;
-			_this1.y = y1;
-			_this1.z = z1;
-			_this1.w = 1.;
-			a2.health = 0;
+			a2.hovered = true;
 		};
-		this.agentCollide(Mob.ALL,this.target,this.TARGET_RADIUS,onAgentHover);
-		var _this2 = this.target;
+		this.agentCollide(ALL,this.target,this.TARGET_RADIUS,onAgentHover);
+		var _this = this.target;
 		var v = s2d.get_mouseX();
-		_this2.posChanged = true;
-		_this2.x = v;
-		var _this3 = this.target;
+		_this.posChanged = true;
+		_this.x = v;
+		var _this1 = this.target;
 		var v1 = s2d.get_mouseY();
-		_this3.posChanged = true;
-		_this3.y = v1;
+		_this1.posChanged = true;
+		_this1.y = v1;
 		var follow = this.player;
 		var threshold = this.player.radius + 30;
 		var byClosest = function(a3,b) {
-			var da = _gthis.distance(a3.x,a3.y,follow.x,follow.y);
-			var db = _gthis.distance(b.x,b.y,follow.x,follow.y);
+			var da = Utils.distance(a3.x,a3.y,follow.x,follow.y);
+			var db = Utils.distance(b.x,b.y,follow.x,follow.y);
 			if(da < db) {
 				return -1;
 			}
@@ -1811,21 +1889,20 @@ Mob.prototype = {
 			}
 			return 0;
 		};
-		Mob.ALL.sort(byClosest);
-		var _g2 = 0;
-		var _g3 = Mob.ALL;
-		while(_g2 < _g3.length) {
-			var a4 = _g3[_g2];
-			++_g2;
+		ALL.sort(byClosest);
+		var _g1 = 0;
+		while(_g1 < ALL.length) {
+			var a4 = ALL[_g1];
+			++_g1;
 			a4.dx = 0;
 			a4.dy = 0;
 		}
-		var _g4 = 0;
-		var _g5 = Mob.ALL.length;
-		while(_g4 < _g5) {
-			var i1 = _g4++;
-			var e = Mob.ALL[i1];
-			var dFromTarget = this.distance(e.x,e.y,follow.x,follow.y);
+		var _g2 = 0;
+		var _g3 = ALL.length;
+		while(_g2 < _g3) {
+			var i1 = _g2++;
+			var e = ALL[i1];
+			var dFromTarget = Utils.distance(e.x,e.y,follow.x,follow.y);
 			var dx = e.dx;
 			var dy = e.dy;
 			var speedAdjust = Math.max(0,Math.min(1,Math.pow((dFromTarget - threshold) / threshold,4)));
@@ -1836,15 +1913,14 @@ Mob.prototype = {
 				dy += Math.sin(aToTarget) * speedAdjust;
 			}
 			if(e.avoidOthers) {
-				var _g41 = 0;
-				var _g51 = Mob.ALL;
-				while(_g41 < _g51.length) {
-					var o = _g51[_g41];
-					++_g41;
+				var _g21 = 0;
+				while(_g21 < ALL.length) {
+					var o = ALL[_g21];
+					++_g21;
 					if(o != e) {
 						var pt = e;
 						var ept = o;
-						var d = this.distance(pt.x,pt.y,ept.x,ept.y);
+						var d = Utils.distance(pt.x,pt.y,ept.x,ept.y);
 						var separation = pt.radius + 10 + Math.sqrt(speed / 2);
 						var min = pt.radius + ept.radius + separation;
 						var isColliding = d < min;
@@ -1875,12 +1951,12 @@ Mob.prototype = {
 			if(dy < -max) {
 				dy = -max;
 			}
-			var _g42 = e;
-			_g42.posChanged = true;
-			_g42.x += dx * speed * dt;
-			var _g43 = e;
-			_g43.posChanged = true;
-			_g43.y += dy * speed * dt;
+			var _g22 = e;
+			_g22.posChanged = true;
+			_g22.x += dx * speed * dt;
+			var _g23 = e;
+			_g23.posChanged = true;
+			_g23.y += dy * speed * dt;
 		}
 	}
 	,__class__: Mob
@@ -22912,6 +22988,9 @@ var haxe_IMap = function() { };
 $hxClasses["haxe.IMap"] = haxe_IMap;
 haxe_IMap.__name__ = "haxe.IMap";
 haxe_IMap.__isInterface__ = true;
+haxe_IMap.prototype = {
+	__class__: haxe_IMap
+};
 var haxe_ds_StringMap = function() {
 	this.h = { };
 };
@@ -22919,7 +22998,13 @@ $hxClasses["haxe.ds.StringMap"] = haxe_ds_StringMap;
 haxe_ds_StringMap.__name__ = "haxe.ds.StringMap";
 haxe_ds_StringMap.__interfaces__ = [haxe_IMap];
 haxe_ds_StringMap.prototype = {
-	setReserved: function(key,value) {
+	get: function(key) {
+		if(__map_reserved[key] != null) {
+			return this.getReserved(key);
+		}
+		return this.h[key];
+	}
+	,setReserved: function(key,value) {
 		if(this.rh == null) {
 			this.rh = { };
 		}
@@ -26644,7 +26729,10 @@ $hxClasses["haxe.ds.IntMap"] = haxe_ds_IntMap;
 haxe_ds_IntMap.__name__ = "haxe.ds.IntMap";
 haxe_ds_IntMap.__interfaces__ = [haxe_IMap];
 haxe_ds_IntMap.prototype = {
-	remove: function(key) {
+	get: function(key) {
+		return this.h[key];
+	}
+	,remove: function(key) {
 		if(!this.h.hasOwnProperty(key)) {
 			return false;
 		}
@@ -39889,6 +39977,11 @@ haxe_ds_BalancedTree.prototype = {
 		this.iteratorLoop(this.root,ret);
 		return HxOverrides.iter(ret);
 	}
+	,keys: function() {
+		var ret = [];
+		this.keysLoop(this.root,ret);
+		return HxOverrides.iter(ret);
+	}
 	,setLoop: function(k,v,node) {
 		if(node == null) {
 			return new haxe_ds_TreeNode(null,k,v,null);
@@ -39909,6 +40002,13 @@ haxe_ds_BalancedTree.prototype = {
 			this.iteratorLoop(node.left,acc);
 			acc.push(node.value);
 			this.iteratorLoop(node.right,acc);
+		}
+	}
+	,keysLoop: function(node,acc) {
+		if(node != null) {
+			this.keysLoop(node.left,acc);
+			acc.push(node.key);
+			this.keysLoop(node.right,acc);
 		}
 	}
 	,balance: function(l,k,v,r) {
@@ -40085,6 +40185,9 @@ haxe_ds_ObjectMap.prototype = {
 		}
 		this.h[id] = value;
 		this.h.__keys__[id] = key;
+	}
+	,get: function(key) {
+		return this.h[key.__id__];
 	}
 	,remove: function(key) {
 		var id = key.__id__;
@@ -40715,6 +40818,22 @@ haxe_io_Path.prototype = {
 		return (this.dir == null ? "" : this.dir + (this.backslash ? "\\" : "/")) + this.file + (this.ext == null ? "" : "." + this.ext);
 	}
 	,__class__: haxe_io_Path
+};
+var haxe_iterators_MapKeyValueIterator = function(map) {
+	this.map = map;
+	this.keys = map.keys();
+};
+$hxClasses["haxe.iterators.MapKeyValueIterator"] = haxe_iterators_MapKeyValueIterator;
+haxe_iterators_MapKeyValueIterator.__name__ = "haxe.iterators.MapKeyValueIterator";
+haxe_iterators_MapKeyValueIterator.prototype = {
+	hasNext: function() {
+		return this.keys.hasNext();
+	}
+	,next: function() {
+		var key = this.keys.next();
+		return { value : this.map.get(key), key : key};
+	}
+	,__class__: haxe_iterators_MapKeyValueIterator
 };
 var haxe_macro_Binop = $hxEnums["haxe.macro.Binop"] = { __ename__ : true, __constructs__ : ["OpAdd","OpMult","OpDiv","OpSub","OpAssign","OpEq","OpNotEq","OpGt","OpGte","OpLt","OpLte","OpAnd","OpOr","OpXor","OpBoolAnd","OpBoolOr","OpShl","OpShr","OpUShr","OpMod","OpAssignOp","OpInterval","OpArrow","OpIn"]
 	,OpAdd: {_hx_index:0,__enum__:"haxe.macro.Binop",toString:$estr}
@@ -63896,7 +64015,8 @@ hx__registerFont = function(name,data) {
 	window.document.body.appendChild(div);
 };
 js_Boot.__toStr = ({ }).toString;
-Mob.ALL = [];
+Entity.idGenerated = 0;
+Entity.ALL = [];
 Xml.Element = 0;
 Xml.PCData = 1;
 Xml.CData = 2;
