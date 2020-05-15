@@ -94,7 +94,7 @@ class Main extends hxd.App {
     t += dt;
     acc += dt;
 
-    var frameTime = 1/60;
+    var frameTime = dt;
     var isNextFrame = acc >= frameTime;
     // handle fixed dt here
     if (isNextFrame) {

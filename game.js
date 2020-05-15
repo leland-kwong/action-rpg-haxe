@@ -392,7 +392,7 @@ Main.prototype = $extend(hxd_App.prototype,{
 	,update: function(dt) {
 		this.t += dt;
 		this.acc += dt;
-		var frameTime = 0.0166666666666666664;
+		var frameTime = dt;
 		var isNextFrame = this.acc >= frameTime;
 		if(isNextFrame) {
 			this.acc -= frameTime;
@@ -405,10 +405,1219 @@ Main.prototype = $extend(hxd_App.prototype,{
 	,__class__: Main
 });
 Math.__name__ = "Math";
+var h2d_Object = function(parent) {
+	this.alpha = 1.;
+	this.matA = 1;
+	this.matB = 0;
+	this.matC = 0;
+	this.matD = 1;
+	this.absX = 0;
+	this.absY = 0;
+	this.posChanged = true;
+	this.x = 0;
+	this.posChanged = true;
+	this.y = 0;
+	this.posChanged = true;
+	this.scaleX = 1;
+	this.posChanged = true;
+	this.scaleY = 1;
+	this.posChanged = true;
+	this.rotation = 0;
+	this.blendMode = h2d_BlendMode.Alpha;
+	this.posChanged = parent != null;
+	this.set_visible(true);
+	this.children = [];
+	if(parent != null) {
+		parent.addChild(this);
+	}
+};
+$hxClasses["h2d.Object"] = h2d_Object;
+h2d_Object.__name__ = "h2d.Object";
+h2d_Object.prototype = {
+	getBounds: function(relativeTo,out) {
+		if(out == null) {
+			out = new h2d_col_Bounds();
+		} else {
+			out.xMin = 1e20;
+			out.yMin = 1e20;
+			out.xMax = -1e20;
+			out.yMax = -1e20;
+		}
+		if(relativeTo != null) {
+			relativeTo.syncPos();
+		}
+		if(relativeTo != this) {
+			this.syncPos();
+		}
+		this.getBoundsRec(relativeTo,out,false);
+		if(out.xMax <= out.xMin || out.yMax <= out.yMin) {
+			this.addBounds(relativeTo,out,-1,-1,2,2);
+			out.xMax = out.xMin = (out.xMax + out.xMin) * 0.5;
+			out.yMax = out.yMin = (out.yMax + out.yMin) * 0.5;
+		}
+		return out;
+	}
+	,getSize: function(out) {
+		if(out == null) {
+			out = new h2d_col_Bounds();
+		} else {
+			out.xMin = 1e20;
+			out.yMin = 1e20;
+			out.xMax = -1e20;
+			out.yMax = -1e20;
+		}
+		this.syncPos();
+		this.getBoundsRec(this.parent,out,true);
+		if(out.xMax <= out.xMin || out.yMax <= out.yMin) {
+			this.addBounds(this.parent,out,-1,-1,2,2);
+			out.xMax = out.xMin = (out.xMax + out.xMin) * 0.5;
+			out.yMax = out.yMin = (out.yMax + out.yMin) * 0.5;
+		}
+		var dx = -this.x;
+		var dy = -this.y;
+		out.xMin += dx;
+		out.xMax += dx;
+		out.yMin += dy;
+		out.yMax += dy;
+		return out;
+	}
+	,getAbsPos: function() {
+		this.syncPos();
+		var m = new h2d_col_Matrix();
+		m.a = this.matA;
+		m.b = this.matB;
+		m.c = this.matC;
+		m.d = this.matD;
+		m.x = this.absX;
+		m.y = this.absY;
+		return m;
+	}
+	,find: function(f) {
+		var v = f(this);
+		if(v != null) {
+			return v;
+		}
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var o = _g1[_g];
+			++_g;
+			var v1 = o.find(f);
+			if(v1 != null) {
+				return v1;
+			}
+		}
+		return null;
+	}
+	,findAll: function(f,arr) {
+		if(arr == null) {
+			arr = [];
+		}
+		var v = f(this);
+		if(v != null) {
+			arr.push(v);
+		}
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var o = _g1[_g];
+			++_g;
+			o.findAll(f,arr);
+		}
+		return arr;
+	}
+	,set_filter: function(f) {
+		if(this.filter != null && this.allocated) {
+			this.filter.unbind(this);
+		}
+		this.filter = f;
+		if(f != null && this.allocated) {
+			f.bind(this);
+		}
+		return f;
+	}
+	,getBoundsRec: function(relativeTo,out,forSize) {
+		if(this.posChanged) {
+			this.calcAbsPos();
+			var _g = 0;
+			var _g1 = this.children;
+			while(_g < _g1.length) {
+				var c = _g1[_g];
+				++_g;
+				c.posChanged = true;
+			}
+			this.posChanged = false;
+		}
+		var n = this.children.length;
+		if(n == 0) {
+			out.xMin = 1e20;
+			out.yMin = 1e20;
+			out.xMax = -1e20;
+			out.yMax = -1e20;
+			return;
+		}
+		if(n == 1) {
+			var c1 = this.children[0];
+			if(c1.visible) {
+				c1.getBoundsRec(relativeTo,out,forSize);
+			} else {
+				out.xMin = 1e20;
+				out.yMin = 1e20;
+				out.xMax = -1e20;
+				out.yMax = -1e20;
+			}
+			return;
+		}
+		var xmin = Infinity;
+		var ymin = Infinity;
+		var xmax = -Infinity;
+		var ymax = -Infinity;
+		var _g2 = 0;
+		var _g11 = this.children;
+		while(_g2 < _g11.length) {
+			var c2 = _g11[_g2];
+			++_g2;
+			if(!c2.visible) {
+				continue;
+			}
+			c2.getBoundsRec(relativeTo,out,forSize);
+			if(out.xMin < xmin) {
+				xmin = out.xMin;
+			}
+			if(out.yMin < ymin) {
+				ymin = out.yMin;
+			}
+			if(out.xMax > xmax) {
+				xmax = out.xMax;
+			}
+			if(out.yMax > ymax) {
+				ymax = out.yMax;
+			}
+		}
+		out.xMin = xmin;
+		out.yMin = ymin;
+		out.xMax = xmax;
+		out.yMax = ymax;
+	}
+	,addBounds: function(relativeTo,out,dx,dy,width,height) {
+		if(width <= 0 || height <= 0) {
+			return;
+		}
+		if(relativeTo == null) {
+			var x;
+			var y;
+			var x1 = dx * this.matA + dy * this.matC + this.absX;
+			var y1 = dx * this.matB + dy * this.matD + this.absY;
+			if(x1 < out.xMin) {
+				out.xMin = x1;
+			}
+			if(x1 > out.xMax) {
+				out.xMax = x1;
+			}
+			if(y1 < out.yMin) {
+				out.yMin = y1;
+			}
+			if(y1 > out.yMax) {
+				out.yMax = y1;
+			}
+			var x2 = (dx + width) * this.matA + dy * this.matC + this.absX;
+			var y2 = (dx + width) * this.matB + dy * this.matD + this.absY;
+			if(x2 < out.xMin) {
+				out.xMin = x2;
+			}
+			if(x2 > out.xMax) {
+				out.xMax = x2;
+			}
+			if(y2 < out.yMin) {
+				out.yMin = y2;
+			}
+			if(y2 > out.yMax) {
+				out.yMax = y2;
+			}
+			var x3 = dx * this.matA + (dy + height) * this.matC + this.absX;
+			var y3 = dx * this.matB + (dy + height) * this.matD + this.absY;
+			if(x3 < out.xMin) {
+				out.xMin = x3;
+			}
+			if(x3 > out.xMax) {
+				out.xMax = x3;
+			}
+			if(y3 < out.yMin) {
+				out.yMin = y3;
+			}
+			if(y3 > out.yMax) {
+				out.yMax = y3;
+			}
+			var x4 = (dx + width) * this.matA + (dy + height) * this.matC + this.absX;
+			var y4 = (dx + width) * this.matB + (dy + height) * this.matD + this.absY;
+			if(x4 < out.xMin) {
+				out.xMin = x4;
+			}
+			if(x4 > out.xMax) {
+				out.xMax = x4;
+			}
+			if(y4 < out.yMin) {
+				out.yMin = y4;
+			}
+			if(y4 > out.yMax) {
+				out.yMax = y4;
+			}
+			return;
+		}
+		if(relativeTo == this) {
+			if(out.xMin > dx) {
+				out.xMin = dx;
+			}
+			if(out.yMin > dy) {
+				out.yMin = dy;
+			}
+			if(out.xMax < dx + width) {
+				out.xMax = dx + width;
+			}
+			if(out.yMax < dy + height) {
+				out.yMax = dy + height;
+			}
+			return;
+		}
+		var r = relativeTo.matA * relativeTo.matD - relativeTo.matB * relativeTo.matC;
+		if(r == 0) {
+			return;
+		}
+		var det = 1 / r;
+		var rA = relativeTo.matD * det;
+		var rB = -relativeTo.matB * det;
+		var rC = -relativeTo.matC * det;
+		var rD = relativeTo.matA * det;
+		var rX = this.absX - relativeTo.absX;
+		var rY = this.absY - relativeTo.absY;
+		var x5 = dx * this.matA + dy * this.matC + rX;
+		var y5 = dx * this.matB + dy * this.matD + rY;
+		var x6 = x5 * rA + y5 * rC;
+		var y6 = x5 * rB + y5 * rD;
+		if(x6 < out.xMin) {
+			out.xMin = x6;
+		}
+		if(x6 > out.xMax) {
+			out.xMax = x6;
+		}
+		if(y6 < out.yMin) {
+			out.yMin = y6;
+		}
+		if(y6 > out.yMax) {
+			out.yMax = y6;
+		}
+		x5 = (dx + width) * this.matA + dy * this.matC + rX;
+		y5 = (dx + width) * this.matB + dy * this.matD + rY;
+		var x7 = x5 * rA + y5 * rC;
+		var y7 = x5 * rB + y5 * rD;
+		if(x7 < out.xMin) {
+			out.xMin = x7;
+		}
+		if(x7 > out.xMax) {
+			out.xMax = x7;
+		}
+		if(y7 < out.yMin) {
+			out.yMin = y7;
+		}
+		if(y7 > out.yMax) {
+			out.yMax = y7;
+		}
+		x5 = dx * this.matA + (dy + height) * this.matC + rX;
+		y5 = dx * this.matB + (dy + height) * this.matD + rY;
+		var x8 = x5 * rA + y5 * rC;
+		var y8 = x5 * rB + y5 * rD;
+		if(x8 < out.xMin) {
+			out.xMin = x8;
+		}
+		if(x8 > out.xMax) {
+			out.xMax = x8;
+		}
+		if(y8 < out.yMin) {
+			out.yMin = y8;
+		}
+		if(y8 > out.yMax) {
+			out.yMax = y8;
+		}
+		x5 = (dx + width) * this.matA + (dy + height) * this.matC + rX;
+		y5 = (dx + width) * this.matB + (dy + height) * this.matD + rY;
+		var x9 = x5 * rA + y5 * rC;
+		var y9 = x5 * rB + y5 * rD;
+		if(x9 < out.xMin) {
+			out.xMin = x9;
+		}
+		if(x9 > out.xMax) {
+			out.xMax = x9;
+		}
+		if(y9 < out.yMin) {
+			out.yMin = y9;
+		}
+		if(y9 > out.yMax) {
+			out.yMax = y9;
+		}
+	}
+	,getObjectsCount: function() {
+		var k = 0;
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var c = _g1[_g];
+			++_g;
+			k += c.getObjectsCount() + 1;
+		}
+		return k;
+	}
+	,localToGlobal: function(pt) {
+		this.syncPos();
+		if(pt == null) {
+			pt = new h2d_col_Point();
+		}
+		var px = pt.x * this.matA + pt.y * this.matC + this.absX;
+		var py = pt.x * this.matB + pt.y * this.matD + this.absY;
+		pt.x = px;
+		pt.y = py;
+		return pt;
+	}
+	,globalToLocal: function(pt) {
+		this.syncPos();
+		pt.x -= this.absX;
+		pt.y -= this.absY;
+		var invDet = 1 / (this.matA * this.matD - this.matB * this.matC);
+		var px = (pt.x * this.matD - pt.y * this.matC) * invDet;
+		var py = (-pt.x * this.matB + pt.y * this.matA) * invDet;
+		pt.x = px;
+		pt.y = py;
+		return pt;
+	}
+	,getScene: function() {
+		var p = this;
+		while(p.parent != null) p = p.parent;
+		return ((p) instanceof h2d_Scene) ? p : null;
+	}
+	,set_visible: function(b) {
+		if(this.visible == b) {
+			return b;
+		}
+		this.visible = b;
+		if(this.parentContainer != null) {
+			this.parentContainer.contentChanged(this);
+		}
+		return b;
+	}
+	,addChild: function(s) {
+		this.addChildAt(s,this.children.length);
+	}
+	,addChildAt: function(s,pos) {
+		if(pos < 0) {
+			pos = 0;
+		}
+		if(pos > this.children.length) {
+			pos = this.children.length;
+		}
+		var p = this;
+		while(p != null) {
+			if(p == s) {
+				throw new js__$Boot_HaxeError("Recursive addChild");
+			}
+			p = p.parent;
+		}
+		if(s.parent != null) {
+			var old = s.allocated;
+			s.allocated = false;
+			s.parent.removeChild(s);
+			s.allocated = old;
+		}
+		this.children.splice(pos,0,s);
+		if(!this.allocated && s.allocated) {
+			s.onRemove();
+		}
+		s.parent = this;
+		s.parentContainer = this.parentContainer;
+		s.posChanged = true;
+		if(this.allocated) {
+			if(!s.allocated) {
+				s.onAdd();
+			} else {
+				s.onHierarchyMoved(true);
+			}
+		}
+		if(this.parentContainer != null) {
+			this.parentContainer.contentChanged(this);
+		}
+	}
+	,onContentChanged: function() {
+		if(this.parentContainer != null) {
+			this.parentContainer.contentChanged(this);
+		}
+	}
+	,onHierarchyMoved: function(parentChanged) {
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var c = _g1[_g];
+			++_g;
+			c.onHierarchyMoved(parentChanged);
+		}
+	}
+	,onAdd: function() {
+		this.allocated = true;
+		if(this.filter != null) {
+			this.filter.bind(this);
+		}
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var c = _g1[_g];
+			++_g;
+			c.onAdd();
+		}
+	}
+	,onRemove: function() {
+		this.allocated = false;
+		if(this.filter != null) {
+			this.filter.unbind(this);
+		}
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var c = _g1[_g];
+			++_g;
+			c.onRemove();
+		}
+	}
+	,getMatrix: function(m) {
+		m.a = this.matA;
+		m.b = this.matB;
+		m.c = this.matC;
+		m.d = this.matD;
+		m.x = this.absX;
+		m.y = this.absY;
+	}
+	,removeChild: function(s) {
+		if(HxOverrides.remove(this.children,s)) {
+			if(s.allocated) {
+				s.onRemove();
+			}
+			s.parent = null;
+			if(s.parentContainer != null) {
+				s.setParentContainer(null);
+			}
+			s.posChanged = true;
+			if(this.parentContainer != null) {
+				this.parentContainer.contentChanged(this);
+			}
+		}
+	}
+	,setParentContainer: function(c) {
+		this.parentContainer = c;
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var s = _g1[_g];
+			++_g;
+			s.setParentContainer(c);
+		}
+	}
+	,removeChildren: function() {
+		while(this.children.length > 0) this.removeChild(this.children[0]);
+	}
+	,remove: function() {
+		if(this.parent != null) {
+			this.parent.removeChild(this);
+		}
+	}
+	,drawTo: function(t) {
+		var s = this.getScene();
+		var needDispose = s == null;
+		if(s == null) {
+			s = new h2d_Scene();
+		}
+		s.drawImplTo(this,[t]);
+		if(needDispose) {
+			s.dispose();
+			this.onRemove();
+		}
+	}
+	,drawToTextures: function(texs,outputs) {
+		var s = this.getScene();
+		var needDispose = s == null;
+		if(s == null) {
+			s = new h2d_Scene();
+		}
+		s.drawImplTo(this,texs,outputs);
+		if(needDispose) {
+			s.dispose();
+			this.onRemove();
+		}
+	}
+	,draw: function(ctx) {
+	}
+	,sync: function(ctx) {
+		var changed = this.posChanged;
+		if(changed) {
+			this.calcAbsPos();
+			this.posChanged = false;
+		}
+		this.lastFrame = ctx.frame;
+		var p = 0;
+		var len = this.children.length;
+		while(p < len) {
+			var c = this.children[p];
+			if(c == null) {
+				break;
+			}
+			if(c.lastFrame != ctx.frame) {
+				if(changed) {
+					c.posChanged = true;
+				}
+				c.sync(ctx);
+			}
+			if(this.children[p] != c) {
+				p = 0;
+				len = this.children.length;
+			} else {
+				++p;
+			}
+		}
+	}
+	,syncPos: function() {
+		if(this.parent != null) {
+			this.parent.syncPos();
+		}
+		if(this.posChanged) {
+			this.calcAbsPos();
+			var _g = 0;
+			var _g1 = this.children;
+			while(_g < _g1.length) {
+				var c = _g1[_g];
+				++_g;
+				c.posChanged = true;
+			}
+			this.posChanged = false;
+		}
+	}
+	,calcAbsPos: function() {
+		if(this.parent == null) {
+			var cr;
+			var sr;
+			if(this.rotation == 0) {
+				cr = 1.;
+				sr = 0.;
+				this.matA = this.scaleX;
+				this.matB = 0;
+				this.matC = 0;
+				this.matD = this.scaleY;
+			} else {
+				cr = Math.cos(this.rotation);
+				sr = Math.sin(this.rotation);
+				this.matA = this.scaleX * cr;
+				this.matB = this.scaleX * sr;
+				this.matC = this.scaleY * -sr;
+				this.matD = this.scaleY * cr;
+			}
+			this.absX = this.x;
+			this.absY = this.y;
+		} else {
+			if(this.rotation == 0) {
+				this.matA = this.scaleX * this.parent.matA;
+				this.matB = this.scaleX * this.parent.matB;
+				this.matC = this.scaleY * this.parent.matC;
+				this.matD = this.scaleY * this.parent.matD;
+			} else {
+				var cr1 = Math.cos(this.rotation);
+				var sr1 = Math.sin(this.rotation);
+				var tmpA = this.scaleX * cr1;
+				var tmpB = this.scaleX * sr1;
+				var tmpC = this.scaleY * -sr1;
+				var tmpD = this.scaleY * cr1;
+				this.matA = tmpA * this.parent.matA + tmpB * this.parent.matC;
+				this.matB = tmpA * this.parent.matB + tmpB * this.parent.matD;
+				this.matC = tmpC * this.parent.matA + tmpD * this.parent.matC;
+				this.matD = tmpC * this.parent.matB + tmpD * this.parent.matD;
+			}
+			this.absX = this.x * this.parent.matA + this.y * this.parent.matC + this.parent.absX;
+			this.absY = this.x * this.parent.matB + this.y * this.parent.matD + this.parent.absY;
+		}
+	}
+	,emitTile: function(ctx,tile) {
+		if(h2d_Object.nullDrawable == null) {
+			h2d_Object.nullDrawable = new h2d_Drawable(null);
+		}
+		h2d_Object.nullDrawable.absX = this.absX;
+		h2d_Object.nullDrawable.absY = this.absY;
+		h2d_Object.nullDrawable.matA = this.matA;
+		h2d_Object.nullDrawable.matB = this.matB;
+		h2d_Object.nullDrawable.matC = this.matC;
+		h2d_Object.nullDrawable.matD = this.matD;
+		ctx.drawTile(h2d_Object.nullDrawable,tile);
+		return;
+	}
+	,clipBounds: function(ctx,bounds) {
+		var view = ctx.tmpBounds;
+		var matA;
+		var matB;
+		var matC;
+		var matD;
+		var absX;
+		var absY;
+		if(ctx.inFilter != null) {
+			var f1 = ctx.baseShader.filterMatrixA__;
+			var f2 = ctx.baseShader.filterMatrixB__;
+			matA = this.matA * f1.x + this.matB * f1.y;
+			matB = this.matA * f2.x + this.matB * f2.y;
+			matC = this.matC * f1.x + this.matD * f1.y;
+			matD = this.matC * f2.x + this.matD * f2.y;
+			absX = this.absX * f1.x + this.absY * f1.y + f1.z;
+			absY = this.absX * f2.x + this.absY * f2.y + f2.z;
+		} else {
+			matA = this.matA;
+			matB = this.matB;
+			matC = this.matC;
+			matD = this.matD;
+			absX = this.absX;
+			absY = this.absY;
+		}
+		view.xMin = 1e20;
+		view.yMin = 1e20;
+		view.xMax = -1e20;
+		view.yMax = -1e20;
+		var x = bounds.xMin;
+		var y = bounds.yMin;
+		var x1 = x * matA + y * matC + absX;
+		var y1 = x * matB + y * matD + absY;
+		if(x1 < view.xMin) {
+			view.xMin = x1;
+		}
+		if(x1 > view.xMax) {
+			view.xMax = x1;
+		}
+		if(y1 < view.yMin) {
+			view.yMin = y1;
+		}
+		if(y1 > view.yMax) {
+			view.yMax = y1;
+		}
+		var x2 = bounds.xMax;
+		var y2 = bounds.yMin;
+		var x3 = x2 * matA + y2 * matC + absX;
+		var y3 = x2 * matB + y2 * matD + absY;
+		if(x3 < view.xMin) {
+			view.xMin = x3;
+		}
+		if(x3 > view.xMax) {
+			view.xMax = x3;
+		}
+		if(y3 < view.yMin) {
+			view.yMin = y3;
+		}
+		if(y3 > view.yMax) {
+			view.yMax = y3;
+		}
+		var x4 = bounds.xMin;
+		var y4 = bounds.yMax;
+		var x5 = x4 * matA + y4 * matC + absX;
+		var y5 = x4 * matB + y4 * matD + absY;
+		if(x5 < view.xMin) {
+			view.xMin = x5;
+		}
+		if(x5 > view.xMax) {
+			view.xMax = x5;
+		}
+		if(y5 < view.yMin) {
+			view.yMin = y5;
+		}
+		if(y5 > view.yMax) {
+			view.yMax = y5;
+		}
+		var x6 = bounds.xMax;
+		var y6 = bounds.yMax;
+		var x7 = x6 * matA + y6 * matC + absX;
+		var y7 = x6 * matB + y6 * matD + absY;
+		if(x7 < view.xMin) {
+			view.xMin = x7;
+		}
+		if(x7 > view.xMax) {
+			view.xMax = x7;
+		}
+		if(y7 < view.yMin) {
+			view.yMin = y7;
+		}
+		if(y7 > view.yMax) {
+			view.yMax = y7;
+		}
+		if(view.xMin < ctx.curX) {
+			view.xMin = ctx.curX;
+		}
+		if(view.yMin < ctx.curY) {
+			view.yMin = ctx.curY;
+		}
+		if(view.xMax > ctx.curX + ctx.curWidth) {
+			view.xMax = ctx.curX + ctx.curWidth;
+		}
+		if(view.yMax > ctx.curY + ctx.curHeight) {
+			view.yMax = ctx.curY + ctx.curHeight;
+		}
+		var invDet = 1 / (matA * matD - matB * matC);
+		var sxMin = view.xMin;
+		var syMin = view.yMin;
+		var sxMax = view.xMax;
+		var syMax = view.yMax;
+		view.xMin = 1e20;
+		view.yMin = 1e20;
+		view.xMax = -1e20;
+		view.yMax = -1e20;
+		var x8 = sxMin;
+		var y8 = syMin;
+		x8 -= absX;
+		y8 -= absY;
+		var x9 = (x8 * matD - y8 * matC) * invDet;
+		var y9 = (-x8 * matB + y8 * matA) * invDet;
+		if(x9 < view.xMin) {
+			view.xMin = x9;
+		}
+		if(x9 > view.xMax) {
+			view.xMax = x9;
+		}
+		if(y9 < view.yMin) {
+			view.yMin = y9;
+		}
+		if(y9 > view.yMax) {
+			view.yMax = y9;
+		}
+		var x10 = sxMax;
+		var y10 = syMin;
+		x10 -= absX;
+		y10 -= absY;
+		var x11 = (x10 * matD - y10 * matC) * invDet;
+		var y11 = (-x10 * matB + y10 * matA) * invDet;
+		if(x11 < view.xMin) {
+			view.xMin = x11;
+		}
+		if(x11 > view.xMax) {
+			view.xMax = x11;
+		}
+		if(y11 < view.yMin) {
+			view.yMin = y11;
+		}
+		if(y11 > view.yMax) {
+			view.yMax = y11;
+		}
+		var x12 = sxMin;
+		var y12 = syMax;
+		x12 -= absX;
+		y12 -= absY;
+		var x13 = (x12 * matD - y12 * matC) * invDet;
+		var y13 = (-x12 * matB + y12 * matA) * invDet;
+		if(x13 < view.xMin) {
+			view.xMin = x13;
+		}
+		if(x13 > view.xMax) {
+			view.xMax = x13;
+		}
+		if(y13 < view.yMin) {
+			view.yMin = y13;
+		}
+		if(y13 > view.yMax) {
+			view.yMax = y13;
+		}
+		var x14 = sxMax;
+		var y14 = syMax;
+		x14 -= absX;
+		y14 -= absY;
+		var x15 = (x14 * matD - y14 * matC) * invDet;
+		var y15 = (-x14 * matB + y14 * matA) * invDet;
+		if(x15 < view.xMin) {
+			view.xMin = x15;
+		}
+		if(x15 > view.xMax) {
+			view.xMax = x15;
+		}
+		if(y15 < view.yMin) {
+			view.yMin = y15;
+		}
+		if(y15 > view.yMax) {
+			view.yMax = y15;
+		}
+		var a = bounds.xMin;
+		var b = view.xMin;
+		bounds.xMin = a < b ? b : a;
+		var a1 = bounds.yMin;
+		var b1 = view.yMin;
+		bounds.yMin = a1 < b1 ? b1 : a1;
+		var a2 = bounds.xMax;
+		var b2 = view.xMax;
+		bounds.xMax = a2 > b2 ? b2 : a2;
+		var a3 = bounds.yMax;
+		var b3 = view.yMax;
+		bounds.yMax = a3 > b3 ? b3 : a3;
+	}
+	,drawFilters: function(ctx) {
+		if(!ctx.pushFilter(this)) {
+			return;
+		}
+		var bounds = ctx.tmpBounds;
+		var total = new h2d_col_Bounds();
+		var maxExtent = -1.;
+		this.filter.sync(ctx,this);
+		if(this.filter.autoBounds) {
+			maxExtent = this.filter.boundsExtend;
+		} else {
+			this.filter.getBounds(this,bounds);
+			if(bounds.xMin < total.xMin) {
+				total.xMin = bounds.xMin;
+			}
+			if(bounds.xMax > total.xMax) {
+				total.xMax = bounds.xMax;
+			}
+			if(bounds.yMin < total.yMin) {
+				total.yMin = bounds.yMin;
+			}
+			if(bounds.yMax > total.yMax) {
+				total.yMax = bounds.yMax;
+			}
+		}
+		if(maxExtent >= 0) {
+			this.getBounds(this,bounds);
+			bounds.xMin -= maxExtent;
+			bounds.yMin -= maxExtent;
+			bounds.xMax += maxExtent;
+			bounds.yMax += maxExtent;
+			if(bounds.xMin < total.xMin) {
+				total.xMin = bounds.xMin;
+			}
+			if(bounds.xMax > total.xMax) {
+				total.xMax = bounds.xMax;
+			}
+			if(bounds.yMin < total.yMin) {
+				total.yMin = bounds.yMin;
+			}
+			if(bounds.yMax > total.yMax) {
+				total.yMax = bounds.yMax;
+			}
+		}
+		this.clipBounds(ctx,total);
+		var xMin = Math.floor(total.xMin + 1e-10);
+		var yMin = Math.floor(total.yMin + 1e-10);
+		var width = Math.ceil(total.xMax - xMin - 1e-10);
+		var height = Math.ceil(total.yMax - yMin - 1e-10);
+		if(width <= 0 || height <= 0 || total.xMax < total.xMin) {
+			ctx.popFilter();
+			return;
+		}
+		var t = ctx.textures.allocTarget("filterTemp",width,height,false);
+		ctx.pushTarget(t,xMin,yMin,width,height);
+		ctx.engine.clear(0);
+		var oldAlpha = ctx.globalAlpha;
+		var shader = ctx.baseShader;
+		var _this = shader.filterMatrixA__;
+		var x = _this.x;
+		var y = _this.y;
+		var z = _this.z;
+		var w = _this.w;
+		if(w == null) {
+			w = 1.;
+		}
+		if(z == null) {
+			z = 0.;
+		}
+		if(y == null) {
+			y = 0.;
+		}
+		if(x == null) {
+			x = 0.;
+		}
+		var oldA_x = x;
+		var oldA_y = y;
+		var oldA_z = z;
+		var oldA_w = w;
+		var _this1 = shader.filterMatrixB__;
+		var x1 = _this1.x;
+		var y1 = _this1.y;
+		var z1 = _this1.z;
+		var w1 = _this1.w;
+		if(w1 == null) {
+			w1 = 1.;
+		}
+		if(z1 == null) {
+			z1 = 0.;
+		}
+		if(y1 == null) {
+			y1 = 0.;
+		}
+		if(x1 == null) {
+			x1 = 0.;
+		}
+		var oldB_x = x1;
+		var oldB_y = y1;
+		var oldB_z = z1;
+		var oldB_w = w1;
+		var oldF = ctx.inFilter;
+		var invDet = 1 / (this.matA * this.matD - this.matB * this.matC);
+		var invA = this.matD * invDet;
+		var invB = -this.matB * invDet;
+		var invC = -this.matC * invDet;
+		var invD = this.matA * invDet;
+		var invX = -(this.absX * invA + this.absY * invC);
+		var invY = -(this.absX * invB + this.absY * invD);
+		var _this2 = shader.filterMatrixA__;
+		var x2 = invA;
+		var y2 = invC;
+		var z2 = invX;
+		if(z2 == null) {
+			z2 = 0.;
+		}
+		if(y2 == null) {
+			y2 = 0.;
+		}
+		if(x2 == null) {
+			x2 = 0.;
+		}
+		_this2.x = x2;
+		_this2.y = y2;
+		_this2.z = z2;
+		_this2.w = 1.;
+		var _this3 = shader.filterMatrixB__;
+		var x3 = invB;
+		var y3 = invD;
+		var z3 = invY;
+		if(z3 == null) {
+			z3 = 0.;
+		}
+		if(y3 == null) {
+			y3 = 0.;
+		}
+		if(x3 == null) {
+			x3 = 0.;
+		}
+		_this3.x = x3;
+		_this3.y = y3;
+		_this3.z = z3;
+		_this3.w = 1.;
+		ctx.globalAlpha = 1;
+		this.draw(ctx);
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var c = _g1[_g];
+			++_g;
+			c.drawRec(ctx);
+		}
+		var finalTile = h2d_Tile.fromTexture(t);
+		finalTile.dx = xMin;
+		finalTile.dy = yMin;
+		var prev = finalTile;
+		finalTile = this.filter.draw(ctx,finalTile);
+		if(finalTile != prev && finalTile != null) {
+			finalTile.dx += xMin;
+			finalTile.dy += yMin;
+		}
+		var _this4 = shader.filterMatrixA__;
+		_this4.x = oldA_x;
+		_this4.y = oldA_y;
+		_this4.z = oldA_z;
+		_this4.w = oldA_w;
+		var _this5 = shader.filterMatrixB__;
+		_this5.x = oldB_x;
+		_this5.y = oldB_y;
+		_this5.z = oldB_z;
+		_this5.w = oldB_w;
+		ctx.popTarget();
+		ctx.popFilter();
+		ctx.globalAlpha = oldAlpha;
+		if(finalTile == null) {
+			return;
+		}
+		this.drawFiltered(ctx,finalTile);
+	}
+	,drawFiltered: function(ctx,tile) {
+		var oldAlpha = ctx.globalAlpha;
+		ctx.currentBlend = null;
+		ctx.inFilterBlend = this.blendMode;
+		ctx.globalAlpha *= this.alpha;
+		this.emitTile(ctx,tile);
+		ctx.globalAlpha = oldAlpha;
+		ctx.inFilterBlend = null;
+		ctx.currentBlend = null;
+	}
+	,drawRec: function(ctx) {
+		if(!this.visible) {
+			return;
+		}
+		if(this.posChanged) {
+			this.calcAbsPos();
+			var _g = 0;
+			var _g1 = this.children;
+			while(_g < _g1.length) {
+				var c = _g1[_g];
+				++_g;
+				c.posChanged = true;
+			}
+			this.posChanged = false;
+		}
+		if(this.filter != null && this.filter.get_enable()) {
+			this.drawFilters(ctx);
+		} else {
+			var old = ctx.globalAlpha;
+			ctx.globalAlpha *= this.alpha;
+			if(ctx.front2back) {
+				var nchilds = this.children.length;
+				var _g2 = 0;
+				var _g11 = nchilds;
+				while(_g2 < _g11) {
+					var i = _g2++;
+					this.children[nchilds - 1 - i].drawRec(ctx);
+				}
+				this.draw(ctx);
+			} else {
+				this.draw(ctx);
+				var _g3 = 0;
+				var _g12 = this.children;
+				while(_g3 < _g12.length) {
+					var c1 = _g12[_g3];
+					++_g3;
+					c1.drawRec(ctx);
+				}
+			}
+			ctx.globalAlpha = old;
+		}
+	}
+	,set_x: function(v) {
+		this.posChanged = true;
+		return this.x = v;
+	}
+	,set_y: function(v) {
+		this.posChanged = true;
+		return this.y = v;
+	}
+	,set_scaleX: function(v) {
+		this.posChanged = true;
+		return this.scaleX = v;
+	}
+	,set_scaleY: function(v) {
+		this.posChanged = true;
+		return this.scaleY = v;
+	}
+	,set_rotation: function(v) {
+		this.posChanged = true;
+		return this.rotation = v;
+	}
+	,move: function(dx,dy) {
+		var _g = this;
+		var v = _g.x + dx * Math.cos(this.rotation);
+		_g.posChanged = true;
+		_g.x = v;
+		var _g1 = this;
+		var v1 = _g1.y + dy * Math.sin(this.rotation);
+		_g1.posChanged = true;
+		_g1.y = v1;
+	}
+	,setPosition: function(x,y) {
+		this.posChanged = true;
+		this.x = x;
+		this.posChanged = true;
+		this.y = y;
+	}
+	,rotate: function(v) {
+		var _g = this;
+		_g.posChanged = true;
+		_g.rotation += v;
+	}
+	,scale: function(v) {
+		var _g = this;
+		_g.posChanged = true;
+		_g.scaleX *= v;
+		var _g1 = this;
+		_g1.posChanged = true;
+		_g1.scaleY *= v;
+	}
+	,setScale: function(v) {
+		this.posChanged = true;
+		this.scaleX = v;
+		this.posChanged = true;
+		this.scaleY = v;
+	}
+	,getChildAt: function(n) {
+		return this.children[n];
+	}
+	,getChildIndex: function(o) {
+		var _g = 0;
+		var _g1 = this.children.length;
+		while(_g < _g1) {
+			var i = _g++;
+			if(this.children[i] == o) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	,getObjectByName: function(name) {
+		if(this.name == name) {
+			return this;
+		}
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var c = _g1[_g];
+			++_g;
+			var o = c.getObjectByName(name);
+			if(o != null) {
+				return o;
+			}
+		}
+		return null;
+	}
+	,get_numChildren: function() {
+		return this.children.length;
+	}
+	,iterator: function() {
+		return new hxd_impl_ArrayIterator_$h2d_$Object(this.children);
+	}
+	,toString: function() {
+		var c = js_Boot.getClass(this);
+		var c1 = c.__name__;
+		if(this.name == null) {
+			return c1;
+		} else {
+			return this.name + "(" + c1 + ")";
+		}
+	}
+	,contentChanged: function(s) {
+	}
+	,constraintSize: function(maxWidth,maxHeight) {
+	}
+	,__class__: h2d_Object
+};
+var Entity = function(props) {
+	this.health = 1;
+	this.forceMultiplier = 1.0;
+	this.avoidOthers = false;
+	this.speed = 0.0;
+	this.weight = 1.0;
+	this.dy = 0.0;
+	this.dx = 0.0;
+	h2d_Object.call(this);
+	this.posChanged = true;
+	this.x = props.x;
+	this.posChanged = true;
+	this.y = props.y;
+	this.id = props.id;
+	this.radius = props.radius;
+	this.weight = props.weight;
+	this.speed = props.speed;
+	this.color = props.color;
+	this.avoidOthers = props.avoidOthers;
+	this.forceMultiplier = props.forceMultiplier;
+	this.health = props.health;
+};
+$hxClasses["Entity"] = Entity;
+Entity.__name__ = "Entity";
+Entity.__super__ = h2d_Object;
+Entity.prototype = $extend(h2d_Object.prototype,{
+	__class__: Entity
+});
 var Mob = function(s2d) {
 	this.TARGET_RADIUS = 20.0;
 	this.SPRITES = new haxe_ds_IntMap();
-	var numEntities = 500;
+	var numEntities = 100;
 	var colors_h = { };
 	colors_h[2] = 16223339;
 	colors_h[3] = 16765286;
@@ -429,32 +1638,29 @@ var Mob = function(s2d) {
 		var size = this.irnd(2,4);
 		var radius = size * 2;
 		var speed = (5 + 2 / radius * 500) * 1.4;
-		var entity = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, dx : 0.0, dy : 0.0, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0};
+		var entity = new Entity({ id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : radius, weight : 1.0, speed : speed, color : colors_h[size], avoidOthers : true, forceMultiplier : 1.0, health : 100});
 		Mob.ALL.push(entity);
 	}
 	var obstacle = function(x,y) {
-		return { id : makeId(), x : x, y : y, radius : 20, dx : 0.0, dy : 0.0, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0};
+		return new Entity({ id : makeId(), x : x, y : y, radius : 20, weight : 1.0, speed : 0.0, color : colors_h[5], avoidOthers : false, forceMultiplier : 3.0, health : 99999});
 	};
 	Mob.ALL.push(obstacle(200.0,300.0));
 	Mob.ALL.push(obstacle(s2d.width - 100.0,s2d.height / 2));
-	this.player = { id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : 25, dx : 0.0, dy : 0.0, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0};
+	this.player = new Entity({ id : makeId(), x : s2d.width * 0.5, y : s2d.height * 0.5, radius : 25, weight : 1.0, speed : 500.0, color : colors_h[6], avoidOthers : false, forceMultiplier : 3.0, health : 100});
 	Mob.ALL.push(this.player);
 	var _g3 = 0;
 	var _g4 = Mob.ALL;
 	while(_g3 < _g4.length) {
 		var entity1 = _g4[_g3];
 		++_g3;
-		var graphic = new h2d_Graphics(s2d);
-		graphic.posChanged = true;
-		graphic.x = entity1.x;
-		graphic.posChanged = true;
-		graphic.y = entity1.y;
+		var graphic = new h2d_Graphics(entity1);
 		graphic.beginFill(0);
 		graphic.drawCircle(0,0,entity1.radius + 1);
 		graphic.beginFill(entity1.color);
 		graphic.drawCircle(0,0,entity1.radius);
 		graphic.endFill();
 		this.SPRITES.h[entity1.id] = graphic;
+		s2d.addChild(entity1);
 	}
 };
 $hxClasses["Mob"] = Mob;
@@ -483,50 +1689,16 @@ Mob.prototype = {
 	,distance: function(ax,ay,bx,by) {
 		return Math.sqrt(this.distanceSqr(ax,ay,bx,by));
 	}
-	,agentCollide: function(agents,sprites,target,TARGET_RADIUS) {
+	,agentCollide: function(agents,target,TARGET_RADIUS,onCollide) {
 		var _g = 0;
 		while(_g < agents.length) {
 			var a = agents[_g];
 			++_g;
-			var s = sprites.h[a.id];
-			var _this = s.color;
-			var x = 1;
-			var y = 1;
-			var z = 1;
-			if(z == null) {
-				z = 0.;
-			}
-			if(y == null) {
-				y = 0.;
-			}
-			if(x == null) {
-				x = 0.;
-			}
-			_this.x = x;
-			_this.y = y;
-			_this.z = z;
-			_this.w = 1.;
 			var d = this.distance(target.x,target.y,a.x,a.y);
 			var min = TARGET_RADIUS + a.radius * 1.0;
 			var isConflict = d < min;
 			if(isConflict) {
-				var _this1 = s.color;
-				var x1 = 255;
-				var y1 = 255;
-				var z1 = 255;
-				if(z1 == null) {
-					z1 = 0.;
-				}
-				if(y1 == null) {
-					y1 = 0.;
-				}
-				if(x1 == null) {
-					x1 = 0.;
-				}
-				_this1.x = x1;
-				_this1.y = y1;
-				_this1.z = z1;
-				_this1.w = 1.;
+				onCollide(a);
 			}
 		}
 	}
@@ -549,25 +1721,87 @@ Mob.prototype = {
 		var magnitude = Math.sqrt(dx * dx + dy * dy);
 		var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
 		var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
-		player.x += dxNormalized * player.speed * dt;
-		player.y += dyNormalized * player.speed * dt;
+		var _g = player;
+		_g.posChanged = true;
+		_g.x += dxNormalized * player.speed * dt;
+		var _g1 = player;
+		_g1.posChanged = true;
+		_g1.y += dyNormalized * player.speed * dt;
 	}
 	,update: function(s2d,dt) {
 		var _gthis = this;
+		var i = 0;
+		while(i < Mob.ALL.length) {
+			var a = Mob.ALL[i];
+			var isDisposed = a.health == 0;
+			if(isDisposed) {
+				Mob.ALL.splice(i,1);
+				if(a != null && a.parent != null) {
+					a.parent.removeChild(a);
+				}
+			} else {
+				++i;
+			}
+		}
+		var _g = 0;
+		var _g1 = Mob.ALL;
+		while(_g < _g1.length) {
+			var a1 = _g1[_g];
+			++_g;
+			var s = this.SPRITES.h[a1.id];
+			var _this = s.color;
+			var x = 1;
+			var y = 1;
+			var z = 1;
+			if(z == null) {
+				z = 0.;
+			}
+			if(y == null) {
+				y = 0.;
+			}
+			if(x == null) {
+				x = 0.;
+			}
+			_this.x = x;
+			_this.y = y;
+			_this.z = z;
+			_this.w = 1.;
+		}
 		this.movePlayer(this.player,dt,s2d);
-		this.agentCollide(Mob.ALL,this.SPRITES,this.target,this.TARGET_RADIUS);
-		var _this = this.target;
+		var onAgentHover = function(a2) {
+			var s1 = _gthis.SPRITES.h[a2.id];
+			var _this1 = s1.color;
+			var x1 = 255;
+			var y1 = 255;
+			var z1 = 255;
+			if(z1 == null) {
+				z1 = 0.;
+			}
+			if(y1 == null) {
+				y1 = 0.;
+			}
+			if(x1 == null) {
+				x1 = 0.;
+			}
+			_this1.x = x1;
+			_this1.y = y1;
+			_this1.z = z1;
+			_this1.w = 1.;
+			a2.health = 0;
+		};
+		this.agentCollide(Mob.ALL,this.target,this.TARGET_RADIUS,onAgentHover);
+		var _this2 = this.target;
 		var v = s2d.get_mouseX();
-		_this.posChanged = true;
-		_this.x = v;
-		var _this1 = this.target;
+		_this2.posChanged = true;
+		_this2.x = v;
+		var _this3 = this.target;
 		var v1 = s2d.get_mouseY();
-		_this1.posChanged = true;
-		_this1.y = v1;
+		_this3.posChanged = true;
+		_this3.y = v1;
 		var follow = this.player;
 		var threshold = this.player.radius + 30;
-		var byClosest = function(a,b) {
-			var da = _gthis.distance(a.x,a.y,follow.x,follow.y);
+		var byClosest = function(a3,b) {
+			var da = _gthis.distance(a3.x,a3.y,follow.x,follow.y);
 			var db = _gthis.distance(b.x,b.y,follow.x,follow.y);
 			if(da < db) {
 				return -1;
@@ -578,19 +1812,19 @@ Mob.prototype = {
 			return 0;
 		};
 		Mob.ALL.sort(byClosest);
-		var _g = 0;
-		var _g1 = Mob.ALL;
-		while(_g < _g1.length) {
-			var a1 = _g1[_g];
-			++_g;
-			a1.dx = 0;
-			a1.dy = 0;
-		}
 		var _g2 = 0;
-		var _g3 = Mob.ALL.length;
-		while(_g2 < _g3) {
-			var i = _g2++;
-			var e = Mob.ALL[i];
+		var _g3 = Mob.ALL;
+		while(_g2 < _g3.length) {
+			var a4 = _g3[_g2];
+			++_g2;
+			a4.dx = 0;
+			a4.dy = 0;
+		}
+		var _g4 = 0;
+		var _g5 = Mob.ALL.length;
+		while(_g4 < _g5) {
+			var i1 = _g4++;
+			var e = Mob.ALL[i1];
 			var dFromTarget = this.distance(e.x,e.y,follow.x,follow.y);
 			var dx = e.dx;
 			var dy = e.dy;
@@ -602,11 +1836,11 @@ Mob.prototype = {
 				dy += Math.sin(aToTarget) * speedAdjust;
 			}
 			if(e.avoidOthers) {
-				var _g21 = 0;
-				var _g31 = Mob.ALL;
-				while(_g21 < _g31.length) {
-					var o = _g31[_g21];
-					++_g21;
+				var _g41 = 0;
+				var _g51 = Mob.ALL;
+				while(_g41 < _g51.length) {
+					var o = _g51[_g41];
+					++_g41;
 					if(o != e) {
 						var pt = e;
 						var ept = o;
@@ -617,11 +1851,11 @@ Mob.prototype = {
 						if(isColliding) {
 							var conflict = min - d;
 							var adjustedConflict = Math.min(conflict,conflict * 50 / speed);
-							var a2 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
+							var a5 = Math.atan2(ept.y - pt.y,ept.x - pt.x);
 							var w = pt.weight / (pt.weight + ept.weight);
 							var multiplier = ept.forceMultiplier;
-							var avoidX = Math.cos(a2) * adjustedConflict * w * multiplier;
-							var avoidY = Math.sin(a2) * adjustedConflict * w * multiplier;
+							var avoidX = Math.cos(a5) * adjustedConflict * w * multiplier;
+							var avoidY = Math.sin(a5) * adjustedConflict * w * multiplier;
 							dx -= avoidX;
 							dy -= avoidY;
 						}
@@ -641,15 +1875,12 @@ Mob.prototype = {
 			if(dy < -max) {
 				dy = -max;
 			}
-			e.x += dx * speed * dt;
-			e.y += dy * speed * dt;
-			var id = e.id;
-			var _this2 = this.SPRITES.h[id];
-			_this2.posChanged = true;
-			_this2.x = e.x;
-			var _this3 = this.SPRITES.h[id];
-			_this3.posChanged = true;
-			_this3.y = e.y;
+			var _g42 = e;
+			_g42.posChanged = true;
+			_g42.x += dx * speed * dt;
+			var _g43 = e;
+			_g43.posChanged = true;
+			_g43.y += dy * speed * dt;
 		}
 	}
 	,__class__: Mob
@@ -4313,1187 +5544,6 @@ format_wav_Reader.prototype = {
 		return { header : { format : format1, channels : channels, samplingRate : samplingRate, byteRate : byteRate, blockAlign : blockAlign, bitsPerSample : bitsPerSample}, data : data, cuePoints : cuePoints};
 	}
 	,__class__: format_wav_Reader
-};
-var h2d_Object = function(parent) {
-	this.alpha = 1.;
-	this.matA = 1;
-	this.matB = 0;
-	this.matC = 0;
-	this.matD = 1;
-	this.absX = 0;
-	this.absY = 0;
-	this.posChanged = true;
-	this.x = 0;
-	this.posChanged = true;
-	this.y = 0;
-	this.posChanged = true;
-	this.scaleX = 1;
-	this.posChanged = true;
-	this.scaleY = 1;
-	this.posChanged = true;
-	this.rotation = 0;
-	this.blendMode = h2d_BlendMode.Alpha;
-	this.posChanged = parent != null;
-	this.set_visible(true);
-	this.children = [];
-	if(parent != null) {
-		parent.addChild(this);
-	}
-};
-$hxClasses["h2d.Object"] = h2d_Object;
-h2d_Object.__name__ = "h2d.Object";
-h2d_Object.prototype = {
-	getBounds: function(relativeTo,out) {
-		if(out == null) {
-			out = new h2d_col_Bounds();
-		} else {
-			out.xMin = 1e20;
-			out.yMin = 1e20;
-			out.xMax = -1e20;
-			out.yMax = -1e20;
-		}
-		if(relativeTo != null) {
-			relativeTo.syncPos();
-		}
-		if(relativeTo != this) {
-			this.syncPos();
-		}
-		this.getBoundsRec(relativeTo,out,false);
-		if(out.xMax <= out.xMin || out.yMax <= out.yMin) {
-			this.addBounds(relativeTo,out,-1,-1,2,2);
-			out.xMax = out.xMin = (out.xMax + out.xMin) * 0.5;
-			out.yMax = out.yMin = (out.yMax + out.yMin) * 0.5;
-		}
-		return out;
-	}
-	,getSize: function(out) {
-		if(out == null) {
-			out = new h2d_col_Bounds();
-		} else {
-			out.xMin = 1e20;
-			out.yMin = 1e20;
-			out.xMax = -1e20;
-			out.yMax = -1e20;
-		}
-		this.syncPos();
-		this.getBoundsRec(this.parent,out,true);
-		if(out.xMax <= out.xMin || out.yMax <= out.yMin) {
-			this.addBounds(this.parent,out,-1,-1,2,2);
-			out.xMax = out.xMin = (out.xMax + out.xMin) * 0.5;
-			out.yMax = out.yMin = (out.yMax + out.yMin) * 0.5;
-		}
-		var dx = -this.x;
-		var dy = -this.y;
-		out.xMin += dx;
-		out.xMax += dx;
-		out.yMin += dy;
-		out.yMax += dy;
-		return out;
-	}
-	,getAbsPos: function() {
-		this.syncPos();
-		var m = new h2d_col_Matrix();
-		m.a = this.matA;
-		m.b = this.matB;
-		m.c = this.matC;
-		m.d = this.matD;
-		m.x = this.absX;
-		m.y = this.absY;
-		return m;
-	}
-	,find: function(f) {
-		var v = f(this);
-		if(v != null) {
-			return v;
-		}
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var o = _g1[_g];
-			++_g;
-			var v1 = o.find(f);
-			if(v1 != null) {
-				return v1;
-			}
-		}
-		return null;
-	}
-	,findAll: function(f,arr) {
-		if(arr == null) {
-			arr = [];
-		}
-		var v = f(this);
-		if(v != null) {
-			arr.push(v);
-		}
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var o = _g1[_g];
-			++_g;
-			o.findAll(f,arr);
-		}
-		return arr;
-	}
-	,set_filter: function(f) {
-		if(this.filter != null && this.allocated) {
-			this.filter.unbind(this);
-		}
-		this.filter = f;
-		if(f != null && this.allocated) {
-			f.bind(this);
-		}
-		return f;
-	}
-	,getBoundsRec: function(relativeTo,out,forSize) {
-		if(this.posChanged) {
-			this.calcAbsPos();
-			var _g = 0;
-			var _g1 = this.children;
-			while(_g < _g1.length) {
-				var c = _g1[_g];
-				++_g;
-				c.posChanged = true;
-			}
-			this.posChanged = false;
-		}
-		var n = this.children.length;
-		if(n == 0) {
-			out.xMin = 1e20;
-			out.yMin = 1e20;
-			out.xMax = -1e20;
-			out.yMax = -1e20;
-			return;
-		}
-		if(n == 1) {
-			var c1 = this.children[0];
-			if(c1.visible) {
-				c1.getBoundsRec(relativeTo,out,forSize);
-			} else {
-				out.xMin = 1e20;
-				out.yMin = 1e20;
-				out.xMax = -1e20;
-				out.yMax = -1e20;
-			}
-			return;
-		}
-		var xmin = Infinity;
-		var ymin = Infinity;
-		var xmax = -Infinity;
-		var ymax = -Infinity;
-		var _g2 = 0;
-		var _g11 = this.children;
-		while(_g2 < _g11.length) {
-			var c2 = _g11[_g2];
-			++_g2;
-			if(!c2.visible) {
-				continue;
-			}
-			c2.getBoundsRec(relativeTo,out,forSize);
-			if(out.xMin < xmin) {
-				xmin = out.xMin;
-			}
-			if(out.yMin < ymin) {
-				ymin = out.yMin;
-			}
-			if(out.xMax > xmax) {
-				xmax = out.xMax;
-			}
-			if(out.yMax > ymax) {
-				ymax = out.yMax;
-			}
-		}
-		out.xMin = xmin;
-		out.yMin = ymin;
-		out.xMax = xmax;
-		out.yMax = ymax;
-	}
-	,addBounds: function(relativeTo,out,dx,dy,width,height) {
-		if(width <= 0 || height <= 0) {
-			return;
-		}
-		if(relativeTo == null) {
-			var x;
-			var y;
-			var x1 = dx * this.matA + dy * this.matC + this.absX;
-			var y1 = dx * this.matB + dy * this.matD + this.absY;
-			if(x1 < out.xMin) {
-				out.xMin = x1;
-			}
-			if(x1 > out.xMax) {
-				out.xMax = x1;
-			}
-			if(y1 < out.yMin) {
-				out.yMin = y1;
-			}
-			if(y1 > out.yMax) {
-				out.yMax = y1;
-			}
-			var x2 = (dx + width) * this.matA + dy * this.matC + this.absX;
-			var y2 = (dx + width) * this.matB + dy * this.matD + this.absY;
-			if(x2 < out.xMin) {
-				out.xMin = x2;
-			}
-			if(x2 > out.xMax) {
-				out.xMax = x2;
-			}
-			if(y2 < out.yMin) {
-				out.yMin = y2;
-			}
-			if(y2 > out.yMax) {
-				out.yMax = y2;
-			}
-			var x3 = dx * this.matA + (dy + height) * this.matC + this.absX;
-			var y3 = dx * this.matB + (dy + height) * this.matD + this.absY;
-			if(x3 < out.xMin) {
-				out.xMin = x3;
-			}
-			if(x3 > out.xMax) {
-				out.xMax = x3;
-			}
-			if(y3 < out.yMin) {
-				out.yMin = y3;
-			}
-			if(y3 > out.yMax) {
-				out.yMax = y3;
-			}
-			var x4 = (dx + width) * this.matA + (dy + height) * this.matC + this.absX;
-			var y4 = (dx + width) * this.matB + (dy + height) * this.matD + this.absY;
-			if(x4 < out.xMin) {
-				out.xMin = x4;
-			}
-			if(x4 > out.xMax) {
-				out.xMax = x4;
-			}
-			if(y4 < out.yMin) {
-				out.yMin = y4;
-			}
-			if(y4 > out.yMax) {
-				out.yMax = y4;
-			}
-			return;
-		}
-		if(relativeTo == this) {
-			if(out.xMin > dx) {
-				out.xMin = dx;
-			}
-			if(out.yMin > dy) {
-				out.yMin = dy;
-			}
-			if(out.xMax < dx + width) {
-				out.xMax = dx + width;
-			}
-			if(out.yMax < dy + height) {
-				out.yMax = dy + height;
-			}
-			return;
-		}
-		var r = relativeTo.matA * relativeTo.matD - relativeTo.matB * relativeTo.matC;
-		if(r == 0) {
-			return;
-		}
-		var det = 1 / r;
-		var rA = relativeTo.matD * det;
-		var rB = -relativeTo.matB * det;
-		var rC = -relativeTo.matC * det;
-		var rD = relativeTo.matA * det;
-		var rX = this.absX - relativeTo.absX;
-		var rY = this.absY - relativeTo.absY;
-		var x5 = dx * this.matA + dy * this.matC + rX;
-		var y5 = dx * this.matB + dy * this.matD + rY;
-		var x6 = x5 * rA + y5 * rC;
-		var y6 = x5 * rB + y5 * rD;
-		if(x6 < out.xMin) {
-			out.xMin = x6;
-		}
-		if(x6 > out.xMax) {
-			out.xMax = x6;
-		}
-		if(y6 < out.yMin) {
-			out.yMin = y6;
-		}
-		if(y6 > out.yMax) {
-			out.yMax = y6;
-		}
-		x5 = (dx + width) * this.matA + dy * this.matC + rX;
-		y5 = (dx + width) * this.matB + dy * this.matD + rY;
-		var x7 = x5 * rA + y5 * rC;
-		var y7 = x5 * rB + y5 * rD;
-		if(x7 < out.xMin) {
-			out.xMin = x7;
-		}
-		if(x7 > out.xMax) {
-			out.xMax = x7;
-		}
-		if(y7 < out.yMin) {
-			out.yMin = y7;
-		}
-		if(y7 > out.yMax) {
-			out.yMax = y7;
-		}
-		x5 = dx * this.matA + (dy + height) * this.matC + rX;
-		y5 = dx * this.matB + (dy + height) * this.matD + rY;
-		var x8 = x5 * rA + y5 * rC;
-		var y8 = x5 * rB + y5 * rD;
-		if(x8 < out.xMin) {
-			out.xMin = x8;
-		}
-		if(x8 > out.xMax) {
-			out.xMax = x8;
-		}
-		if(y8 < out.yMin) {
-			out.yMin = y8;
-		}
-		if(y8 > out.yMax) {
-			out.yMax = y8;
-		}
-		x5 = (dx + width) * this.matA + (dy + height) * this.matC + rX;
-		y5 = (dx + width) * this.matB + (dy + height) * this.matD + rY;
-		var x9 = x5 * rA + y5 * rC;
-		var y9 = x5 * rB + y5 * rD;
-		if(x9 < out.xMin) {
-			out.xMin = x9;
-		}
-		if(x9 > out.xMax) {
-			out.xMax = x9;
-		}
-		if(y9 < out.yMin) {
-			out.yMin = y9;
-		}
-		if(y9 > out.yMax) {
-			out.yMax = y9;
-		}
-	}
-	,getObjectsCount: function() {
-		var k = 0;
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var c = _g1[_g];
-			++_g;
-			k += c.getObjectsCount() + 1;
-		}
-		return k;
-	}
-	,localToGlobal: function(pt) {
-		this.syncPos();
-		if(pt == null) {
-			pt = new h2d_col_Point();
-		}
-		var px = pt.x * this.matA + pt.y * this.matC + this.absX;
-		var py = pt.x * this.matB + pt.y * this.matD + this.absY;
-		pt.x = px;
-		pt.y = py;
-		return pt;
-	}
-	,globalToLocal: function(pt) {
-		this.syncPos();
-		pt.x -= this.absX;
-		pt.y -= this.absY;
-		var invDet = 1 / (this.matA * this.matD - this.matB * this.matC);
-		var px = (pt.x * this.matD - pt.y * this.matC) * invDet;
-		var py = (-pt.x * this.matB + pt.y * this.matA) * invDet;
-		pt.x = px;
-		pt.y = py;
-		return pt;
-	}
-	,getScene: function() {
-		var p = this;
-		while(p.parent != null) p = p.parent;
-		return ((p) instanceof h2d_Scene) ? p : null;
-	}
-	,set_visible: function(b) {
-		if(this.visible == b) {
-			return b;
-		}
-		this.visible = b;
-		if(this.parentContainer != null) {
-			this.parentContainer.contentChanged(this);
-		}
-		return b;
-	}
-	,addChild: function(s) {
-		this.addChildAt(s,this.children.length);
-	}
-	,addChildAt: function(s,pos) {
-		if(pos < 0) {
-			pos = 0;
-		}
-		if(pos > this.children.length) {
-			pos = this.children.length;
-		}
-		var p = this;
-		while(p != null) {
-			if(p == s) {
-				throw new js__$Boot_HaxeError("Recursive addChild");
-			}
-			p = p.parent;
-		}
-		if(s.parent != null) {
-			var old = s.allocated;
-			s.allocated = false;
-			s.parent.removeChild(s);
-			s.allocated = old;
-		}
-		this.children.splice(pos,0,s);
-		if(!this.allocated && s.allocated) {
-			s.onRemove();
-		}
-		s.parent = this;
-		s.parentContainer = this.parentContainer;
-		s.posChanged = true;
-		if(this.allocated) {
-			if(!s.allocated) {
-				s.onAdd();
-			} else {
-				s.onHierarchyMoved(true);
-			}
-		}
-		if(this.parentContainer != null) {
-			this.parentContainer.contentChanged(this);
-		}
-	}
-	,onContentChanged: function() {
-		if(this.parentContainer != null) {
-			this.parentContainer.contentChanged(this);
-		}
-	}
-	,onHierarchyMoved: function(parentChanged) {
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var c = _g1[_g];
-			++_g;
-			c.onHierarchyMoved(parentChanged);
-		}
-	}
-	,onAdd: function() {
-		this.allocated = true;
-		if(this.filter != null) {
-			this.filter.bind(this);
-		}
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var c = _g1[_g];
-			++_g;
-			c.onAdd();
-		}
-	}
-	,onRemove: function() {
-		this.allocated = false;
-		if(this.filter != null) {
-			this.filter.unbind(this);
-		}
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var c = _g1[_g];
-			++_g;
-			c.onRemove();
-		}
-	}
-	,getMatrix: function(m) {
-		m.a = this.matA;
-		m.b = this.matB;
-		m.c = this.matC;
-		m.d = this.matD;
-		m.x = this.absX;
-		m.y = this.absY;
-	}
-	,removeChild: function(s) {
-		if(HxOverrides.remove(this.children,s)) {
-			if(s.allocated) {
-				s.onRemove();
-			}
-			s.parent = null;
-			if(s.parentContainer != null) {
-				s.setParentContainer(null);
-			}
-			s.posChanged = true;
-			if(this.parentContainer != null) {
-				this.parentContainer.contentChanged(this);
-			}
-		}
-	}
-	,setParentContainer: function(c) {
-		this.parentContainer = c;
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var s = _g1[_g];
-			++_g;
-			s.setParentContainer(c);
-		}
-	}
-	,removeChildren: function() {
-		while(this.children.length > 0) this.removeChild(this.children[0]);
-	}
-	,remove: function() {
-		if(this.parent != null) {
-			this.parent.removeChild(this);
-		}
-	}
-	,drawTo: function(t) {
-		var s = this.getScene();
-		var needDispose = s == null;
-		if(s == null) {
-			s = new h2d_Scene();
-		}
-		s.drawImplTo(this,[t]);
-		if(needDispose) {
-			s.dispose();
-			this.onRemove();
-		}
-	}
-	,drawToTextures: function(texs,outputs) {
-		var s = this.getScene();
-		var needDispose = s == null;
-		if(s == null) {
-			s = new h2d_Scene();
-		}
-		s.drawImplTo(this,texs,outputs);
-		if(needDispose) {
-			s.dispose();
-			this.onRemove();
-		}
-	}
-	,draw: function(ctx) {
-	}
-	,sync: function(ctx) {
-		var changed = this.posChanged;
-		if(changed) {
-			this.calcAbsPos();
-			this.posChanged = false;
-		}
-		this.lastFrame = ctx.frame;
-		var p = 0;
-		var len = this.children.length;
-		while(p < len) {
-			var c = this.children[p];
-			if(c == null) {
-				break;
-			}
-			if(c.lastFrame != ctx.frame) {
-				if(changed) {
-					c.posChanged = true;
-				}
-				c.sync(ctx);
-			}
-			if(this.children[p] != c) {
-				p = 0;
-				len = this.children.length;
-			} else {
-				++p;
-			}
-		}
-	}
-	,syncPos: function() {
-		if(this.parent != null) {
-			this.parent.syncPos();
-		}
-		if(this.posChanged) {
-			this.calcAbsPos();
-			var _g = 0;
-			var _g1 = this.children;
-			while(_g < _g1.length) {
-				var c = _g1[_g];
-				++_g;
-				c.posChanged = true;
-			}
-			this.posChanged = false;
-		}
-	}
-	,calcAbsPos: function() {
-		if(this.parent == null) {
-			var cr;
-			var sr;
-			if(this.rotation == 0) {
-				cr = 1.;
-				sr = 0.;
-				this.matA = this.scaleX;
-				this.matB = 0;
-				this.matC = 0;
-				this.matD = this.scaleY;
-			} else {
-				cr = Math.cos(this.rotation);
-				sr = Math.sin(this.rotation);
-				this.matA = this.scaleX * cr;
-				this.matB = this.scaleX * sr;
-				this.matC = this.scaleY * -sr;
-				this.matD = this.scaleY * cr;
-			}
-			this.absX = this.x;
-			this.absY = this.y;
-		} else {
-			if(this.rotation == 0) {
-				this.matA = this.scaleX * this.parent.matA;
-				this.matB = this.scaleX * this.parent.matB;
-				this.matC = this.scaleY * this.parent.matC;
-				this.matD = this.scaleY * this.parent.matD;
-			} else {
-				var cr1 = Math.cos(this.rotation);
-				var sr1 = Math.sin(this.rotation);
-				var tmpA = this.scaleX * cr1;
-				var tmpB = this.scaleX * sr1;
-				var tmpC = this.scaleY * -sr1;
-				var tmpD = this.scaleY * cr1;
-				this.matA = tmpA * this.parent.matA + tmpB * this.parent.matC;
-				this.matB = tmpA * this.parent.matB + tmpB * this.parent.matD;
-				this.matC = tmpC * this.parent.matA + tmpD * this.parent.matC;
-				this.matD = tmpC * this.parent.matB + tmpD * this.parent.matD;
-			}
-			this.absX = this.x * this.parent.matA + this.y * this.parent.matC + this.parent.absX;
-			this.absY = this.x * this.parent.matB + this.y * this.parent.matD + this.parent.absY;
-		}
-	}
-	,emitTile: function(ctx,tile) {
-		if(h2d_Object.nullDrawable == null) {
-			h2d_Object.nullDrawable = new h2d_Drawable(null);
-		}
-		h2d_Object.nullDrawable.absX = this.absX;
-		h2d_Object.nullDrawable.absY = this.absY;
-		h2d_Object.nullDrawable.matA = this.matA;
-		h2d_Object.nullDrawable.matB = this.matB;
-		h2d_Object.nullDrawable.matC = this.matC;
-		h2d_Object.nullDrawable.matD = this.matD;
-		ctx.drawTile(h2d_Object.nullDrawable,tile);
-		return;
-	}
-	,clipBounds: function(ctx,bounds) {
-		var view = ctx.tmpBounds;
-		var matA;
-		var matB;
-		var matC;
-		var matD;
-		var absX;
-		var absY;
-		if(ctx.inFilter != null) {
-			var f1 = ctx.baseShader.filterMatrixA__;
-			var f2 = ctx.baseShader.filterMatrixB__;
-			matA = this.matA * f1.x + this.matB * f1.y;
-			matB = this.matA * f2.x + this.matB * f2.y;
-			matC = this.matC * f1.x + this.matD * f1.y;
-			matD = this.matC * f2.x + this.matD * f2.y;
-			absX = this.absX * f1.x + this.absY * f1.y + f1.z;
-			absY = this.absX * f2.x + this.absY * f2.y + f2.z;
-		} else {
-			matA = this.matA;
-			matB = this.matB;
-			matC = this.matC;
-			matD = this.matD;
-			absX = this.absX;
-			absY = this.absY;
-		}
-		view.xMin = 1e20;
-		view.yMin = 1e20;
-		view.xMax = -1e20;
-		view.yMax = -1e20;
-		var x = bounds.xMin;
-		var y = bounds.yMin;
-		var x1 = x * matA + y * matC + absX;
-		var y1 = x * matB + y * matD + absY;
-		if(x1 < view.xMin) {
-			view.xMin = x1;
-		}
-		if(x1 > view.xMax) {
-			view.xMax = x1;
-		}
-		if(y1 < view.yMin) {
-			view.yMin = y1;
-		}
-		if(y1 > view.yMax) {
-			view.yMax = y1;
-		}
-		var x2 = bounds.xMax;
-		var y2 = bounds.yMin;
-		var x3 = x2 * matA + y2 * matC + absX;
-		var y3 = x2 * matB + y2 * matD + absY;
-		if(x3 < view.xMin) {
-			view.xMin = x3;
-		}
-		if(x3 > view.xMax) {
-			view.xMax = x3;
-		}
-		if(y3 < view.yMin) {
-			view.yMin = y3;
-		}
-		if(y3 > view.yMax) {
-			view.yMax = y3;
-		}
-		var x4 = bounds.xMin;
-		var y4 = bounds.yMax;
-		var x5 = x4 * matA + y4 * matC + absX;
-		var y5 = x4 * matB + y4 * matD + absY;
-		if(x5 < view.xMin) {
-			view.xMin = x5;
-		}
-		if(x5 > view.xMax) {
-			view.xMax = x5;
-		}
-		if(y5 < view.yMin) {
-			view.yMin = y5;
-		}
-		if(y5 > view.yMax) {
-			view.yMax = y5;
-		}
-		var x6 = bounds.xMax;
-		var y6 = bounds.yMax;
-		var x7 = x6 * matA + y6 * matC + absX;
-		var y7 = x6 * matB + y6 * matD + absY;
-		if(x7 < view.xMin) {
-			view.xMin = x7;
-		}
-		if(x7 > view.xMax) {
-			view.xMax = x7;
-		}
-		if(y7 < view.yMin) {
-			view.yMin = y7;
-		}
-		if(y7 > view.yMax) {
-			view.yMax = y7;
-		}
-		if(view.xMin < ctx.curX) {
-			view.xMin = ctx.curX;
-		}
-		if(view.yMin < ctx.curY) {
-			view.yMin = ctx.curY;
-		}
-		if(view.xMax > ctx.curX + ctx.curWidth) {
-			view.xMax = ctx.curX + ctx.curWidth;
-		}
-		if(view.yMax > ctx.curY + ctx.curHeight) {
-			view.yMax = ctx.curY + ctx.curHeight;
-		}
-		var invDet = 1 / (matA * matD - matB * matC);
-		var sxMin = view.xMin;
-		var syMin = view.yMin;
-		var sxMax = view.xMax;
-		var syMax = view.yMax;
-		view.xMin = 1e20;
-		view.yMin = 1e20;
-		view.xMax = -1e20;
-		view.yMax = -1e20;
-		var x8 = sxMin;
-		var y8 = syMin;
-		x8 -= absX;
-		y8 -= absY;
-		var x9 = (x8 * matD - y8 * matC) * invDet;
-		var y9 = (-x8 * matB + y8 * matA) * invDet;
-		if(x9 < view.xMin) {
-			view.xMin = x9;
-		}
-		if(x9 > view.xMax) {
-			view.xMax = x9;
-		}
-		if(y9 < view.yMin) {
-			view.yMin = y9;
-		}
-		if(y9 > view.yMax) {
-			view.yMax = y9;
-		}
-		var x10 = sxMax;
-		var y10 = syMin;
-		x10 -= absX;
-		y10 -= absY;
-		var x11 = (x10 * matD - y10 * matC) * invDet;
-		var y11 = (-x10 * matB + y10 * matA) * invDet;
-		if(x11 < view.xMin) {
-			view.xMin = x11;
-		}
-		if(x11 > view.xMax) {
-			view.xMax = x11;
-		}
-		if(y11 < view.yMin) {
-			view.yMin = y11;
-		}
-		if(y11 > view.yMax) {
-			view.yMax = y11;
-		}
-		var x12 = sxMin;
-		var y12 = syMax;
-		x12 -= absX;
-		y12 -= absY;
-		var x13 = (x12 * matD - y12 * matC) * invDet;
-		var y13 = (-x12 * matB + y12 * matA) * invDet;
-		if(x13 < view.xMin) {
-			view.xMin = x13;
-		}
-		if(x13 > view.xMax) {
-			view.xMax = x13;
-		}
-		if(y13 < view.yMin) {
-			view.yMin = y13;
-		}
-		if(y13 > view.yMax) {
-			view.yMax = y13;
-		}
-		var x14 = sxMax;
-		var y14 = syMax;
-		x14 -= absX;
-		y14 -= absY;
-		var x15 = (x14 * matD - y14 * matC) * invDet;
-		var y15 = (-x14 * matB + y14 * matA) * invDet;
-		if(x15 < view.xMin) {
-			view.xMin = x15;
-		}
-		if(x15 > view.xMax) {
-			view.xMax = x15;
-		}
-		if(y15 < view.yMin) {
-			view.yMin = y15;
-		}
-		if(y15 > view.yMax) {
-			view.yMax = y15;
-		}
-		var a = bounds.xMin;
-		var b = view.xMin;
-		bounds.xMin = a < b ? b : a;
-		var a1 = bounds.yMin;
-		var b1 = view.yMin;
-		bounds.yMin = a1 < b1 ? b1 : a1;
-		var a2 = bounds.xMax;
-		var b2 = view.xMax;
-		bounds.xMax = a2 > b2 ? b2 : a2;
-		var a3 = bounds.yMax;
-		var b3 = view.yMax;
-		bounds.yMax = a3 > b3 ? b3 : a3;
-	}
-	,drawFilters: function(ctx) {
-		if(!ctx.pushFilter(this)) {
-			return;
-		}
-		var bounds = ctx.tmpBounds;
-		var total = new h2d_col_Bounds();
-		var maxExtent = -1.;
-		this.filter.sync(ctx,this);
-		if(this.filter.autoBounds) {
-			maxExtent = this.filter.boundsExtend;
-		} else {
-			this.filter.getBounds(this,bounds);
-			if(bounds.xMin < total.xMin) {
-				total.xMin = bounds.xMin;
-			}
-			if(bounds.xMax > total.xMax) {
-				total.xMax = bounds.xMax;
-			}
-			if(bounds.yMin < total.yMin) {
-				total.yMin = bounds.yMin;
-			}
-			if(bounds.yMax > total.yMax) {
-				total.yMax = bounds.yMax;
-			}
-		}
-		if(maxExtent >= 0) {
-			this.getBounds(this,bounds);
-			bounds.xMin -= maxExtent;
-			bounds.yMin -= maxExtent;
-			bounds.xMax += maxExtent;
-			bounds.yMax += maxExtent;
-			if(bounds.xMin < total.xMin) {
-				total.xMin = bounds.xMin;
-			}
-			if(bounds.xMax > total.xMax) {
-				total.xMax = bounds.xMax;
-			}
-			if(bounds.yMin < total.yMin) {
-				total.yMin = bounds.yMin;
-			}
-			if(bounds.yMax > total.yMax) {
-				total.yMax = bounds.yMax;
-			}
-		}
-		this.clipBounds(ctx,total);
-		var xMin = Math.floor(total.xMin + 1e-10);
-		var yMin = Math.floor(total.yMin + 1e-10);
-		var width = Math.ceil(total.xMax - xMin - 1e-10);
-		var height = Math.ceil(total.yMax - yMin - 1e-10);
-		if(width <= 0 || height <= 0 || total.xMax < total.xMin) {
-			ctx.popFilter();
-			return;
-		}
-		var t = ctx.textures.allocTarget("filterTemp",width,height,false);
-		ctx.pushTarget(t,xMin,yMin,width,height);
-		ctx.engine.clear(0);
-		var oldAlpha = ctx.globalAlpha;
-		var shader = ctx.baseShader;
-		var _this = shader.filterMatrixA__;
-		var x = _this.x;
-		var y = _this.y;
-		var z = _this.z;
-		var w = _this.w;
-		if(w == null) {
-			w = 1.;
-		}
-		if(z == null) {
-			z = 0.;
-		}
-		if(y == null) {
-			y = 0.;
-		}
-		if(x == null) {
-			x = 0.;
-		}
-		var oldA_x = x;
-		var oldA_y = y;
-		var oldA_z = z;
-		var oldA_w = w;
-		var _this1 = shader.filterMatrixB__;
-		var x1 = _this1.x;
-		var y1 = _this1.y;
-		var z1 = _this1.z;
-		var w1 = _this1.w;
-		if(w1 == null) {
-			w1 = 1.;
-		}
-		if(z1 == null) {
-			z1 = 0.;
-		}
-		if(y1 == null) {
-			y1 = 0.;
-		}
-		if(x1 == null) {
-			x1 = 0.;
-		}
-		var oldB_x = x1;
-		var oldB_y = y1;
-		var oldB_z = z1;
-		var oldB_w = w1;
-		var oldF = ctx.inFilter;
-		var invDet = 1 / (this.matA * this.matD - this.matB * this.matC);
-		var invA = this.matD * invDet;
-		var invB = -this.matB * invDet;
-		var invC = -this.matC * invDet;
-		var invD = this.matA * invDet;
-		var invX = -(this.absX * invA + this.absY * invC);
-		var invY = -(this.absX * invB + this.absY * invD);
-		var _this2 = shader.filterMatrixA__;
-		var x2 = invA;
-		var y2 = invC;
-		var z2 = invX;
-		if(z2 == null) {
-			z2 = 0.;
-		}
-		if(y2 == null) {
-			y2 = 0.;
-		}
-		if(x2 == null) {
-			x2 = 0.;
-		}
-		_this2.x = x2;
-		_this2.y = y2;
-		_this2.z = z2;
-		_this2.w = 1.;
-		var _this3 = shader.filterMatrixB__;
-		var x3 = invB;
-		var y3 = invD;
-		var z3 = invY;
-		if(z3 == null) {
-			z3 = 0.;
-		}
-		if(y3 == null) {
-			y3 = 0.;
-		}
-		if(x3 == null) {
-			x3 = 0.;
-		}
-		_this3.x = x3;
-		_this3.y = y3;
-		_this3.z = z3;
-		_this3.w = 1.;
-		ctx.globalAlpha = 1;
-		this.draw(ctx);
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var c = _g1[_g];
-			++_g;
-			c.drawRec(ctx);
-		}
-		var finalTile = h2d_Tile.fromTexture(t);
-		finalTile.dx = xMin;
-		finalTile.dy = yMin;
-		var prev = finalTile;
-		finalTile = this.filter.draw(ctx,finalTile);
-		if(finalTile != prev && finalTile != null) {
-			finalTile.dx += xMin;
-			finalTile.dy += yMin;
-		}
-		var _this4 = shader.filterMatrixA__;
-		_this4.x = oldA_x;
-		_this4.y = oldA_y;
-		_this4.z = oldA_z;
-		_this4.w = oldA_w;
-		var _this5 = shader.filterMatrixB__;
-		_this5.x = oldB_x;
-		_this5.y = oldB_y;
-		_this5.z = oldB_z;
-		_this5.w = oldB_w;
-		ctx.popTarget();
-		ctx.popFilter();
-		ctx.globalAlpha = oldAlpha;
-		if(finalTile == null) {
-			return;
-		}
-		this.drawFiltered(ctx,finalTile);
-	}
-	,drawFiltered: function(ctx,tile) {
-		var oldAlpha = ctx.globalAlpha;
-		ctx.currentBlend = null;
-		ctx.inFilterBlend = this.blendMode;
-		ctx.globalAlpha *= this.alpha;
-		this.emitTile(ctx,tile);
-		ctx.globalAlpha = oldAlpha;
-		ctx.inFilterBlend = null;
-		ctx.currentBlend = null;
-	}
-	,drawRec: function(ctx) {
-		if(!this.visible) {
-			return;
-		}
-		if(this.posChanged) {
-			this.calcAbsPos();
-			var _g = 0;
-			var _g1 = this.children;
-			while(_g < _g1.length) {
-				var c = _g1[_g];
-				++_g;
-				c.posChanged = true;
-			}
-			this.posChanged = false;
-		}
-		if(this.filter != null && this.filter.get_enable()) {
-			this.drawFilters(ctx);
-		} else {
-			var old = ctx.globalAlpha;
-			ctx.globalAlpha *= this.alpha;
-			if(ctx.front2back) {
-				var nchilds = this.children.length;
-				var _g2 = 0;
-				var _g11 = nchilds;
-				while(_g2 < _g11) {
-					var i = _g2++;
-					this.children[nchilds - 1 - i].drawRec(ctx);
-				}
-				this.draw(ctx);
-			} else {
-				this.draw(ctx);
-				var _g3 = 0;
-				var _g12 = this.children;
-				while(_g3 < _g12.length) {
-					var c1 = _g12[_g3];
-					++_g3;
-					c1.drawRec(ctx);
-				}
-			}
-			ctx.globalAlpha = old;
-		}
-	}
-	,set_x: function(v) {
-		this.posChanged = true;
-		return this.x = v;
-	}
-	,set_y: function(v) {
-		this.posChanged = true;
-		return this.y = v;
-	}
-	,set_scaleX: function(v) {
-		this.posChanged = true;
-		return this.scaleX = v;
-	}
-	,set_scaleY: function(v) {
-		this.posChanged = true;
-		return this.scaleY = v;
-	}
-	,set_rotation: function(v) {
-		this.posChanged = true;
-		return this.rotation = v;
-	}
-	,move: function(dx,dy) {
-		var _g = this;
-		var v = _g.x + dx * Math.cos(this.rotation);
-		_g.posChanged = true;
-		_g.x = v;
-		var _g1 = this;
-		var v1 = _g1.y + dy * Math.sin(this.rotation);
-		_g1.posChanged = true;
-		_g1.y = v1;
-	}
-	,setPosition: function(x,y) {
-		this.posChanged = true;
-		this.x = x;
-		this.posChanged = true;
-		this.y = y;
-	}
-	,rotate: function(v) {
-		var _g = this;
-		_g.posChanged = true;
-		_g.rotation += v;
-	}
-	,scale: function(v) {
-		var _g = this;
-		_g.posChanged = true;
-		_g.scaleX *= v;
-		var _g1 = this;
-		_g1.posChanged = true;
-		_g1.scaleY *= v;
-	}
-	,setScale: function(v) {
-		this.posChanged = true;
-		this.scaleX = v;
-		this.posChanged = true;
-		this.scaleY = v;
-	}
-	,getChildAt: function(n) {
-		return this.children[n];
-	}
-	,getChildIndex: function(o) {
-		var _g = 0;
-		var _g1 = this.children.length;
-		while(_g < _g1) {
-			var i = _g++;
-			if(this.children[i] == o) {
-				return i;
-			}
-		}
-		return -1;
-	}
-	,getObjectByName: function(name) {
-		if(this.name == name) {
-			return this;
-		}
-		var _g = 0;
-		var _g1 = this.children;
-		while(_g < _g1.length) {
-			var c = _g1[_g];
-			++_g;
-			var o = c.getObjectByName(name);
-			if(o != null) {
-				return o;
-			}
-		}
-		return null;
-	}
-	,get_numChildren: function() {
-		return this.children.length;
-	}
-	,iterator: function() {
-		return new hxd_impl_ArrayIterator_$h2d_$Object(this.children);
-	}
-	,toString: function() {
-		var c = js_Boot.getClass(this);
-		var c1 = c.__name__;
-		if(this.name == null) {
-			return c1;
-		} else {
-			return this.name + "(" + c1 + ")";
-		}
-	}
-	,contentChanged: function(s) {
-	}
-	,constraintSize: function(maxWidth,maxHeight) {
-	}
-	,__class__: h2d_Object
 };
 var h2d_Drawable = function(parent) {
 	h2d_Object.call(this,parent);

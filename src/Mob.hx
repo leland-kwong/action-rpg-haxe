@@ -3,20 +3,47 @@ typedef Point = {
   var x : Float;
   var y : Float;
   var radius: Int;
-  var dx : Float;
-  var dy : Float;
   var weight: Float;
   var speed: Float;
   var color: Int;
   var avoidOthers: Bool;
   var forceMultiplier: Float;
+  var health: Int;
+}
+
+class Entity extends h2d.Object {
+  public var id: Int;
+  public var radius: Int;
+  public var dx = 0.0;
+  public var dy = 0.0;
+  public var weight = 1.0;
+  public var speed = 0.0;
+  public var color: Int;
+  public var avoidOthers = false;
+  public var forceMultiplier = 1.0;
+  public var health = 1;
+
+  public function new(props: Point) {
+    super();
+
+    x = props.x;
+    y = props.y;
+    id = props.id;
+    radius = props.radius;
+    weight = props.weight;
+    speed = props.speed;
+    color = props.color;
+    avoidOthers = props.avoidOthers;
+    forceMultiplier = props.forceMultiplier;
+    health = props.health;
+  }
 }
 
 class Mob {
-  public static var ALL: Array<Point> = [];
+  public static var ALL: Array<Entity> = [];
 
   var SPRITES: Map<Int, h2d.Graphics> = new Map();
-  var player: Point;
+  var player: Entity;
   var target: h2d.Object;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
@@ -44,7 +71,7 @@ class Mob {
   }
 
   public function new(s2d: h2d.Scene) {
-    var numEntities = 500;
+    var numEntities = 100;
     var colors = [
       2 => 0xF78C6B,
       3 => 0xFFD166,
@@ -66,59 +93,54 @@ class Mob {
       var size = irnd(2, 4);
       var radius = size * 2;
       var speed = (5 + 2 / radius * 500) * 1.4;
-      var entity = {
+      var entity = new Entity({
         id: makeId(),
         x: s2d.width * 0.5,
         y: s2d.height * 0.5,
         radius: radius,
-        dx: 0.0,
-        dy: 0.0,
         weight: 1.0,
         speed: speed,
         color: colors[size],
         avoidOthers: true,
         forceMultiplier: 1.0,
-      };
+        health: 100,
+      });
       ALL.push(entity);
     }
 
     function obstacle(x, y) {
-      return {
+      return new Entity({
         id: makeId(),
         x: x,
         y: y,
         radius: 20,
-        dx: 0.0,
-        dy: 0.0,
         weight: 1.0,
         speed: 0.0,
         color: colors[5],
         avoidOthers: false,
         forceMultiplier: 3.0,
-      };
+        health: 99999,
+      });
     }
     ALL.push(obstacle(200.0, 300.0));
     ALL.push(obstacle(s2d.width - 100.0, s2d.height / 2));
 
-    player = {
+    player = new Entity({
       id: makeId(),
       x: s2d.width * 0.5,
       y: s2d.height * 0.5,
       radius: 25,
-      dx: 0.0,
-      dy: 0.0,
       weight: 1.0,
       speed: 500.0,
       color: colors[6],
       avoidOthers: false,
       forceMultiplier: 3.0,
-    }
+      health: 100,
+    });
     ALL.push(player);
 
     for (entity in ALL) {
-      var graphic = new h2d.Graphics(s2d);
-      graphic.x = entity.x;
-      graphic.y = entity.y;
+      var graphic = new h2d.Graphics(entity);
       // make outline
       graphic.beginFill(0x000000);
       graphic.drawCircle(0, 0, entity.radius + 1);
@@ -126,24 +148,27 @@ class Mob {
       graphic.drawCircle(0, 0, entity.radius);
       graphic.endFill();
       SPRITES[entity.id] = graphic;
+      s2d.addChild(entity);
     }
   }
 
-  function agentCollide(agents: Array<Point>, sprites: Map<Int, h2d.Graphics>, target: h2d.Object, TARGET_RADIUS) {
+  function agentCollide(
+    agents: Array<Entity>,
+    target: h2d.Object,
+    TARGET_RADIUS,
+    onCollide: (a: Entity) -> Void
+  ) {
     for (a in agents) {
-      var s = sprites[a.id];
-      s.color.set(1, 1, 1);
-
       var d = distance(target.x, target.y, a.x, a.y);
       var min = TARGET_RADIUS + a.radius * 1.0;
       var isConflict = d < min;
       if (isConflict) {
-        s.color.set(255, 255, 255);
+        onCollide(a);
       }
     }
   }
 
-  function movePlayer(player: Point, dt: Float, s2d: h2d.Scene) {
+  function movePlayer(player: Entity, dt: Float, s2d: h2d.Scene) {
     var Key = hxd.Key;
     var dx = 0;
     var dy = 0;
@@ -170,8 +195,35 @@ class Mob {
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
+    // cleanup disposed agents first
+    {
+      var i = 0;
+      while (i < ALL.length) {
+        var a = ALL[i];
+        var isDisposed = a.health == 0;
+        if (isDisposed) {
+          ALL.splice(i, 1);
+          a.remove();
+        } else {
+          i += 1;
+        }
+      }
+    }
+
+    // reset agent states
+    for (a in ALL) {
+      var s = SPRITES[a.id];
+      s.color.set(1, 1, 1);
+    }
+
     movePlayer(player, dt, s2d);
-    agentCollide(ALL, SPRITES, target, TARGET_RADIUS);
+
+    function onAgentHover(a) {
+      var s = SPRITES[a.id];
+      s.color.set(255, 255, 255);
+      a.health = 0;
+    }
+    agentCollide(ALL, target, TARGET_RADIUS, onAgentHover);
 
     target.x = s2d.mouseX;
     target.y = s2d.mouseY;
@@ -266,9 +318,6 @@ class Mob {
       }
       e.x += dx * speed * dt;
       e.y += dy * speed * dt;
-      var id = e.id;
-      SPRITES[id].x = e.x;
-      SPRITES[id].y = e.y;
     }
   }
 }
