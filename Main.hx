@@ -100,7 +100,7 @@ class Main extends hxd.App {
     var font: h2d.Font = hxd.res.DefaultFont.get();
 
     background = addBackground(s2d, 0x333333);
-    mob = new Mob(s2d);
+    mob = new Mob(s2d, null);
 
     setupDebugInfo(font);
   }
@@ -110,27 +110,33 @@ class Main extends hxd.App {
     t += dt;
     acc += dt;
 
-    var numEnemies = getNumEnemies();
-    var levelCleared = numEnemies == 0;
-    if (levelCleared) {
-      level += 1;
-      mob.newLevel(s2d, level);
-    }
-
     var frameTime = 1/60;
     var fps = Math.round(1/dt);
-    var text = ['time: ${t}',
-                'fps: ${fps}',
-                'drawCalls: ${engine.drawCalls}',
-                'numEnemies: ${numEnemies}'].join('\n');
-    debugText.text = text;
-
     var isNextFrame = acc >= frameTime;
     // handle fixed dt here
     if (isNextFrame) {
       acc -= frameTime;
+
+      var numEnemies = getNumEnemies();
+      var levelCleared = numEnemies == 0;
+      if (levelCleared) {
+        level += 1;
+        mob.newLevel(s2d, level);
+      }
+
+      if (mob.isGameOver()) {
+        level = 0;
+        mob = new Mob(s2d, mob);
+      }
+
       mob.update(s2d, frameTime);
       // batcher.update(t, dt, s2d);
+
+      var text = ['time: ${t}',
+                  'fps: ${fps}',
+                  'drawCalls: ${engine.drawCalls}',
+                  'numEnemies: ${numEnemies}'].join('\n');
+      debugText.text = text;
     }
 
     background.width = s2d.width;

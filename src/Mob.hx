@@ -13,10 +13,7 @@ typedef Point = {
   var y : Float;
   var radius: Int;
   var weight: Float;
-  var speed: Float;
   var color: Int;
-  var avoidOthers: Bool;
-  var forceMultiplier: Float;
   var health: Int;
 }
 
@@ -57,7 +54,7 @@ class Entity extends h2d.Object {
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var health = 1;
-  public var hovered = false;
+  public var damageTaken = 0;
 
   public function new(props: Point) {
     super();
@@ -67,30 +64,13 @@ class Entity extends h2d.Object {
     id = idGenerated++;
     radius = props.radius;
     weight = props.weight;
-    speed = props.speed;
     color = props.color;
-    avoidOthers = props.avoidOthers;
-    forceMultiplier = props.forceMultiplier;
     health = props.health;
 
     ALL.push(this);
   }
 
   public function update(dt: Float) {
-    for (child in iterator()) {
-      // NOTE: ask in discord whether theres a more idiomatic way
-      // for checking multiple types
-      var c:Dynamic = child;
-
-      if (Type.getClass(child) == h2d.Graphics) {
-        c.color.set(1, 1, 1, 1);
-
-        if (hovered) {
-          c.color.set(255, 255, 255, 1);
-        }
-      }
-    }
-
     if (speed != 0) {
       var max = 1;
 
@@ -114,8 +94,6 @@ class Entity extends h2d.Object {
         y += dy * speed * dt;
       }
     }
-
-    hovered = false;
   }
 
   public function findNearest(x, y, range, filter: String) {
@@ -138,7 +116,7 @@ class Entity extends h2d.Object {
 
 class Bullet extends Entity {
   var damage = 1;
-  var lifeTime = 10.0;
+  var lifeTime = 5.0;
 
   public function new(x1: Float, y1: Float, x2: Float, y2: Float) {
     super({
@@ -146,12 +124,11 @@ class Bullet extends Entity {
       y: y1,
       radius: 10,
       health: 1,
-      forceMultiplier: 0.0,
       color: 0xffffff,
-      speed: 300.0,
-      avoidOthers: false,
       weight: 0.0,
     });
+    speed = 500.0;
+    forceMultiplier = 0.0;
 
     var sprite = new h2d.Graphics();
     addChild(sprite);
@@ -186,8 +163,7 @@ class Bullet extends Entity {
         var isConflict = d < min;
         if (isConflict) {
           health = 0;
-          a.health -= damage;
-          a.hovered = true;
+          a.damageTaken += damage;
           break;
         }
       }
@@ -206,10 +182,7 @@ class Turret extends Entity {
       y: y,
       radius: 20,
       health: 100,
-      forceMultiplier: 1.0,
       color: 0xff6392,
-      speed: 0.0,
-      avoidOthers: false,
       weight: 0.0,
     });
 
@@ -247,10 +220,18 @@ class Turret extends Entity {
 class Enemy extends Entity {
   var font: h2d.Font = hxd.res.DefaultFont.get().clone();
   var text: h2d.Text;
+  var cds: Cooldown;
+  var damage = 1;
+  public var attackTarget: Entity;
 
   public function new(props) {
     super(props);
     type = 'ENEMY';
+    speed = (15 / radius * 500) * 1.0;
+    avoidOthers = true;
+    cds = new Cooldown();
+
+    cds.set('summoningSickness', 1.0);
 
     var graphic = new h2d.Graphics(this);
     // make outline
@@ -272,6 +253,73 @@ class Enemy extends Entity {
   public override function update(dt) {
     super.update(dt);
 
+    cds.update(dt);
+    text.text = '${health}';
+
+    if (!cds.has('summoningSickness') && attackTarget != null) {
+      if (!cds.has('attack')) {
+        cds.set('attack', 1.0);
+        attackTarget.health -= damage;
+      }
+    }
+
+    for (child in iterator()) {
+      var c:Dynamic = child;
+
+      if (Type.getClass(child) == h2d.Graphics) {
+        if (!cds.has('hitFlash')) {
+          c.color.set(1, 1, 1, 1);
+        }
+
+        if (damageTaken > 0) {
+          cds.set('hitFlash', 0.04);
+          c.color.set(255, 255, 255, 1);
+          health -= damageTaken;
+          damageTaken = 0;
+        }
+      }
+    }
+
+    attackTarget = null;
+  }
+}
+
+class Player extends Entity {
+  var text: h2d.Text;
+
+  public function new(x, y) {
+    super({
+      x: x,
+      y: y,
+      radius: 25,
+      weight: 1.0,
+      color: 0x118AB2,
+      health: 10,
+    });
+    speed = 500.0;
+    forceMultiplier = 3.0;
+
+    var playerSprite = new h2d.Graphics(this);
+    // make outline
+    playerSprite.beginFill(0xffffff);
+    playerSprite.drawCircle(0, 0, radius + 2);
+    playerSprite.beginFill(color);
+    playerSprite.drawCircle(0, 0, radius);
+    playerSprite.endFill();
+
+    var font: h2d.Font = hxd.res.DefaultFont.get().clone();
+    font.resizeTo(16);
+    text = new h2d.Text(font);
+    text.textAlign = Center;
+    text.textColor = 0xffffff;
+    // vertical align center
+    text.y = -text.textHeight / 2;
+    addChild(text);
+  }
+
+  public override function update(dt) {
+    super.update(dt);
+
     text.text = '${health}';
   }
 }
@@ -281,6 +329,7 @@ class Mob {
   var target: h2d.Object;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
+  var useAbilityOnClick: (ev: hxd.Event) -> Void;
 
   function rnd(min:Float, max:Float, ?sign=false) {
     if( sign )
@@ -296,96 +345,57 @@ class Mob {
       return min + Std.random(max-min+1);
   }
 
-  public function newLevel(s2d: h2d.Scene, level: Int) {
-    // prepare for next level
+  public function isGameOver() {
+    return player.health <= 0;
+  }
+
+  public function cleanup() {
+    // reset game state
     for (e in Entity.ALL) {
-      if (e.type == 'OBSTACLE') {
-        e.health = 0;
-      }
+      e.health = 0;
     }
 
-    var numEntities = level * level;
+    target.remove();
+    hxd.Window.getInstance()
+      .removeEventTarget(useAbilityOnClick);
+  }
+
+  public function newLevel(s2d: h2d.Scene, level: Int) {
+    var numEnemies = level * Math.round(level /2);
     var colors = [
-      2 => 0xF78C6B,
-      3 => 0xFFD166,
-      4 => 0x06D6A0,
-      5 => 0x999999,
+      1 => 0xF78C6B,
+      2 => 0xFFD166,
+      3 => 0x06D6A0,
     ];
 
-    for (_ in 0...numEntities) {
-      var size = irnd(2, 4);
-      var radius = size * 12;
-      var speed = (5 + 2 / radius * 500) * 1.4;
+    /* TODO:
+      Spawn enemies in over time. This way they don't all
+      show up at once and clog.
+    */
+    for (_ in 0...numEnemies) {
+      var size = irnd(1, 3);
+      var radius = size * 20;
       var e = new Enemy({
         x: s2d.width * 0.5,
         y: s2d.height * 0.5,
         radius: radius,
         weight: 1.0,
-        speed: speed,
         color: colors[size],
-        avoidOthers: true,
-        forceMultiplier: 1.0,
-        health: 10,
+        health: size * 5,
       });
       s2d.addChild(e);
     }
-
-    function obstacle(x, y) {
-      var o = new Entity({
-        x: x,
-        y: y,
-        radius: 20,
-        weight: 1.0,
-        speed: 0.0,
-        color: colors[5],
-        avoidOthers: false,
-        forceMultiplier: 3.0,
-        health: 99999,
-      });
-      o.type == 'OBSTACLE';
-
-      var graphic = new h2d.Graphics(o);
-      // make outline
-      graphic.beginFill(0x000000);
-      graphic.drawCircle(0, 0, o.radius + 1);
-      graphic.beginFill(o.color);
-      graphic.drawCircle(0, 0, o.radius);
-      graphic.endFill();
-
-      return o;
-    }
-
-    s2d.addChild(
-      obstacle(200.0, 300.0)
-    );
-    s2d.addChild(
-      obstacle(s2d.width - 100.0, s2d.height / 2)
-    );
   }
 
   public function new(
-    s2d: h2d.Scene
+    s2d: h2d.Scene,
+    oldGame: Mob
   ) {
-    player = new Entity({
-      x: s2d.width * 0.5,
-      y: s2d.height * 0.5,
-      radius: 25,
-      weight: 1.0,
-      speed: 500.0,
-      color: 0x118AB2,
-      avoidOthers: false,
-      forceMultiplier: 3.0,
-      health: 100,
-    });
+    if (oldGame != null) {
+      oldGame.cleanup();
+    }
+    player = new Player(s2d.width / 2, s2d.height / 2);
     s2d.addChild(player);
-
-    var playerSprite = new h2d.Graphics(player);
-    // make outline
-    playerSprite.beginFill(0x000000);
-    playerSprite.drawCircle(0, 0, player.radius + 1);
-    playerSprite.beginFill(player.color);
-    playerSprite.drawCircle(0, 0, player.radius);
-    playerSprite.endFill();
 
     // mouse pointer
     target = new h2d.Object(s2d);
@@ -393,29 +403,14 @@ class Mob {
     targetSprite.beginFill(0xffda3d, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
 
-    function useAbilityOnClick(ev: hxd.Event) {
+    useAbilityOnClick = function(ev: hxd.Event) {
       if (ev.kind == hxd.EventKind.EPush) {
         useAbility(ev.relX, ev.relY, s2d);
         // trace(ev.toString());
       }
     }
-    hxd.Window.getInstance().addEventTarget(useAbilityOnClick);
-  }
-
-  function agentCollide(
-    agents: Array<Entity>,
-    target: h2d.Object,
-    TARGET_RADIUS,
-    onCollide: (a: Entity) -> Void
-  ) {
-    for (a in agents) {
-      var d = Utils.distance(target.x, target.y, a.x, a.y);
-      var min = TARGET_RADIUS + a.radius * 1.0;
-      var isConflict = d < min;
-      if (isConflict) {
-        onCollide(a);
-      }
-    }
+    hxd.Window.getInstance()
+      .addEventTarget(useAbilityOnClick);
   }
 
   function movePlayer(player: Entity, dt: Float, s2d: h2d.Scene) {
@@ -470,11 +465,6 @@ class Mob {
 
     movePlayer(player, dt, s2d);
 
-    function onAgentHover(a) {
-      a.hovered = true;
-    }
-    agentCollide(ALL, target, TARGET_RADIUS, onAgentHover);
-
     target.x = s2d.mouseX;
     target.y = s2d.mouseY;
 
@@ -482,6 +472,7 @@ class Mob {
 
     // distance to keep from destination
     var threshold = player.radius + 30;
+    var attackRange = threshold + 100;
 
     function byClosest(a, b) {
       var da = Utils.distance(a.x, a.y, follow.x, follow.y);
@@ -504,67 +495,76 @@ class Mob {
     **/
     ALL.sort(byClosest);
 
-    for(e in ALL) {
-      if (e.type != 'ENEMY') {
-        continue;
-      }
+    function updateEnemies(list: Array<Entity>) {
+      for(e in list) {
+        if (!Std.is(e, Enemy)) {
+          continue;
+        }
 
-      var dFromTarget = Utils.distance(e.x, e.y, follow.x, follow.y);
-      var dx = 0.0;
-      var dy = 0.0;
-      // exponential drop-off as agent approaches destination
-      var speedAdjust = Math.max(0,
-                                 Math.min(1,
-                                          Math.pow((dFromTarget - threshold) / threshold, 4)));
-      var speed = e.speed;
-      if (dFromTarget > threshold) {
-        var aToTarget = Math.atan2(follow.y - e.y, follow.x - e.x);
-        dx += Math.cos(aToTarget) * speedAdjust;
-        dy += Math.sin(aToTarget) * speedAdjust;
-      }
+        var dFromTarget = Utils.distance(e.x, e.y, follow.x, follow.y);
+        var dx = 0.0;
+        var dy = 0.0;
+        // exponential drop-off as agent approaches destination
+        var speedAdjust = Math.max(0,
+                                  Math.min(1,
+                                            Math.pow((dFromTarget - threshold) / threshold, 4)));
+        var speed = e.speed;
+        if (dFromTarget > threshold) {
+          var aToTarget = Math.atan2(follow.y - e.y, follow.x - e.x);
+          dx += Math.cos(aToTarget) * speedAdjust;
+          dy += Math.sin(aToTarget) * speedAdjust;
+        }
 
-      if (e.avoidOthers) {
-        // make entities avoid each other by repulsion
-        for (o in ALL) {
-          if (o != e && o.forceMultiplier > 0) {
-            var pt = e;
-            var ept = o;
-            var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
-            var separation = pt.radius + 10 + Math.sqrt(speed / 2);
-            var min = pt.radius + ept.radius + separation;
-            var isColliding = d < min;
-            if (isColliding) {
-              var conflict = min - d;
-              var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
-              var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-              var w = pt.weight / (pt.weight + ept.weight);
-              // immobile entities have a stronger influence (obstacles such as walls, etc...)
-              var multiplier = ept.forceMultiplier;
-              var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
-              var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
+        if (dFromTarget <= attackRange) {
+          Reflect.setField(e, 'attackTarget', player);
+        }
 
-              dx -= avoidX;
-              dy -= avoidY;
+        if (e.avoidOthers) {
+          // make entities avoid each other by repulsion
+          for (o in ALL) {
+            if (o != e && o.forceMultiplier > 0) {
+              var pt = e;
+              var ept = o;
+              var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
+              var separation = 5 + Math.sqrt(speed / 2);
+              var min = pt.radius + ept.radius + separation;
+              var isColliding = d < min;
+              if (isColliding) {
+                var conflict = min - d;
+                var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
+                var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
+                var w = pt.weight / (pt.weight + ept.weight);
+                // immobile entities have a stronger influence (obstacles such as walls, etc...)
+                var multiplier = ept.forceMultiplier;
+                var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
+                var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
+
+                dx -= avoidX;
+                dy -= avoidY;
+              }
             }
           }
         }
-      }
 
-      var max = 1;
-      if (dx > max) {
-        dx = max;
+        var max = 1;
+        if (dx > max) {
+          dx = max;
+        }
+        if (dx < -max) {
+          dx = -max;
+        }
+        if (dy > max) {
+          dy = max;
+        }
+        if (dy < -max) {
+          dy = -max;
+        }
+
+        e.x += dx * speed * dt;
+        e.y += dy * speed * dt;
       }
-      if (dx < -max) {
-        dx = -max;
-      }
-      if (dy > max) {
-        dy = max;
-      }
-      if (dy < -max) {
-        dy = -max;
-      }
-      e.x += dx * speed * dt;
-      e.y += dy * speed * dt;
     }
+
+    updateEnemies(ALL);
   }
 }
