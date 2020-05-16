@@ -56,6 +56,7 @@ class Main extends hxd.App {
   var batcher: BatchDraw;
   var mob: Mob;
   var background: h2d.Bitmap;
+  var level = 0;
 
   function animate(s2d: h2d.Scene) {
     // creates three tiles with different color
@@ -85,13 +86,21 @@ class Main extends hxd.App {
     s2d.addChild(debugText);
   }
 
+  function getNumEnemies() {
+    var numEnemies = 0;
+    for (e in Entity.ALL) {
+      if (e.type == 'ENEMY') {
+        numEnemies += 1;
+      }
+    }
+    return numEnemies;
+  }
+
   override function init() {
     var font: h2d.Font = hxd.res.DefaultFont.get();
 
     background = addBackground(s2d, 0x333333);
-
     mob = new Mob(s2d);
-    // batcher = new BatchDraw(s2d, font);
 
     setupDebugInfo(font);
   }
@@ -101,11 +110,19 @@ class Main extends hxd.App {
     t += dt;
     acc += dt;
 
+    var numEnemies = getNumEnemies();
+    var levelCleared = numEnemies == 0;
+    if (levelCleared) {
+      level += 1;
+      mob.newLevel(s2d, level);
+    }
+
     var frameTime = 1/60;
     var fps = Math.round(1/dt);
     var text = ['time: ${t}',
                 'fps: ${fps}',
-                'drawCalls: ${engine.drawCalls}'].join('\n');
+                'drawCalls: ${engine.drawCalls}',
+                'numEnemies: ${numEnemies}'].join('\n');
     debugText.text = text;
 
     var isNextFrame = acc >= frameTime;

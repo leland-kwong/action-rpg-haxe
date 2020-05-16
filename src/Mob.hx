@@ -137,7 +137,7 @@ class Entity extends h2d.Object {
 }
 
 class Bullet extends Entity {
-  var damage = 10;
+  var damage = 1;
   var lifeTime = 10.0;
 
   public function new(x1: Float, y1: Float, x2: Float, y2: Float) {
@@ -148,7 +148,7 @@ class Bullet extends Entity {
       health: 1,
       forceMultiplier: 0.0,
       color: 0xffffff,
-      speed: 200.0,
+      speed: 300.0,
       avoidOthers: false,
       weight: 0.0,
     });
@@ -245,9 +245,34 @@ class Turret extends Entity {
 }
 
 class Enemy extends Entity {
+  var font: h2d.Font = hxd.res.DefaultFont.get().clone();
+  var text: h2d.Text;
+
   public function new(props) {
     super(props);
     type = 'ENEMY';
+
+    var graphic = new h2d.Graphics(this);
+    // make outline
+    graphic.beginFill(0x000000);
+    graphic.drawCircle(0, 0, radius + 1);
+    graphic.beginFill(color);
+    graphic.drawCircle(0, 0, radius);
+    graphic.endFill();
+
+    font.resizeTo(20);
+    text = new h2d.Text(font);
+    text.textAlign = Center;
+    text.textColor = 0x000000;
+    // vertical align center
+    text.y = -text.textHeight / 2;
+    addChild(text);
+  }
+
+  public override function update(dt) {
+    super.update(dt);
+
+    text.text = '${health}';
   }
 }
 
@@ -271,24 +296,25 @@ class Mob {
       return min + Std.random(max-min+1);
   }
 
-  public function new(s2d: h2d.Scene) {
-    var numEntities = 400;
+  public function newLevel(s2d: h2d.Scene, level: Int) {
+    // prepare for next level
+    for (e in Entity.ALL) {
+      if (e.type == 'OBSTACLE') {
+        e.health = 0;
+      }
+    }
+
+    var numEntities = level * level;
     var colors = [
       2 => 0xF78C6B,
       3 => 0xFFD166,
       4 => 0x06D6A0,
       5 => 0x999999,
-      6 => 0x118AB2,
     ];
-
-    target = new h2d.Object(s2d);
-    targetSprite = new h2d.Graphics(target);
-    targetSprite.beginFill(0xffda3d, 0.3);
-    targetSprite.drawCircle(0, 0, TARGET_RADIUS);
 
     for (_ in 0...numEntities) {
       var size = irnd(2, 4);
-      var radius = size * 4;
+      var radius = size * 12;
       var speed = (5 + 2 / radius * 500) * 1.4;
       var e = new Enemy({
         x: s2d.width * 0.5,
@@ -299,13 +325,13 @@ class Mob {
         color: colors[size],
         avoidOthers: true,
         forceMultiplier: 1.0,
-        health: 100,
+        health: 10,
       });
       s2d.addChild(e);
     }
 
     function obstacle(x, y) {
-      return new Entity({
+      var o = new Entity({
         x: x,
         y: y,
         radius: 20,
@@ -316,32 +342,56 @@ class Mob {
         forceMultiplier: 3.0,
         health: 99999,
       });
-    }
-    obstacle(200.0, 300.0);
-    obstacle(s2d.width - 100.0, s2d.height / 2);
+      o.type == 'OBSTACLE';
 
+      var graphic = new h2d.Graphics(o);
+      // make outline
+      graphic.beginFill(0x000000);
+      graphic.drawCircle(0, 0, o.radius + 1);
+      graphic.beginFill(o.color);
+      graphic.drawCircle(0, 0, o.radius);
+      graphic.endFill();
+
+      return o;
+    }
+
+    s2d.addChild(
+      obstacle(200.0, 300.0)
+    );
+    s2d.addChild(
+      obstacle(s2d.width - 100.0, s2d.height / 2)
+    );
+  }
+
+  public function new(
+    s2d: h2d.Scene
+  ) {
     player = new Entity({
       x: s2d.width * 0.5,
       y: s2d.height * 0.5,
       radius: 25,
       weight: 1.0,
       speed: 500.0,
-      color: colors[6],
+      color: 0x118AB2,
       avoidOthers: false,
       forceMultiplier: 3.0,
       health: 100,
     });
+    s2d.addChild(player);
 
-    for (entity in Entity.ALL) {
-      var graphic = new h2d.Graphics(entity);
-      // make outline
-      graphic.beginFill(0x000000);
-      graphic.drawCircle(0, 0, entity.radius + 1);
-      graphic.beginFill(entity.color);
-      graphic.drawCircle(0, 0, entity.radius);
-      graphic.endFill();
-      s2d.addChild(entity);
-    }
+    var playerSprite = new h2d.Graphics(player);
+    // make outline
+    playerSprite.beginFill(0x000000);
+    playerSprite.drawCircle(0, 0, player.radius + 1);
+    playerSprite.beginFill(player.color);
+    playerSprite.drawCircle(0, 0, player.radius);
+    playerSprite.endFill();
+
+    // mouse pointer
+    target = new h2d.Object(s2d);
+    targetSprite = new h2d.Graphics(target);
+    targetSprite.beginFill(0xffda3d, 0.3);
+    targetSprite.drawCircle(0, 0, TARGET_RADIUS);
 
     function useAbilityOnClick(ev: hxd.Event) {
       if (ev.kind == hxd.EventKind.EPush) {
