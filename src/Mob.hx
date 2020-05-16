@@ -361,7 +361,10 @@ class Enemy extends Entity {
 }
 
 class Player extends Entity {
-  var text: h2d.Text;
+  public var playerInfo: h2d.Text;
+  public var numTurretsAvailable = 4;
+  public var maxNumTurretsAvailable = 4;
+  var cds = new Cooldown();
 
   public function new(x, y) {
     super({
@@ -382,27 +385,41 @@ class Player extends Entity {
     playerSprite.beginFill(color);
     playerSprite.drawCircle(0, 0, radius);
     playerSprite.endFill();
-
-    var font: h2d.Font = hxd.res.DefaultFont.get().clone();
-    font.resizeTo(16);
-    text = new h2d.Text(font);
-    text.textAlign = Center;
-    text.textColor = 0xffffff;
-    // vertical align center
-    text.y = -text.textHeight / 2;
-    addChild(text);
   }
 
   public override function update(dt) {
     super.update(dt);
+    cds.update(dt);
 
-    text.text = '${health}';
+    if (!cds.has('turretReloading') &&
+      numTurretsAvailable < maxNumTurretsAvailable
+    ) {
+      cds.set('turretReloading', 1.0);
+      numTurretsAvailable += 1;
+    }
+  }
+
+  public function useAbility(x1, y1, s2d: h2d.Scene) {
+    if (numTurretsAvailable == 0) {
+      // TODO: trigger some sort of warning effect
+      // so player gets feedback
+      trace('nomore turrets available');
+      return;
+    }
+
+    if (numTurretsAvailable == maxNumTurretsAvailable) {
+      cds.set('turretReloading', 1.0);
+    }
+    var turret = new Turret(x1, y1);
+    numTurretsAvailable -= 1;
+    s2d.addChild(turret);
   }
 }
 
 class Mob {
   var player: Player;
   var target: h2d.Object;
+  var playerInfo: h2d.Text;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
   var useAbilityOnClick: (ev: hxd.Event) -> Void;
@@ -432,6 +449,7 @@ class Mob {
     }
 
     target.remove();
+    playerInfo.remove();
     hxd.Window.getInstance()
       .removeEventTarget(useAbilityOnClick);
   }
@@ -450,7 +468,7 @@ class Mob {
     */
     for (_ in 0...numEnemies) {
       var size = irnd(1, 3);
-      var radius = size * 20;
+      var radius = 7 + size * 10;
       var e = new Enemy({
         x: s2d.width * 0.5,
         y: s2d.height * 0.5,
@@ -472,6 +490,17 @@ class Mob {
     player = new Player(s2d.width / 2, s2d.height / 2);
     s2d.addChild(player);
 
+
+
+    var font: h2d.Font = hxd.res.DefaultFont.get().clone();
+    font.resizeTo(24);
+    playerInfo = new h2d.Text(font);
+    playerInfo.textAlign = Left;
+    playerInfo.textColor = 0xffffff;
+    playerInfo.x = 10;
+    playerInfo.y = 10;
+    s2d.addChild(playerInfo);
+
     // mouse pointer
     target = new h2d.Object(s2d);
     targetSprite = new h2d.Graphics(target);
@@ -480,8 +509,7 @@ class Mob {
 
     useAbilityOnClick = function(ev: hxd.Event) {
       if (ev.kind == hxd.EventKind.EPush) {
-        useAbility(ev.relX, ev.relY, s2d);
-        // trace(ev.toString());
+        player.useAbility(ev.relX, ev.relY, s2d);
       }
     }
     hxd.Window.getInstance()
@@ -514,13 +542,15 @@ class Mob {
     player.y += dyNormalized * player.speed * dt;
   }
 
-  function useAbility(x1, y1, s2d: h2d.Scene) {
-    var turret = new Turret(x1, y1);
-    s2d.addChild(turret);
-  }
-
   public function update(s2d: h2d.Scene, dt: Float) {
     var ALL = Entity.ALL;
+
+    {
+      playerInfo.text = [
+        'health: ${player.health}',
+        'turrets available: ${player.numTurretsAvailable}'
+      ].join('\n');
+    }
 
     // cleanup/update agents first
     {

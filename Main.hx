@@ -79,8 +79,9 @@ class Main extends hxd.App {
   function setupDebugInfo(font) {
     var debugUiMargin = 10;
     debugText = new h2d.Text(font);
-    debugText.x = debugUiMargin;
+    debugText.x = s2d.width - debugUiMargin;
     debugText.y = debugUiMargin;
+    debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
     s2d.addChild(debugText);
