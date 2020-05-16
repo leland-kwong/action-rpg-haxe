@@ -1,3 +1,4 @@
+using hxd.Event;
 class Utils {
   public static function distanceSqr(ax:Float,ay:Float,bx:Float,by:Float) : Float {
     return (ax-bx)*(ax-bx) + (ay-by)*(ay-by);
@@ -197,6 +198,7 @@ class Bullet extends Entity {
 class Turret extends Entity {
   var cds: Cooldown;
   var range = 300;
+  var lifeTime = 10.0;
 
   public function new(x, y) {
     super({
@@ -212,6 +214,11 @@ class Turret extends Entity {
     });
 
     cds = new Cooldown();
+
+    var sprite = new h2d.Graphics(this);
+    sprite.beginFill(color);
+    sprite.drawCircle(0, 0, radius);
+    sprite.endFill();
   }
 
   public override function update(dt: Float) {
@@ -228,6 +235,12 @@ class Turret extends Entity {
         parent.addChild(b);
       }
     }
+
+    lifeTime -= dt;
+    var isDisposed = lifeTime <= 0;
+    if (isDisposed) {
+      health = 0;
+    }
   }
 }
 
@@ -243,7 +256,6 @@ class Mob {
   var target: h2d.Object;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
-  var turret: Turret;
 
   function rnd(min:Float, max:Float, ?sign=false) {
     if( sign )
@@ -332,7 +344,10 @@ class Mob {
     }
 
     function useAbilityOnClick(ev: hxd.Event) {
-
+      if (ev.kind == hxd.EventKind.EPush) {
+        useAbility(ev.relX, ev.relY, s2d);
+        // trace(ev.toString());
+      }
     }
     hxd.Window.getInstance().addEventTarget(useAbilityOnClick);
   }
@@ -379,8 +394,9 @@ class Mob {
     player.y += dyNormalized * player.speed * dt;
   }
 
-  public function useAbility(x1, y1) {
-    new Turret(x1, y1);
+  function useAbility(x1, y1, s2d: h2d.Scene) {
+    var turret = new Turret(x1, y1);
+    s2d.addChild(turret);
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
