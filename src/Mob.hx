@@ -229,15 +229,17 @@ class Enemy extends Entity {
   var text: h2d.Text;
   var cds: Cooldown;
   var damage = 1;
+  var follow: Player;
   public var attackTarget: Entity;
 
-  public function new(props, size) {
+  public function new(props, size, followTarget) {
     super(props);
     type = 'ENEMY';
     speed = speedBySize[size];
     health = healthBySize[size];
     avoidOthers = true;
     cds = new Cooldown();
+    follow = followTarget;
 
     cds.set('summoningSickness', 1.0);
 
@@ -259,10 +261,76 @@ class Enemy extends Entity {
   }
 
   public override function update(dt) {
+    dx = 0.0;
+    dy = 0.0;
+
     super.update(dt);
 
     cds.update(dt);
     text.text = '${health}';
+
+    // distance to keep from destination
+    var threshold = follow.radius + 30;
+    var attackRange = threshold + 100;
+
+    var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
+    // exponential drop-off as agent approaches destination
+    var speedAdjust = Math.max(0,
+                              Math.min(1,
+                                        Math.pow((dFromTarget - threshold) / threshold, 4)));
+    if (dFromTarget > threshold) {
+      var aToTarget = Math.atan2(follow.y - y, follow.x - x);
+      dx += Math.cos(aToTarget) * speedAdjust;
+      dy += Math.sin(aToTarget) * speedAdjust;
+    }
+
+    if (dFromTarget <= attackRange) {
+      attackTarget = follow;
+    }
+
+    if (avoidOthers) {
+      // make entities avoid each other by repulsion
+      for (o in Entity.ALL) {
+        if (o != this && o.forceMultiplier > 0) {
+          var pt = this;
+          var ept = o;
+          var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
+          var separation = 5 + Math.sqrt(speed / 2);
+          var min = pt.radius + ept.radius + separation;
+          var isColliding = d < min;
+          if (isColliding) {
+            var conflict = min - d;
+            var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
+            var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
+            var w = pt.weight / (pt.weight + ept.weight);
+            // immobile entities have a stronger influence (obstacles such as walls, etc...)
+            var multiplier = ept.forceMultiplier;
+            var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
+            var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
+
+            dx -= avoidX;
+            dy -= avoidY;
+          }
+        }
+      }
+    }
+
+    var max = 1;
+    if (dx > max) {
+      dx = max;
+    }
+    if (dx < -max) {
+      dx = -max;
+    }
+    if (dy > max) {
+      dy = max;
+    }
+    if (dy < -max) {
+      dy = -max;
+    }
+
+    x += dx * speed * dt;
+    y += dy * speed * dt;
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
       if (!cds.has('attack')) {
@@ -333,7 +401,7 @@ class Player extends Entity {
 }
 
 class Mob {
-  var player: Entity;
+  var player: Player;
   var target: h2d.Object;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
@@ -389,7 +457,7 @@ class Mob {
         radius: radius,
         weight: 1.0,
         color: colors[size],
-      }, size);
+      }, size, player);
       s2d.addChild(e);
     }
   }
@@ -477,10 +545,6 @@ class Mob {
 
     var follow = player;
 
-    // distance to keep from destination
-    var threshold = player.radius + 30;
-    var attackRange = threshold + 100;
-
     function byClosest(a, b) {
       var da = Utils.distance(a.x, a.y, follow.x, follow.y);
       var db = Utils.distance(b.x, b.y, follow.x, follow.y);
@@ -496,82 +560,15 @@ class Mob {
       return 0;
     }
     /**
-      Sort by closest to furtherst so that repelling forces go
+      Sort by closest to furthest so that repelling forces go
       from inside to outside to prevent inner agents from getting
       scrunched up.
     **/
+    /**
+      TODO: This sorts the entire entity list. We probably want
+      to figure out a way to have different collections of agents
+      for a more localized sorting.
+    **/
     ALL.sort(byClosest);
-
-    function updateEnemies(list: Array<Entity>) {
-      for(e in list) {
-        if (!Std.is(e, Enemy)) {
-          continue;
-        }
-
-        var dFromTarget = Utils.distance(e.x, e.y, follow.x, follow.y);
-        var dx = 0.0;
-        var dy = 0.0;
-        // exponential drop-off as agent approaches destination
-        var speedAdjust = Math.max(0,
-                                  Math.min(1,
-                                            Math.pow((dFromTarget - threshold) / threshold, 4)));
-        var speed = e.speed;
-        if (dFromTarget > threshold) {
-          var aToTarget = Math.atan2(follow.y - e.y, follow.x - e.x);
-          dx += Math.cos(aToTarget) * speedAdjust;
-          dy += Math.sin(aToTarget) * speedAdjust;
-        }
-
-        if (dFromTarget <= attackRange) {
-          Reflect.setField(e, 'attackTarget', player);
-        }
-
-        if (e.avoidOthers) {
-          // make entities avoid each other by repulsion
-          for (o in ALL) {
-            if (o != e && o.forceMultiplier > 0) {
-              var pt = e;
-              var ept = o;
-              var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
-              var separation = 5 + Math.sqrt(speed / 2);
-              var min = pt.radius + ept.radius + separation;
-              var isColliding = d < min;
-              if (isColliding) {
-                var conflict = min - d;
-                var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
-                var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-                var w = pt.weight / (pt.weight + ept.weight);
-                // immobile entities have a stronger influence (obstacles such as walls, etc...)
-                var multiplier = ept.forceMultiplier;
-                var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
-                var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
-
-                dx -= avoidX;
-                dy -= avoidY;
-              }
-            }
-          }
-        }
-
-        var max = 1;
-        if (dx > max) {
-          dx = max;
-        }
-        if (dx < -max) {
-          dx = -max;
-        }
-        if (dy > max) {
-          dy = max;
-        }
-        if (dy < -max) {
-          dy = -max;
-        }
-
-        e.x += dx * speed * dt;
-        e.y += dy * speed * dt;
-      }
-    }
-
-    updateEnemies(ALL);
   }
 }
