@@ -2,6 +2,6 @@
 -cp src
 
 -lib heaps
--js game.js
+-js game.dist.js
 -main Main
 -debug

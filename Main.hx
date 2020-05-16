@@ -2,42 +2,48 @@ import Mob;
 
 class BatchDraw {
   var txt: h2d.Text;
-  var texture: h3d.mat.Texture;
-  var customGraphics: h2d.Graphics;
+  var batch: h2d.SpriteBatch;
+  var graphic: h2d.Graphics;
+  var circleTile: h2d.Tile;
+  var squareTile: h2d.Tile;
 
   public function new(s2d: h2d.Scene, font) {
-    texture = new h3d.mat.Texture(s2d.height, s2d.width, [h3d.mat.Data.TextureFlags.Target]);
-    final tile = h2d.Tile.fromTexture(texture);
-    var bmp = new h2d.Bitmap(tile, s2d);
+    var texture = new h3d.mat.Texture(s2d.height, s2d.width, [h3d.mat.Data.TextureFlags.Target]);
+    var tile = h2d.Tile.fromTexture(texture);
+    circleTile = tile.sub(0, 0, 51 * 2, 51 * 2);
 
-    customGraphics = new h2d.Graphics(bmp);
-    customGraphics.beginFill(0xFFF);
-    for (i in 0...200) {
-      customGraphics.drawCircle(50, 50 + i, 100);
-    }
-    customGraphics.endFill();
+    graphic = new h2d.Graphics(s2d);
+    // outline
+    graphic.beginFill(0xffffff);
+    graphic.drawCircle(51, 51, 51);
+    // fill
+    graphic.beginFill(0x999);
+    graphic.drawCircle(51, 51, 50);
 
-    txt = new h2d.Text(font, bmp);
-    for (i in 0...100) {
-      var t = new h2d.Text(font, bmp);
-      t.y = 400 + i * 5;
-      t.text = 'blah ${i}';
-    }
-
-    bmp.x = 50;
-
-    for (i in 0...30) {
-      txt.y = i * 10 + 200;
-      txt.text = 'hello ${i}';
-      txt.drawTo(texture);
-    }
+    var squareX = 50 + 102;
+    var squareY = 51;
+    squareTile = tile.sub(squareX, squareY, 50, 50);
+    graphic.beginFill(0xffda3d);
+    graphic.drawRect(squareX, squareY, 50, 50);
+    graphic.endFill();
+    graphic.drawTo(texture);
   }
 
   public function update(t, dt:Float, s2d: h2d.Scene) {
-    texture.clear(0x000, 0);
+    graphic.clear();
 
-    txt.text = "foobar";
-    txt.y = Math.sin(t) * 30 + 100;
+    for (i in 0...10000) {
+      var x = i % 50 * 2 + 100 + Std.random(100);
+      var y = Math.round(i / 2) + Std.random(100);
+      var tile = i % 2 == 0 ? circleTile : squareTile;
+      var centerOffsetX = tile.width / 2;
+      var centerOffsetY = tile.height / 2;
+      graphic.drawTile(
+        x + Math.sin(t) * 100 - centerOffsetX,
+        y - centerOffsetY,
+        tile
+      );
+    }
   }
 }
 
@@ -83,9 +89,11 @@ class Main extends hxd.App {
     var font: h2d.Font = hxd.res.DefaultFont.get();
 
     background = addBackground(s2d, 0x333333);
-    setupDebugInfo(font);
 
     mob = new Mob(s2d);
+    // batcher = new BatchDraw(s2d, font);
+
+    setupDebugInfo(font);
   }
 
   // on each frame
@@ -93,7 +101,7 @@ class Main extends hxd.App {
     t += dt;
     acc += dt;
 
-    var frameTime = dt;
+    var frameTime = 1/60;
     var fps = Math.round(1/dt);
     var text = ['time: ${t}',
                 'fps: ${fps}',
@@ -105,6 +113,7 @@ class Main extends hxd.App {
     if (isNextFrame) {
       acc -= frameTime;
       mob.update(s2d, frameTime);
+      // batcher.update(t, dt, s2d);
     }
 
     background.width = s2d.width;

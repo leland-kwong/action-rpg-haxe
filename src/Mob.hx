@@ -260,11 +260,6 @@ class Mob {
   }
 
   public function new(s2d: h2d.Scene) {
-    turret = new Turret(
-      250,
-      150
-    );
-
     var numEntities = 400;
     var colors = [
       2 => 0xF78C6B,
@@ -281,7 +276,7 @@ class Mob {
 
     for (_ in 0...numEntities) {
       var size = irnd(2, 4);
-      var radius = size * 2;
+      var radius = size * 4;
       var speed = (5 + 2 / radius * 500) * 1.4;
       var e = new Enemy({
         x: s2d.width * 0.5,
@@ -335,6 +330,11 @@ class Mob {
       graphic.endFill();
       s2d.addChild(entity);
     }
+
+    function useAbilityOnClick(ev: hxd.Event) {
+
+    }
+    hxd.Window.getInstance().addEventTarget(useAbilityOnClick);
   }
 
   function agentCollide(
@@ -377,6 +377,10 @@ class Mob {
 
     player.x += dxNormalized * player.speed * dt;
     player.y += dyNormalized * player.speed * dt;
+  }
+
+  public function useAbility(x1, y1) {
+    new Turret(x1, y1);
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {

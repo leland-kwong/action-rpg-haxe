@@ -24,7 +24,7 @@ exec('haxe -v --wait 6000', (err, stdout, stderr) => {
 });
 
 console.log('running initial compile')
-compileFile = 'build.hxml'
+compileFile = 'build.js.hxml'
 compile(compileFile)
 
 let pending = null;
