@@ -14,7 +14,6 @@ typedef Point = {
   var radius: Int;
   var weight: Float;
   var color: Int;
-  var health: Int;
 }
 
 class Cooldown {
@@ -65,7 +64,6 @@ class Entity extends h2d.Object {
     radius = props.radius;
     weight = props.weight;
     color = props.color;
-    health = props.health;
 
     ALL.push(this);
   }
@@ -123,7 +121,6 @@ class Bullet extends Entity {
       x: x1,
       y: y1,
       radius: 10,
-      health: 1,
       color: 0xffffff,
       weight: 0.0,
     });
@@ -181,11 +178,10 @@ class Turret extends Entity {
       x: x,
       y: y,
       radius: 20,
-      health: 100,
       color: 0xff6392,
       weight: 0.0,
     });
-
+    health = 100;
     cds = new Cooldown();
 
     var sprite = new h2d.Graphics(this);
@@ -218,16 +214,28 @@ class Turret extends Entity {
 }
 
 class Enemy extends Entity {
+  static var healthBySize = [
+    1 => 5,
+    2 => 10,
+    3 => 20,
+  ];
+  static var speedBySize = [
+    1 => 350.0,
+    2 => 200.0,
+    3 => 150.0,
+  ];
+
   var font: h2d.Font = hxd.res.DefaultFont.get().clone();
   var text: h2d.Text;
   var cds: Cooldown;
   var damage = 1;
   public var attackTarget: Entity;
 
-  public function new(props) {
+  public function new(props, size) {
     super(props);
     type = 'ENEMY';
-    speed = (15 / radius * 500) * 1.0;
+    speed = speedBySize[size];
+    health = healthBySize[size];
     avoidOthers = true;
     cds = new Cooldown();
 
@@ -294,8 +302,8 @@ class Player extends Entity {
       radius: 25,
       weight: 1.0,
       color: 0x118AB2,
-      health: 10,
     });
+    health = 10;
     speed = 500.0;
     forceMultiplier = 3.0;
 
@@ -381,8 +389,7 @@ class Mob {
         radius: radius,
         weight: 1.0,
         color: colors[size],
-        health: size * 5,
-      });
+      }, size);
       s2d.addChild(e);
     }
   }
