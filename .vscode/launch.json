@@ -5,15 +5,27 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "chrome",
+      "name": "HashLink (launch)",
       "request": "launch",
-      "name": "Launch Chrome against localhost",
-      "url": "file://${workspaceFolder}/index.html",
-      "webRoot": "${workspaceFolder}",
+      "type": "hl",
+      "hxml": "build.hxml",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": {
-				"type" : "haxe",
-				"args" : "active configuration"
-			}
+        "type": "haxe",
+        "args": "active configuration"
+      }
+    },
+    {
+      "name": "HashLink (attach)",
+      "request": "attach",
+      "port": 6112,
+      "type": "hl",
+      "hxml": "build.hxml",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": {
+        "type": "haxe",
+        "args": "active configuration"
+      }
     }
   ]
 }

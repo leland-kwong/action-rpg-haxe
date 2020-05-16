@@ -1,8 +1,8 @@
 const { exec } = require('child_process');
 const fs = require('fs');
 
-const compile = (file) => {
-  exec(`haxe --connect 6000 ${file}`, (err, stdout, stderr) => {
+const compile = (buildFile) => {
+  exec(`haxe ${buildFile} --connect 6000`, (err, stdout, stderr) => {
     if (err) {
       //some err occurred
       console.error(err)
@@ -24,14 +24,22 @@ exec('haxe -v --wait 6000', (err, stdout, stderr) => {
 });
 
 console.log('running initial compile')
-compileFile = 'compile.hxml'
+compileFile = 'build.js.hxml'
 compile(compileFile)
 
-fs.watch('Main.hx', (eventType, filename) => {
-  console.log(filename)
+let pending = null;
+
+const rebuild = (eventType, filename) => {
   if (filename.indexOf('.hx') === -1) {
-    console.log(filename)
     return
   }
-  compile(compileFile)
-})
+
+  console.log(`${ filename } changed`)
+  clearTimeout(pending)
+  pending = setTimeout(() => {
+    compile(compileFile)
+  }, 50)
+}
+
+fs.watch('Main.hx', rebuild);
+fs.watch('src', rebuild)
