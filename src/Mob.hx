@@ -16,6 +16,15 @@ typedef Point = {
   var color: Int;
 }
 
+class Colors {
+  public static final red = 0xef476f;
+  public static final orange = 0xf78c6b;
+  public static final yellow = 0xffd166;
+  public static final green = 0x06d6a0;
+  public static final blue = 0x118ab2;
+  public static final darkBlue = 0x073b4c;
+}
+
 class Cooldown {
   var cds: Map<String, Float>;
 
@@ -54,6 +63,7 @@ class Entity extends h2d.Object {
   public var forceMultiplier = 1.0;
   public var health = 1;
   public var damageTaken = 0;
+  var t = 0.0;
 
   public function new(props: Point) {
     super();
@@ -69,6 +79,8 @@ class Entity extends h2d.Object {
   }
 
   public function update(dt: Float) {
+    t += dt;
+
     if (speed != 0) {
       var max = 1;
 
@@ -220,9 +232,9 @@ class Enemy extends Entity {
     3 => 20,
   ];
   static var speedBySize = [
-    1 => 350.0,
-    2 => 200.0,
-    3 => 150.0,
+    1 => 250.0,
+    2 => 120.0,
+    3 => 60.0,
   ];
 
   var font: h2d.Font = hxd.res.DefaultFont.get().clone();
@@ -269,73 +281,75 @@ class Enemy extends Entity {
     cds.update(dt);
     text.text = '${health}';
 
-    // distance to keep from destination
-    var threshold = follow.radius + 30;
-    var attackRange = threshold + 100;
+    if (!cds.has('attack')) {
+      // distance to keep from destination
+      var threshold = follow.radius + 30;
+      var attackRange = threshold + 50;
 
-    var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
-    // exponential drop-off as agent approaches destination
-    var speedAdjust = Math.max(0,
-                              Math.min(1,
-                                        Math.pow((dFromTarget - threshold) / threshold, 4)));
-    if (dFromTarget > threshold) {
-      var aToTarget = Math.atan2(follow.y - y, follow.x - x);
-      dx += Math.cos(aToTarget) * speedAdjust;
-      dy += Math.sin(aToTarget) * speedAdjust;
-    }
+      var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
+      // exponential drop-off as agent approaches destination
+      var speedAdjust = Math.max(0,
+                                Math.min(1,
+                                          Math.pow((dFromTarget - threshold) / threshold, 4)));
+      if (dFromTarget > threshold) {
+        var aToTarget = Math.atan2(follow.y - y, follow.x - x);
+        dx += Math.cos(aToTarget) * speedAdjust;
+        dy += Math.sin(aToTarget) * speedAdjust;
+      }
 
-    if (dFromTarget <= attackRange) {
-      attackTarget = follow;
-    }
+      if (dFromTarget <= attackRange) {
+        attackTarget = follow;
+      }
 
-    if (avoidOthers) {
-      // make entities avoid each other by repulsion
-      for (o in Entity.ALL) {
-        if (o != this && o.forceMultiplier > 0) {
-          var pt = this;
-          var ept = o;
-          var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
-          var separation = 5 + Math.sqrt(speed / 2);
-          var min = pt.radius + ept.radius + separation;
-          var isColliding = d < min;
-          if (isColliding) {
-            var conflict = min - d;
-            var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
-            var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-            var w = pt.weight / (pt.weight + ept.weight);
-            // immobile entities have a stronger influence (obstacles such as walls, etc...)
-            var multiplier = ept.forceMultiplier;
-            var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
-            var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
+      if (avoidOthers) {
+        // make entities avoid each other by repulsion
+        for (o in Entity.ALL) {
+          if (o != this && o.forceMultiplier > 0) {
+            var pt = this;
+            var ept = o;
+            var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
+            var separation = 5 + Math.sqrt(speed / 2);
+            var min = pt.radius + ept.radius + separation;
+            var isColliding = d < min;
+            if (isColliding) {
+              var conflict = min - d;
+              var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
+              var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
+              var w = pt.weight / (pt.weight + ept.weight);
+              // immobile entities have a stronger influence (obstacles such as walls, etc...)
+              var multiplier = ept.forceMultiplier;
+              var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
+              var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
 
-            dx -= avoidX;
-            dy -= avoidY;
+              dx -= avoidX;
+              dy -= avoidY;
+            }
           }
         }
       }
-    }
 
-    var max = 1;
-    if (dx > max) {
-      dx = max;
-    }
-    if (dx < -max) {
-      dx = -max;
-    }
-    if (dy > max) {
-      dy = max;
-    }
-    if (dy < -max) {
-      dy = -max;
-    }
+      var max = 1;
+      if (dx > max) {
+        dx = max;
+      }
+      if (dx < -max) {
+        dx = -max;
+      }
+      if (dy > max) {
+        dy = max;
+      }
+      if (dy < -max) {
+        dy = -max;
+      }
 
-    x += dx * speed * dt;
-    y += dy * speed * dt;
+      x += dx * speed * dt;
+      y += dy * speed * dt;
+    }
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
       if (!cds.has('attack')) {
-        cds.set('attack', 1.0);
-        attackTarget.health -= damage;
+        cds.set('attack', 0.5);
+        attackTarget.damageTaken += damage;
       }
     }
 
@@ -365,37 +379,63 @@ class Player extends Entity {
   public var numTurretsAvailable = 4;
   public var maxNumTurretsAvailable = 4;
   var cds = new Cooldown();
+  var hitFlashOverlay: h2d.Graphics;
+  var playerSprite: h2d.Graphics;
 
-  public function new(x, y) {
+  public function new(x, y, s2d: h2d.Scene) {
     super({
       x: x,
       y: y,
-      radius: 25,
+      radius: 23,
       weight: 1.0,
-      color: 0x118AB2,
+      color: Colors.blue,
     });
     health = 10;
-    speed = 500.0;
+    speed = 400.0;
     forceMultiplier = 3.0;
 
-    var playerSprite = new h2d.Graphics(this);
+    playerSprite = new h2d.Graphics(this);
     // make outline
     playerSprite.beginFill(0xffffff);
-    playerSprite.drawCircle(0, 0, radius + 2);
+    playerSprite.drawCircle(0, 0, radius + 4);
     playerSprite.beginFill(color);
     playerSprite.drawCircle(0, 0, radius);
     playerSprite.endFill();
+
+    hitFlashOverlay = new h2d.Graphics(s2d);
+    hitFlashOverlay.beginFill(Colors.red);
+    hitFlashOverlay.drawRect(0, 0, s2d.width, s2d.height);
+  }
+
+  override function onRemove() {
+    hitFlashOverlay.remove();
   }
 
   public override function update(dt) {
     super.update(dt);
     cds.update(dt);
 
+    // pulsate player for visual juice
+    playerSprite.setScale(1 - Math.abs(Math.sin(t * 2.5) / 10));
+
     if (!cds.has('turretReloading') &&
       numTurretsAvailable < maxNumTurretsAvailable
     ) {
       cds.set('turretReloading', 1.0);
       numTurretsAvailable += 1;
+    }
+
+    {
+      if (!cds.has('hitFlash')) {
+        hitFlashOverlay.color.set(1, 1, 1, 0);
+      }
+
+      if (damageTaken > 0) {
+        cds.set('hitFlash', 0.02);
+        hitFlashOverlay.color.set(1, 1, 1, 0.5);
+        health -= damageTaken;
+        damageTaken = 0;
+      }
     }
   }
 
@@ -487,7 +527,11 @@ class Mob {
     if (oldGame != null) {
       oldGame.cleanup();
     }
-    player = new Player(s2d.width / 2, s2d.height / 2);
+    player = new Player(
+      s2d.width / 2,
+      s2d.height / 2,
+      s2d
+    );
     s2d.addChild(player);
 
 
