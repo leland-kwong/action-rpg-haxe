@@ -1,4 +1,6 @@
 using hxd.Event;
+import Fonts;
+
 class Utils {
   public static function distanceSqr(ax:Float,ay:Float,bx:Float,by:Float) : Float {
     return (ax-bx)*(ax-bx) + (ay-by)*(ay-by);
@@ -23,6 +25,7 @@ class Colors {
   public static final green = 0x06d6a0;
   public static final blue = 0x118ab2;
   public static final darkBlue = 0x073b4c;
+  public static final pureWhite = 0xffffff;
 }
 
 class Cooldown {
@@ -237,14 +240,14 @@ class Enemy extends Entity {
     3 => 60.0,
   ];
 
-  var font: h2d.Font = hxd.res.DefaultFont.get().clone();
+  var font: h2d.Font = Fonts.primary.get().clone();
   var text: h2d.Text;
   var cds: Cooldown;
   var damage = 1;
-  var follow: Player;
+  var follow: Entity;
   public var attackTarget: Entity;
 
-  public function new(props, size, followTarget) {
+  public function new(props, size, followTarget: Entity) {
     super(props);
     type = 'ENEMY';
     speed = speedBySize[size];
@@ -263,7 +266,7 @@ class Enemy extends Entity {
     graphic.drawCircle(0, 0, radius);
     graphic.endFill();
 
-    font.resizeTo(20);
+    font.resizeTo(24);
     text = new h2d.Text(font);
     text.textAlign = Center;
     text.textColor = 0x000000;
@@ -439,7 +442,7 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(x1, y1, s2d: h2d.Scene) {
+  public function useAbility(x1, y1, parent: h2d.Object) {
     if (numTurretsAvailable == 0) {
       // TODO: trigger some sort of warning effect
       // so player gets feedback
@@ -452,11 +455,12 @@ class Player extends Entity {
     }
     var turret = new Turret(x1, y1);
     numTurretsAvailable -= 1;
-    s2d.addChild(turret);
+    parent.addChild(turret);
   }
 }
 
-class Mob {
+class Game extends h2d.Object {
+  public var level = 0;
   var player: Player;
   var target: h2d.Object;
   var playerInfo: h2d.Text;
@@ -482,7 +486,7 @@ class Mob {
     return player.health <= 0;
   }
 
-  public function cleanup() {
+  public function cleanupLevel() {
     // reset game state
     for (e in Entity.ALL) {
       e.health = 0;
@@ -494,7 +498,14 @@ class Mob {
       .removeEventTarget(useAbilityOnClick);
   }
 
-  public function newLevel(s2d: h2d.Scene, level: Int) {
+  override function onRemove() {
+    cleanupLevel();
+    cleanupDisposedEntities();
+  }
+
+  public function newLevel(s2d: h2d.Scene) {
+    level += 1;
+
     var numEnemies = level * Math.round(level /2);
     var colors = [
       1 => 0xF78C6B,
@@ -516,25 +527,26 @@ class Mob {
         weight: 1.0,
         color: colors[size],
       }, size, player);
-      s2d.addChild(e);
+      addChild(e);
     }
   }
 
   public function new(
     s2d: h2d.Scene,
-    oldGame: Mob
+    oldGame: Game
   ) {
+    super();
+
+    s2d.addChild(this);
     if (oldGame != null) {
-      oldGame.cleanup();
+      oldGame.cleanupLevel();
     }
     player = new Player(
-      s2d.width / 2,
+      300,
       s2d.height / 2,
       s2d
     );
-    s2d.addChild(player);
-
-
+    addChild(player);
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
@@ -543,17 +555,17 @@ class Mob {
     playerInfo.textColor = 0xffffff;
     playerInfo.x = 10;
     playerInfo.y = 10;
-    s2d.addChild(playerInfo);
+    addChild(playerInfo);
 
     // mouse pointer
-    target = new h2d.Object(s2d);
+    target = new h2d.Object(this);
     targetSprite = new h2d.Graphics(target);
     targetSprite.beginFill(0xffda3d, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
 
     useAbilityOnClick = function(ev: hxd.Event) {
       if (ev.kind == hxd.EventKind.EPush) {
-        player.useAbility(ev.relX, ev.relY, s2d);
+        player.useAbility(ev.relX, ev.relY, this);
       }
     }
     hxd.Window.getInstance()
@@ -586,6 +598,21 @@ class Mob {
     player.y += dyNormalized * player.speed * dt;
   }
 
+  function cleanupDisposedEntities() {
+    var ALL = Entity.ALL;
+    var i = 0;
+    while (i < ALL.length) {
+      var a = ALL[i];
+      var isDisposed = a.health <= 0;
+      if (isDisposed) {
+        ALL.splice(i, 1);
+        a.remove();
+      } else {
+        i += 1;
+      }
+    }
+  }
+
   public function update(s2d: h2d.Scene, dt: Float) {
     var ALL = Entity.ALL;
 
@@ -596,20 +623,9 @@ class Mob {
       ].join('\n');
     }
 
-    // cleanup/update agents first
-    {
-      var i = 0;
-      while (i < ALL.length) {
-        var a = ALL[i];
-        var isDisposed = a.health <= 0;
-        if (isDisposed) {
-          ALL.splice(i, 1);
-          a.remove();
-        } else {
-          a.update(dt);
-          i += 1;
-        }
-      }
+    cleanupDisposedEntities();
+    for (a in ALL) {
+      a.update(dt);
     }
 
     movePlayer(player, dt, s2d);

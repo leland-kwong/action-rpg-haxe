@@ -1,4 +1,7 @@
-import Mob;
+import h2d.Text;
+import h2d.Interactive;
+import Fonts;
+import Game;
 
 class BatchDraw {
   var txt: h2d.Text;
@@ -47,6 +50,104 @@ class BatchDraw {
   }
 }
 
+enum UiState {
+  Over;
+  Normal;
+}
+
+class UiButton extends h2d.Object {
+  var text: h2d.Text;
+  var state: UiState;
+  public var button: Interactive;
+
+  public function new(btnText, font, onClick) {
+    super();
+
+    text = new Text(font);
+    text.text = btnText;
+
+    button = new Interactive(
+      text.textWidth,
+      text.textHeight
+    );
+
+    button.onOver = function(ev: hxd.Event) {
+      state = UiState.Over;
+    }
+
+    button.onOut = function(ev: hxd.Event) {
+      state = UiState.Normal;
+    }
+
+    button.onClick = function(ev: hxd.Event) {
+      onClick();
+    }
+
+    button.addChild(text);
+    addChild(button);
+  }
+
+  public function update(dt) {
+    if (state == UiState.Normal) {
+      text.textColor = Game.Colors.pureWhite;
+    }
+
+    if (state == UiState.Over) {
+      text.textColor = Game.Colors.yellow;
+    }
+  }
+}
+class HomeScreen extends h2d.Object {
+  var uiButtonsList = [];
+
+  public function new(s2d, onGameStart, onGameExit) {
+    super();
+
+    var leftMargin = 100;
+
+    var titleFont = Fonts.primary.get().clone();
+    titleFont.resizeTo(12 * 6);
+    var titleText = new h2d.Text(titleFont, this);
+    titleText.text = 'Autonomous';
+    titleText.textColor = Game.Colors.pureWhite;
+    titleText.x = leftMargin;
+    titleText.y = 300;
+
+    var btnFont = Fonts.primary.get().clone();
+    btnFont.resizeTo(36);
+
+    var startGameBtn = new UiButton(
+      'Start Game', btnFont, onGameStart
+    );
+    addChild(startGameBtn);
+    startGameBtn.x = leftMargin;
+    startGameBtn.y = titleText.y + titleText.textHeight + 50;
+    uiButtonsList.push(startGameBtn);
+
+    var exitGameBtn = new UiButton(
+      'Exit Game', btnFont, onGameExit
+    );
+    addChild(exitGameBtn);
+    exitGameBtn.x = startGameBtn.x;
+    exitGameBtn.y = startGameBtn.y + startGameBtn.button.height + 10;
+    uiButtonsList.push(exitGameBtn);
+  }
+
+  override function onRemove() {
+    trace('homescreen remove');
+    for (o in uiButtonsList) {
+      o.remove();
+    }
+  }
+
+  public function update(dt: Float) {
+    for (o in uiButtonsList) {
+      var btn = (o: UiButton);
+      btn.update(dt);
+    }
+  }
+}
+
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
@@ -54,9 +155,9 @@ class Main extends hxd.App {
   var t = 0.0;
   var acc = 0.0;
   var batcher: BatchDraw;
-  var mob: Mob;
+  var game: Game;
   var background: h2d.Bitmap;
-  var level = 0;
+  var homeScreen: HomeScreen;
 
   function animate(s2d: h2d.Scene) {
     // creates three tiles with different color
@@ -77,10 +178,7 @@ class Main extends hxd.App {
   }
 
   function setupDebugInfo(font) {
-    var debugUiMargin = 10;
     debugText = new h2d.Text(font);
-    debugText.x = s2d.width - debugUiMargin;
-    debugText.y = debugUiMargin;
     debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
@@ -97,17 +195,58 @@ class Main extends hxd.App {
     return numEnemies;
   }
 
+  function showHomeScreen() {
+    if (homeScreen != null) {
+      return;
+    }
+
+    // reset game states
+    game.remove();
+    game = null;
+
+    function onGameStart() {
+      game = new Game(s2d, game);
+      homeScreen.remove();
+      homeScreen = null;
+    }
+
+    function onGameExit() {
+      trace('on game exit');
+      hxd.System.exit();
+    }
+    homeScreen = new HomeScreen(
+      s2d, onGameStart, onGameExit
+    );
+    s2d.addChild(homeScreen);
+  }
+
   override function init() {
-    var font: h2d.Font = hxd.res.DefaultFont.get();
+    #if !jsMode
+    // make fullscreen
+    {
+      hxd.Window.getInstance()
+        .displayMode = hxd.Window.DisplayMode.Fullscreen;
+    }
+    #end
 
     background = addBackground(s2d, 0x333333);
-    mob = new Mob(s2d, null);
 
-    setupDebugInfo(font);
+    showHomeScreen();
+    setupDebugInfo(Fonts.primary.get());
+  }
+
+  function handleGlobalHotkeys() {
+    var Key = hxd.Key;
+
+    if (Key.isPressed(Key.ESCAPE)) {
+      showHomeScreen();
+    }
   }
 
   // on each frame
   override function update(dt:Float) {
+    handleGlobalHotkeys();
+
     t += dt;
     acc += dt;
 
@@ -119,24 +258,32 @@ class Main extends hxd.App {
       acc -= frameTime;
 
       var numEnemies = getNumEnemies();
-      var levelCleared = numEnemies == 0;
-      if (levelCleared) {
-        level += 1;
-        mob.newLevel(s2d, level);
+
+      if (game != null) {
+        var levelCleared = numEnemies == 0;
+        if (levelCleared) {
+          game.newLevel(s2d);
+        }
+
+        game.update(s2d, frameTime);
+        // batcher.update(t, dt, s2d);
+
+        if (game.isGameOver()) {
+          showHomeScreen();
+        }
       }
 
-      if (mob.isGameOver()) {
-        level = 0;
-        mob = new Mob(s2d, mob);
+      if (homeScreen != null) {
+        homeScreen.update(dt);
       }
-
-      mob.update(s2d, frameTime);
-      // batcher.update(t, dt, s2d);
 
       var text = ['time: ${t}',
                   'fps: ${fps}',
                   'drawCalls: ${engine.drawCalls}',
                   'numEnemies: ${numEnemies}'].join('\n');
+      var debugUiMargin = 10;
+      debugText.x = s2d.width - debugUiMargin;
+      debugText.y = debugUiMargin;
       debugText.text = text;
     }
 
