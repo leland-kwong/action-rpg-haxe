@@ -9,6 +9,20 @@ class Utils {
   public static function distance(ax:Float,ay:Float, bx:Float,by:Float) : Float {
     return Math.sqrt( distanceSqr(ax,ay,bx,by) );
   }
+
+  public static function rnd(min:Float, max:Float, ?sign=false) {
+    if( sign )
+      return (min + Math.random()*(max-min)) * (Std.random(2)*2-1);
+    else
+      return min + Math.random()*(max-min);
+  }
+
+  public static function irnd(min:Int, max:Int, ?sign:Bool) {
+    if( sign )
+      return (min + Std.random(max-min+1)) * (Std.random(2)*2-1);
+    else
+      return min + Std.random(max-min+1);
+  }
 }
 typedef Point = {
   var x : Float;
@@ -66,6 +80,7 @@ class Entity extends h2d.Object {
   public var forceMultiplier = 1.0;
   public var health = 1;
   public var damageTaken = 0;
+  public var status = 'TARGETABLE';
   var time = 0.0;
 
   public function new(props: Point) {
@@ -189,7 +204,7 @@ class Bullet extends Entity {
 class Turret extends Entity {
   var cds: Cooldown;
   var range = 300;
-  var lifeTime = 10.0;
+  var lifeTime = 5.0;
   var attackRate = 0.2;
   var attackVelocity = 500.0;
 
@@ -219,7 +234,7 @@ class Turret extends Entity {
       cds.set('attack', attackRate);
 
       var nearest = findNearest(x, y, range, 'ENEMY');
-      if (nearest != null) {
+      if (nearest != null && nearest.status == 'TARGETABLE') {
         var b = new Bullet(
           x, y, nearest.x, nearest.y,
           attackVelocity
@@ -254,21 +269,28 @@ class Enemy extends Entity {
   var damage = 1;
   var follow: Entity;
   var hasSnakeMotion: Bool;
+  var spawnDuration: Float;
+  var graphic: h2d.Graphics;
+  var size: Int;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
     super(props);
     type = 'ENEMY';
-    speed = speedBySize[size];
+    status = 'UNTARGETABLE';
+    speed = 0.0;
+    spawnDuration = size * 0.2;
     health = healthBySize[size];
     hasSnakeMotion = size == 2;
     avoidOthers = true;
     cds = new Cooldown();
     follow = followTarget;
+    this.size = size;
 
     cds.set('summoningSickness', 1.0);
+    setScale(0);
 
-    var graphic = new h2d.Graphics(this);
+    graphic = new h2d.Graphics(this);
     // make outline
     graphic.beginFill(0x000000);
     graphic.drawCircle(0, 0, radius + 1);
@@ -288,6 +310,16 @@ class Enemy extends Entity {
   public override function update(dt) {
     dx = 0.0;
     dy = 0.0;
+
+    var spawnProgress = Math.min(1, time / spawnDuration);
+    var isFullySpawned = spawnProgress >= 1;
+    if (!isFullySpawned) {
+      setScale(spawnProgress);
+    }
+    if (isFullySpawned) {
+      status = 'TARGETABLE';
+      speed = speedBySize[size];
+    }
 
     super.update(dt);
 
@@ -392,8 +424,9 @@ class Enemy extends Entity {
 
 class Player extends Entity {
   public var playerInfo: h2d.Text;
-  public var numTurretsAvailable = 4;
-  public var maxNumTurretsAvailable = 4;
+  public var maxNumTurretsAvailable = 8;
+  public var numTurretsAvailable = 8;
+  public var turretReloadTime = 0.8;
   var cds = new Cooldown();
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
@@ -411,11 +444,11 @@ class Player extends Entity {
     forceMultiplier = 3.0;
 
     playerSprite = new h2d.Graphics(this);
-    // make outline
-    playerSprite.beginFill(0xffffff);
-    playerSprite.drawCircle(0, 0, radius + 4);
     playerSprite.beginFill(color);
     playerSprite.drawCircle(0, 0, radius);
+    // make halo
+    playerSprite.beginFill(0xffffff, 0.3);
+    playerSprite.drawCircle(0, 0, radius + 4);
     playerSprite.endFill();
 
     hitFlashOverlay = new h2d.Graphics(s2d);
@@ -437,7 +470,7 @@ class Player extends Entity {
     if (!cds.has('turretReloading') &&
       numTurretsAvailable < maxNumTurretsAvailable
     ) {
-      cds.set('turretReloading', 1.0);
+      cds.set('turretReloading', turretReloadTime);
       numTurretsAvailable += 1;
     }
 
@@ -472,6 +505,67 @@ class Player extends Entity {
   }
 }
 
+// Spawns enemies over time
+class EnemySpawner {
+  static var colors = [
+    1 => 0xF78C6B,
+    2 => 0xFFD166,
+    3 => 0x06D6A0,
+  ];
+
+  var enemiesLeftToSpawn: Int;
+  var parent: h2d.Object;
+  var x: Float;
+  var y: Float;
+  var target: Entity;
+  var spawnInterval = 0.1;
+  /**
+    FIXME
+    Currently `Main.hx` checks for the number of enemies
+    remaining before going to the next level. So we need to
+    spawn an enemy immediately so there is at least 1 enemy
+    exists.
+  **/
+  var accumulator = 0.1;
+
+  public function new(
+    x, y, numEnemies, parent: h2d.Object,
+    target: Entity
+  ) {
+    enemiesLeftToSpawn = numEnemies;
+    this.parent = parent;
+    this.x = x;
+    this.y = y;
+    this.target = target;
+  }
+
+  public function update(dt: Float) {
+    if (enemiesLeftToSpawn <= 0) {
+      return;
+    }
+
+    accumulator += dt;
+    if (accumulator < spawnInterval) {
+      return;
+    }
+
+    accumulator -= spawnInterval;
+    enemiesLeftToSpawn -= 1;
+
+    var size = Utils.irnd(1, 3);
+    var radius = 7 + size * 10;
+    var posRange = 100;
+    var e = new Enemy({
+      x: x + Utils.irnd(-posRange, posRange),
+      y: y + Utils.irnd(-posRange, posRange),
+      radius: radius,
+      weight: 1.0,
+      color: colors[size],
+    }, size, target);
+    parent.addChild(e);
+  }
+}
+
 class Game extends h2d.Object {
   public var level = 0;
   var player: Player;
@@ -480,20 +574,7 @@ class Game extends h2d.Object {
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
   var useAbilityOnClick: (ev: hxd.Event) -> Void;
-
-  function rnd(min:Float, max:Float, ?sign=false) {
-    if( sign )
-      return (min + Math.random()*(max-min)) * (Std.random(2)*2-1);
-    else
-      return min + Math.random()*(max-min);
-  }
-
-  function irnd(min:Int, max:Int, ?sign:Bool) {
-    if( sign )
-      return (min + Std.random(max-min+1)) * (Std.random(2)*2-1);
-    else
-      return min + Std.random(max-min+1);
-  }
+  var enemySpawner: EnemySpawner;
 
   public function isGameOver() {
     return player.health <= 0;
@@ -518,30 +599,13 @@ class Game extends h2d.Object {
 
   public function newLevel(s2d: h2d.Scene) {
     level += 1;
-
-    var numEnemies = level * Math.round(level /2);
-    var colors = [
-      1 => 0xF78C6B,
-      2 => 0xFFD166,
-      3 => 0x06D6A0,
-    ];
-
-    /* TODO:
-      Spawn enemies in over time. This way they don't all
-      show up at once and clog.
-    */
-    for (_ in 0...numEnemies) {
-      var size = irnd(1, 3);
-      var radius = 7 + size * 10;
-      var e = new Enemy({
-        x: s2d.width * 0.5,
-        y: s2d.height * 0.5,
-        radius: radius,
-        weight: 1.0,
-        color: colors[size],
-      }, size, player);
-      addChild(e);
-    }
+    enemySpawner = new EnemySpawner(
+      s2d.width / 2,
+      s2d.height / 2,
+      level * Math.round(level /2),
+      s2d,
+      player
+    );
   }
 
   public function new(
@@ -628,6 +692,10 @@ class Game extends h2d.Object {
 
   public function update(s2d: h2d.Scene, dt: Float) {
     var ALL = Entity.ALL;
+
+    if (enemySpawner != null) {
+      enemySpawner.update(dt);
+    }
 
     {
       playerInfo.text = [
