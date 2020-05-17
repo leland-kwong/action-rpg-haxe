@@ -1,9 +1,10 @@
 -D jsMode
+-D debugMode
 
 # class paths
 -cp src
 
 -lib heaps
--js game.dist.js
+-js bin/game.dist.js
 -main Main
 -debug

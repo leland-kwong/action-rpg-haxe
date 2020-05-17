@@ -148,6 +148,40 @@ class HomeScreen extends h2d.Object {
   }
 }
 
+class Hud extends h2d.Object {
+  var helpTextList: Array<h2d.Text> = [];
+  var scene: h2d.Scene;
+
+  function abilityHelpText(text, font) {
+    var t = new h2d.Text(font, this);
+    t.text = text;
+    t.textColor = Game.Colors.pureWhite;
+    helpTextList.push(t);
+    return t;
+  }
+
+  public function new(s2d: h2d.Scene) {
+    super();
+
+    scene = s2d;
+    var font = Fonts.primary.get().clone();
+    font.resizeTo(24);
+    abilityHelpText('left-click: primary', font);
+    abilityHelpText('right-click: secondary', font);
+  }
+
+  public function update() {
+    var _originX = 10.0;
+    var originY = scene.height - 10;
+
+    for (t in helpTextList) {
+      t.x = _originX;
+      t.y = originY - t.textHeight;
+      _originX += t.textWidth + 20;
+    }
+  }
+}
+
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
@@ -158,6 +192,7 @@ class Main extends hxd.App {
   var game: Game;
   var background: h2d.Bitmap;
   var homeScreen: HomeScreen;
+  var hud: Hud;
 
   function animate(s2d: h2d.Scene) {
     // creates three tiles with different color
@@ -232,7 +267,12 @@ class Main extends hxd.App {
     background = addBackground(s2d, 0x333333);
 
     showHomeScreen();
-    setupDebugInfo(Fonts.primary.get());
+    hud = new Hud(s2d);
+    s2d.addChild(hud);
+
+    #if debugMode
+      setupDebugInfo(Fonts.primary.get());
+    #end
   }
 
   function handleGlobalHotkeys() {
@@ -246,10 +286,12 @@ class Main extends hxd.App {
   // on each frame
   override function update(dt:Float) {
     handleGlobalHotkeys();
+    hud.update();
 
     t += dt;
     acc += dt;
 
+    // fixed to 60fps for now
     var frameTime = 1/60;
     var fps = Math.round(1/dt);
     var isNextFrame = acc >= frameTime;
@@ -277,14 +319,19 @@ class Main extends hxd.App {
         homeScreen.update(dt);
       }
 
-      var text = ['time: ${t}',
-                  'fps: ${fps}',
-                  'drawCalls: ${engine.drawCalls}',
-                  'numEnemies: ${numEnemies}'].join('\n');
-      var debugUiMargin = 10;
-      debugText.x = s2d.width - debugUiMargin;
-      debugText.y = debugUiMargin;
-      debugText.text = text;
+      if (debugText != null) {
+        var text = [
+          'time: ${t}',
+          'fps: ${fps}',
+          'drawCalls: ${engine.drawCalls}',
+          'numEntities: ${Entity.ALL.length}',
+          'numEnemies: ${numEnemies}'
+        ].join('\n');
+        var debugUiMargin = 10;
+        debugText.x = s2d.width - debugUiMargin;
+        debugText.y = debugUiMargin;
+        debugText.text = text;
+      }
     }
 
     background.width = s2d.width;

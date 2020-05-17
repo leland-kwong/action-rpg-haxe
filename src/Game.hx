@@ -1,3 +1,7 @@
+/**
+  TODO: Add enemy destroyed animation (fade out or explode into pieces?)
+**/
+
 using hxd.Event;
 import Fonts;
 
@@ -142,19 +146,21 @@ class Entity extends h2d.Object {
   }
 }
 
-class Bullet extends Entity {
+class Projectile extends Entity {
   var damage = 1;
   var lifeTime = 5.0;
+  var collidedWith: Entity;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
-    color: Int,
-    speed: Float
+    color = 0xffffff,
+    speed: Float,
+    radius = 10
   ) {
     super({
       x: x1,
       y: y1,
-      radius: 10,
+      radius: radius,
       color: color,
       weight: 0.0,
     });
@@ -164,7 +170,7 @@ class Bullet extends Entity {
     var sprite = new h2d.Graphics();
     addChild(sprite);
 
-    sprite.beginFill(0xFFFFFF);
+    sprite.beginFill(color);
     sprite.drawCircle(0, 0, radius);
     sprite.endFill();
 
@@ -182,6 +188,7 @@ class Bullet extends Entity {
     super.update(dt);
 
     lifeTime -= dt;
+    collidedWith = null;
 
     if (lifeTime <= 0) {
       health = 0;
@@ -191,10 +198,9 @@ class Bullet extends Entity {
       if (a.type == 'ENEMY') {
         var d = Utils.distance(x, y, a.x, a.y);
         var min = radius + a.radius * 1.0;
-        var isConflict = d < min;
-        if (isConflict) {
-          health = 0;
-          a.damageTaken += damage;
+        var conflict = d < min;
+        if (conflict) {
+          collidedWith = a;
           break;
         }
       }
@@ -202,25 +208,104 @@ class Bullet extends Entity {
   }
 }
 
+class Bullet extends Projectile {
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    if (collidedWith != null) {
+      health = 0;
+      collidedWith.damageTaken += damage;
+    }
+  }
+}
+
+class ClusterBombExplosion extends Projectile {
+  var triggered = false;
+
+  public override  function update(dt: Float) {
+    super.update(dt);
+
+    var explosionDuration = 0.5;
+    var progress = time / explosionDuration;
+    setScale(1 - progress);
+    alpha = 0.7 - progress;
+    if (progress >= 1) {
+      health = 0;
+    }
+
+    if (triggered) {
+      return;
+    }
+    triggered = true;
+    // hit all targets in area
+    for (a in Entity.ALL) {
+      if (a.type == 'ENEMY') {
+        var d = Utils.distance(a.x, a.y, x, y);
+        var min = a.radius + radius;
+        var conflict = d < min;
+        if (conflict) {
+          a.damageTaken += 1;
+        }
+      }
+    }
+  }
+}
+
+class ClusterBomb extends Projectile {
+  public function new(x1, y1, x2, y2, color, speed) {
+    super(x1, y1, x2, y2, color, speed);
+    lifeTime = 2.0;
+  }
+
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    var shouldExplode = collidedWith != null ||
+      lifeTime <= 0;
+    if (shouldExplode) {
+      health = 0;
+      for (_ in 0...3) {
+        var area = 70;
+        var x2 = x + Utils.irnd(-area, area);
+        var y2 = y + Utils.irnd(-area, area);
+        var inst = new ClusterBombExplosion(
+          x2, y2, x2, y2, Colors.pureWhite,
+          0.0, 55
+        );
+        parent.parent.addChild(inst);
+      }
+    }
+  }
+}
+
 class Turret extends Entity {
+  public static var baseColor = 0xff6392;
   var cds: Cooldown;
   var range = 300;
   var lifeTime = 10.0;
   var attackRate = 0.2;
   var attackVelocity = 500.0;
   var sprite: h2d.Graphics;
+  var attackType = 'Bullet';
 
-  public function new(x, y) {
+  public function new(x, y, attackType) {
     super({
       x: x,
       y: y,
       radius: 20,
-      color: 0xff6392,
+      color: Turret.baseColor,
       weight: 0.0,
     });
     type = 'TURRET';
+    this.attackType = attackType;
     health = 3;
     cds = new Cooldown();
+
+    if (attackType == 'ClusterBomb') {
+      attackRate = 1.0;
+      attackVelocity = 200.0;
+      range = 400;
+    }
 
     sprite = new h2d.Graphics(this);
     sprite.beginFill(color);
@@ -238,12 +323,24 @@ class Turret extends Entity {
 
       var nearest = findNearest(x, y, range, 'ENEMY');
       if (nearest != null && nearest.status == 'TARGETABLE') {
-        var b = new Bullet(
-          x, y, nearest.x, nearest.y,
-          color,
-          attackVelocity
-        );
-        parent.addChild(b);
+        switch attackType {
+          case 'ClusterBomb': {
+            var b = new ClusterBomb(
+              x, y, nearest.x, nearest.y,
+              Colors.pureWhite,
+              attackVelocity
+            );
+            parent.addChild(b);
+          }
+          case 'Bullet': {
+            var b = new Bullet(
+              x, y, nearest.x, nearest.y,
+              Colors.pureWhite,
+              attackVelocity
+            );
+            parent.addChild(b);
+          }
+        }
       }
     }
 
@@ -379,7 +476,7 @@ class Enemy extends Entity {
             var isColliding = d < min;
             if (isColliding) {
               var conflict = min - d;
-              var adjustedConflict = Math.min(conflict, conflict * 50 / speed);
+              var adjustedConflict = Math.min(conflict, conflict * 60 / speed);
               var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
               var w = pt.weight / (pt.weight + ept.weight);
               // immobile entities have a stronger influence (obstacles such as walls, etc...)
@@ -404,7 +501,6 @@ class Enemy extends Entity {
                   (attacksTurrets && o.type == 'TURRET')
                 )
               ) {
-                // trace('attackTarget', o.type);
                 attackTarget = o;
               }
             }
@@ -494,6 +590,8 @@ class Player extends Entity {
     hitFlashOverlay = new h2d.Graphics(s2d);
     hitFlashOverlay.beginFill(Colors.red);
     hitFlashOverlay.drawRect(0, 0, s2d.width, s2d.height);
+    // make it hidden initially
+    hitFlashOverlay.color.set(1, 1, 1, 0);
   }
 
   override function onRemove() {
@@ -528,7 +626,7 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(x1, y1, parent: h2d.Object) {
+  public function useAbility(x1, y1, ability: Int, parent: h2d.Object) {
     if (numTurretsAvailable == 0) {
       // TODO: trigger some sort of warning effect
       // so player gets feedback
@@ -539,9 +637,18 @@ class Player extends Entity {
     if (numTurretsAvailable == maxNumTurretsAvailable) {
       cds.set('turretReloading', 1.0);
     }
-    var turret = new Turret(x1, y1);
+
     numTurretsAvailable -= 1;
-    parent.addChild(turret);
+    switch ability {
+      case 0: {
+        var turret = new Turret(x1, y1, 'Bullet');
+        parent.addChild(turret);
+      }
+      case 1: {
+        var turret = new Turret(x1, y1, 'ClusterBomb');
+        parent.addChild(turret);
+      }
+    }
   }
 }
 
@@ -682,7 +789,7 @@ class Game extends h2d.Object {
 
     useAbilityOnClick = function(ev: hxd.Event) {
       if (ev.kind == hxd.EventKind.EPush) {
-        player.useAbility(ev.relX, ev.relY, this);
+        player.useAbility(ev.relX, ev.relY, ev.button, this);
       }
     }
     hxd.Window.getInstance()
@@ -753,33 +860,5 @@ class Game extends h2d.Object {
 
     target.x = s2d.mouseX;
     target.y = s2d.mouseY;
-
-    var follow = player;
-
-    function byClosest(a, b) {
-      var da = Utils.distance(a.x, a.y, follow.x, follow.y);
-      var db = Utils.distance(b.x, b.y, follow.x, follow.y);
-
-      if (da < db) {
-        return -1;
-      }
-
-      if (da > db) {
-        return 1;
-      }
-
-      return 0;
-    }
-    /**
-      Sort by closest to furthest so that repelling forces go
-      from inside to outside to prevent inner agents from getting
-      scrunched up.
-    **/
-    /**
-      TODO: This sorts the entire entity list. We probably want
-      to figure out a way to have different collections of agents
-      for a more localized sorting.
-    **/
-    ALL.sort(byClosest);
   }
 }
