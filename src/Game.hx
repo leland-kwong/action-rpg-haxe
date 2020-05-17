@@ -208,6 +208,7 @@ class Turret extends Entity {
   var lifeTime = 10.0;
   var attackRate = 0.2;
   var attackVelocity = 500.0;
+  var sprite: h2d.Graphics;
 
   public function new(x, y) {
     super({
@@ -217,10 +218,11 @@ class Turret extends Entity {
       color: 0xff6392,
       weight: 0.0,
     });
-    health = 100;
+    type = 'TURRET';
+    health = 3;
     cds = new Cooldown();
 
-    var sprite = new h2d.Graphics(this);
+    sprite = new h2d.Graphics(this);
     sprite.beginFill(color);
     sprite.drawCircle(0, 0, radius);
     sprite.endFill();
@@ -250,19 +252,32 @@ class Turret extends Entity {
     if (isDisposed) {
       health = 0;
     }
+
+    {
+      if (!cds.has('hitFlash')) {
+        sprite.color.set(1, 1, 1, 1);
+      }
+
+      if (damageTaken > 0) {
+        cds.set('hitFlash', 0.04);
+        sprite.color.set(255, 255, 255, 1);
+        health -= damageTaken;
+        damageTaken = 0;
+      }
+    }
   }
 }
 
 class Enemy extends Entity {
   static var healthBySize = [
     1 => 5,
-    2 => 20,
-    3 => 40,
+    2 => 10,
+    3 => 20,
   ];
   static var speedBySize = [
-    1 => 250.0,
-    2 => 150.0,
-    3 => 60.0,
+    1 => 450.0,
+    2 => 160.0,
+    3 => 100.0,
   ];
 
   var font: h2d.Font = Fonts.primary.get().clone();
@@ -274,6 +289,8 @@ class Enemy extends Entity {
   var spawnDuration: Float;
   var graphic: h2d.Graphics;
   var size: Int;
+  var repelFilter: String;
+  var attacksTurrets = false;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -288,6 +305,12 @@ class Enemy extends Entity {
     cds = new Cooldown();
     follow = followTarget;
     this.size = size;
+    if (size == 2) {
+      attacksTurrets = true;
+    }
+    if (size == 3) {
+      repelFilter = 'TURRET';
+    }
 
     cds.set('summoningSickness', 1.0);
     setScale(0);
@@ -330,22 +353,18 @@ class Enemy extends Entity {
 
     if (!cds.has('attack')) {
       // distance to keep from destination
-      var threshold = follow.radius + 30;
-      var attackRange = threshold + 50;
+      var threshold = follow.radius + 20;
+      var attackRange = 80;
 
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(0,
                                 Math.min(1,
-                                          Math.pow((dFromTarget - threshold) / threshold, 4)));
+                                          Math.pow((dFromTarget - threshold) / threshold, 2)));
       if (dFromTarget > threshold) {
         var aToTarget = Math.atan2(follow.y - y, follow.x - x);
         dx += Math.cos(aToTarget) * speedAdjust;
         dy += Math.sin(aToTarget) * speedAdjust;
-      }
-
-      if (dFromTarget <= attackRange) {
-        attackTarget = follow;
       }
 
       if (avoidOthers) {
@@ -370,6 +389,24 @@ class Enemy extends Entity {
 
               dx -= avoidX;
               dy -= avoidY;
+
+              if (repelFilter == o.type) {
+                o.x += avoidX;
+                o.y += avoidY;
+              }
+            }
+
+            if (attackTarget == null) {
+              var attackDistance = d - pt.radius + ept.radius;
+              if (attackDistance <= attackRange &&
+                (
+                  o == follow ||
+                  (attacksTurrets && o.type == 'TURRET')
+                )
+              ) {
+                // trace('attackTarget', o.type);
+                attackTarget = o;
+              }
             }
           }
         }
@@ -390,7 +427,7 @@ class Enemy extends Entity {
       }
 
       var waveVal = hasSnakeMotion
-        ? Math.abs(Math.sin(time * 1.5))
+        ? Math.abs(Math.sin(time * 2.5))
         : 1;
       x += dx * speed * dt * waveVal;
       y += dy * speed * dt * waveVal;
@@ -441,8 +478,9 @@ class Player extends Entity {
       weight: 1.0,
       color: Colors.blue,
     });
+    type = 'PLAYER';
     health = 10;
-    speed = 400.0;
+    speed = 350.0;
     forceMultiplier = 3.0;
 
     playerSprite = new h2d.Graphics(this);
