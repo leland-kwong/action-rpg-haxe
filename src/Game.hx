@@ -66,7 +66,7 @@ class Entity extends h2d.Object {
   public var forceMultiplier = 1.0;
   public var health = 1;
   public var damageTaken = 0;
-  var t = 0.0;
+  var time = 0.0;
 
   public function new(props: Point) {
     super();
@@ -82,7 +82,7 @@ class Entity extends h2d.Object {
   }
 
   public function update(dt: Float) {
-    t += dt;
+    time += dt;
 
     if (speed != 0) {
       var max = 1;
@@ -131,7 +131,10 @@ class Bullet extends Entity {
   var damage = 1;
   var lifeTime = 5.0;
 
-  public function new(x1: Float, y1: Float, x2: Float, y2: Float) {
+  public function new(
+    x1: Float, y1: Float, x2: Float, y2: Float,
+    speed: Float
+  ) {
     super({
       x: x1,
       y: y1,
@@ -139,7 +142,7 @@ class Bullet extends Entity {
       color: 0xffffff,
       weight: 0.0,
     });
-    speed = 500.0;
+    this.speed = speed;
     forceMultiplier = 0.0;
 
     var sprite = new h2d.Graphics();
@@ -187,6 +190,8 @@ class Turret extends Entity {
   var cds: Cooldown;
   var range = 300;
   var lifeTime = 10.0;
+  var attackRate = 0.2;
+  var attackVelocity = 500.0;
 
   public function new(x, y) {
     super({
@@ -211,11 +216,14 @@ class Turret extends Entity {
     cds.update(dt);
 
     if (!cds.has('attack')) {
-      cds.set('attack', 0.2);
+      cds.set('attack', attackRate);
 
       var nearest = findNearest(x, y, range, 'ENEMY');
       if (nearest != null) {
-        var b = new Bullet(x, y, nearest.x, nearest.y);
+        var b = new Bullet(
+          x, y, nearest.x, nearest.y,
+          attackVelocity
+        );
         parent.addChild(b);
       }
     }
@@ -236,7 +244,7 @@ class Enemy extends Entity {
   ];
   static var speedBySize = [
     1 => 250.0,
-    2 => 120.0,
+    2 => 190.0,
     3 => 60.0,
   ];
 
@@ -245,6 +253,7 @@ class Enemy extends Entity {
   var cds: Cooldown;
   var damage = 1;
   var follow: Entity;
+  var hasSnakeMotion: Bool;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -252,6 +261,7 @@ class Enemy extends Entity {
     type = 'ENEMY';
     speed = speedBySize[size];
     health = healthBySize[size];
+    hasSnakeMotion = size == 2;
     avoidOthers = true;
     cds = new Cooldown();
     follow = followTarget;
@@ -345,8 +355,11 @@ class Enemy extends Entity {
         dy = -max;
       }
 
-      x += dx * speed * dt;
-      y += dy * speed * dt;
+      var waveVal = hasSnakeMotion
+        ? Math.abs(Math.sin(time * 1.5))
+        : 1;
+      x += dx * speed * dt * waveVal;
+      y += dy * speed * dt * waveVal;
     }
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
@@ -419,7 +432,7 @@ class Player extends Entity {
     cds.update(dt);
 
     // pulsate player for visual juice
-    playerSprite.setScale(1 - Math.abs(Math.sin(t * 2.5) / 10));
+    playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
 
     if (!cds.has('turretReloading') &&
       numTurretsAvailable < maxNumTurretsAvailable
