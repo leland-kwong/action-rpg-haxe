@@ -6,6 +6,18 @@ using hxd.Event;
 import Fonts;
 
 class Utils {
+  public static function clamp(value: Float, min: Float, max: Float) {
+    if (value < min) {
+      return min;
+    }
+
+    if (value > max) {
+      return max;
+    }
+
+    return value;
+  }
+
   public static function distanceSqr(ax:Float,ay:Float,bx:Float,by:Float) : Float {
     return (ax-bx)*(ax-bx) + (ay-by)*(ay-by);
   }
@@ -107,23 +119,11 @@ class Entity extends h2d.Object {
       var max = 1;
 
       if (dx != 0) {
-        if (dx > max) {
-          dx = max;
-        }
-        if (dx < -max) {
-          dx = -max;
-        }
-        x += dx * speed * dt;
+        x += Utils.clamp(dx, -max, max) * speed * dt;
       }
 
       if (dy != 0) {
-        if (dy > max) {
-          dy = max;
-        }
-        if (dy < -max) {
-          dy = -max;
-        }
-        y += dy * speed * dt;
+        y += Utils.clamp(dy, -max, max) * speed * dt;
       }
     }
   }
@@ -508,25 +508,14 @@ class Enemy extends Entity {
         }
       }
 
-      var max = 1;
-      if (dx > max) {
-        dx = max;
-      }
-      if (dx < -max) {
-        dx = -max;
-      }
-      if (dy > max) {
-        dy = max;
-      }
-      if (dy < -max) {
-        dy = -max;
-      }
-
+      var maxDelta = 1;
       var waveVal = hasSnakeMotion
         ? Math.abs(Math.sin(time * 2.5))
         : 1;
-      x += dx * speed * dt * waveVal;
-      y += dy * speed * dt * waveVal;
+      x += Utils.clamp(dx, -maxDelta, maxDelta) *
+        speed * dt * waveVal;
+      y += Utils.clamp(dy, -maxDelta, maxDelta) *
+        speed * dt * waveVal;
     }
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
@@ -565,6 +554,7 @@ class Player extends Entity {
   var cds = new Cooldown();
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
+  var rootScene: h2d.Scene;
 
   public function new(x, y, s2d: h2d.Scene) {
     super({
@@ -579,6 +569,7 @@ class Player extends Entity {
     speed = 350.0;
     forceMultiplier = 3.0;
 
+    rootScene = s2d;
     playerSprite = new h2d.Graphics(this);
     playerSprite.beginFill(color);
     playerSprite.drawCircle(0, 0, radius);
@@ -600,16 +591,20 @@ class Player extends Entity {
     dx = 0;
     dy = 0;
 
-    if (Key.isDown(Key.A)) {
+    // left
+    if (Key.isDown(Key.A) && x > radius) {
       dx = -1;
     }
-    if (Key.isDown(Key.D)) {
+    // right
+    if (Key.isDown(Key.D) && x < rootScene.width - radius) {
       dx = 1;
     }
-    if (Key.isDown(Key.W)) {
+    // up
+    if (Key.isDown(Key.W) && y > radius) {
       dy = -1;
     }
-    if (Key.isDown(Key.S)) {
+    // down
+    if (Key.isDown(Key.S) && y < rootScene.height - radius) {
       dy = 1;
     }
 
