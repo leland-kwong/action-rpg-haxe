@@ -148,13 +148,14 @@ class Bullet extends Entity {
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
+    color: Int,
     speed: Float
   ) {
     super({
       x: x1,
       y: y1,
       radius: 10,
-      color: 0xffffff,
+      color: color,
       weight: 0.0,
     });
     this.speed = speed;
@@ -204,7 +205,7 @@ class Bullet extends Entity {
 class Turret extends Entity {
   var cds: Cooldown;
   var range = 300;
-  var lifeTime = 5.0;
+  var lifeTime = 10.0;
   var attackRate = 0.2;
   var attackVelocity = 500.0;
 
@@ -237,6 +238,7 @@ class Turret extends Entity {
       if (nearest != null && nearest.status == 'TARGETABLE') {
         var b = new Bullet(
           x, y, nearest.x, nearest.y,
+          color,
           attackVelocity
         );
         parent.addChild(b);
@@ -254,12 +256,12 @@ class Turret extends Entity {
 class Enemy extends Entity {
   static var healthBySize = [
     1 => 5,
-    2 => 10,
-    3 => 20,
+    2 => 20,
+    3 => 40,
   ];
   static var speedBySize = [
     1 => 250.0,
-    2 => 190.0,
+    2 => 150.0,
     3 => 60.0,
   ];
 
@@ -281,7 +283,7 @@ class Enemy extends Entity {
     speed = 0.0;
     spawnDuration = size * 0.2;
     health = healthBySize[size];
-    hasSnakeMotion = size == 2;
+    hasSnakeMotion = size == 1;
     avoidOthers = true;
     cds = new Cooldown();
     follow = followTarget;
@@ -424,9 +426,9 @@ class Enemy extends Entity {
 
 class Player extends Entity {
   public var playerInfo: h2d.Text;
-  public var maxNumTurretsAvailable = 8;
-  public var numTurretsAvailable = 8;
-  public var turretReloadTime = 0.8;
+  public var maxNumTurretsAvailable = 4;
+  public var numTurretsAvailable = 4;
+  public var turretReloadTime = 1.0;
   var cds = new Cooldown();
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
