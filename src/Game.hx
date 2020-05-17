@@ -594,6 +594,33 @@ class Player extends Entity {
     hitFlashOverlay.color.set(1, 1, 1, 0);
   }
 
+  function movePlayer() {
+    var Key = hxd.Key;
+
+    dx = 0;
+    dy = 0;
+
+    if (Key.isDown(Key.A)) {
+      dx = -1;
+    }
+    if (Key.isDown(Key.D)) {
+      dx = 1;
+    }
+    if (Key.isDown(Key.W)) {
+      dy = -1;
+    }
+    if (Key.isDown(Key.S)) {
+      dy = 1;
+    }
+
+    var magnitude = Math.sqrt(dx * dx + dy * dy);
+    var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
+    var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
+
+    dx = dxNormalized;
+    dy = dyNormalized;
+  }
+
   override function onRemove() {
     hitFlashOverlay.remove();
   }
@@ -602,6 +629,7 @@ class Player extends Entity {
     super.update(dt);
     cds.update(dt);
 
+    movePlayer();
     // pulsate player for visual juice
     playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
 
@@ -796,32 +824,6 @@ class Game extends h2d.Object {
       .addEventTarget(useAbilityOnClick);
   }
 
-  function movePlayer(player: Entity, dt: Float, s2d: h2d.Scene) {
-    var Key = hxd.Key;
-    var dx = 0;
-    var dy = 0;
-
-    if (Key.isDown(Key.A)) {
-      dx = -1;
-    }
-    if (Key.isDown(Key.D)) {
-      dx = 1;
-    }
-    if (Key.isDown(Key.W)) {
-      dy = -1;
-    }
-    if (Key.isDown(Key.S)) {
-      dy = 1;
-    }
-
-    var magnitude = Math.sqrt(dx * dx + dy * dy);
-    var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
-    var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
-
-    player.x += dxNormalized * player.speed * dt;
-    player.y += dyNormalized * player.speed * dt;
-  }
-
   function cleanupDisposedEntities() {
     var ALL = Entity.ALL;
     var i = 0;
@@ -855,8 +857,6 @@ class Game extends h2d.Object {
     for (a in ALL) {
       a.update(dt);
     }
-
-    movePlayer(player, dt, s2d);
 
     target.x = s2d.mouseX;
     target.y = s2d.mouseY;

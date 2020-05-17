@@ -152,7 +152,7 @@ class Hud extends h2d.Object {
   var helpTextList: Array<h2d.Text> = [];
   var scene: h2d.Scene;
 
-  function abilityHelpText(text, font) {
+  function controlsHelpText(text, font) {
     var t = new h2d.Text(font, this);
     t.text = text;
     t.textColor = Game.Colors.pureWhite;
@@ -166,8 +166,9 @@ class Hud extends h2d.Object {
     scene = s2d;
     var font = Fonts.primary.get().clone();
     font.resizeTo(24);
-    abilityHelpText('left-click: primary', font);
-    abilityHelpText('right-click: secondary', font);
+    controlsHelpText('wasd: move', font);
+    controlsHelpText('left-click: primary', font);
+    controlsHelpText('right-click: secondary', font);
   }
 
   public function update() {
