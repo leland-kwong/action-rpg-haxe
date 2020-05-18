@@ -265,7 +265,7 @@ class Main extends hxd.App {
     }
     #end
 
-    background = addBackground(s2d, 0x333333);
+    background = addBackground(s2d, 0x222222);
 
     showHomeScreen();
     hud = new Hud(s2d);

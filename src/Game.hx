@@ -5,6 +5,64 @@
 using hxd.Event;
 import Fonts;
 
+class SoundFx {
+  public static var globalCds = new Cooldown();
+
+  public static function turretBasic(cooldown = 0.1) {
+    if (globalCds.has('turretBasic')) {
+      return;
+    }
+    globalCds.set('turretBasic', cooldown);
+
+    var soundResource: hxd.res.Sound = null;
+
+    if(hxd.res.Sound.supportedFormat(Wav)){
+      soundResource = hxd.Res.turret_basic;
+    }
+
+    if(soundResource != null){
+      //Play the music and loop it
+      soundResource.play(false, 0.4);
+    }
+  }
+
+  public static function clusterBombLaunch(cooldown = 0.1) {
+    if (globalCds.has('clusterBombLaunch')) {
+      return;
+    }
+    globalCds.set('clusterBombLaunch', cooldown);
+
+    var soundResource: hxd.res.Sound = null;
+
+    if(hxd.res.Sound.supportedFormat(Wav)){
+      soundResource = hxd.Res.cluster_bomb_launch;
+    }
+
+    if(soundResource != null){
+      //Play the music and loop it
+      soundResource.play(false);
+    }
+  }
+
+  public static function clusterBombExplosion(cooldown = 0.1) {
+    if (globalCds.has('clusterBombExplosion')) {
+      return;
+    }
+    globalCds.set('clusterBombExplosion', cooldown);
+
+    var soundResource: hxd.res.Sound = null;
+
+    if(hxd.res.Sound.supportedFormat(Wav)){
+      soundResource = hxd.Res.cluster_bomb_explosion;
+    }
+
+    if(soundResource != null){
+      //Play the music and loop it
+      soundResource.play(false);
+    }
+  }
+}
+
 class Utils {
   public static function clamp(value: Float, min: Float, max: Float) {
     if (value < min) {
@@ -155,7 +213,8 @@ class Projectile extends Entity {
     x1: Float, y1: Float, x2: Float, y2: Float,
     color = 0xffffff,
     speed: Float,
-    radius = 10
+    radius = 10,
+    nSegments: Int = null
   ) {
     super({
       x: x1,
@@ -167,14 +226,16 @@ class Projectile extends Entity {
     this.speed = speed;
     forceMultiplier = 0.0;
 
+    var aToTarget = Math.atan2(y2 - y1, x2 - x1);
+
     var sprite = new h2d.Graphics();
     addChild(sprite);
-
     sprite.beginFill(color);
-    sprite.drawCircle(0, 0, radius);
+    sprite.drawCircle(0, 0, radius, nSegments);
+    sprite.beginFill(color, 0.3);
+    sprite.drawCircle(0, 0, radius + 4, nSegments);
     sprite.endFill();
 
-    var aToTarget = Math.atan2(y2 - y1, x2 - x1);
     var _dx = Math.cos(aToTarget);
     var _dy = Math.sin(aToTarget);
     var magnitude = Math.sqrt(_dx * _dx + _dy * _dy);
@@ -209,8 +270,21 @@ class Projectile extends Entity {
 }
 
 class Bullet extends Projectile {
+  var launchSoundPlayed = false;
+
+  public function new(x1, y1, x2, y2, color, speed) {
+    super(x1, y1, x2, y2, color, speed, 10);
+    lifeTime = 2.0;
+  }
+
   public override function update(dt: Float) {
     super.update(dt);
+
+    if (!launchSoundPlayed) {
+      launchSoundPlayed = true;
+
+      SoundFx.turretBasic();
+    }
 
     if (collidedWith != null) {
       health = 0;
@@ -228,7 +302,7 @@ class ClusterBombExplosion extends Projectile {
     var explosionDuration = 0.5;
     var progress = time / explosionDuration;
     setScale(1 - progress);
-    alpha = 0.7 - progress;
+    alpha = 0.8 - progress;
     if (progress >= 1) {
       health = 0;
     }
@@ -237,6 +311,9 @@ class ClusterBombExplosion extends Projectile {
       return;
     }
     triggered = true;
+
+    SoundFx.clusterBombExplosion();
+
     // hit all targets in area
     for (a in Entity.ALL) {
       if (a.type == 'ENEMY') {
@@ -252,13 +329,22 @@ class ClusterBombExplosion extends Projectile {
 }
 
 class ClusterBomb extends Projectile {
+  var launchSoundPlayed = false;
+
   public function new(x1, y1, x2, y2, color, speed) {
-    super(x1, y1, x2, y2, color, speed);
+    super(x1, y1, x2, y2, color, speed, 10, 5);
     lifeTime = 2.0;
   }
 
   public override function update(dt: Float) {
     super.update(dt);
+
+    set_rotation(time * 4);
+
+    if (!launchSoundPlayed) {
+      launchSoundPlayed = true;
+      SoundFx.clusterBombLaunch();
+    }
 
     var shouldExplode = collidedWith != null ||
       lifeTime <= 0;
@@ -279,7 +365,7 @@ class ClusterBomb extends Projectile {
 }
 
 class Turret extends Entity {
-  public static var baseColor = 0xff6392;
+  public static var baseColor = Colors.green;
   var cds: Cooldown;
   var range = 300;
   var lifeTime = 10.0;
@@ -301,7 +387,10 @@ class Turret extends Entity {
     health = 3;
     cds = new Cooldown();
 
+    var nSegments = null;
+
     if (attackType == 'ClusterBomb') {
+      nSegments = 5;
       attackRate = 1.0;
       attackVelocity = 200.0;
       range = 400;
@@ -309,7 +398,8 @@ class Turret extends Entity {
 
     sprite = new h2d.Graphics(this);
     sprite.beginFill(color);
-    sprite.drawCircle(0, 0, radius);
+    sprite.lineStyle(0);
+    sprite.drawCircle(0, 0, radius, nSegments);
     sprite.endFill();
   }
 
@@ -318,11 +408,13 @@ class Turret extends Entity {
 
     cds.update(dt);
 
-    if (!cds.has('attack')) {
-      cds.set('attack', attackRate);
+    var nearest = findNearest(x, y, range, 'ENEMY');
+    if (nearest != null && nearest.status == 'TARGETABLE') {
+      var angleToTarget = Math.atan2(nearest.y - y, nearest.x - x);
+      set_rotation(angleToTarget);
 
-      var nearest = findNearest(x, y, range, 'ENEMY');
-      if (nearest != null && nearest.status == 'TARGETABLE') {
+      if (!cds.has('attack')) {
+        cds.set('attack', attackRate);
         switch attackType {
           case 'ClusterBomb': {
             var b = new ClusterBomb(
@@ -378,7 +470,6 @@ class Enemy extends Entity {
   ];
 
   var font: h2d.Font = Fonts.primary.get().clone();
-  var text: h2d.Text;
   var cds: Cooldown;
   var damage = 1;
   var follow: Entity;
@@ -413,20 +504,11 @@ class Enemy extends Entity {
     setScale(0);
 
     graphic = new h2d.Graphics(this);
-    // make outline
-    graphic.beginFill(0x000000);
-    graphic.drawCircle(0, 0, radius + 1);
     graphic.beginFill(color);
     graphic.drawCircle(0, 0, radius);
+    graphic.beginFill(0x000000, 0.1);
+    graphic.drawCircle(0, 0, radius - 4);
     graphic.endFill();
-
-    font.resizeTo(24);
-    text = new h2d.Text(font);
-    text.textAlign = Center;
-    text.textColor = 0x000000;
-    // vertical align center
-    text.y = -text.textHeight / 2;
-    addChild(text);
   }
 
   public override function update(dt) {
@@ -446,7 +528,6 @@ class Enemy extends Entity {
     super.update(dt);
 
     cds.update(dt);
-    text.text = '${health}';
 
     if (!cds.has('attack')) {
       // distance to keep from destination
@@ -562,7 +643,7 @@ class Player extends Entity {
       y: y,
       radius: 23,
       weight: 1.0,
-      color: Colors.blue,
+      color: Colors.green,
     });
     type = 'PLAYER';
     health = 10;
@@ -571,11 +652,11 @@ class Player extends Entity {
 
     rootScene = s2d;
     playerSprite = new h2d.Graphics(this);
-    playerSprite.beginFill(color);
-    playerSprite.drawCircle(0, 0, radius);
     // make halo
     playerSprite.beginFill(0xffffff, 0.3);
     playerSprite.drawCircle(0, 0, radius + 4);
+    playerSprite.beginFill(color);
+    playerSprite.drawCircle(0, 0, radius);
     playerSprite.endFill();
 
     hitFlashOverlay = new h2d.Graphics(s2d);
@@ -678,9 +759,9 @@ class Player extends Entity {
 // Spawns enemies over time
 class EnemySpawner {
   static var colors = [
-    1 => 0xF78C6B,
-    2 => 0xFFD166,
-    3 => 0x06D6A0,
+    1 => Colors.red,
+    2 => Colors.orange,
+    3 => Colors.yellow,
   ];
 
   var enemiesLeftToSpawn: Int;
@@ -784,6 +865,8 @@ class Game extends h2d.Object {
   ) {
     super();
 
+    hxd.Res.initEmbed();
+
     s2d.addChild(this);
     if (oldGame != null) {
       oldGame.cleanupLevel();
@@ -840,6 +923,8 @@ class Game extends h2d.Object {
     if (enemySpawner != null) {
       enemySpawner.update(dt);
     }
+
+    SoundFx.globalCds.update(dt);
 
     {
       playerInfo.text = [
