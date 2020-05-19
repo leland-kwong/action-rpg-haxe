@@ -2,7 +2,6 @@ import h2d.Text;
 import h2d.Interactive;
 import Fonts;
 import Game;
-import Easing;
 
 class BatchDraw {
   var txt: h2d.Text;

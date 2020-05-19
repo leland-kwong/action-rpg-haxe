@@ -6,6 +6,10 @@ using hxd.Event;
 import Fonts;
 import Easing;
 
+class Global {
+  public static var rootScene: h2d.Scene;
+}
+
 class SoundFx {
   public static var globalCds = new Cooldown();
 
@@ -294,28 +298,23 @@ class Bullet extends Projectile {
   }
 }
 
-class ClusterBombExplosion extends Projectile {
+class ClusterBombExplosion extends Entity {
   var triggered = false;
+  var explosions: Array<Projectile> = [];
+  var explosionArea: Int;
 
-  public override  function update(dt: Float) {
-    super.update(dt);
+  public function new(x, y, radius) {
+    super({
+      x: x,
+      y: y,
+      color: Colors.pureWhite,
+      weight: 1.0,
+      radius: 0
+    });
+    explosionArea = radius;
+  }
 
-    var explosionDuration = 0.5;
-    var progress = Easing.progress(0, time, explosionDuration);
-    var sx = Easing.easeIn(progress);
-    setScale(1 - sx);
-    alpha = 0.8 - sx;
-    if (progress >= 1) {
-      health = 0;
-    }
-
-    if (triggered) {
-      return;
-    }
-    triggered = true;
-
-    SoundFx.clusterBombExplosion();
-
+  function damageEachAgentInRadius(x, y, radius, damage) {
     // hit all targets in area
     for (a in Entity.ALL) {
       if (a.type == 'ENEMY') {
@@ -323,19 +322,59 @@ class ClusterBombExplosion extends Projectile {
         var min = a.radius + radius;
         var conflict = d < min;
         if (conflict) {
-          a.damageTaken += 1;
+          a.damageTaken += damage;
         }
       }
+    }
+  }
+
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    var explosionDuration = 0.5;
+    var progress = Easing.progress(0, time, explosionDuration);
+    var sx = Easing.easeIn(progress);
+    if (progress >= 1) {
+      health = 0;
+      return;
+    }
+
+    if (triggered) {
+      // animate explosion
+      for (expl in explosions) {
+        expl.setScale(1 - sx);
+        expl.alpha = 0.8 - sx;
+      }
+      return;
+    }
+    triggered = true;
+
+    SoundFx.clusterBombExplosion();
+
+    for (_ in 0...3) {
+      var area = explosionArea;
+      var x2 = x + Utils.irnd(-area, area);
+      var y2 = y + Utils.irnd(-area, area);
+      var inst = new Projectile(
+        x2, y2, x2, y2, Colors.pureWhite,
+        0.0, 45
+      );
+      Global.rootScene.addChild(inst);
+      damageEachAgentInRadius(x2, y2, inst.radius, 1);
+      explosions.push(inst);
     }
   }
 }
 
 class ClusterBomb extends Projectile {
   var launchSoundPlayed = false;
+  var initialExplosionTriggered = false;
+  var explosionAreaRadius = 70;
 
-  public function new(x1, y1, x2, y2, color, speed) {
-    super(x1, y1, x2, y2, color, speed, 10, 5);
+  public function new(x1, y1, x2, y2, color, speed, projectilRadius, explosionAreaRadius) {
+    super(x1, y1, x2, y2, color, speed, projectilRadius, 5);
     lifeTime = 2.0;
+    this.explosionAreaRadius = explosionAreaRadius;
   }
 
   public override function update(dt: Float) {
@@ -349,19 +388,13 @@ class ClusterBomb extends Projectile {
     }
 
     var shouldExplode = collidedWith != null ||
-      lifeTime <= 0;
+      time >= lifeTime;
     if (shouldExplode) {
       health = 0;
-      for (_ in 0...3) {
-        var area = 70;
-        var x2 = x + Utils.irnd(-area, area);
-        var y2 = y + Utils.irnd(-area, area);
-        var inst = new ClusterBombExplosion(
-          x2, y2, x2, y2, Colors.pureWhite,
-          0.0, 55
-        );
-        parent.parent.addChild(inst);
-      }
+
+      Global.rootScene.addChild(
+        new ClusterBombExplosion(x, y, explosionAreaRadius)
+      );
     }
   }
 }
@@ -422,9 +455,11 @@ class Turret extends Entity {
             var b = new ClusterBomb(
               x, y, nearest.x, nearest.y,
               Colors.pureWhite,
-              attackVelocity
+              attackVelocity,
+              10,
+              70
             );
-            parent.addChild(b);
+            Global.rootScene.addChild(b);
           }
           case 'Bullet': {
             var b = new Bullet(
@@ -432,7 +467,7 @@ class Turret extends Entity {
               Colors.pureWhite,
               attackVelocity
             );
-            parent.addChild(b);
+            Global.rootScene.addChild(b);
           }
         }
       }
@@ -885,6 +920,7 @@ class Game extends h2d.Object {
   ) {
     super();
 
+    Global.rootScene = s2d;
     hxd.Res.initEmbed();
 
     s2d.addChild(this);
