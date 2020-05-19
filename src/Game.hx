@@ -4,6 +4,7 @@
 
 using hxd.Event;
 import Fonts;
+import Easing;
 
 class SoundFx {
   public static var globalCds = new Cooldown();
@@ -300,9 +301,10 @@ class ClusterBombExplosion extends Projectile {
     super.update(dt);
 
     var explosionDuration = 0.5;
-    var progress = time / explosionDuration;
-    setScale(1 - progress);
-    alpha = 0.8 - progress;
+    var progress = Easing.progress(0, time, explosionDuration);
+    var sx = Easing.easeIn(progress);
+    setScale(1 - sx);
+    alpha = 0.8 - sx;
     if (progress >= 1) {
       health = 0;
     }
@@ -479,6 +481,7 @@ class Enemy extends Entity {
   var size: Int;
   var repelFilter: String;
   var attacksTurrets = false;
+  var bounceAnimationStartTime: Float;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -506,7 +509,7 @@ class Enemy extends Entity {
     graphic = new h2d.Graphics(this);
     graphic.beginFill(color);
     graphic.drawCircle(0, 0, radius);
-    graphic.beginFill(0x000000, 0.1);
+    graphic.beginFill(0xffffff, 0.1);
     graphic.drawCircle(0, 0, radius - 4);
     graphic.endFill();
   }
@@ -521,8 +524,25 @@ class Enemy extends Entity {
       setScale(spawnProgress);
     }
     if (isFullySpawned) {
+      bounceAnimationStartTime = bounceAnimationStartTime == null
+        ? time
+        : bounceAnimationStartTime;
       status = 'TARGETABLE';
       speed = speedBySize[size];
+
+      // bounce animation (stretch/squash)
+      {
+        var progress = Easing.progress(bounceAnimationStartTime, time, 1.0);
+        var ds = Easing.easeInOut(progress);
+
+        graphic.scaleY = 1 + ds / 6;
+        graphic.scaleX = 1 - ds / 6;
+        graphic.y = 1 + (1 / 6);
+
+        if (progress >= 1) {
+          bounceAnimationStartTime = time;
+        }
+      }
     }
 
     super.update(dt);

@@ -2,6 +2,7 @@ import h2d.Text;
 import h2d.Interactive;
 import Fonts;
 import Game;
+import Easing;
 
 class BatchDraw {
   var txt: h2d.Text;
@@ -194,6 +195,7 @@ class Main extends hxd.App {
   var background: h2d.Bitmap;
   var homeScreen: HomeScreen;
   var hud: Hud;
+  var reactiveItems: Array<Dynamic> = [];
 
   function animate(s2d: h2d.Scene) {
     // creates three tiles with different color
@@ -288,6 +290,10 @@ class Main extends hxd.App {
   override function update(dt:Float) {
     handleGlobalHotkeys();
     hud.update();
+
+    for (it in reactiveItems) {
+      it.update(dt);
+    }
 
     t += dt;
     acc += dt;
