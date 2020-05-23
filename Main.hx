@@ -2,6 +2,11 @@ import h2d.Text;
 import h2d.Interactive;
 import Fonts;
 import Game;
+import Grid;
+
+class Global {
+  public static var rootScene: h2d.Scene;
+}
 
 class BatchDraw {
   var txt: h2d.Text;
@@ -258,6 +263,8 @@ class Main extends hxd.App {
   }
 
   override function init() {
+    Global.rootScene = s2d;
+
     #if !jsMode
     // make fullscreen
     {
@@ -268,9 +275,15 @@ class Main extends hxd.App {
 
     background = addBackground(s2d, 0x222222);
 
-    showHomeScreen();
-    hud = new Hud(s2d);
-    s2d.addChild(hud);
+    // showHomeScreen();
+    // hud = new Hud(s2d);
+    // s2d.addChild(hud);
+    // reactiveItems.push(hud);
+
+    reactiveItems.push(
+      new Grid.Example(s2d)
+    );
+    Grid.runTests();
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
@@ -288,7 +301,6 @@ class Main extends hxd.App {
   // on each frame
   override function update(dt:Float) {
     handleGlobalHotkeys();
-    hud.update();
 
     for (it in reactiveItems) {
       it.update(dt);

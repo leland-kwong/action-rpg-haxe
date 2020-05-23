@@ -1,6 +1,12 @@
+# custom debug vars
 -D jsMode
 -D debugMode
+
+# heaps built-in vars
 -D resourcesPath=./sound_effects_res
+
+# haxe built-in vars
+-D haxeJSON
 
 # class paths
 -cp src

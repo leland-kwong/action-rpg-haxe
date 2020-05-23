@@ -6,10 +6,6 @@ using hxd.Event;
 import Fonts;
 import Easing;
 
-class Global {
-  public static var rootScene: h2d.Scene;
-}
-
 class SoundFx {
   public static var globalCds = new Cooldown();
 
@@ -359,7 +355,7 @@ class ClusterBombExplosion extends Entity {
         x2, y2, x2, y2, Colors.pureWhite,
         0.0, 45
       );
-      Global.rootScene.addChild(inst);
+      Main.Global.rootScene.addChild(inst);
       damageEachAgentInRadius(x2, y2, inst.radius, 1);
       explosions.push(inst);
     }
@@ -392,7 +388,7 @@ class ClusterBomb extends Projectile {
     if (shouldExplode) {
       health = 0;
 
-      Global.rootScene.addChild(
+      Main.Global.rootScene.addChild(
         new ClusterBombExplosion(x, y, explosionAreaRadius)
       );
     }
@@ -459,7 +455,7 @@ class Turret extends Entity {
               10,
               70
             );
-            Global.rootScene.addChild(b);
+            Main.Global.rootScene.addChild(b);
           }
           case 'Bullet': {
             var b = new Bullet(
@@ -467,7 +463,7 @@ class Turret extends Entity {
               Colors.pureWhite,
               attackVelocity
             );
-            Global.rootScene.addChild(b);
+            Main.Global.rootScene.addChild(b);
           }
         }
       }
@@ -920,7 +916,7 @@ class Game extends h2d.Object {
   ) {
     super();
 
-    Global.rootScene = s2d;
+    Main.Global.rootScene = s2d;
     hxd.Res.initEmbed();
 
     s2d.addChild(this);
