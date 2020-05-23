@@ -6,6 +6,7 @@ typedef GridKey = Int;
 typedef GridRef = {
   var cellSize: Int;
   var data: Map<Int, Map<Int, Map<GridKey, GridKey>>>;
+  var itemCache: Map<Int, Array<Int>>;
 }
 
 class Example extends h2d.Object {
@@ -21,7 +22,7 @@ class Example extends h2d.Object {
   public function new(s2d: h2d.Scene) {
     super(s2d);
 
-    cursorSize = cellSize - 10;
+    cursorSize = cellSize * 2;
     texture = new h3d.mat.Texture(s2d.width, s2d.height, [h3d.mat.Data.TextureFlags.Target]);
     var tile = h2d.Tile.fromTexture(texture);
 
@@ -89,7 +90,7 @@ class Example extends h2d.Object {
       var mouseY = Math.round(ev.relY);
 
       Grid.clear(ref);
-      Grid.addItemRect(ref, mouseX, mouseY, cursorSize, cursorSize, 1);
+      Grid.setItemRect(ref, mouseX, mouseY, cursorSize, cursorSize, 1);
 
       drawGridText(ref);
     }
@@ -133,7 +134,8 @@ class Grid {
   public static function create(cellSize): GridRef {
     return {
       cellSize: cellSize,
-      data: new Map()
+      data: new Map(),
+      itemCache: new Map(),
     }
   }
 
@@ -147,7 +149,7 @@ class Grid {
     return row != null ? row[x] : null;
   }
 
-  public static function addItem(ref: GridRef, x, y, key: GridKey) {
+  static function addItem(ref: GridRef, x, y, key: GridKey) {
     if (!ref.data.exists(y)) {
       ref.data[y] = new Map();
     }
@@ -160,11 +162,15 @@ class Grid {
   }
 
   // NOTE: origin is at center of rect
-  public static function addItemRect(ref: GridRef, x, y, w, h, key: GridKey) {
+  public static function setItemRect(ref: GridRef, x, y, w, h, key: GridKey) {
+    removeItem(ref, key);
+
     var xMin = Math.floor(Math.round(x - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(Math.round(x + (w / 2)) / ref.cellSize);
     var yMin = Math.floor(Math.round(y - (h / 2)) / ref.cellSize);
     var yMax = Math.ceil(Math.round(y + (h / 2)) / ref.cellSize);
+
+    ref.itemCache[key] = [xMin, xMax, yMin, yMax];
 
     for (y in yMin...yMax) {
       for (x in xMin...xMax) {
@@ -194,32 +200,30 @@ class Grid {
     return items;
   }
 
-  public static function removeItem(ref: GridRef, x, y, key: GridKey) {
-    var cellData = getCell(ref, x, y);
+  public static function removeItem(ref: GridRef, key: GridKey) {
+    var cache = ref.itemCache[key];
 
-    if (cellData != null) {
-      cellData.remove(key);
+    if (cache == null) {
+      return;
+    }
+
+    var xMin = cache[0];
+    var xMax = cache[1];
+    var yMin = cache[2];
+    var yMax = cache[3];
+
+    for (y in yMin...yMax) {
+      for (x in xMin...xMax) {
+        var cellData = getCell(ref, x, y);
+
+        if (cellData != null) {
+          cellData.remove(key);
+        }
+      }
     }
   }
 
-  public static function runTests() {
-    Test.assert('grid cell should have item', () -> {
-      var ref = Grid.create(1);
-      var itemKey = 1;
-
-      Grid.addItem(ref, 2, 3, itemKey);
-      Grid.getCell(ref, 2, 3).exists(itemKey);
-    });
-
-    Test.assert('grid cell should remove item', () -> {
-      var ref = Grid.create(1);
-      var itemKey = 1;
-
-      Grid.addItem(ref, 2, 3, itemKey);
-      Grid.removeItem(ref, 2, 3, itemKey);
-      !Grid.getCell(ref, 2, 3).exists(itemKey);
-    });
-
+  public static function test() {
     function numKeys(map: Map<Dynamic, Dynamic>) {
       var numKeys = 0;
 
@@ -230,13 +234,40 @@ class Grid {
       return numKeys;
     }
 
+    Test.assert('[grid] cell should have item', () -> {
+      var ref = Grid.create(1);
+      var itemKey = 1;
+
+      Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
+      Grid.getCell(ref, 2, 3).exists(itemKey);
+    });
+
+    Test.assert('[grid] cell should remove item', () -> {
+      var ref = Grid.create(1);
+      var itemKey = 1;
+
+      Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
+      Grid.removeItem(ref, itemKey);
+      !Grid.getCell(ref, 2, 3).exists(itemKey);
+    });
+
+    Test.assert('[grid] move item', () -> {
+      var ref = Grid.create(1);
+      var itemKey = 1;
+
+      Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
+      Grid.setItemRect(ref, 2, 4, 1, 1, itemKey);
+      return numKeys(ref.data[3][2]) == 0 &&
+        numKeys(ref.data[4][2]) == 1;
+    });
+
     Test.assert('[grid] add item rect exact fit', () -> {
       var ref = Grid.create(1);
       var itemKey = 1;
       var width = 1;
       var height = 3;
 
-      Grid.addItemRect(ref, 0, 1, width, height, itemKey);
+      Grid.setItemRect(ref, 0, 1, width, height, itemKey);
       return numKeys(ref.data) == height &&
         numKeys(ref.data[0]) == width;
     });
@@ -248,7 +279,7 @@ class Grid {
       var width = cellSize - 1;
       var height = cellSize - 1;
 
-      Grid.addItemRect(
+      Grid.setItemRect(
         ref,
         Math.round(width / 2) + 2,
         Math.round(height / 2) + 2,
@@ -270,7 +301,7 @@ class Grid {
 
       for (y in 0...(height)) {
         for (x in 0...(width)) {
-          Grid.addItem(ref, x, y, index);
+          Grid.setItemRect(ref, x, y, 1, 1, index);
           index += 1;
         }
       }

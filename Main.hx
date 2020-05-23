@@ -283,7 +283,7 @@ class Main extends hxd.App {
     reactiveItems.push(
       new Grid.Example(s2d)
     );
-    Grid.runTests();
+    Grid.test();
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
