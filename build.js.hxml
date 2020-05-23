@@ -1,7 +1,11 @@
+-D jsMode
+-D debugMode
+-D resourcesPath=./sound_effects_res
+
 # class paths
 -cp src
 
 -lib heaps
--js game.dist.js
+-js bin/game.dist.js
 -main Main
 -debug

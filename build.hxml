@@ -1,3 +1,5 @@
+-D resourcesPath=./sound_effects_res
+
 # class paths
 -cp src
 
