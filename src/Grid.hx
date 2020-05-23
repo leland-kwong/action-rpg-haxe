@@ -9,7 +9,7 @@ typedef GridRef = {
   var itemCache: Map<Int, Array<Int>>;
 }
 
-class Example extends h2d.Object {
+class GridExample extends h2d.Object {
   var ref: GridRef;
   var canvas: h2d.Graphics;
   var text: h2d.Text;

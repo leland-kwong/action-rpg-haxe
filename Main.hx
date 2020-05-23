@@ -281,7 +281,7 @@ class Main extends hxd.App {
     // reactiveItems.push(hud);
 
     reactiveItems.push(
-      new Grid.Example(s2d)
+      new GridExample(s2d)
     );
     Grid.test();
 
