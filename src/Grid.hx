@@ -1,3 +1,4 @@
+import hxd.Key;
 import TestUtils.assert;
 import Fonts;
 import SaveState;
@@ -10,8 +11,15 @@ typedef GridRef = {
   var itemCache: Map<Int, Array<Int>>;
 }
 
+enum GridEditMode {
+  Normal;
+  Insert;
+  Delete;
+}
+
 class GridExample {
-  var ref: GridRef;
+  var mouseGridRef: GridRef;
+  var environmentGridRef: GridRef;
   var canvas: h2d.Graphics;
   var text: h2d.Text;
   var cellTile: h2d.Tile;
@@ -19,11 +27,21 @@ class GridExample {
   var cellSize = 64;
   var texture: h3d.mat.Texture;
   var cursorSize: Int;
+  var debugPoint: h2d.Graphics;
+  var scene: h2d.Scene;
+  var editMode: GridEditMode;
+  var updateGrids: (ev: {relX: Float, relY: Float}) -> Void;
 
   public function new(s2d: h2d.Scene) {
     SaveState.tests();
 
-    cursorSize = cellSize * 2;
+    scene = s2d;
+    {
+      debugPoint = new h2d.Graphics(s2d);
+      debugPoint.beginFill(Game.Colors.yellow);
+      debugPoint.drawCircle(0, 0, 10);
+    }
+    cursorSize = cellSize;
     texture = new h3d.mat.Texture(s2d.width, s2d.height, [h3d.mat.Data.TextureFlags.Target]);
     var tile = h2d.Tile.fromTexture(texture);
 
@@ -43,7 +61,7 @@ class GridExample {
     );
     var textTile = h2d.Tile.fromTexture(textTexture);
 
-    function drawGridText(ref: Grid.GridRef) {
+    function drawGridInfo(ref: Grid.GridRef) {
       textTexture.clear(0xffffff, 0);
       textCanvas.clear();
       var tiles = [];
@@ -71,8 +89,9 @@ class GridExample {
         }
       }
 
-      text.text = '';
+      // text.text = '';
 
+      textCanvas.alpha = 0.5;
       for (t in tiles) {
         textCanvas.drawTile(
           t.x + cellSize / 2 - t.width / 2,
@@ -82,19 +101,75 @@ class GridExample {
       }
     }
 
-    ref = Grid.create(cellSize);
+    mouseGridRef = Grid.create(cellSize);
+    environmentGridRef = Grid.create(cellSize);
 
     interactArea = new h2d.Interactive(0, 0, Main.Global.rootScene);
     interactArea.enableRightButton = true;
-    interactArea.onMove = function(ev: hxd.Event) {
+
+    function editEnvironment(ev, editMode) {
+      if (editMode == GridEditMode.Normal) {
+        return;
+      }
+
       var mouseX = Math.round(ev.relX);
       var mouseY = Math.round(ev.relY);
+      var gridX = Grid.snapPosition(ev.relX, cursorSize);
+      var gridY = Grid.snapPosition(ev.relY, cursorSize);
 
-      Grid.clear(ref);
-      Grid.setItemRect(ref, mouseX, mouseY, cursorSize, cursorSize, 1);
+      // add item
+      if (editMode == GridEditMode.Insert) {
+        // remove previous items
+        var currentItems = Grid.getItemsInRect(
+          environmentGridRef, gridX, gridY, cursorSize, cursorSize
+        );
+        for (itemKey in currentItems) {
+          Grid.removeItem(environmentGridRef, itemKey);
+        }
 
-      drawGridText(ref);
+        // add new wall
+        var wallId = Utils.uid();
+        Grid.setItemRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize, wallId);
+      }
+
+      // remove item
+      if (editMode == GridEditMode.Delete) {
+        var items = Grid.getItemsInRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize);
+        for (key in items) {
+          Grid.removeItem(environmentGridRef, key);
+        }
+      }
     }
+
+    function previewInsertArea(ev) {
+      var gridX = Grid.snapPosition(ev.relX, cursorSize);
+      var gridY = Grid.snapPosition(ev.relY, cursorSize);
+
+      Grid.clear(mouseGridRef);
+      Grid.setItemRect(mouseGridRef, gridX, gridY, cursorSize, cursorSize, 1);
+
+      drawGridInfo(mouseGridRef);
+    }
+    updateGrids = function(ev) {
+      previewInsertArea(ev);
+      editEnvironment(ev, editMode);
+    };
+
+    function setEditMode(ev: hxd.Event) {
+      if (ev.button == 0) {
+        editMode = GridEditMode.Insert;
+      }
+
+      if (ev.button == 1) {
+        editMode = GridEditMode.Delete;
+      }
+    }
+    interactArea.onPush = setEditMode;
+
+    function setNormalMode(ev: hxd.Event) {
+      editMode = GridEditMode.Normal;
+    }
+    interactArea.onRelease = setNormalMode;
   }
 
   public function update(dt: Float) {
@@ -102,16 +177,42 @@ class GridExample {
     interactArea.width = Main.Global.rootScene.width;
     interactArea.height = Main.Global.rootScene.height;
 
-    for (y => row in ref.data) {
-      for (x => items in row) {
-        canvas.beginFill(Game.Colors.pureWhite, 0);
-        canvas.lineStyle(1, Game.Colors.pureWhite);
-        canvas.drawRect(
-          x * cellTile.width,
-          y * cellTile.height,
-          cellTile.width,
-          cellTile.height
-        );
+    updateGrids({
+      relX: scene.mouseX,
+      relY: scene.mouseY
+    });
+
+    {
+      var gridX = Grid.snapPosition(scene.mouseX, cursorSize);
+      var gridY = Grid.snapPosition(scene.mouseY, cursorSize);
+
+      debugPoint.x = gridX;
+      debugPoint.y = gridY;
+
+      // toggle cursor size
+      if (Key.isPressed(Key.T)) {
+        cursorSize = cursorSize == cellSize
+          ? cellSize * 2 : cellSize;
+      }
+    }
+
+    // render grid
+    for (gridRef in [mouseGridRef, environmentGridRef]) {
+      for (y => row in gridRef.data) {
+        for (x => items in row) {
+          if (Utils.iterLength(items) == 0) {
+            continue;
+          }
+
+          canvas.beginFill(Game.Colors.pureWhite, 0);
+          canvas.lineStyle(1, Game.Colors.pureWhite);
+          canvas.drawRect(
+            x * cellTile.width,
+            y * cellTile.height,
+            cellTile.width,
+            cellTile.height
+          );
+        }
       }
     }
 
@@ -132,6 +233,11 @@ class GridExample {
 }
 
 class Grid {
+  // snaps to the center of a cell
+  public static function snapPosition(v: Dynamic, cellSize) {
+    return Math.ceil(v / cellSize) * cellSize - Math.floor(cellSize / 2);
+  }
+
   public static function create(cellSize): GridRef {
     return {
       cellSize: cellSize,

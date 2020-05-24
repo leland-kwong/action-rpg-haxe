@@ -201,18 +201,6 @@ class Main extends hxd.App {
   var hud: Hud;
   var reactiveItems: Array<Dynamic> = [];
 
-  function animate(s2d: h2d.Scene) {
-    // creates three tiles with different color
-    var t1 = h2d.Tile.fromColor(0xFF0000, 30, 30);
-    var t2 = h2d.Tile.fromColor(0x00FF00, 30, 40);
-    var t3 = h2d.Tile.fromColor(0x0000FF, 30, 50);
-
-    // creates an animation for these tiles
-    anim = new h2d.Anim([t1,t2,t3], s2d);
-    anim.x = s2d.width * 0.5;
-    anim.y = s2d.height * 0.5;
-  }
-
   function addBackground(s2d: h2d.Scene, color) {
     // background
     var overlayTile = h2d.Tile.fromColor(color, s2d.width, s2d.height);
@@ -266,13 +254,14 @@ class Main extends hxd.App {
   override function init() {
     Global.rootScene = s2d;
 
-    #if !jsMode
-    // make fullscreen
     {
-      hxd.Window.getInstance()
-        .displayMode = hxd.Window.DisplayMode.Fullscreen;
+      var win = hxd.Window.getInstance();
+
+      // make fullscreen
+      #if !jsMode
+        win.displayMode = hxd.Window.DisplayMode.Fullscreen;
+      #end
     }
-    #end
 
     background = addBackground(s2d, 0x222222);
 
