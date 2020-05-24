@@ -237,6 +237,11 @@ class Main extends hxd.App {
     return numEnemies;
   }
 
+  function onGameExit() {
+    trace('on game exit');
+    hxd.System.exit();
+  }
+
   function showHomeScreen() {
     if (homeScreen != null) {
       return;
@@ -252,10 +257,6 @@ class Main extends hxd.App {
       homeScreen = null;
     }
 
-    function onGameExit() {
-      trace('on game exit');
-      hxd.System.exit();
-    }
     homeScreen = new HomeScreen(
       s2d, onGameStart, onGameExit
     );
@@ -283,7 +284,7 @@ class Main extends hxd.App {
     reactiveItems.push(
       new GridExample(s2d)
     );
-    Grid.test();
+    Grid.tests();
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());

@@ -1,10 +1,15 @@
-class Test {
+class TestUtils {
   public static function assert(
     failureMessage: String,
-    testPredicate
+    testPredicate: () -> Bool,
+    afterTest: () -> Void = null
   ) {
     if (!testPredicate()) {
       throw '[test fail] ${failureMessage}';
+    }
+
+    if (afterTest != null) {
+      afterTest();
     }
   }
 }

@@ -1,5 +1,6 @@
-import Test;
+import TestUtils.assert;
 import Fonts;
+import SaveState;
 
 typedef GridKey = Int;
 
@@ -9,7 +10,7 @@ typedef GridRef = {
   var itemCache: Map<Int, Array<Int>>;
 }
 
-class GridExample extends h2d.Object {
+class GridExample {
   var ref: GridRef;
   var canvas: h2d.Graphics;
   var text: h2d.Text;
@@ -20,14 +21,14 @@ class GridExample extends h2d.Object {
   var cursorSize: Int;
 
   public function new(s2d: h2d.Scene) {
-    super(s2d);
+    SaveState.tests();
 
     cursorSize = cellSize * 2;
     texture = new h3d.mat.Texture(s2d.width, s2d.height, [h3d.mat.Data.TextureFlags.Target]);
     var tile = h2d.Tile.fromTexture(texture);
 
     cellTile = tile.sub(0, 0, cellSize, cellSize);
-    canvas = new h2d.Graphics(this);
+    canvas = new h2d.Graphics(s2d);
     canvas.beginFill(0xffffff, 0);
     canvas.lineStyle(1, 0xffffff);
     canvas.drawRect(0, 0, cellSize, cellSize);
@@ -35,8 +36,8 @@ class GridExample extends h2d.Object {
 
     var cellFont = Fonts.primary.get().clone();
     cellFont.resizeTo(Math.round(12 * 1.5));
-    text = new h2d.Text(cellFont, this);
-    var textCanvas = new h2d.Graphics(this);
+    text = new h2d.Text(cellFont, s2d);
+    var textCanvas = new h2d.Graphics(s2d);
     var textTexture = new h3d.mat.Texture(
       s2d.width, s2d.height, [h3d.mat.Data.TextureFlags.Target]
     );
@@ -223,7 +224,7 @@ class Grid {
     }
   }
 
-  public static function test() {
+  public static function tests() {
     function numKeys(map: Map<Dynamic, Dynamic>) {
       var numKeys = 0;
 
@@ -234,7 +235,7 @@ class Grid {
       return numKeys;
     }
 
-    Test.assert('[grid] cell should have item', () -> {
+    assert('[grid] cell should have item', () -> {
       var ref = Grid.create(1);
       var itemKey = 1;
 
@@ -242,7 +243,7 @@ class Grid {
       Grid.getCell(ref, 2, 3).exists(itemKey);
     });
 
-    Test.assert('[grid] cell should remove item', () -> {
+    assert('[grid] cell should remove item', () -> {
       var ref = Grid.create(1);
       var itemKey = 1;
 
@@ -251,7 +252,7 @@ class Grid {
       !Grid.getCell(ref, 2, 3).exists(itemKey);
     });
 
-    Test.assert('[grid] move item', () -> {
+    assert('[grid] move item', () -> {
       var ref = Grid.create(1);
       var itemKey = 1;
 
@@ -261,7 +262,7 @@ class Grid {
         numKeys(ref.data[4][2]) == 1;
     });
 
-    Test.assert('[grid] add item rect exact fit', () -> {
+    assert('[grid] add item rect exact fit', () -> {
       var ref = Grid.create(1);
       var itemKey = 1;
       var width = 1;
@@ -272,7 +273,7 @@ class Grid {
         numKeys(ref.data[0]) == width;
     });
 
-    Test.assert('[grid] add item rect partial overlap', () -> {
+    assert('[grid] add item rect partial overlap', () -> {
       var cellSize = 10;
       var ref = Grid.create(cellSize);
       var itemKey = 1;
@@ -292,7 +293,7 @@ class Grid {
         numKeys(ref.data[0]) == Math.ceil(cellSize / width);
     });
 
-    Test.assert('[grid] get items in rect', () -> {
+    assert('[grid] get items in rect', () -> {
       var cellSize = 1;
       var ref = Grid.create(cellSize);
       var width = 2;

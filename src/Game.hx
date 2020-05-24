@@ -418,7 +418,7 @@ class Turret extends Entity {
     health = 3;
     cds = new Cooldown();
 
-    var nSegments = null;
+    var nSegments = -1;
 
     if (attackType == 'ClusterBomb') {
       nSegments = 5;
@@ -512,7 +512,7 @@ class Enemy extends Entity {
   var size: Int;
   var repelFilter: String;
   var attacksTurrets = false;
-  var bounceAnimationStartTime: Float;
+  var bounceAnimationStartTime = -1.0;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -555,7 +555,7 @@ class Enemy extends Entity {
       setScale(spawnProgress);
     }
     if (isFullySpawned) {
-      bounceAnimationStartTime = bounceAnimationStartTime == null
+      bounceAnimationStartTime = bounceAnimationStartTime == -1
         ? time
         : bounceAnimationStartTime;
       status = 'TARGETABLE';
