@@ -7,8 +7,16 @@ typedef GridKey = Int;
 
 typedef GridRef = {
   var cellSize: Int;
-  var data: Map<Int, Map<Int, Map<GridKey, GridKey>>>;
+  var data: Map<
+    Int, // row-index
+    Map< // row-data
+      Int, // column-index
+      Map<GridKey, GridKey>
+    >
+  >;
   var itemCache: Map<Int, Array<Int>>;
+  var type: String;
+  var pruneEmptyCell: Bool;
 }
 
 enum GridEditMode {
@@ -29,12 +37,11 @@ class GridExample {
   var cursorSize: Int;
   var debugPoint: h2d.Graphics;
   var scene: h2d.Scene;
-  var editMode: GridEditMode;
+  var editMode = GridEditMode.Normal;
   var updateGrids: (ev: {relX: Float, relY: Float}) -> Void;
+  var environmentGridSavePath = 'dev/test.map';
 
   public function new(s2d: h2d.Scene) {
-    SaveState.tests();
-
     scene = s2d;
     {
       debugPoint = new h2d.Graphics(s2d);
@@ -102,7 +109,10 @@ class GridExample {
     }
 
     mouseGridRef = Grid.create(cellSize);
-    environmentGridRef = Grid.create(cellSize);
+    var previousEnvironmentState = SaveState.load(environmentGridSavePath);
+    environmentGridRef = previousEnvironmentState == null
+      ? Grid.create(cellSize)
+      : previousEnvironmentState;
 
     interactArea = new h2d.Interactive(0, 0, Main.Global.rootScene);
     interactArea.enableRightButton = true;
@@ -112,8 +122,6 @@ class GridExample {
         return;
       }
 
-      var mouseX = Math.round(ev.relX);
-      var mouseY = Math.round(ev.relY);
       var gridX = Grid.snapPosition(ev.relX, cursorSize);
       var gridY = Grid.snapPosition(ev.relY, cursorSize);
 
@@ -139,20 +147,61 @@ class GridExample {
           Grid.removeItem(environmentGridRef, key);
         }
       }
+
+      SaveState.save(environmentGridRef, environmentGridSavePath);
     }
 
     function previewInsertArea(ev) {
       var gridX = Grid.snapPosition(ev.relX, cursorSize);
       var gridY = Grid.snapPosition(ev.relY, cursorSize);
 
-      Grid.clear(mouseGridRef);
+      // clear old one
+      mouseGridRef = Grid.create(cellSize);
       Grid.setItemRect(mouseGridRef, gridX, gridY, cursorSize, cursorSize, 1);
-
       drawGridInfo(mouseGridRef);
     }
+
+    function drawBresenham(ev: {relX: Dynamic, relY: Dynamic}, debug = false) {
+      var size = cellSize;
+      var startGridX = 3;
+      var startGridY = 1;
+      var gridX = Math.floor(ev.relX / size);
+      var gridY = Math.floor(ev.relY / size);
+
+      if (debug) {
+        Main.Global.debugCanvas.beginFill(Game.Colors.pureWhite, 0.2);
+      }
+
+      Utils.bresenhamLine(startGridX, startGridY, gridX, gridY, (x, y, i) -> {
+        if (debug) {
+          var screenX = x * size;
+          var screenY = y * size;
+
+          Main.Global.debugCanvas.drawRect(screenX, screenY, size, size);
+        }
+
+        return Grid.isEmptyCell(environmentGridRef, x, y);
+      });
+    }
+
+    var debugText = new h2d.Text(Fonts.primary.get(), s2d);
+    debugText.x = 10;
+    debugText.y = 10;
+    var benchResultTotal = 0.0;
+    var benchCount = 0;
     updateGrids = function(ev) {
       previewInsertArea(ev);
       editEnvironment(ev, editMode);
+
+      var ts = Utils.hrt();
+      for (i in 0...500) {
+        drawBresenham(ev, i == 0);
+      }
+
+      // average out results
+      benchCount += 1;
+      benchResultTotal += Utils.hrt() - ts;
+      debugText.text = '${benchResultTotal / benchCount}';
     };
 
     function setEditMode(ev: hxd.Event) {
@@ -200,7 +249,7 @@ class GridExample {
     for (gridRef in [mouseGridRef, environmentGridRef]) {
       for (y => row in gridRef.data) {
         for (x => items in row) {
-          if (Utils.iterLength(items) == 0) {
+          if (Lambda.count(items) == 0) {
             continue;
           }
 
@@ -238,33 +287,45 @@ class Grid {
     return Math.ceil(v / cellSize) * cellSize - Math.floor(cellSize / 2);
   }
 
-  public static function create(cellSize): GridRef {
+  public static function create(
+    cellSize,
+    // automatically cleans up empty rows and cells after each item removal
+    pruneEmptyCell = false
+  ): GridRef {
     return {
       cellSize: cellSize,
       data: new Map(),
       itemCache: new Map(),
+      pruneEmptyCell: pruneEmptyCell,
+      type: 'Grid'
     }
   }
 
-  public static function clear(ref: GridRef) {
-    ref.data.clear();
+  public static function has(ref: GridRef, key: GridKey) {
+    return ref.itemCache.exists(key);
   }
 
-  public static function getCell(ref: GridRef, x, y) {
+  public static function isEmptyCell(ref: GridRef, x, y) {
+    var cellData = getCell(ref, x, y);
+
+    if (cellData == null) {
+      return true;
+    }
+
+    return Lambda.count(cellData) == 0;
+  }
+
+  inline public static function getCell(ref: GridRef, x, y) {
     var row = ref.data[y];
 
     return row != null ? row[x] : null;
   }
 
   static function addItem(ref: GridRef, x, y, key: GridKey) {
-    if (!ref.data.exists(y)) {
-      ref.data[y] = new Map();
-    }
-
-    if (!ref.data[y].exists(x)) {
-      ref.data[y][x] = new Map();
-    }
-
+    var curRow = ref.data[y];
+    ref.data[y] = curRow == null ? new Map() : curRow;
+    var curCell = ref.data[y][x];
+    ref.data[y][x] = curCell == null ? new Map() : curCell;
     ref.data[y][x][key] = key;
   }
 
@@ -318,6 +379,7 @@ class Grid {
     var xMax = cache[1];
     var yMin = cache[2];
     var yMax = cache[3];
+    var pruneEmpty = ref.pruneEmptyCell;
 
     for (y in yMin...yMax) {
       for (x in xMin...xMax) {
@@ -326,27 +388,34 @@ class Grid {
         if (cellData != null) {
           cellData.remove(key);
         }
+
+        if (
+          pruneEmpty &&
+          Lambda.count(cellData) == 0
+        ) {
+          ref.data[y].remove(x);
+        }
+      }
+
+      if (
+        pruneEmpty &&
+        Lambda.count(ref.data[y]) == 0
+      ) {
+        ref.data.remove(y);
       }
     }
+
+    ref.itemCache.remove(key);
   }
 
   public static function tests() {
-    function numKeys(map: Map<Dynamic, Dynamic>) {
-      var numKeys = 0;
-
-      for (_ in map.keys()) {
-        numKeys += 1;
-      }
-
-      return numKeys;
-    }
-
     assert('[grid] cell should have item', () -> {
       var ref = Grid.create(1);
       var itemKey = 1;
 
       Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
-      Grid.getCell(ref, 2, 3).exists(itemKey);
+      Grid.has(ref, itemKey) &&
+        Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 1;
     });
 
     assert('[grid] cell should remove item', () -> {
@@ -355,7 +424,8 @@ class Grid {
 
       Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
       Grid.removeItem(ref, itemKey);
-      !Grid.getCell(ref, 2, 3).exists(itemKey);
+      !Grid.has(ref, itemKey) &&
+        Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 0;
     });
 
     assert('[grid] move item', () -> {
@@ -364,8 +434,9 @@ class Grid {
 
       Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
       Grid.setItemRect(ref, 2, 4, 1, 1, itemKey);
-      return numKeys(ref.data[3][2]) == 0 &&
-        numKeys(ref.data[4][2]) == 1;
+
+      return Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 0 &&
+        Lambda.count(Grid.getItemsInRect(ref, 2, 4, 1, 1)) == 1;
     });
 
     assert('[grid] add item rect exact fit', () -> {
@@ -375,8 +446,8 @@ class Grid {
       var height = 3;
 
       Grid.setItemRect(ref, 0, 1, width, height, itemKey);
-      return numKeys(ref.data) == height &&
-        numKeys(ref.data[0]) == width;
+      return Lambda.count(ref.data) == height &&
+        Lambda.count(ref.data[0]) == width;
     });
 
     assert('[grid] add item rect partial overlap', () -> {
@@ -395,8 +466,8 @@ class Grid {
         itemKey
       );
 
-      return numKeys(ref.data) == Math.ceil(cellSize / height) &&
-        numKeys(ref.data[0]) == Math.ceil(cellSize / width);
+      return Lambda.count(ref.data) == Math.ceil(cellSize / height) &&
+        Lambda.count(ref.data[0]) == Math.ceil(cellSize / width);
     });
 
     assert('[grid] get items in rect', () -> {
@@ -416,7 +487,7 @@ class Grid {
       var queryX = Math.round(width / 2);
       var queryY = Math.round(height / 2);
 
-      return numKeys(
+      return Lambda.count(
         Grid.getItemsInRect(ref, queryX, queryY, width, height)
       ) == 4;
     });

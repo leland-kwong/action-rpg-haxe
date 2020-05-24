@@ -6,6 +6,7 @@ import Grid;
 
 class Global {
   public static var rootScene: h2d.Scene;
+  public static var debugCanvas: h2d.Graphics;
 }
 
 class BatchDraw {
@@ -251,7 +252,15 @@ class Main extends hxd.App {
     s2d.addChild(homeScreen);
   }
 
+  function runTests() {
+    Grid.tests();
+    SaveState.tests();
+  }
+
   override function init() {
+    background = addBackground(s2d, 0x222222);
+    runTests();
+
     Global.rootScene = s2d;
 
     {
@@ -263,8 +272,6 @@ class Main extends hxd.App {
       #end
     }
 
-    background = addBackground(s2d, 0x222222);
-
     // showHomeScreen();
     // hud = new Hud(s2d);
     // s2d.addChild(hud);
@@ -273,10 +280,10 @@ class Main extends hxd.App {
     reactiveItems.push(
       new GridExample(s2d)
     );
-    Grid.tests();
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
+      Global.debugCanvas = new h2d.Graphics(s2d);
     #end
   }
 
@@ -290,6 +297,8 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
+    Global.debugCanvas.clear();
+
     handleGlobalHotkeys();
 
     for (it in reactiveItems) {

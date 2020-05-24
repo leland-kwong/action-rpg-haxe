@@ -1,3 +1,7 @@
+#if jsMode
+import js.Browser;
+#end
+
 class Utils {
   public static function clamp(value: Float, min: Float, max: Float) {
     if (value < min) {
@@ -39,13 +43,53 @@ class Utils {
     return idsCreated;
   }
 
-  public static function iterLength(iter: Iterable<Dynamic>): Int {
-    var length = 0;
+  public static var BRESENHAM_DONE = 1;
+  // creates a line using bresenham's line algorithm
+  public static function bresenhamLine(
+    x1, y1, x2, y2, callback: (x: Int, y: Int, i: Int) -> Bool
+  ) {
+    var MAX_NUM_ITERATIONS = 5000;
 
-    for (_ in iter) {
-      length += 1;
+    var dx = Math.abs(x2 - x1);
+    var dy = Math.abs(y2 - y1);
+    var sign_x = (x1 < x2) ? 1 : -1;
+    var sign_y = (y1 < y2) ? 1 : -1;
+    var err = dx - dy;
+    var num_iterations = 0;
+
+    while (true) {
+      if (num_iterations > MAX_NUM_ITERATIONS) {
+        throw "[bresenham line error] Too many calls. This is not normal behavior.";
+      }
+
+      var is_end_of_line = ((x1 == x2) && (y1 == y2));
+      var shouldContinue = callback(x1, y1, num_iterations);
+
+      if (!shouldContinue || is_end_of_line) {
+        return;
+      }
+
+      var e2 = 2 * err;
+      if (e2 > -dy) {
+        err = err - dy;
+        x1  = x1 + sign_x;
+      }
+
+      if (e2 < dx) {
+        err = err + dx;
+        y1  = y1 + sign_y;
+      }
+
+      num_iterations += 1;
     }
+  }
 
-    return length;
+  public static function hrt(): Float {
+    #if jsMode
+    var window = Browser.window;
+    return window.performance.now();
+    #end
+
+    return 0.0;
   }
 }

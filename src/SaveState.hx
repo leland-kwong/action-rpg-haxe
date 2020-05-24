@@ -15,7 +15,7 @@ import sys.io.File;
   Add support for save/loading to native file system
 **/
 class SaveState {
-  static var saveDir = 'saved_games';
+  static var saveDir = 'saved_states';
 
   public static function save(
     data: Dynamic,
