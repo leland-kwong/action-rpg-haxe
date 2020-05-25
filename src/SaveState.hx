@@ -11,12 +11,8 @@ import sys.FileSystem;
 import sys.io.File;
 #end
 
-/**
-  TODO
-  Add support for save/loading to native file system
-**/
 class SaveState {
-  static var saveDir = 'saved_states';
+  static var saveDir = 'external-assets';
 
   public static function save(
     data: Dynamic,
@@ -118,13 +114,14 @@ class SaveState {
       var fullPath = '${saveDir}/${keyPath}';
 
       if (!FileSystem.exists(fullPath)) {
-        return null;
+        onSuccess(null);
+        return;
       }
 
       var s = File.getContent(fullPath);
       var unserializer = new Unserializer(s);
 
-      return unserializer.unserialize();
+      onSuccess(unserializer.unserialize());
     }
     #end
 
@@ -139,6 +136,11 @@ class SaveState {
     {
       var ls = Browser.getLocalStorage();
       ls.removeItem(keyPath);
+
+      /**
+        TODO:
+        Add support for deleting via http request (dev-server)
+      **/
     }
     #else
     {

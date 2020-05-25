@@ -5,7 +5,7 @@ const fs = require('fs-extra')
 const app = express()
 const jsonParser = bodyParser.json()
 
-const rootDir = 'src/external-saves'
+const rootDir = 'bin/external-assets'
 const getFullSavePath = (file) => `${rootDir}/${file}`
 
 app.use(cors())

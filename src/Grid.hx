@@ -42,7 +42,7 @@ class GridExample {
   var scene: h2d.Scene;
   var editMode = GridEditMode.Normal;
   var updateGrids: (ev: {relX: Float, relY: Float}) -> Void;
-  var environmentGridSavePath = 'test-assets/test.map';
+  var environmentGridSavePath = 'test.map';
   var cds = new Game.Cooldown();
   var hasPendingSave = false;
 
@@ -225,8 +225,13 @@ class GridExample {
     mouseGridRef = Grid.create(cellSize);
     trace('loading environment grid state');
     SaveState.load(
-      '${Config.devServer}/load-state/${environmentGridSavePath.urlEncode()}',
-      true,
+      #if jsMode
+        '${Config.devServer}/load-state/${environmentGridSavePath.urlEncode()}',
+        true,
+      #else
+        environmentGridSavePath,
+        false,
+      #end
       (previousEnvironmentState) -> {
         environmentGridRef = previousEnvironmentState == null
           ? Grid.create(cellSize)
@@ -234,7 +239,7 @@ class GridExample {
         isReady = true;
         onReady();
       }, (e) -> {
-      trace('error loading environment grid', e);
+        trace('error loading environment grid', e);
       }
     );
   }
@@ -258,7 +263,11 @@ class GridExample {
       SaveState.save(
         environmentGridRef,
         environmentGridSavePath,
-        '${Config.devServer}/save-state',
+        #if jsMode
+          '${Config.devServer}/save-state',
+        #else
+          null,
+        #end
         (_) -> {
           trace('map grid saved');
         },

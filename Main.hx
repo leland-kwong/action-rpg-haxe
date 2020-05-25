@@ -283,8 +283,8 @@ class Main extends hxd.App {
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
-      Global.debugCanvas = new h2d.Graphics(s2d);
     #end
+    Global.debugCanvas = new h2d.Graphics(s2d);
   }
 
   function handleGlobalHotkeys() {
