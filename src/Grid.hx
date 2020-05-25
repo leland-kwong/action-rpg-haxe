@@ -2,6 +2,8 @@ import hxd.Key;
 import TestUtils.assert;
 import Fonts;
 import SaveState;
+import Config;
+using StringTools;
 
 typedef GridKey = String;
 
@@ -26,6 +28,7 @@ enum GridEditMode {
 }
 
 class GridExample {
+  var isReady = false;
   var mouseGridRef: GridRef;
   var environmentGridRef: GridRef;
   var canvas: h2d.Graphics;
@@ -107,123 +110,140 @@ class GridExample {
       }
     }
 
-    mouseGridRef = Grid.create(cellSize);
-    var previousEnvironmentState = SaveState.load(environmentGridSavePath);
-    environmentGridRef = previousEnvironmentState == null
-      ? Grid.create(cellSize)
-      : previousEnvironmentState;
 
-    interactArea = new h2d.Interactive(0, 0, Main.Global.rootScene);
-    interactArea.enableRightButton = true;
+    function onReady() {
+      interactArea = new h2d.Interactive(0, 0, Main.Global.rootScene);
+      interactArea.enableRightButton = true;
 
-    function editEnvironment(ev, editMode) {
-      if (editMode == GridEditMode.Normal) {
-        return;
-      }
-
-      var gridX = Grid.snapPosition(ev.relX, cursorSize);
-      var gridY = Grid.snapPosition(ev.relY, cursorSize);
-
-      // add item
-      if (editMode == GridEditMode.Insert) {
-        // remove previous items
-        var currentItems = Grid.getItemsInRect(
-          environmentGridRef, gridX, gridY, cursorSize, cursorSize
-        );
-        for (itemKey in currentItems) {
-          Grid.removeItem(environmentGridRef, itemKey);
+      function editEnvironment(ev, editMode) {
+        if (editMode == GridEditMode.Normal) {
+          return;
         }
 
-        // add new wall
-        var wallId = Utils.uid((id) -> {
-          !Grid.has(environmentGridRef, id);
-        });
-        Grid.setItemRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize, wallId);
-      }
+        var gridX = Grid.snapPosition(ev.relX, cursorSize);
+        var gridY = Grid.snapPosition(ev.relY, cursorSize);
 
-      // remove item
-      if (editMode == GridEditMode.Delete) {
-        var items = Grid.getItemsInRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize);
-        for (key in items) {
-          Grid.removeItem(environmentGridRef, key);
+        // add item
+        if (editMode == GridEditMode.Insert) {
+          // remove previous items
+          var currentItems = Grid.getItemsInRect(
+            environmentGridRef, gridX, gridY, cursorSize, cursorSize
+          );
+          for (itemKey in currentItems) {
+            Grid.removeItem(environmentGridRef, itemKey);
+          }
+
+          // add new wall
+          var wallId = Utils.uid((id) -> {
+            !Grid.has(environmentGridRef, id);
+          });
+          Grid.setItemRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize, wallId);
         }
+
+        // remove item
+        if (editMode == GridEditMode.Delete) {
+          var items = Grid.getItemsInRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize);
+          for (key in items) {
+            Grid.removeItem(environmentGridRef, key);
+          }
+        }
+
+        hasPendingSave = true;
+        cds.set('saveDebounce', 0.2);
       }
 
-      hasPendingSave = true;
-      cds.set('saveDebounce', 0.2);
-    }
+      function previewInsertArea(ev) {
+        var gridX = Grid.snapPosition(ev.relX, cursorSize);
+        var gridY = Grid.snapPosition(ev.relY, cursorSize);
 
-    function previewInsertArea(ev) {
-      var gridX = Grid.snapPosition(ev.relX, cursorSize);
-      var gridY = Grid.snapPosition(ev.relY, cursorSize);
-
-      // clear old one
-      mouseGridRef = Grid.create(cellSize);
-      Grid.setItemRect(mouseGridRef, gridX, gridY, cursorSize, cursorSize, '@mouse');
-      drawGridInfo(mouseGridRef);
-    }
-
-    function drawBresenham(ev: {relX: Dynamic, relY: Dynamic}, debug = false) {
-      var size = cellSize;
-      var startGridX = 3;
-      var startGridY = 1;
-      var gridX = Math.floor(ev.relX / size);
-      var gridY = Math.floor(ev.relY / size);
-
-      if (debug) {
-        Main.Global.debugCanvas.beginFill(Game.Colors.pureWhite, 0.2);
+        // clear old one
+        mouseGridRef = Grid.create(cellSize);
+        Grid.setItemRect(mouseGridRef, gridX, gridY, cursorSize, cursorSize, '@mouse');
+        drawGridInfo(mouseGridRef);
       }
 
-      Utils.bresenhamLine(startGridX, startGridY, gridX, gridY, (x, y, i) -> {
+      function drawBresenham(ev: {relX: Dynamic, relY: Dynamic}, debug = false) {
+        var size = cellSize;
+        var startGridX = 3;
+        var startGridY = 1;
+        var gridX = Math.floor(ev.relX / size);
+        var gridY = Math.floor(ev.relY / size);
+
         if (debug) {
-          var screenX = x * size;
-          var screenY = y * size;
-
-          Main.Global.debugCanvas.drawRect(screenX, screenY, size, size);
+          Main.Global.debugCanvas.beginFill(Game.Colors.pureWhite, 0.2);
         }
 
-        return Grid.isEmptyCell(environmentGridRef, x, y);
-      });
-    }
+        Utils.bresenhamLine(startGridX, startGridY, gridX, gridY, (x, y, i) -> {
+          if (debug) {
+            var screenX = x * size;
+            var screenY = y * size;
 
-    var debugText = new h2d.Text(Fonts.primary.get(), s2d);
-    debugText.x = 10;
-    debugText.y = 10;
-    var benchResultTotal = 0.0;
-    var benchCount = 0;
-    updateGrids = function(ev) {
-      previewInsertArea(ev);
-      editEnvironment(ev, editMode);
+            Main.Global.debugCanvas.drawRect(screenX, screenY, size, size);
+          }
 
-      var ts = Utils.hrt();
-      for (i in 0...500) {
-        drawBresenham(ev, i == 0);
+          return Grid.isEmptyCell(environmentGridRef, x, y);
+        });
       }
 
-      // average out results
-      benchCount += 1;
-      benchResultTotal += Utils.hrt() - ts;
-      debugText.text = '${benchResultTotal / benchCount}';
-    };
+      var debugText = new h2d.Text(Fonts.primary.get(), s2d);
+      debugText.x = 10;
+      debugText.y = 10;
+      var benchResultTotal = 0.0;
+      var benchCount = 0;
+      updateGrids = function(ev) {
+        previewInsertArea(ev);
+        editEnvironment(ev, editMode);
 
-    function setEditMode(ev: hxd.Event) {
-      if (ev.button == 0) {
-        editMode = GridEditMode.Insert;
+        var ts = Utils.hrt();
+        for (i in 0...500) {
+          drawBresenham(ev, i == 0);
+        }
+
+        // average out results
+        benchCount += 1;
+        benchResultTotal += Utils.hrt() - ts;
+        debugText.text = '${benchResultTotal / benchCount}';
+      };
+
+      function setEditMode(ev: hxd.Event) {
+        if (ev.button == 0) {
+          editMode = GridEditMode.Insert;
+        }
+
+        if (ev.button == 1) {
+          editMode = GridEditMode.Delete;
+        }
       }
+      interactArea.onPush = setEditMode;
 
-      if (ev.button == 1) {
-        editMode = GridEditMode.Delete;
+      function setNormalMode(ev: hxd.Event) {
+        editMode = GridEditMode.Normal;
       }
+      interactArea.onRelease = setNormalMode;
     }
-    interactArea.onPush = setEditMode;
 
-    function setNormalMode(ev: hxd.Event) {
-      editMode = GridEditMode.Normal;
-    }
-    interactArea.onRelease = setNormalMode;
+    mouseGridRef = Grid.create(cellSize);
+    trace('loading environment grid state');
+    SaveState.load(
+      '${Config.devServer}/load-state/${environmentGridSavePath.urlEncode()}',
+      true,
+      (previousEnvironmentState) -> {
+        environmentGridRef = previousEnvironmentState == null
+          ? Grid.create(cellSize)
+          : previousEnvironmentState;
+        isReady = true;
+        onReady();
+      }, (e) -> {
+      trace('error loading environment grid', e);
+      }
+    );
   }
 
   public function update(dt: Float) {
+    if (!isReady) {
+      return;
+    }
+
     canvas.clear();
     cds.update(dt);
     interactArea.width = Main.Global.rootScene.width;
@@ -238,7 +258,7 @@ class GridExample {
       SaveState.save(
         environmentGridRef,
         environmentGridSavePath,
-        'http://localhost:3000/save-state',
+        '${Config.devServer}/save-state',
         (_) -> {
           trace('map grid saved');
         },

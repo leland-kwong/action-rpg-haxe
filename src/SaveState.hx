@@ -2,6 +2,7 @@ import TestUtils.assert;
 import haxe.Serializer;
 import haxe.Unserializer;
 using Lambda;
+using StringTools;
 
 #if jsMode
 import js.Browser;
@@ -20,8 +21,8 @@ class SaveState {
   public static function save(
     data: Dynamic,
     keyPath: String,
-    persistToUrl: String,
-    onSuccess: (res: Dynamic) -> Void,
+    persistToUrl: Null<String>,
+    onSuccess: (res: Null<Dynamic>) -> Void,
     onError: (e: Dynamic) -> Void
   ) {
     var serializer = new Serializer();
@@ -30,9 +31,6 @@ class SaveState {
 
     try {
     #if jsMode
-      var ls = Browser.getLocalStorage();
-      ls.setItem(keyPath, serialized);
-
       if (persistToUrl != null) {
         var fetch = js.Browser.window.fetch;
 
@@ -52,6 +50,11 @@ class SaveState {
         .then(onSuccess)
         .catchError(onError);
       }
+      else {
+        var ls = Browser.getLocalStorage();
+        ls.setItem(keyPath, serialized);
+        onSuccess(null);
+      }
     #else
       if (!FileSystem.exists(saveDir)) {
         FileSystem.createDirectory(saveDir);
@@ -64,19 +67,51 @@ class SaveState {
     }
   }
 
-  public static function load(keyPath: String): Dynamic {
+  public static function load(
+    keyPath: String,
+    fromUrl = false,
+    onSuccess: (data: Dynamic) -> Void,
+    onError: (error: Dynamic) -> Void
+  ): Void {
+    try {
+
     #if jsMode
-    {
+    if (fromUrl) {
+      var fetch = js.Browser.window.fetch;
+
+      fetch(new js.html.Request(keyPath))
+        .then(res -> res.json())
+        .then((res: {ok: Bool, data: Null<String>, error: Null<String>}) -> {
+          if (res.ok) {
+            return res.data;
+          }
+          else {
+            throw res.error;
+          }
+        })
+        .then((data) -> {
+          if (data == null) {
+            onSuccess(null);
+            return;
+          }
+
+          var unserializer = new Unserializer(data);
+          onSuccess(unserializer.unserialize());
+        })
+        .catchError(onError);
+    }
+    else {
       var ls = Browser.getLocalStorage();
       var s = ls.getItem(keyPath);
 
       if (s == null) {
-        return s;
+        onSuccess(null);
+        return;
       }
 
       var unserializer = new Unserializer(s);
 
-      return unserializer.unserialize();
+      onSuccess(unserializer.unserialize());
     }
     #else
     {
@@ -92,6 +127,11 @@ class SaveState {
       return unserializer.unserialize();
     }
     #end
+
+    }
+    catch (error: Dynamic) {
+      onError(error);
+    }
   }
 
   public static function delete(keyPath: String) {
@@ -118,35 +158,39 @@ class SaveState {
           'bar' => 1
         ];
 
-        SaveState.save(data, keyPath, null, (_) -> {
-          var s: Map<String, Int> = SaveState.load(keyPath);
-          var isEqualState = [for (k in s.keys()) k]
-            .foreach((k) -> {
-              data[k] == s[k];
-            });
-
-          hasPassed(isEqualState);
-        }, (e) -> {
+        function onError(e) {
           trace(e);
           hasPassed(false);
-        });
+        }
+
+        SaveState.save(data, keyPath, null, (_) -> {
+          SaveState.load(keyPath, false, (s: Map<String, Int>) -> {
+            var isEqualState = [for (k in s.keys()) k]
+              .foreach((k) -> {
+                data[k] == s[k];
+              });
+
+            hasPassed(isEqualState);
+          }, onError);
+        }, onError);
       }, () -> {
         SaveState.delete(keyPath);
       });
 
       assert('[SaveState] delete state', (hasPassed) -> {
+        function onError(e) {
+          trace(e);
+          hasPassed(false);
+        }
+
         SaveState.save({
           foo: 'foo'
         }, keyPath, null, (_) -> {
           SaveState.delete(keyPath);
-
-          hasPassed(
-            SaveState.load(keyPath) == null
-          );
-        }, (e) -> {
-          trace(e);
-          hasPassed(false);
-        });
+          SaveState.load(keyPath, (s) -> {
+            hasPassed(s == null);
+          }, onError);
+        }, onError);
       });
     }
     #end

@@ -19,13 +19,13 @@ app.post('/save-state', jsonParser, function (req, res) {
   fs.writeFile(fullPath, data)
     .then(() => {
       res.send({
-        ok: 1
+        ok: true
       })
     })
     .catch((err) => {
       res.status(500)
         .send({
-          ok: 0,
+          ok: false,
           error: 'error saving file'
         })
       console.error('[save-state error]', err)
@@ -35,23 +35,34 @@ app.post('/save-state', jsonParser, function (req, res) {
 app.get('/load-state/:keyPath', (req, res) => {
   const { keyPath } = req.params;
   const fullPath = getFullSavePath(keyPath);
-
-  console.log(req.params);
-  fs.readFile(fullPath, 'utf8')
-    .then((fileData) => {
-      res.send({
-        ok: 1,
-        data: fileData
+  const onError = (err) => {
+    res.status(500)
+      .send({
+        ok: true,
+        error: 'error loading file'
       })
-    })
-    .catch((err) => {
-      res.status(500)
-        .send({
-          ok: 0,
-          error: 'error loading file'
+    console.error('[load-state error]', err)
+  }
+
+  fs.pathExists(fullPath)
+    .then((exists) => {
+      if (!exists) {
+        res.send({
+          ok: true,
+          data: null
         })
-      console.error('[load-state error]', err)
-    })
+        return;
+      }
+
+      fs.readFile(fullPath, 'utf8')
+        .then((fileData) => {
+          res.send({
+            ok: true,
+            data: fileData
+          })
+        })
+        .catch(onError)
+    });
 })
 
 const port = 3000
