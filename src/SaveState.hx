@@ -19,25 +19,49 @@ class SaveState {
 
   public static function save(
     data: Dynamic,
-    keyPath: String
+    keyPath: String,
+    persistToUrl: String,
+    onSuccess: (res: Dynamic) -> Void,
+    onError: (e: Dynamic) -> Void
   ) {
     var serializer = new Serializer();
     serializer.serialize(data);
     var serialized = serializer.toString();
 
+    try {
     #if jsMode
-    {
       var ls = Browser.getLocalStorage();
       ls.setItem(keyPath, serialized);
-    }
+
+      if (persistToUrl != null) {
+        var fetch = js.Browser.window.fetch;
+
+        fetch(
+          new js.html.Request(persistToUrl),
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: haxe.Json.stringify({
+              data: serialized,
+              file: keyPath
+            })
+          }
+        )
+        .then(onSuccess)
+        .catchError(onError);
+      }
     #else
-    {
       if (!FileSystem.exists(saveDir)) {
         FileSystem.createDirectory(saveDir);
       }
       File.saveContent('${saveDir}/${keyPath}', serialized);
-    }
     #end
+    }
+    catch (err: Dynamic) {
+      onError(err);
+    }
   }
 
   public static function load(keyPath: String): Dynamic {
@@ -88,31 +112,41 @@ class SaveState {
     var keyPath = 'test_game_state--${rand}.sav';
 
     #if debugMode {
-      assert('[SaveState] save and load', () -> {
+      assert('[SaveState] save and load', (hasPassed) -> {
         var data = [
           'foo' => 0,
           'bar' => 1
         ];
 
-        SaveState.save(data, keyPath);
-        var s: Map<String, Int> = SaveState.load(keyPath);
-        var isEqualState = [for (k in s.keys()) k]
-          .foreach((k) -> {
-            data[k] == s[k];
-          });
+        SaveState.save(data, keyPath, null, (_) -> {
+          var s: Map<String, Int> = SaveState.load(keyPath);
+          var isEqualState = [for (k in s.keys()) k]
+            .foreach((k) -> {
+              data[k] == s[k];
+            });
 
-        return isEqualState;
+          hasPassed(isEqualState);
+        }, (e) -> {
+          trace(e);
+          hasPassed(false);
+        });
       }, () -> {
         SaveState.delete(keyPath);
       });
 
-      assert('[SaveState] delete state', () -> {
+      assert('[SaveState] delete state', (hasPassed) -> {
         SaveState.save({
           foo: 'foo'
-        }, keyPath);
-        SaveState.delete(keyPath);
+        }, keyPath, null, (_) -> {
+          SaveState.delete(keyPath);
 
-        return SaveState.load(keyPath) == null;
+          hasPassed(
+            SaveState.load(keyPath) == null
+          );
+        }, (e) -> {
+          trace(e);
+          hasPassed(false);
+        });
       });
     }
     #end

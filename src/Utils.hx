@@ -38,9 +38,18 @@ class Utils {
   }
 
   static var idsCreated = 0;
-  public static function uid(): Int {
+  static var idSeed = '${Math.random()}'.substring(2, 8);
+  public static function uid(
+    isUnique: (id: String) -> Bool = null
+  ): String {
     idsCreated += 1;
-    return idsCreated;
+    var id = '${idSeed}-${idsCreated}';
+
+    if (isUnique != null && !isUnique(id)) {
+      return uid(isUnique);
+    }
+
+    return id;
   }
 
   public static var BRESENHAM_DONE = 1;
@@ -90,6 +99,10 @@ class Utils {
     return window.performance.now();
     #end
 
+    /**
+      TODO
+      Add support for native
+    **/
     return 0.0;
   }
 }

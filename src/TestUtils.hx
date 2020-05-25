@@ -1,15 +1,20 @@
 class TestUtils {
   public static function assert(
     failureMessage: String,
-    testPredicate: () -> Bool,
+    testFn: (
+      (passed: Bool) -> Void
+    ) -> Void,
     afterTest: () -> Void = null
   ) {
-    if (!testPredicate()) {
-      throw '[test fail] ${failureMessage}';
-    }
+    function predicate(passed) {
+      if (!passed) {
+        throw '[test fail] ${failureMessage}';
+      }
 
-    if (afterTest != null) {
-      afterTest();
+      if (afterTest != null) {
+        afterTest();
+      }
     }
+    testFn(predicate);
   }
 }

@@ -1,0 +1,30 @@
+{
+  "name": "arpg",
+  "version": "0.1.0",
+  "description": "haxe-dev-server",
+  "main": "main.js",
+  "bin": {
+    "arpg": "main.dist.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leland-Kwong/autonomous-game.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Leland-Kwong/autonomous-game/issues"
+  },
+  "homepage": "https://github.com/Leland-Kwong/autonomous-game#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "fs-extra": "^9.0.0"
+  }
+}

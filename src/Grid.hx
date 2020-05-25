@@ -3,7 +3,7 @@ import TestUtils.assert;
 import Fonts;
 import SaveState;
 
-typedef GridKey = Int;
+typedef GridKey = String;
 
 typedef GridRef = {
   var cellSize: Int;
@@ -14,7 +14,7 @@ typedef GridRef = {
       Map<GridKey, GridKey>
     >
   >;
-  var itemCache: Map<Int, Array<Int>>;
+  var itemCache: Map<GridKey, Array<Int>>;
   var type: String;
   var pruneEmptyCell: Bool;
 }
@@ -39,7 +39,9 @@ class GridExample {
   var scene: h2d.Scene;
   var editMode = GridEditMode.Normal;
   var updateGrids: (ev: {relX: Float, relY: Float}) -> Void;
-  var environmentGridSavePath = 'dev/test.map';
+  var environmentGridSavePath = 'test-assets/test.map';
+  var cds = new Game.Cooldown();
+  var hasPendingSave = false;
 
   public function new(s2d: h2d.Scene) {
     scene = s2d;
@@ -83,7 +85,6 @@ class GridExample {
             numKeys += 1;
           }
           text.text = '${numKeys}';
-          // text.textAlign = Center;
           text.drawTo(textTexture);
           tiles.push(
             textTile.sub(
@@ -95,8 +96,6 @@ class GridExample {
           );
         }
       }
-
-      // text.text = '';
 
       textCanvas.alpha = 0.5;
       for (t in tiles) {
@@ -136,7 +135,9 @@ class GridExample {
         }
 
         // add new wall
-        var wallId = Utils.uid();
+        var wallId = Utils.uid((id) -> {
+          !Grid.has(environmentGridRef, id);
+        });
         Grid.setItemRect(environmentGridRef, gridX, gridY, cursorSize, cursorSize, wallId);
       }
 
@@ -148,7 +149,8 @@ class GridExample {
         }
       }
 
-      SaveState.save(environmentGridRef, environmentGridSavePath);
+      hasPendingSave = true;
+      cds.set('saveDebounce', 0.2);
     }
 
     function previewInsertArea(ev) {
@@ -157,7 +159,7 @@ class GridExample {
 
       // clear old one
       mouseGridRef = Grid.create(cellSize);
-      Grid.setItemRect(mouseGridRef, gridX, gridY, cursorSize, cursorSize, 1);
+      Grid.setItemRect(mouseGridRef, gridX, gridY, cursorSize, cursorSize, '@mouse');
       drawGridInfo(mouseGridRef);
     }
 
@@ -223,6 +225,7 @@ class GridExample {
 
   public function update(dt: Float) {
     canvas.clear();
+    cds.update(dt);
     interactArea.width = Main.Global.rootScene.width;
     interactArea.height = Main.Global.rootScene.height;
 
@@ -230,6 +233,21 @@ class GridExample {
       relX: scene.mouseX,
       relY: scene.mouseY
     });
+
+    if (hasPendingSave && !cds.has('saveDebounce')) {
+      SaveState.save(
+        environmentGridRef,
+        environmentGridSavePath,
+        'http://localhost:3000/save-state',
+        (_) -> {
+          trace('map grid saved');
+        },
+        (e) -> {
+          trace('error saving environment grid', e);
+        }
+      );
+      hasPendingSave = false;
+    }
 
     {
       var gridX = Grid.snapPosition(scene.mouseX, cursorSize);
@@ -290,7 +308,7 @@ class Grid {
   public static function create(
     cellSize,
     // automatically cleans up empty rows and cells after each item removal
-    pruneEmptyCell = false
+    pruneEmptyCell = true
   ): GridRef {
     return {
       cellSize: cellSize,
@@ -409,51 +427,57 @@ class Grid {
   }
 
   public static function tests() {
-    assert('[grid] cell should have item', () -> {
+    assert('[grid] cell should have item', (hasPassed) -> {
       var ref = Grid.create(1);
-      var itemKey = 1;
+      var id = Utils.uid();
 
-      Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
-      Grid.has(ref, itemKey) &&
-        Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 1;
+      Grid.setItemRect(ref, 2, 3, 1, 1, id);
+      hasPassed(
+        Grid.has(ref, id) &&
+          Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 1
+      );
     });
 
-    assert('[grid] cell should remove item', () -> {
+    assert('[grid] cell should remove item', (hasPassed) -> {
       var ref = Grid.create(1);
-      var itemKey = 1;
+      var id = Utils.uid();
 
-      Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
-      Grid.removeItem(ref, itemKey);
-      !Grid.has(ref, itemKey) &&
-        Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 0;
+      Grid.setItemRect(ref, 2, 3, 1, 1, id);
+      Grid.removeItem(ref, id);
+      hasPassed(
+        !Grid.has(ref, id) &&
+          Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 0
+      );
     });
 
-    assert('[grid] move item', () -> {
+    assert('[grid] move item', (hasPassed) -> {
       var ref = Grid.create(1);
-      var itemKey = 1;
+      var id = Utils.uid();
 
-      Grid.setItemRect(ref, 2, 3, 1, 1, itemKey);
-      Grid.setItemRect(ref, 2, 4, 1, 1, itemKey);
+      Grid.setItemRect(ref, 2, 3, 1, 1, id);
+      Grid.setItemRect(ref, 2, 4, 1, 1, id);
 
-      return Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 0 &&
-        Lambda.count(Grid.getItemsInRect(ref, 2, 4, 1, 1)) == 1;
+      hasPassed(
+        Lambda.count(Grid.getItemsInRect(ref, 2, 3, 1, 1)) == 0 &&
+          Lambda.count(Grid.getItemsInRect(ref, 2, 4, 1, 1)) == 1
+      );
     });
 
-    assert('[grid] add item rect exact fit', () -> {
+    assert('[grid] add item rect exact fit', (hasPassed) -> {
       var ref = Grid.create(1);
-      var itemKey = 1;
       var width = 1;
       var height = 3;
 
-      Grid.setItemRect(ref, 0, 1, width, height, itemKey);
-      return Lambda.count(ref.data) == height &&
-        Lambda.count(ref.data[0]) == width;
+      Grid.setItemRect(ref, 0, 1, width, height, Utils.uid());
+      hasPassed(
+        Lambda.count(ref.data) == height &&
+         Lambda.count(ref.data[0]) == width
+      );
     });
 
-    assert('[grid] add item rect partial overlap', () -> {
+    assert('[grid] add item rect partial overlap', (hasPassed) -> {
       var cellSize = 10;
       var ref = Grid.create(cellSize);
-      var itemKey = 1;
       var width = cellSize - 1;
       var height = cellSize - 1;
 
@@ -463,14 +487,16 @@ class Grid {
         Math.round(height / 2) + 2,
         width,
         height,
-        itemKey
+        Utils.uid()
       );
 
-      return Lambda.count(ref.data) == Math.ceil(cellSize / height) &&
-        Lambda.count(ref.data[0]) == Math.ceil(cellSize / width);
+      hasPassed(
+        Lambda.count(ref.data) == Math.ceil(cellSize / height) &&
+         Lambda.count(ref.data[0]) == Math.ceil(cellSize / width)
+      );
     });
 
-    assert('[grid] get items in rect', () -> {
+    assert('[grid] get items in rect', (hasPassed) -> {
       var cellSize = 1;
       var ref = Grid.create(cellSize);
       var width = 2;
@@ -479,7 +505,7 @@ class Grid {
 
       for (y in 0...(height)) {
         for (x in 0...(width)) {
-          Grid.setItemRect(ref, x, y, 1, 1, index);
+          Grid.setItemRect(ref, x, y, 1, 1, Utils.uid());
           index += 1;
         }
       }
@@ -487,9 +513,11 @@ class Grid {
       var queryX = Math.round(width / 2);
       var queryY = Math.round(height / 2);
 
-      return Lambda.count(
-        Grid.getItemsInRect(ref, queryX, queryY, width, height)
-      ) == 4;
+      hasPassed(
+        Lambda.count(
+          Grid.getItemsInRect(ref, queryX, queryY, width, height)
+        ) == 4
+      );
     });
   }
 }

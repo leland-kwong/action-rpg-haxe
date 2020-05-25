@@ -1,8 +1,15 @@
 const { exec } = require('child_process');
 const fs = require('fs');
+const [, , port] = process.argv;
+
+if (port === undefined) {
+  throw new Error('port must be provided');
+}
 
 const compile = (buildFile) => {
-  exec(`haxe ${buildFile} --connect 6000`, (err, stdout, stderr) => {
+  console.log(`compiling ${buildFile}`);
+
+  exec(`haxe ${buildFile} --connect ${port}`, (err, stdout, stderr) => {
     if (err) {
       //some err occurred
       console.error(err)
@@ -13,17 +20,16 @@ const compile = (buildFile) => {
   });
 }
 
-exec('haxe -v --wait 6000', (err, stdout, stderr) => {
+exec(`haxe --wait ${port}`, (err, stdout, stderr) => {
   if (err) {
     //some err occurred
     console.error(err)
   } else {
   // the *entire* stdout and stderr (buffered)
-    console.log('build success')
+    console.log('server ready')
   }
 });
 
-console.log('running initial compile')
 compileFile = 'build.js.hxml'
 compile(compileFile)
 
