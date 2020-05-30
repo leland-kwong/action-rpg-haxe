@@ -3,6 +3,7 @@ import TestUtils.assert;
 import Fonts;
 import SaveState;
 import Config;
+import Asset;
 using StringTools;
 
 typedef GridKey = String;
@@ -27,7 +28,7 @@ enum GridEditMode {
   Delete;
 }
 
-class GridExample {
+class GridEditor {
   var isReady = false;
   var mouseGridRef: GridRef;
   var environmentGridRef: GridRef;
@@ -173,7 +174,7 @@ class GridExample {
           Main.Global.debugCanvas.beginFill(Game.Colors.pureWhite, 0.2);
         }
 
-        Utils.bresenhamLine(startGridX, startGridY, gridX, gridY, (x, y, i) -> {
+        Utils.bresenhamLine(startGridX, startGridY, gridX, gridY, (_, x, y, i) -> {
           if (debug) {
             var screenX = x * size;
             var screenY = y * size;
@@ -223,15 +224,8 @@ class GridExample {
     }
 
     mouseGridRef = Grid.create(cellSize);
-    trace('loading environment grid state');
-    SaveState.load(
-      #if jsMode
-        '${Config.devServer}/load-state/${environmentGridSavePath.urlEncode()}',
-        true,
-      #else
-        environmentGridSavePath,
-        false,
-      #end
+    Asset.loadMap(
+      'test',
       (previousEnvironmentState) -> {
         environmentGridRef = previousEnvironmentState == null
           ? Grid.create(cellSize)
@@ -294,22 +288,20 @@ class GridExample {
 
     // render grid
     for (gridRef in [mouseGridRef, environmentGridRef]) {
-      for (y => row in gridRef.data) {
-        for (x => items in row) {
-          if (Lambda.count(items) == 0) {
-            continue;
-          }
-
-          canvas.beginFill(Game.Colors.pureWhite, 0);
-          canvas.lineStyle(1, Game.Colors.pureWhite);
-          canvas.drawRect(
-            x * cellTile.width,
-            y * cellTile.height,
-            cellTile.width,
-            cellTile.height
-          );
+      Grid.eachCell(gridRef, (x, y, items) -> {
+        if (Lambda.count(items) == 0) {
+          return;
         }
-      }
+
+        canvas.beginFill(Game.Colors.pureWhite, 0);
+        canvas.lineStyle(1, Game.Colors.pureWhite);
+        canvas.drawRect(
+          x * cellTile.width,
+          y * cellTile.height,
+          cellTile.width,
+          cellTile.height
+        );
+      });
     }
 
     {
@@ -413,6 +405,14 @@ class Grid {
     }
 
     return items;
+  }
+
+  public static function eachCell(ref: GridRef, callback) {
+    for (y => row in ref.data) {
+      for (x => items in row) {
+        callback(x, y, items);
+      }
+    }
   }
 
   public static function removeItem(ref: GridRef, key: GridKey) {

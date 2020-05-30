@@ -2,6 +2,7 @@
   TODO: Add enemy destroyed animation (fade out or explode into pieces?)
 **/
 
+import Grid.GridRef;
 using hxd.Event;
 import Fonts;
 import Easing;
@@ -110,7 +111,7 @@ class Entity extends h2d.Object {
 
   public static var ALL: Array<Entity> = [];
   public var id: Int;
-  public var type: String;
+  public var type = 'UNKNOWN_TYPE';
   public var radius: Int;
   public var dx = 0.0;
   public var dy = 0.0;
@@ -475,8 +476,9 @@ class Enemy extends Entity {
 
   var font: h2d.Font = Fonts.primary.get().clone();
   var cds: Cooldown;
-  var damage = 1;
-  var follow: Entity;
+  var damage = 0;
+  public var follow: Entity;
+  public var canSeeTarget = true;
   var hasSnakeMotion: Bool;
   var spawnDuration: Float;
   var graphic: h2d.Graphics;
@@ -484,6 +486,7 @@ class Enemy extends Entity {
   var repelFilter: String;
   var attacksTurrets = false;
   var bounceAnimationStartTime = -1.0;
+  var debugCenter = false;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -511,6 +514,12 @@ class Enemy extends Entity {
     graphic = new h2d.Graphics(this);
     graphic.beginFill(color);
     graphic.drawCircle(0, 0, radius);
+
+    if (debugCenter) {
+      graphic.beginFill(0x000000);
+      graphic.drawCircle(0, 0, 3);
+    }
+
     graphic.beginFill(0xffffff, 0.1);
     graphic.drawCircle(0, 0, radius - 4);
     graphic.endFill();
@@ -555,13 +564,12 @@ class Enemy extends Entity {
       // distance to keep from destination
       var threshold = follow.radius + 20;
       var attackRange = 80;
-
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(0,
                                 Math.min(1,
                                           Math.pow((dFromTarget - threshold) / threshold, 2)));
-      if (dFromTarget > threshold) {
+      if (canSeeTarget && dFromTarget > threshold) {
         var aToTarget = Math.atan2(follow.y - y, follow.x - x);
         dx += Math.cos(aToTarget) * speedAdjust;
         dy += Math.sin(aToTarget) * speedAdjust;
@@ -844,6 +852,7 @@ class Game extends h2d.Object {
   var player: Player;
   var target: h2d.Object;
   var playerInfo: h2d.Text;
+  var mapRef: GridRef;
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
   var useAbilityOnClick: (ev: hxd.Event) -> Void;
@@ -889,6 +898,31 @@ class Game extends h2d.Object {
 
     Main.Global.rootScene = s2d;
     hxd.Res.initEmbed();
+
+    Asset.loadMap(
+      'test',
+      (mapData: GridRef) -> {
+        Grid.eachCell(mapData, (x, y, items) -> {
+          var color = Game.Colors.pureWhite;
+          var radius = Math.round(mapData.cellSize / 2);
+          var ent = new Entity({
+            x: x * mapData.cellSize + radius,
+            y: y * mapData.cellSize + radius,
+            radius: radius,
+            weight: 1.0,
+            color: color
+          });
+          var wallGraphic = new h2d.Graphics(ent);
+          wallGraphic.beginFill(color, 0.5);
+          wallGraphic.drawRect(-ent.radius, -ent.radius, ent.radius * 2, ent.radius * 2);
+          Main.Global.rootScene.addChild(ent);
+          mapRef = mapData;
+        });
+      },
+      (e) -> {
+        trace('error loading game map');
+      }
+    );
 
     s2d.addChild(this);
     if (oldGame != null) {
@@ -941,6 +975,12 @@ class Game extends h2d.Object {
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
+    var isReady = mapRef != null;
+
+    if (!isReady) {
+      return;
+    }
+
     var ALL = Entity.ALL;
 
     if (enemySpawner != null) {
@@ -957,7 +997,46 @@ class Game extends h2d.Object {
     }
 
     cleanupDisposedEntities();
+    var cellSize = mapRef.cellSize;
+
+    var debugLineOfSight = true;
+    var lineOfSightCheck = (entity, x, y, i) -> {
+      var isClearPath = Grid.isEmptyCell(mapRef, x, y);
+
+      if (!isClearPath) {
+        entity.canSeeTarget = false;
+      }
+
+      if (debugLineOfSight) {
+        var screenX = x * cellSize;
+        var screenY = y * cellSize;
+        var c = isClearPath
+          ? Game.Colors.pureWhite
+          : Game.Colors.red;
+        var lineWidth = isClearPath ? 0 : 2;
+        Main.Global.debugCanvas.beginFill(c, 0.4);
+        Main.Global.debugCanvas.lineStyle(lineWidth, c, 0.8);
+        Main.Global.debugCanvas.drawRect(screenX, screenY, cellSize, cellSize);
+      }
+
+      return isClearPath;
+    }
+
     for (a in ALL) {
+      if (a.type == 'ENEMY') {
+        var enemy:Dynamic = a;
+        var cellSize = mapRef.cellSize;
+        var startGridX = Math.floor(a.x / cellSize);
+        var startGridY = Math.floor(a.y / cellSize);
+        var targetGridX = Math.floor(enemy.follow.x / cellSize);
+        var targetGridY = Math.floor(enemy.follow.y / cellSize);
+
+        enemy.canSeeTarget = true;
+
+        Utils.bresenhamLine(
+          startGridX, startGridY, targetGridX, targetGridY, lineOfSightCheck, enemy
+        );
+      }
       a.update(dt);
     }
 

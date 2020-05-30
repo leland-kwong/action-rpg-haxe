@@ -55,7 +55,7 @@ class Utils {
   public static var BRESENHAM_DONE = 1;
   // creates a line using bresenham's line algorithm
   public static function bresenhamLine(
-    x1, y1, x2, y2, callback: (x: Int, y: Int, i: Int) -> Bool
+    x1, y1, x2, y2, callback: (ctx: Dynamic, x: Int, y: Int, i: Int) -> Bool, context = null
   ) {
     var MAX_NUM_ITERATIONS = 5000;
 
@@ -72,7 +72,7 @@ class Utils {
       }
 
       var is_end_of_line = ((x1 == x2) && (y1 == y2));
-      var shouldContinue = callback(x1, y1, num_iterations);
+      var shouldContinue = callback(context, x1, y1, num_iterations);
 
       if (!shouldContinue || is_end_of_line) {
         return;

@@ -17,7 +17,7 @@ class SaveState {
   public static function save(
     data: Dynamic,
     keyPath: String,
-    persistToUrl: Null<String>,
+    persistUrl: Null<String>,
     onSuccess: (res: Null<Dynamic>) -> Void,
     onError: (e: Dynamic) -> Void
   ) {
@@ -27,11 +27,11 @@ class SaveState {
 
     try {
     #if jsMode
-      if (persistToUrl != null) {
+      if (persistUrl != null) {
         var fetch = js.Browser.window.fetch;
 
         fetch(
-          new js.html.Request(persistToUrl),
+          new js.html.Request(persistUrl),
           {
             method: 'POST',
             headers: {

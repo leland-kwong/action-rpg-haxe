@@ -272,14 +272,14 @@ class Main extends hxd.App {
       #end
     }
 
-    // showHomeScreen();
-    // hud = new Hud(s2d);
-    // s2d.addChild(hud);
-    // reactiveItems.push(hud);
+    showHomeScreen();
+    hud = new Hud(s2d);
+    s2d.addChild(hud);
+    reactiveItems.push(hud);
 
-    reactiveItems.push(
-      new GridExample(s2d)
-    );
+    // reactiveItems.push(
+    //   new GridEditor(s2d)
+    // );
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
@@ -297,8 +297,6 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
-    Global.debugCanvas.clear();
-
     handleGlobalHotkeys();
 
     for (it in reactiveItems) {
@@ -316,6 +314,7 @@ class Main extends hxd.App {
     if (isNextFrame) {
       acc -= frameTime;
 
+      Global.debugCanvas.clear();
       var numEnemies = getNumEnemies();
 
       if (game != null) {
