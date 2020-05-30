@@ -801,7 +801,7 @@ class EnemySpawner {
   var x: Float;
   var y: Float;
   var target: Entity;
-  var spawnInterval = 0.1;
+  var spawnInterval = 0.05;
   /**
     FIXME
     Currently `Main.hx` checks for the number of enemies
@@ -850,7 +850,7 @@ class EnemySpawner {
 }
 
 class Game extends h2d.Object {
-  public var level = 10;
+  public var level = 15;
   var player: Player;
   var target: h2d.Object;
   var playerInfo: h2d.Text;
@@ -1018,7 +1018,7 @@ class Game extends h2d.Object {
     cleanupDisposedEntities();
     var cellSize = mapRef.cellSize;
 
-    var debugLineOfSight = true;
+    var debugLineOfSight = false;
     var lineOfSightCheck = (entity, x, y, i) -> {
       var isClearPath = Grid.isEmptyCell(mapRef, x, y);
 

@@ -1,6 +1,7 @@
 const { exec } = require('child_process');
 const fs = require('fs');
 const [, , port] = process.argv;
+require('./dev-server/main');
 
 if (port === undefined) {
   throw new Error('port must be provided');
