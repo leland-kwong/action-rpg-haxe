@@ -794,6 +794,7 @@ class EnemySpawner {
     3 => Colors.yellow,
   ];
 
+  var cds = new Cooldown();
   var enemiesLeftToSpawn: Int;
   var parent: h2d.Object;
   var x: Float;
@@ -824,13 +825,13 @@ class EnemySpawner {
     if (enemiesLeftToSpawn <= 0) {
       return;
     }
+    cds.update(dt);
 
-    accumulator += dt;
-    if (accumulator < spawnInterval) {
+    if (cds.has('recentlySpawned')) {
       return;
     }
 
-    accumulator -= spawnInterval;
+    cds.set('recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
     var size = Utils.irnd(1, 3);
@@ -858,8 +859,22 @@ class Game extends h2d.Object {
   var useAbilityOnClick: (ev: hxd.Event) -> Void;
   var enemySpawner: EnemySpawner;
 
+  function calcNumEnemies(level: Int) {
+    return level * Math.round(level /2);
+  }
+
   public function isGameOver() {
     return player.health <= 0;
+  }
+
+  public function isLevelComplete() {
+    for (e in Entity.ALL) {
+      // enemies still remain, so level not complete
+      if (e.type == 'ENEMY') {
+        return false;
+      }
+    }
+    return true;
   }
 
   public function cleanupLevel() {
@@ -884,7 +899,7 @@ class Game extends h2d.Object {
     enemySpawner = new EnemySpawner(
       s2d.width / 2,
       s2d.height / 2,
-      level * Math.round(level /2),
+      calcNumEnemies(level),
       s2d,
       player
     );

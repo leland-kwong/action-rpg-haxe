@@ -216,16 +216,6 @@ class Main extends hxd.App {
     s2d.addChild(debugText);
   }
 
-  function getNumEnemies() {
-    var numEnemies = 0;
-    for (e in Entity.ALL) {
-      if (e.type == 'ENEMY') {
-        numEnemies += 1;
-      }
-    }
-    return numEnemies;
-  }
-
   function onGameExit() {
     trace('on game exit');
     hxd.System.exit();
@@ -307,7 +297,7 @@ class Main extends hxd.App {
     acc += dt;
 
     // fixed to 60fps for now
-    var frameTime = 1/60;
+    var frameTime = dt;
     var fps = Math.round(1/dt);
     var isNextFrame = acc >= frameTime;
     // handle fixed dt here
@@ -315,10 +305,9 @@ class Main extends hxd.App {
       acc -= frameTime;
 
       Global.debugCanvas.clear();
-      var numEnemies = getNumEnemies();
 
       if (game != null) {
-        var levelCleared = numEnemies == 0;
+        var levelCleared = game.isLevelComplete();
         if (levelCleared) {
           game.newLevel(s2d);
         }
@@ -341,7 +330,6 @@ class Main extends hxd.App {
           'fps: ${fps}',
           'drawCalls: ${engine.drawCalls}',
           'numEntities: ${Entity.ALL.length}',
-          'numEnemies: ${numEnemies}'
         ].join('\n');
         var debugUiMargin = 10;
         debugText.x = s2d.width - debugUiMargin;
