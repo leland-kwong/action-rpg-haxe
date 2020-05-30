@@ -13,53 +13,6 @@ class Global {
   public static var mainCamera: CameraRef;
 }
 
-class BatchDraw {
-  var txt: h2d.Text;
-  var batch: h2d.SpriteBatch;
-  var graphic: h2d.Graphics;
-  var circleTile: h2d.Tile;
-  var squareTile: h2d.Tile;
-
-  public function new(s2d: h2d.Scene, font) {
-    var texture = new h3d.mat.Texture(s2d.height, s2d.width, [h3d.mat.Data.TextureFlags.Target]);
-    var tile = h2d.Tile.fromTexture(texture);
-    circleTile = tile.sub(0, 0, 51 * 2, 51 * 2);
-
-    graphic = new h2d.Graphics(s2d);
-    // outline
-    graphic.beginFill(0xffffff);
-    graphic.drawCircle(51, 51, 51);
-    // fill
-    graphic.beginFill(0x999);
-    graphic.drawCircle(51, 51, 50);
-
-    var squareX = 50 + 102;
-    var squareY = 51;
-    squareTile = tile.sub(squareX, squareY, 50, 50);
-    graphic.beginFill(0xffda3d);
-    graphic.drawRect(squareX, squareY, 50, 50);
-    graphic.endFill();
-    graphic.drawTo(texture);
-  }
-
-  public function update(t, dt:Float, s2d: h2d.Scene) {
-    graphic.clear();
-
-    for (i in 0...10000) {
-      var x = i % 50 * 2 + 100 + Std.random(100);
-      var y = Math.round(i / 2) + Std.random(100);
-      var tile = i % 2 == 0 ? circleTile : squareTile;
-      var centerOffsetX = tile.width / 2;
-      var centerOffsetY = tile.height / 2;
-      graphic.drawTile(
-        x + Math.sin(t) * 100 - centerOffsetX,
-        y - centerOffsetY,
-        tile
-      );
-    }
-  }
-}
-
 enum UiState {
   Over;
   Normal;
@@ -127,7 +80,10 @@ class HomeScreen extends h2d.Object {
     btnFont.resizeTo(36);
 
     var startGameBtn = new UiButton(
-      'Start Game', btnFont, onGameStart
+      'Start Game', btnFont, () -> {
+        this.remove();
+        onGameStart();
+      }
     );
     addChild(startGameBtn);
     startGameBtn.x = leftMargin;
@@ -141,13 +97,6 @@ class HomeScreen extends h2d.Object {
     exitGameBtn.x = startGameBtn.x;
     exitGameBtn.y = startGameBtn.y + startGameBtn.button.height + 10;
     uiButtonsList.push(exitGameBtn);
-  }
-
-  override function onRemove() {
-    trace('homescreen remove');
-    for (o in uiButtonsList) {
-      o.remove();
-    }
   }
 
   public function update(dt: Float) {
@@ -193,17 +142,21 @@ class Hud extends h2d.Object {
   }
 }
 
+enum abstract MainSceneType(String) {
+  var PlayGame;
+  var MapEditor;
+}
+
+
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
   var tickCount = 0;
   var t = 0.0;
   var acc = 0.0;
-  var batcher: BatchDraw;
   var game: Game;
   var background: h2d.Bitmap;
-  var homeScreen: HomeScreen;
-  var reactiveItems: Array<Dynamic> = [];
+  var reactiveItems: Map<String, Dynamic> = new Map();
 
   function addBackground(s2d: h2d.Scene, color) {
     // background
@@ -225,24 +178,16 @@ class Main extends hxd.App {
   }
 
   function showHomeScreen() {
-    if (homeScreen != null) {
-      return;
-    }
-
-    // reset game states
     game.remove();
     game = null;
 
     function onGameStart() {
       game = new Game(s2d, game);
-      homeScreen.remove();
-      homeScreen = null;
     }
 
-    homeScreen = new HomeScreen(
+    return new HomeScreen(
       onGameStart, onGameExit
     );
-    Global.uiRoot.addChild(homeScreen);
   }
 
   function runTests() {
@@ -254,6 +199,28 @@ class Main extends hxd.App {
     Global.mainBackground.render(e);
     super.render(e);
     Global.uiRoot.render(e);
+  }
+
+  function switchMainScene(sceneType: MainSceneType) {
+    for (it in reactiveItems) {
+      it.remove();
+    }
+
+    switch(sceneType) {
+      case MainSceneType.PlayGame: {
+        var hud = new Hud(Global.uiRoot);
+        Global.uiRoot.addChild(hud);
+        reactiveItems['MainScene_PlayGame_Hud'] = hud;
+        var hs = showHomeScreen();
+        Global.uiRoot.addChild(hs);
+        reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
+      }
+
+      case MainSceneType.MapEditor: {
+        var editor = new GridEditor(s2d);
+        reactiveItems['MainScene_GridEditor'] = editor;
+      }
+    }
   }
 
   override function init() {
@@ -277,14 +244,7 @@ class Main extends hxd.App {
     Global.rootScene = s2d;
     Global.mainCamera = Camera.create();
 
-    showHomeScreen();
-    var hud = new Hud(Global.uiRoot);
-    Global.uiRoot.addChild(hud);
-    reactiveItems.push(hud);
-
-    // reactiveItems.push(
-    //   new GridEditor(s2d)
-    // );
+    switchMainScene(MainSceneType.PlayGame);
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
@@ -296,7 +256,7 @@ class Main extends hxd.App {
     var Key = hxd.Key;
 
     if (Key.isPressed(Key.ESCAPE)) {
-      showHomeScreen();
+      switchMainScene(MainSceneType.PlayGame);
     }
   }
 
@@ -321,7 +281,7 @@ class Main extends hxd.App {
     t += dt;
     acc += dt;
 
-    // fixed to 60fps for now
+    // set to 1/60 for a fixed 60fps
     var frameTime = dt;
     var fps = Math.round(1/dt);
     var isNextFrame = acc >= frameTime;
@@ -338,21 +298,19 @@ class Main extends hxd.App {
         }
 
         game.update(s2d, frameTime);
-        // batcher.update(t, dt, s2d);
 
         if (game.isGameOver()) {
-          showHomeScreen();
+          switchMainScene(MainSceneType.PlayGame);
         }
       }
 
-      if (homeScreen != null) {
-        homeScreen.update(dt);
-      }
+      Camera.update(Main.Global.mainCamera, dt);
 
       if (debugText != null) {
         var text = [
           'time: ${t}',
-          'fps: ${fps}',
+          'fpsTrue: ${fps}',
+          'fps: ${Math.round(1/frameTime)}',
           'drawCalls: ${engine.drawCalls}',
           'numEntities: ${Entity.ALL.length}',
         ].join('\n');
@@ -365,8 +323,6 @@ class Main extends hxd.App {
 
     background.width = s2d.width;
     background.height = s2d.height;
-
-    Camera.update(Main.Global.mainCamera, dt);
   }
 
   static function main() {
