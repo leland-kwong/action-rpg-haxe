@@ -3,10 +3,14 @@ import h2d.Interactive;
 import Fonts;
 import Game;
 import Grid;
+import Camera;
 
 class Global {
   public static var rootScene: h2d.Scene;
+  public static var uiRoot: h2d.Scene;
+  public static var mainBackground: h2d.Scene;
   public static var debugCanvas: h2d.Graphics;
+  public static var mainCamera: CameraRef;
 }
 
 class BatchDraw {
@@ -106,7 +110,7 @@ class UiButton extends h2d.Object {
 class HomeScreen extends h2d.Object {
   var uiButtonsList = [];
 
-  public function new(s2d, onGameStart, onGameExit) {
+  public function new(onGameStart, onGameExit) {
     super();
 
     var leftMargin = 100;
@@ -199,7 +203,6 @@ class Main extends hxd.App {
   var game: Game;
   var background: h2d.Bitmap;
   var homeScreen: HomeScreen;
-  var hud: Hud;
   var reactiveItems: Array<Dynamic> = [];
 
   function addBackground(s2d: h2d.Scene, color) {
@@ -213,7 +216,7 @@ class Main extends hxd.App {
     debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
-    s2d.addChild(debugText);
+    Global.uiRoot.addChild(debugText);
   }
 
   function onGameExit() {
@@ -237,9 +240,9 @@ class Main extends hxd.App {
     }
 
     homeScreen = new HomeScreen(
-      s2d, onGameStart, onGameExit
+      onGameStart, onGameExit
     );
-    s2d.addChild(homeScreen);
+    Global.uiRoot.addChild(homeScreen);
   }
 
   function runTests() {
@@ -247,12 +250,13 @@ class Main extends hxd.App {
     SaveState.tests();
   }
 
+  public override function render(e: h3d.Engine) {
+    Global.mainBackground.render(e);
+    super.render(e);
+    Global.uiRoot.render(e);
+  }
+
   override function init() {
-    background = addBackground(s2d, 0x222222);
-    runTests();
-
-    Global.rootScene = s2d;
-
     {
       var win = hxd.Window.getInstance();
 
@@ -262,9 +266,20 @@ class Main extends hxd.App {
       #end
     }
 
+    Global.uiRoot = new h2d.Scene();
+    sevents.addScene(Global.uiRoot);
+
+    Global.mainBackground = new h2d.Scene();
+
+    background = addBackground(Global.mainBackground, 0x222222);
+    runTests();
+
+    Global.rootScene = s2d;
+    Global.mainCamera = Camera.create();
+
     showHomeScreen();
-    hud = new Hud(s2d);
-    s2d.addChild(hud);
+    var hud = new Hud(Global.uiRoot);
+    Global.uiRoot.addChild(hud);
     reactiveItems.push(hud);
 
     // reactiveItems.push(
@@ -287,6 +302,16 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
+    Camera.setSize(
+      Main.Global.mainCamera,
+      Main.Global.rootScene.width,
+      Main.Global.rootScene.height
+    );
+
+    Main.Global.rootScene.x = -Main.Global.mainCamera.x +
+      Main.Global.mainCamera.w / 2;
+    Main.Global.rootScene.y = -Main.Global.mainCamera.y +
+      Main.Global.mainCamera.h / 2;
     handleGlobalHotkeys();
 
     for (it in reactiveItems) {
@@ -340,6 +365,8 @@ class Main extends hxd.App {
 
     background.width = s2d.width;
     background.height = s2d.height;
+
+    Camera.update(Main.Global.mainCamera, dt);
   }
 
   static function main() {

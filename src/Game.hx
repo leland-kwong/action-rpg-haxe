@@ -7,6 +7,7 @@ using hxd.Event;
 import Fonts;
 import Easing;
 import Utils;
+import Camera;
 
 class SoundFx {
   public static var globalCds = new Cooldown();
@@ -703,19 +704,19 @@ class Player extends Entity {
     dy = 0;
 
     // left
-    if (Key.isDown(Key.A) && x > radius) {
+    if (Key.isDown(Key.A)) {
       dx = -1;
     }
     // right
-    if (Key.isDown(Key.D) && x < rootScene.width - radius) {
+    if (Key.isDown(Key.D)) {
       dx = 1;
     }
     // up
-    if (Key.isDown(Key.W) && y > radius) {
+    if (Key.isDown(Key.W)) {
       dy = -1;
     }
     // down
-    if (Key.isDown(Key.S) && y < rootScene.height - radius) {
+    if (Key.isDown(Key.S)) {
       dy = 1;
     }
 
@@ -849,7 +850,7 @@ class EnemySpawner {
 }
 
 class Game extends h2d.Object {
-  public var level = 0;
+  public var level = 10;
   var player: Player;
   var target: h2d.Object;
   var playerInfo: h2d.Text;
@@ -949,6 +950,7 @@ class Game extends h2d.Object {
       s2d
     );
     addChild(player);
+    Camera.follow(Main.Global.mainCamera, player);
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
@@ -957,7 +959,8 @@ class Game extends h2d.Object {
     playerInfo.textColor = 0xffffff;
     playerInfo.x = 10;
     playerInfo.y = 10;
-    addChild(playerInfo);
+    Main.Global.uiRoot
+      .addChild(playerInfo);
 
     // mouse pointer
     target = new h2d.Object(this);
@@ -967,7 +970,8 @@ class Game extends h2d.Object {
 
     useAbilityOnClick = function(ev: hxd.Event) {
       if (ev.kind == hxd.EventKind.EPush) {
-        player.useAbility(ev.relX, ev.relY, ev.button, this);
+        var rs = Main.Global.rootScene;
+        player.useAbility(rs.mouseX, rs.mouseY, ev.button, this);
       }
     }
     hxd.Window.getInstance()
