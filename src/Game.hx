@@ -21,7 +21,7 @@ class SoundFx {
     var soundResource: hxd.res.Sound = null;
 
     if(hxd.res.Sound.supportedFormat(Wav)){
-      soundResource = hxd.Res.turret_basic;
+      soundResource = hxd.Res.sound_effects.turret_basic;
     }
 
     if(soundResource != null){
@@ -39,7 +39,7 @@ class SoundFx {
     var soundResource: hxd.res.Sound = null;
 
     if(hxd.res.Sound.supportedFormat(Wav)){
-      soundResource = hxd.Res.cluster_bomb_launch;
+      soundResource = hxd.Res.sound_effects.cluster_bomb_launch;
     }
 
     if(soundResource != null){
@@ -57,7 +57,7 @@ class SoundFx {
     var soundResource: hxd.res.Sound = null;
 
     if(hxd.res.Sound.supportedFormat(Wav)){
-      soundResource = hxd.Res.cluster_bomb_explosion;
+      soundResource = hxd.Res.sound_effects.cluster_bomb_explosion;
     }
 
     if(soundResource != null){
