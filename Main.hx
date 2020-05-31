@@ -213,7 +213,6 @@ class Main extends hxd.App {
 
   function switchMainScene(sceneType: MainSceneType) {
     for (key => ref in reactiveItems) {
-      trace(ref);
       ref.remove();
       reactiveItems.remove(key);
     }
@@ -269,7 +268,6 @@ class Main extends hxd.App {
     var Key = hxd.Key;
 
     if (Key.isPressed(Key.ESCAPE)) {
-      trace('switch to main');
       switchMainScene(MainSceneType.PlayGame);
     }
   }

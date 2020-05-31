@@ -35,7 +35,6 @@ class GridEditor {
   var canvas: h2d.Graphics;
   var text: h2d.Text;
   var cellTile: h2d.Tile;
-  var interactArea: h2d.Interactive;
   var cellSize = 64;
   var texture: h3d.mat.Texture;
   var cursorSize: Int;
@@ -47,9 +46,18 @@ class GridEditor {
   var cds = new Game.Cooldown();
   var hasPendingSave = false;
   var objectsToCleanup: Array<Dynamic> = [];
+  var handleEvents: (e: hxd.Event) -> Void;
 
   public function new(s2d: h2d.Scene) {
     scene = s2d;
+
+    {
+      var originPoint = new h2d.Graphics(s2d);
+      objectsToCleanup.push(originPoint);
+      originPoint.beginFill(0xffffff, 0);
+      originPoint.lineStyle(2, 0xffffff);
+      originPoint.drawCircle(0, 0, 4);
+    }
     {
       debugPoint = new h2d.Graphics(s2d);
       objectsToCleanup.push(debugPoint);
@@ -118,8 +126,81 @@ class GridEditor {
 
 
     function onReady() {
-      interactArea = new h2d.Interactive(0, 0, Main.Global.rootScene);
-      interactArea.enableRightButton = true;
+      var dragState = {
+        startMousePoint: {
+          x: 0.0,
+          y: 0.0
+        },
+        startObjectPosition: {
+          x: 0.0,
+          y: 0.0
+        },
+        endObjectPosition: {
+          x: 0.0,
+          y: 0.0
+        },
+        dragging: false
+      };
+
+      {
+        function setEditMode(ev: hxd.Event) {
+          if (dragState.dragging || ev.kind != hxd.Event.EventKind.EPush) {
+            return;
+          }
+
+          if (ev.button == 0) {
+            editMode = GridEditMode.Insert;
+          }
+
+          if (ev.button == 1) {
+            editMode = GridEditMode.Delete;
+          }
+        }
+
+        function setNormalMode(ev: hxd.Event) {
+          if (ev.kind != hxd.Event.EventKind.ERelease) {
+            return;
+          }
+
+          editMode = GridEditMode.Normal;
+        }
+
+        Camera.follow(Main.Global.mainCamera, dragState.endObjectPosition);
+        // pan the canvas adobe photoshop style
+        handleEvents = (e: hxd.Event) -> {
+          if (
+            hxd.Key.isDown(hxd.Key.SPACE)
+            && e.button == 0)
+          {
+            if (e.kind == hxd.Event.EventKind.EPush) {
+              dragState.startMousePoint.x = e.relX;
+              dragState.startMousePoint.y = e.relY;
+              dragState.startObjectPosition.x = Main.Global.mainCamera.x;
+              dragState.startObjectPosition.y = Main.Global.mainCamera.y;
+              dragState.dragging = true;
+            }
+            if (
+              e.kind == hxd.Event.EventKind.EMove
+              && dragState.dragging
+            ) {
+              var dx = e.relX - dragState.startMousePoint.x;
+              var dy = e.relY - dragState.startMousePoint.y;
+              var startPos = dragState.startObjectPosition;
+              var endPos = dragState.endObjectPosition;
+              endPos.x = startPos.x - dx;
+              endPos.y = startPos.y - dy;
+            }
+            if (e.kind == hxd.Event.EventKind.ERelease) {
+              dragState.dragging = false;
+            }
+          }
+
+          setEditMode(e);
+          setNormalMode(e);
+        }
+        Main.Global.uiRoot
+          .addEventListener(handleEvents);
+      }
 
       function editEnvironment(ev, editMode) {
         if (editMode == GridEditMode.Normal) {
@@ -128,6 +209,10 @@ class GridEditor {
 
         var gridX = Grid.snapPosition(ev.relX, cursorSize);
         var gridY = Grid.snapPosition(ev.relY, cursorSize);
+
+        if (gridX < 0 || gridY < 0) {
+          return;
+        }
 
         // add item
         if (editMode == GridEditMode.Insert) {
@@ -214,22 +299,6 @@ class GridEditor {
         benchResultTotal += Utils.hrt() - ts;
         debugText.text = '${benchResultTotal / benchCount}';
       };
-
-      function setEditMode(ev: hxd.Event) {
-        if (ev.button == 0) {
-          editMode = GridEditMode.Insert;
-        }
-
-        if (ev.button == 1) {
-          editMode = GridEditMode.Delete;
-        }
-      }
-      interactArea.onPush = setEditMode;
-
-      function setNormalMode(ev: hxd.Event) {
-        editMode = GridEditMode.Normal;
-      }
-      interactArea.onRelease = setNormalMode;
     }
 
     mouseGridRef = Grid.create(cellSize);
@@ -254,8 +323,6 @@ class GridEditor {
 
     canvas.clear();
     cds.update(dt);
-    interactArea.width = Main.Global.rootScene.width;
-    interactArea.height = Main.Global.rootScene.height;
 
     updateGrids({
       relX: scene.mouseX,

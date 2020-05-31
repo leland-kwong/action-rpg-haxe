@@ -22,7 +22,7 @@ class Camera {
     ref.h = h;
   }
 
-  public static function follow(ref: CameraRef, object) {
+  public static function follow(ref: CameraRef, object: Dynamic) {
     ref.following = object;
   }
 
