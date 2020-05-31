@@ -721,8 +721,8 @@ class Player extends Entity {
     }
 
     var magnitude = Math.sqrt(dx * dx + dy * dy);
-    var dxNormalized = magnitude == 0 ? dx : dx / magnitude;
-    var dyNormalized = magnitude == 0 ? dy : dy / magnitude;
+    var dxNormalized = magnitude == 0 ? dx : (dx / magnitude);
+    var dyNormalized = magnitude == 0 ? dy : (dy / magnitude);
 
     dx = dxNormalized;
     dy = dyNormalized;

@@ -165,7 +165,19 @@ class GridEditor {
           editMode = GridEditMode.Normal;
         }
 
+        function setZoom(ev: hxd.Event) {
+          if (ev.kind != hxd.Event.EventKind.EWheel) {
+            return;
+          }
+
+          var zoomBy = 0.25;
+          var zoomDelta = Math.round(ev.wheelDelta) * zoomBy;
+          s2d.scaleX = Utils.clamp(s2d.scaleX - zoomDelta, zoomBy, 2);
+          s2d.scaleY = Utils.clamp(s2d.scaleY - zoomDelta, zoomBy, 2);
+        }
+
         Camera.follow(Main.Global.mainCamera, dragState.endObjectPosition);
+
         // pan the canvas adobe photoshop style
         handleEvents = (e: hxd.Event) -> {
           if (
@@ -197,6 +209,7 @@ class GridEditor {
 
           setEditMode(e);
           setNormalMode(e);
+          setZoom(e);
         }
         Main.Global.uiRoot
           .addEventListener(handleEvents);
@@ -253,51 +266,9 @@ class GridEditor {
         drawGridInfo(mouseGridRef);
       }
 
-      function drawBresenham(ev: {relX: Dynamic, relY: Dynamic}, debug = false) {
-        var size = cellSize;
-        var startGridX = 3;
-        var startGridY = 1;
-        var gridX = Math.floor(ev.relX / size);
-        var gridY = Math.floor(ev.relY / size);
-
-        if (debug) {
-          Main.Global.debugCanvas.beginFill(Game.Colors.pureWhite, 0.2);
-        }
-
-        Utils.bresenhamLine(startGridX, startGridY, gridX, gridY, (_, x, y, i) -> {
-          if (debug) {
-            var screenX = x * size;
-            var screenY = y * size;
-
-            Main.Global.debugCanvas.drawRect(screenX, screenY, size, size);
-          }
-
-          return Grid.isEmptyCell(environmentGridRef, x, y);
-        });
-      }
-
-      var debugText = new h2d.Text(
-        Fonts.primary.get(),
-        Main.Global.uiRoot
-      );
-      objectsToCleanup.push(debugText);
-      debugText.x = 10;
-      debugText.y = 10;
-      var benchResultTotal = 0.0;
-      var benchCount = 0;
       updateGrids = function(ev) {
         previewInsertArea(ev);
         editEnvironment(ev, editMode);
-
-        var ts = Utils.hrt();
-        for (i in 0...500) {
-          drawBresenham(ev, i == 0);
-        }
-
-        // average out results
-        benchCount += 1;
-        benchResultTotal += Utils.hrt() - ts;
-        debugText.text = '${benchResultTotal / benchCount}';
       };
     }
 
@@ -370,7 +341,10 @@ class GridEditor {
         }
 
         canvas.beginFill(Game.Colors.pureWhite, 0);
-        canvas.lineStyle(1, Game.Colors.pureWhite);
+        canvas.lineStyle(4, Game.Colors.pureWhite);
+        // offset by 0.5 since lines are drawn at the
+        // center of a point which can cause issues
+        // when down-scaling
         canvas.drawRect(
           x * cellTile.width,
           y * cellTile.height,
@@ -384,7 +358,7 @@ class GridEditor {
       var mouseX = Main.Global.rootScene.mouseX;
       var mouseY = Main.Global.rootScene.mouseY;
       canvas.beginFill(Game.Colors.yellow, 0);
-      canvas.lineStyle(1, Game.Colors.yellow);
+      canvas.lineStyle(4, Game.Colors.yellow);
       canvas.drawRect(
         // snap to grid
         mouseX - cursorSize / 2,
@@ -399,7 +373,8 @@ class GridEditor {
     for (o in objectsToCleanup) {
       o.remove();
     }
-    trace('cleanup grid editor');
+    Main.Global.rootScene.scaleX = 1;
+    Main.Global.rootScene.scaleY = 1;
   }
 }
 

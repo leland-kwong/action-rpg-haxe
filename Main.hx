@@ -281,9 +281,9 @@ class Main extends hxd.App {
     );
 
     Main.Global.rootScene.x = -Main.Global.mainCamera.x +
-      Main.Global.mainCamera.w / 2;
+      Math.fround(Main.Global.mainCamera.w / 2);
     Main.Global.rootScene.y = -Main.Global.mainCamera.y +
-      Main.Global.mainCamera.h / 2;
+      Math.fround(Main.Global.mainCamera.h / 2);
     handleGlobalHotkeys();
 
     for (it in reactiveItems) {
