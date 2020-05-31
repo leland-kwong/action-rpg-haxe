@@ -46,11 +46,13 @@ class GridEditor {
   var environmentGridSavePath = 'test.map';
   var cds = new Game.Cooldown();
   var hasPendingSave = false;
+  var objectsToCleanup: Array<Dynamic> = [];
 
   public function new(s2d: h2d.Scene) {
     scene = s2d;
     {
       debugPoint = new h2d.Graphics(s2d);
+      objectsToCleanup.push(debugPoint);
       debugPoint.beginFill(Game.Colors.yellow);
       debugPoint.drawCircle(0, 0, 10);
     }
@@ -60,6 +62,7 @@ class GridEditor {
 
     cellTile = tile.sub(0, 0, cellSize, cellSize);
     canvas = new h2d.Graphics(s2d);
+    objectsToCleanup.push(canvas);
     canvas.beginFill(0xffffff, 0);
     canvas.lineStyle(1, 0xffffff);
     canvas.drawRect(0, 0, cellSize, cellSize);
@@ -68,7 +71,9 @@ class GridEditor {
     var cellFont = Fonts.primary.get().clone();
     cellFont.resizeTo(Math.round(12 * 1.5));
     text = new h2d.Text(cellFont, s2d);
+    objectsToCleanup.push(text);
     var textCanvas = new h2d.Graphics(s2d);
+    objectsToCleanup.push(textCanvas);
     var textTexture = new h3d.mat.Texture(
       s2d.width, s2d.height, [h3d.mat.Data.TextureFlags.Target]
     );
@@ -186,7 +191,11 @@ class GridEditor {
         });
       }
 
-      var debugText = new h2d.Text(Fonts.primary.get(), s2d);
+      var debugText = new h2d.Text(
+        Fonts.primary.get(),
+        Main.Global.uiRoot
+      );
+      objectsToCleanup.push(debugText);
       debugText.x = 10;
       debugText.y = 10;
       var benchResultTotal = 0.0;
@@ -317,6 +326,13 @@ class GridEditor {
         cursorSize
       );
     }
+  }
+
+  public function remove() {
+    for (o in objectsToCleanup) {
+      o.remove();
+    }
+    trace('cleanup grid editor');
   }
 }
 

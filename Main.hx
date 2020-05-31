@@ -63,7 +63,7 @@ class UiButton extends h2d.Object {
 class HomeScreen extends h2d.Object {
   var uiButtonsList = [];
 
-  public function new(onGameStart, onGameExit) {
+  public function new(onGameStart, onGameExit, onMapEditorMode) {
     super();
 
     var leftMargin = 100;
@@ -97,6 +97,14 @@ class HomeScreen extends h2d.Object {
     exitGameBtn.x = startGameBtn.x;
     exitGameBtn.y = startGameBtn.y + startGameBtn.button.height + 10;
     uiButtonsList.push(exitGameBtn);
+
+    var mapEditorModeBtn = new UiButton(
+      'Map Editor', btnFont, onMapEditorMode
+    );
+    addChild(mapEditorModeBtn);
+    mapEditorModeBtn.x = exitGameBtn.x;
+    mapEditorModeBtn.y = exitGameBtn.y + startGameBtn.button.height + 10;
+    uiButtonsList.push(mapEditorModeBtn);
   }
 
   public function update(dt: Float) {
@@ -186,7 +194,9 @@ class Main extends hxd.App {
     }
 
     return new HomeScreen(
-      onGameStart, onGameExit
+      onGameStart, onGameExit, () -> {
+        switchMainScene(MainSceneType.MapEditor);
+      }
     );
   }
 
@@ -202,8 +212,10 @@ class Main extends hxd.App {
   }
 
   function switchMainScene(sceneType: MainSceneType) {
-    for (it in reactiveItems) {
-      it.remove();
+    for (key => ref in reactiveItems) {
+      trace(ref);
+      ref.remove();
+      reactiveItems.remove(key);
     }
 
     switch(sceneType) {
@@ -249,6 +261,7 @@ class Main extends hxd.App {
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
     #end
+
     Global.debugCanvas = new h2d.Graphics(s2d);
   }
 
@@ -256,6 +269,7 @@ class Main extends hxd.App {
     var Key = hxd.Key;
 
     if (Key.isPressed(Key.ESCAPE)) {
+      trace('switch to main');
       switchMainScene(MainSceneType.PlayGame);
     }
   }
