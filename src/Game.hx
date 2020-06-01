@@ -68,8 +68,8 @@ class SoundFx {
 }
 
 typedef Point = {
-  var x : Float;
-  var y : Float;
+  var x: Float;
+  var y: Float;
   var radius: Int;
   var weight: Float;
   var color: Int;
@@ -111,7 +111,8 @@ class Entity extends h2d.Object {
   static var idGenerated = 0;
 
   public static var ALL: Array<Entity> = [];
-  public var id: Int;
+  public static var ALL_BY_ID: Map<String, Entity> = new Map();
+  public var id: String;
   public var type = 'UNKNOWN_TYPE';
   public var radius: Int;
   public var dx = 0.0;
@@ -126,17 +127,20 @@ class Entity extends h2d.Object {
   public var status = 'TARGETABLE';
   var time = 0.0;
 
-  public function new(props: Point) {
+  public function new(props: Point, customId = null) {
     super();
 
     x = props.x;
     y = props.y;
-    id = idGenerated++;
+    id = customId == null
+      ? 'entity_${idGenerated++}'
+      : customId;
     radius = props.radius;
     weight = props.weight;
     color = props.color;
 
     ALL.push(this);
+    ALL_BY_ID.set(id, this);
   }
 
   public function update(dt: Float) {
@@ -488,6 +492,8 @@ class Enemy extends Entity {
   var attacksTurrets = false;
   var bounceAnimationStartTime = -1.0;
   var debugCenter = false;
+  public var sightRange = 400;
+  public var neighbors: Array<String>;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -578,7 +584,8 @@ class Enemy extends Entity {
 
       if (avoidOthers) {
         // make entities avoid each other by repulsion
-        for (o in Entity.ALL) {
+        for (oid in neighbors) {
+          var o = Entity.ALL_BY_ID.get(oid);
           if (o != this && o.forceMultiplier > 0) {
             var pt = this;
             var ept = o;
@@ -632,7 +639,8 @@ class Enemy extends Entity {
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
       if (!cds.has('attack')) {
-        cds.set('attack', 0.5);
+        var attackCooldown = 0.0;
+        cds.set('attack', attackCooldown);
         attackTarget.damageTaken += damage;
       }
     }
@@ -855,6 +863,7 @@ class Game extends h2d.Object {
   var target: h2d.Object;
   var playerInfo: h2d.Text;
   var mapRef: GridRef;
+  var dynamicWorldRef: GridRef = Grid.create(64);
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
   var useAbilityOnClick: (ev: hxd.Event) -> Void;
@@ -918,22 +927,26 @@ class Game extends h2d.Object {
     Asset.loadMap(
       'test',
       (mapData: GridRef) -> {
-        Grid.eachCell(mapData, (x, y, items) -> {
-          var color = Game.Colors.pureWhite;
-          var radius = Math.round(mapData.cellSize / 2);
-          var ent = new Entity({
-            x: x * mapData.cellSize + radius,
-            y: y * mapData.cellSize + radius,
-            radius: radius,
-            weight: 1.0,
-            color: color
-          });
-          var wallGraphic = new h2d.Graphics(ent);
-          wallGraphic.beginFill(color, 0.5);
-          wallGraphic.drawRect(-ent.radius, -ent.radius, ent.radius * 2, ent.radius * 2);
-          Main.Global.rootScene.addChild(ent);
-          mapRef = mapData;
-        });
+        var color = Game.Colors.pureWhite;
+        var radius = Math.round(mapData.cellSize / 2);
+        var createEnvironmentItems = (x, y, items: Grid.GridItems) -> {
+          for (id in items) {
+            var padding = 10;
+            var ent = new Entity({
+              x: x * mapData.cellSize + radius,
+              y: y * mapData.cellSize + radius,
+              radius: radius + padding,
+              weight: 1.0,
+              color: color
+            }, id);
+            var wallGraphic = new h2d.Graphics(ent);
+            wallGraphic.beginFill(color, 0.5);
+            wallGraphic.drawRect(-radius, -radius, radius * 2, radius * 2);
+            Main.Global.rootScene.addChild(ent);
+          }
+        }
+        Grid.eachCell(mapData, createEnvironmentItems);
+        mapRef = mapData;
       },
       (e) -> {
         trace('error loading game map');
@@ -986,6 +999,9 @@ class Game extends h2d.Object {
       var isDisposed = a.health <= 0;
       if (isDisposed) {
         ALL.splice(i, 1);
+        Entity.ALL_BY_ID.remove(a.id);
+        Grid.removeItem(dynamicWorldRef, a.id);
+        Grid.removeItem(mapRef, a.id);
         a.remove();
       } else {
         i += 1;
@@ -1021,9 +1037,11 @@ class Game extends h2d.Object {
     var debugLineOfSight = false;
     var lineOfSightCheck = (entity, x, y, i) -> {
       var isClearPath = Grid.isEmptyCell(mapRef, x, y);
+      var isInSightRange = i * cellSize <= entity.sightRange;
 
-      if (!isClearPath) {
+      if (!isClearPath || !isInSightRange) {
         entity.canSeeTarget = false;
+        return false;
       }
 
       if (debugLineOfSight) {
@@ -1042,6 +1060,7 @@ class Game extends h2d.Object {
     }
 
     for (a in ALL) {
+      // line of sight check
       if (a.type == 'ENEMY') {
         var enemy:Dynamic = a;
         var cellSize = mapRef.cellSize;
@@ -1049,14 +1068,29 @@ class Game extends h2d.Object {
         var startGridY = Math.floor(a.y / cellSize);
         var targetGridX = Math.floor(enemy.follow.x / cellSize);
         var targetGridY = Math.floor(enemy.follow.y / cellSize);
-
+        var neighbors: Array<String> = [];
+        var nRange = 100;
+        var dynamicNeighbors = Grid.getItemsInRect(
+          dynamicWorldRef, a.x, a.y, a.radius + nRange, a.radius + nRange
+        );
+        var obstacleNeighbors = Grid.getItemsInRect(
+          mapRef, a.x, a.y, a.radius + nRange, a.radius + nRange
+        );
+        for (n in dynamicNeighbors) {
+          neighbors.push(n);
+        }
+        for (n in obstacleNeighbors) {
+          neighbors.push(n);
+        }
+        enemy.neighbors = neighbors;
         enemy.canSeeTarget = true;
-
         Utils.bresenhamLine(
           startGridX, startGridY, targetGridX, targetGridY, lineOfSightCheck, enemy
         );
       }
+
       a.update(dt);
+      Grid.setItemRect(dynamicWorldRef, a.x, a.y, a.radius, a.radius, a.id);
     }
 
     target.x = s2d.mouseX;

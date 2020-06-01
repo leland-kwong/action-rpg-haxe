@@ -7,6 +7,7 @@ import Asset;
 using StringTools;
 
 typedef GridKey = String;
+typedef GridItems = Map<GridKey, GridKey>;
 
 typedef GridRef = {
   var cellSize: Int;
@@ -14,7 +15,7 @@ typedef GridRef = {
     Int, // row-index
     Map< // row-data
       Int, // column-index
-      Map<GridKey, GridKey>
+      GridItems
     >
   >;
   var itemCache: Map<GridKey, Array<Int>>;
@@ -427,29 +428,46 @@ class Grid {
   }
 
   // NOTE: origin is at center of rect
-  public static function setItemRect(ref: GridRef, x, y, w, h, key: GridKey) {
-    removeItem(ref, key);
-
+  public static function setItemRect(
+    ref: GridRef,
+    x: Float,
+    y: Float,
+    w: Int,
+    h: Int,
+    key: GridKey
+  ) {
+    var fromCache = ref.itemCache[key];
     var xMin = Math.floor(Math.round(x - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(Math.round(x + (w / 2)) / ref.cellSize);
     var yMin = Math.floor(Math.round(y - (h / 2)) / ref.cellSize);
     var yMax = Math.ceil(Math.round(y + (h / 2)) / ref.cellSize);
 
+    if (
+      fromCache != null
+      && xMin == fromCache[0]
+      && xMax == fromCache[1]
+      && yMin == fromCache[2]
+      && yMax == fromCache[3]
+    ) {
+      return;
+    }
+
+    removeItem(ref, key);
     ref.itemCache[key] = [xMin, xMax, yMin, yMax];
 
-    for (y in yMin...yMax) {
-      for (x in xMin...xMax) {
-        addItem(ref, x, y, key);
+    for (_y in yMin...yMax) {
+      for (_x in xMin...xMax) {
+        addItem(ref, _x, _y, key);
       }
     }
   }
 
-  public static function getItemsInRect(ref: GridRef, x, y, w, h) {
+  public static function getItemsInRect(ref: GridRef, x: Float, y: Float, w, h) {
     var xMin = Math.floor(Math.round(x - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(Math.round(x + (w / 2)) / ref.cellSize);
     var yMin = Math.floor(Math.round(y - (h / 2)) / ref.cellSize);
     var yMax = Math.ceil(Math.round(y + (h / 2)) / ref.cellSize);
-    var items = new Map();
+    var items: GridItems = new Map();
 
     for (y in yMin...yMax) {
       for (x in xMin...xMax) {
