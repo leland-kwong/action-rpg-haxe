@@ -16,6 +16,8 @@ class Global {
   public static var mouse = {
     buttonDown: null
   }
+  public static var mapRef: GridRef;
+  public static var dynamicWorldRef: GridRef;
 }
 
 enum UiState {
@@ -140,6 +142,7 @@ class Hud extends h2d.Object {
   function controlsHelpText(text, font) {
     var t = new h2d.Text(font, this);
     t.text = text;
+    t.textAlign = Right;
     t.textColor = Game.Colors.pureWhite;
     helpTextList.push(t);
     return t;
@@ -157,13 +160,13 @@ class Hud extends h2d.Object {
   }
 
   public function update() {
-    var _originX = 10.0;
+    var _originX = scene.width - 10.0;
     var originY = scene.height - 10;
 
     for (t in helpTextList) {
       t.x = _originX;
       t.y = originY - t.textHeight;
-      _originX += t.textWidth + 20;
+      _originX -= t.textWidth + 20;
     }
   }
 }

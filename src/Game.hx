@@ -106,12 +106,14 @@ class Cooldown {
   }
 }
 
+typedef EntityId = String;
+
 class Entity extends h2d.Object {
   static var idGenerated = 0;
 
   public static var ALL: Array<Entity> = [];
   public static var ALL_BY_ID: Map<String, Entity> = new Map();
-  public var id: String;
+  public var id: EntityId;
   public var type = 'UNKNOWN_TYPE';
   public var radius: Int;
   public var dx = 0.0;
@@ -180,6 +182,7 @@ class Projectile extends Entity {
   var damage = 1;
   var lifeTime = 5.0;
   var collidedWith: Entity;
+  public var neighbors: Array<EntityId>;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
@@ -195,6 +198,7 @@ class Projectile extends Entity {
       color: color,
       weight: 0.0,
     });
+    type = 'PROJECTILE';
     this.speed = speed;
     forceMultiplier = 0.0;
 
@@ -227,8 +231,13 @@ class Projectile extends Entity {
       health = 0;
     }
 
-    for (a in Entity.ALL) {
-      if (a.type == 'ENEMY') {
+    if (neighbors.length > 0) {
+      trace('neighbors: ${neighbors.length}');
+    }
+
+    for (id in neighbors) {
+      var a = Entity.ALL_BY_ID[id];
+      if (a.type == 'ENEMY' || a.type == 'OBSTACLE') {
         var d = Utils.distance(x, y, a.x, a.y);
         var min = radius + a.radius * 1.0;
         var conflict = d < min;
@@ -392,7 +401,7 @@ class Enemy extends Entity {
   var bounceAnimationStartTime = -1.0;
   var debugCenter = false;
   public var sightRange = 400;
-  public var neighbors: Array<String>;
+  public var neighbors: Array<EntityId>;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -821,17 +830,18 @@ class Game extends h2d.Object {
         var createEnvironmentItems = (x, y, items: Grid.GridItems) -> {
           for (id in items) {
             var padding = 10;
-            var ent = new Entity({
+            var wallEnt = new Entity({
               x: x * mapData.cellSize + radius,
               y: y * mapData.cellSize + radius,
               radius: radius + padding,
               weight: 1.0,
               color: color
             }, id);
-            var wallGraphic = new h2d.Graphics(ent);
+            wallEnt.type = 'OBSTACLE';
+            var wallGraphic = new h2d.Graphics(wallEnt);
             wallGraphic.beginFill(color, 0.5);
             wallGraphic.drawRect(-radius, -radius, radius * 2, radius * 2);
-            Main.Global.rootScene.addChild(ent);
+            Main.Global.rootScene.addChild(wallEnt);
           }
         }
         Grid.eachCell(mapData, createEnvironmentItems);
@@ -896,6 +906,9 @@ class Game extends h2d.Object {
       return;
     }
 
+    Main.Global.mapRef = mapRef;
+    Main.Global.dynamicWorldRef = dynamicWorldRef;
+
     var ALL = Entity.ALL;
 
     if (enemySpawner != null) {
@@ -939,14 +952,10 @@ class Game extends h2d.Object {
     }
 
     for (a in ALL) {
-      // line of sight check
-      if (a.type == 'ENEMY') {
-        var enemy:Dynamic = a;
-        var cellSize = mapRef.cellSize;
-        var startGridX = Math.floor(a.x / cellSize);
-        var startGridY = Math.floor(a.y / cellSize);
-        var targetGridX = Math.floor(enemy.follow.x / cellSize);
-        var targetGridY = Math.floor(enemy.follow.y / cellSize);
+      var shouldFindNeighbors = a.type == 'ENEMY'
+        || a.type == 'PROJECTILE';
+
+      if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];
         var nRange = 100;
         var dynamicNeighbors = Grid.getItemsInRect(
@@ -961,7 +970,19 @@ class Game extends h2d.Object {
         for (n in obstacleNeighbors) {
           neighbors.push(n);
         }
-        enemy.neighbors = neighbors;
+        var aWithNeighbors:Dynamic = a;
+        aWithNeighbors.neighbors = neighbors;
+      }
+
+      // line of sight check
+      if (a.type == 'ENEMY') {
+        var enemy:Dynamic = a;
+        var cellSize = mapRef.cellSize;
+        var startGridX = Math.floor(a.x / cellSize);
+        var startGridY = Math.floor(a.y / cellSize);
+        var targetGridX = Math.floor(enemy.follow.x / cellSize);
+        var targetGridY = Math.floor(enemy.follow.y / cellSize);
+
         enemy.canSeeTarget = true;
         Utils.bresenhamLine(
           startGridX, startGridY, targetGridX, targetGridY, lineOfSightCheck, enemy
