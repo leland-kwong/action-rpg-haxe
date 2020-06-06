@@ -1,8 +1,10 @@
+import haxe.Json;
 import h2d.Text;
 import h2d.Interactive;
 import Fonts;
 import Game;
 import Grid;
+import ParticlePlayground;
 import Camera;
 
 class Global {
@@ -11,6 +13,9 @@ class Global {
   public static var mainBackground: h2d.Scene;
   public static var debugCanvas: h2d.Graphics;
   public static var mainCamera: CameraRef;
+  public static var mouse = {
+    isDown: false
+  }
 }
 
 enum UiState {
@@ -63,7 +68,12 @@ class UiButton extends h2d.Object {
 class HomeScreen extends h2d.Object {
   var uiButtonsList = [];
 
-  public function new(onGameStart, onGameExit, onMapEditorMode) {
+  public function new(
+    onGameStart,
+    onGameExit,
+    onMapEditorMode,
+    onParticlePlaygroundMode
+  ) {
     super();
 
     var leftMargin = 100;
@@ -105,6 +115,14 @@ class HomeScreen extends h2d.Object {
     mapEditorModeBtn.x = exitGameBtn.x;
     mapEditorModeBtn.y = exitGameBtn.y + startGameBtn.button.height + 10;
     uiButtonsList.push(mapEditorModeBtn);
+
+    var particlePlaygroundModeBtn = new UiButton(
+      'Particle Playground', btnFont, onParticlePlaygroundMode
+    );
+    addChild(particlePlaygroundModeBtn);
+    particlePlaygroundModeBtn.x = mapEditorModeBtn.x;
+    particlePlaygroundModeBtn.y = mapEditorModeBtn.y + mapEditorModeBtn.button.height + 10;
+    uiButtonsList.push(particlePlaygroundModeBtn);
   }
 
   public function update(dt: Float) {
@@ -153,6 +171,7 @@ class Hud extends h2d.Object {
 enum abstract MainSceneType(String) {
   var PlayGame;
   var MapEditor;
+  var ParticlePlayground;
 }
 
 
@@ -174,7 +193,7 @@ class Main extends hxd.App {
 
   function setupDebugInfo(font) {
     debugText = new h2d.Text(font);
-    debugText.textAlign = Right;
+    // debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
     Global.uiRoot.addChild(debugText);
@@ -194,8 +213,12 @@ class Main extends hxd.App {
     }
 
     return new HomeScreen(
-      onGameStart, onGameExit, () -> {
+      onGameStart, onGameExit,
+      () -> {
         switchMainScene(MainSceneType.MapEditor);
+      },
+      () -> {
+        switchMainScene(MainSceneType.ParticlePlayground);
       }
     );
   }
@@ -231,10 +254,29 @@ class Main extends hxd.App {
         var editor = new GridEditor(s2d);
         reactiveItems['MainScene_GridEditor'] = editor;
       }
+
+      case MainSceneType.ParticlePlayground: {
+        var ref = new ParticlePlayground();
+        reactiveItems['MainScene_ParticlePlayground'] = ref;
+      }
     }
   }
 
   override function init() {
+    {
+      function onEvent(event : hxd.Event) {
+        if (event.kind == hxd.Event.EventKind.EPush) {
+          Global.mouse.isDown = true;
+        }
+        if (event.kind == hxd.Event.EventKind.ERelease) {
+          Global.mouse.isDown = false;
+        }
+      }
+      hxd.Window.getInstance().addEventTarget(onEvent);
+    }
+
+    hxd.Res.initEmbed();
+
     {
       var win = hxd.Window.getInstance();
 
@@ -255,7 +297,7 @@ class Main extends hxd.App {
     Global.rootScene = s2d;
     Global.mainCamera = Camera.create();
 
-    switchMainScene(MainSceneType.PlayGame);
+    switchMainScene(MainSceneType.ParticlePlayground);
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());
@@ -325,9 +367,10 @@ class Main extends hxd.App {
           'fps: ${Math.round(1/frameTime)}',
           'drawCalls: ${engine.drawCalls}',
           'numEntities: ${Entity.ALL.length}',
+          'mouse: ${Json.stringify(Global.mouse, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;
-        debugText.x = s2d.width - debugUiMargin;
+        debugText.x = debugUiMargin;
         debugText.y = debugUiMargin;
         debugText.text = text;
       }

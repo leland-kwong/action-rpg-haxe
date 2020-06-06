@@ -922,7 +922,6 @@ class Game extends h2d.Object {
     super();
 
     Main.Global.rootScene = s2d;
-    hxd.Res.initEmbed();
 
     Asset.loadMap(
       'test',
