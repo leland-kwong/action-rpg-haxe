@@ -14,11 +14,10 @@ typedef Particle = {
 
 class ParticleSystem {
   public static var particles: Array<Particle> = [];
-  public static var canvas: h2d.Graphics;
   public static var batch: h2d.SpriteBatch;
   public static var spriteSheet: h2d.Tile;
+  public static var debugText: h2d.Text;
   static var time = 0.0;
-  static var debugText: h2d.Text;
 
   static public function init() {
     spriteSheet = hxd.Res.sprites.shapes.toTile();
@@ -34,10 +33,6 @@ class ParticleSystem {
     debugText.textColor = Game.Colors.pureWhite;
     debugText.x = 10;
     debugText.y = 10;
-
-    var centerPoint = new h2d.Graphics(Main.Global.rootScene);
-    centerPoint.beginFill(Game.Colors.yellow);
-    centerPoint.drawCircle(0, 0, 5, 10);
   }
 
   static public function emit(config: Particle) {
@@ -125,14 +120,15 @@ class ParticlePlayground {
 
   public function remove() {
     ParticleSystem.particles = [];
-    ParticleSystem.canvas.clear();
+    ParticleSystem.batch.remove();
+    ParticleSystem.debugText.remove();
   }
 
   public function update(dt) {
     time += dt;
     cds.update(dt);
 
-    if (!cds.has('makeProjectile') && Main.Global.mouse.isDown) {
+    if (!cds.has('makeProjectile') && Main.Global.mouse.buttonDown == 0) {
       cds.set('makeProjectile', 1 / 10);
       emit();
     }

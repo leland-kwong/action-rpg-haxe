@@ -14,7 +14,7 @@ class Global {
   public static var debugCanvas: h2d.Graphics;
   public static var mainCamera: CameraRef;
   public static var mouse = {
-    isDown: false
+    buttonDown: null
   }
 }
 
@@ -266,10 +266,10 @@ class Main extends hxd.App {
     {
       function onEvent(event : hxd.Event) {
         if (event.kind == hxd.Event.EventKind.EPush) {
-          Global.mouse.isDown = true;
+          Global.mouse.buttonDown = event.button;
         }
         if (event.kind == hxd.Event.EventKind.ERelease) {
-          Global.mouse.isDown = false;
+          Global.mouse.buttonDown = null;
         }
       }
       hxd.Window.getInstance().addEventTarget(onEvent);
@@ -297,7 +297,7 @@ class Main extends hxd.App {
     Global.rootScene = s2d;
     Global.mainCamera = Camera.create();
 
-    switchMainScene(MainSceneType.ParticlePlayground);
+    switchMainScene(MainSceneType.PlayGame);
 
     #if debugMode
       setupDebugInfo(Fonts.primary.get());

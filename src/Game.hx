@@ -3,7 +3,6 @@
 **/
 
 import Grid.GridRef;
-using hxd.Event;
 import Fonts;
 import Easing;
 import Utils;
@@ -12,11 +11,11 @@ import Camera;
 class SoundFx {
   public static var globalCds = new Cooldown();
 
-  public static function turretBasic(cooldown = 0.1) {
-    if (globalCds.has('turretBasic')) {
+  public static function bulletBasic(cooldown = 0.1) {
+    if (globalCds.has('bulletBasic')) {
       return;
     }
-    globalCds.set('turretBasic', cooldown);
+    globalCds.set('bulletBasic', cooldown);
 
     var soundResource: hxd.res.Sound = null;
 
@@ -256,7 +255,7 @@ class Bullet extends Projectile {
     if (!launchSoundPlayed) {
       launchSoundPlayed = true;
 
-      SoundFx.turretBasic();
+      SoundFx.bulletBasic();
     }
 
     if (collidedWith != null) {
@@ -367,105 +366,6 @@ class ClusterBomb extends Projectile {
   }
 }
 
-class Turret extends Entity {
-  public static var baseColor = Colors.green;
-  var cds: Cooldown;
-  var range = 300;
-  var lifeTime = 10.0;
-  var attackRate = 0.2;
-  var attackVelocity = 500.0;
-  var sprite: h2d.Graphics;
-  var attackType = 'Bullet';
-
-  public function new(x, y, attackType) {
-    super({
-      x: x,
-      y: y,
-      radius: 20,
-      color: Turret.baseColor,
-      weight: 0.0,
-    });
-    type = 'TURRET';
-    this.attackType = attackType;
-    health = 3;
-    cds = new Cooldown();
-
-    var nSegments = -1;
-
-    if (attackType == 'ClusterBomb') {
-      nSegments = 5;
-      attackRate = 1.0;
-      attackVelocity = 200.0;
-      range = 400;
-    }
-
-    sprite = new h2d.Graphics(this);
-    sprite.beginFill(color);
-    sprite.lineStyle(0);
-    if (nSegments == -1) {
-      sprite.drawCircle(0, 0, radius);
-    }
-    else {
-      sprite.drawCircle(0, 0, radius, nSegments);
-    }
-    sprite.endFill();
-  }
-
-  public override function update(dt: Float) {
-    super.update(dt);
-
-    cds.update(dt);
-
-    var nearest = findNearest(x, y, range, 'ENEMY');
-    if (nearest != null && nearest.status == 'TARGETABLE') {
-      var angleToTarget = Math.atan2(nearest.y - y, nearest.x - x);
-      set_rotation(angleToTarget);
-
-      if (!cds.has('attack')) {
-        cds.set('attack', attackRate);
-        switch attackType {
-          case 'ClusterBomb': {
-            var b = new ClusterBomb(
-              x, y, nearest.x, nearest.y,
-              Colors.pureWhite,
-              attackVelocity,
-              10,
-              70
-            );
-            Main.Global.rootScene.addChild(b);
-          }
-          case 'Bullet': {
-            var b = new Bullet(
-              x, y, nearest.x, nearest.y,
-              Colors.pureWhite,
-              attackVelocity
-            );
-            Main.Global.rootScene.addChild(b);
-          }
-        }
-      }
-    }
-
-    lifeTime -= dt;
-    var isDisposed = lifeTime <= 0;
-    if (isDisposed) {
-      health = 0;
-    }
-
-    {
-      if (!cds.has('hitFlash')) {
-        sprite.color.set(1, 1, 1, 1);
-      }
-
-      if (damageTaken > 0) {
-        cds.set('hitFlash', 0.04);
-        sprite.color.set(255, 255, 255, 1);
-        health -= damageTaken;
-        damageTaken = 0;
-      }
-    }
-  }
-}
 
 class Enemy extends Entity {
   static var healthBySize = [
@@ -489,7 +389,6 @@ class Enemy extends Entity {
   var graphic: h2d.Graphics;
   var size: Int;
   var repelFilter: String;
-  var attacksTurrets = false;
   var bounceAnimationStartTime = -1.0;
   var debugCenter = false;
   public var sightRange = 400;
@@ -508,9 +407,6 @@ class Enemy extends Entity {
     cds = new Cooldown();
     follow = followTarget;
     this.size = size;
-    if (size == 2) {
-      attacksTurrets = true;
-    }
     if (size == 3) {
       repelFilter = 'TURRET';
     }
@@ -615,10 +511,7 @@ class Enemy extends Entity {
             if (attackTarget == null) {
               var attackDistance = d - pt.radius + ept.radius;
               if (attackDistance <= attackRange &&
-                (
-                  o == follow ||
-                  (attacksTurrets && o.type == 'TURRET')
-                )
+                (o == follow)
               ) {
                 attackTarget = o;
               }
@@ -668,9 +561,6 @@ class Enemy extends Entity {
 
 class Player extends Entity {
   public var playerInfo: h2d.Text;
-  public var maxNumTurretsAvailable = 4;
-  public var numTurretsAvailable = 4;
-  public var turretReloadTime = 1.0;
   var cds = new Cooldown();
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
@@ -747,14 +637,11 @@ class Player extends Entity {
     movePlayer();
     // pulsate player for visual juice
     playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
-
-    if (!cds.has('turretReloading') &&
-      numTurretsAvailable < maxNumTurretsAvailable
-    ) {
-      cds.set('turretReloading', turretReloadTime);
-      numTurretsAvailable += 1;
-    }
-
+    useAbility(
+      Main.Global.rootScene.mouseX,
+      Main.Global.rootScene.mouseY,
+      Main.Global.mouse.buttonDown
+    );
     {
       if (!cds.has('hitFlash')) {
         hitFlashOverlay.color.set(1, 1, 1, 0);
@@ -769,27 +656,33 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(x1, y1, ability: Int, parent: h2d.Object) {
-    if (numTurretsAvailable == 0) {
-      // TODO: trigger some sort of warning effect
-      // so player gets feedback
-      trace('nomore turrets available');
-      return;
-    }
-
-    if (numTurretsAvailable == maxNumTurretsAvailable) {
-      cds.set('turretReloading', 1.0);
-    }
-
-    numTurretsAvailable -= 1;
+  public function useAbility(x1, y1, ability: Int) {
     switch ability {
       case 0: {
-        var turret = new Turret(x1, y1, 'Bullet');
-        parent.addChild(turret);
+        if (cds.has('primaryAbility')) {
+          return;
+        }
+        var b = new Bullet(
+          x, y, x1, y1,
+          Colors.pureWhite,
+          500.0
+        );
+        Main.Global.rootScene.addChild(b);
+        cds.set('primaryAbility', 1 / 7);
       }
       case 1: {
-        var turret = new Turret(x1, y1, 'ClusterBomb');
-        parent.addChild(turret);
+        if (cds.has('secondaryAbility')) {
+          return;
+        }
+        var b = new ClusterBomb(
+          x, y, x1, y1,
+          Colors.pureWhite,
+          200.0,
+          10,
+          70
+        );
+        Main.Global.rootScene.addChild(b);
+        cds.set('secondaryAbility', 1 / 3);
       }
     }
   }
@@ -866,7 +759,6 @@ class Game extends h2d.Object {
   var dynamicWorldRef: GridRef = Grid.create(64);
   var TARGET_RADIUS = 20.0;
   var targetSprite: h2d.Graphics;
-  var useAbilityOnClick: (ev: hxd.Event) -> Void;
   var enemySpawner: EnemySpawner;
 
   function calcNumEnemies(level: Int) {
@@ -895,8 +787,6 @@ class Game extends h2d.Object {
 
     target.remove();
     playerInfo.remove();
-    hxd.Window.getInstance()
-      .removeEventTarget(useAbilityOnClick);
   }
 
   override function onRemove() {
@@ -979,15 +869,6 @@ class Game extends h2d.Object {
     targetSprite = new h2d.Graphics(target);
     targetSprite.beginFill(0xffda3d, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
-
-    useAbilityOnClick = function(ev: hxd.Event) {
-      if (ev.kind == hxd.EventKind.EPush) {
-        var rs = Main.Global.rootScene;
-        player.useAbility(rs.mouseX, rs.mouseY, ev.button, this);
-      }
-    }
-    hxd.Window.getInstance()
-      .addEventTarget(useAbilityOnClick);
   }
 
   function cleanupDisposedEntities() {
@@ -1026,7 +907,6 @@ class Game extends h2d.Object {
     {
       playerInfo.text = [
         'health: ${player.health}',
-        'turrets available: ${player.numTurretsAvailable}'
       ].join('\n');
     }
 
