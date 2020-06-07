@@ -1,3 +1,4 @@
+import haxe.Json;
 import h2d.SpriteBatch;
 import Game.Cooldown;
 
@@ -7,8 +8,8 @@ typedef Particle = {
   var x: Float;
   var y: Float;
   var speed: Float;
-  var ?alpha: (p: Particle, progress: Float) -> Float;
-  var ?scale: (p: Particle, progress: Float) -> Float;
+  var ?rAlpha: (p: Particle, progress: Float) -> Float;
+  var ?rScale: (p: Particle, progress: Float) -> Float;
   var lifeTime: Float;
   var createdAt: Float;
   var batchElement: BatchElement;
@@ -18,12 +19,15 @@ class ParticleSystem {
   public static var particles: Array<Particle> = [];
   public static var batch: h2d.SpriteBatch;
   public static var spriteSheet: h2d.Tile;
+  public static var spriteSheetData: Dynamic;
   public static var debugText: h2d.Text;
   static var time = 0.0;
   static var maxParticles = 0;
 
   static public function init() {
-    spriteSheet = hxd.Res.sprites.shapes.toTile();
+    spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json)
+      .frames;
+    spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     batch = new h2d.SpriteBatch(
       spriteSheet,
       Main.Global.rootScene
@@ -70,11 +74,11 @@ class ParticleSystem {
           var progress = (aliveTime / p.lifeTime);
           p.batchElement.x = p.x;
           p.batchElement.y = p.y;
-          if (p.alpha != null) {
-            p.batchElement.alpha = p.alpha(p, progress);
+          if (p.rAlpha != null) {
+            p.batchElement.alpha = p.rAlpha(p, progress);
           }
-          if (p.scale != null) {
-            p.batchElement.scale = p.scale(p, progress);
+          if (p.rScale != null) {
+            p.batchElement.scale = p.rScale(p, progress);
           }
         }
       }
@@ -88,14 +92,34 @@ class ParticlePlayground {
   var projectileList = [];
   var time = 0.0;
   var tile: h2d.Tile;
+  var tileWithGlow: h2d.Tile;
   var circleTile: h2d.Tile;
 
   public function new() {
     ParticleSystem.init();
 
     var rootScene = Main.Global.rootScene;
-    tile = ParticleSystem.spriteSheet.sub(0, 0, 16, 16).center();
-    circleTile = ParticleSystem.spriteSheet.sub(0, 16, 16, 16).center();
+    var spriteSquareData = ParticleSystem.spriteSheetData.square_white;
+    tile = ParticleSystem.spriteSheet.sub(
+      spriteSquareData.frame.x,
+      spriteSquareData.frame.y,
+      spriteSquareData.frame.w,
+      spriteSquareData.frame.h
+    ).center();
+    var spriteCircleData = ParticleSystem.spriteSheetData.circle_white;
+    circleTile = ParticleSystem.spriteSheet.sub(
+      spriteCircleData.frame.x,
+      spriteCircleData.frame.y,
+      spriteCircleData.frame.w,
+      spriteCircleData.frame.h
+    ).center();
+    var spriteSquareWithGlowData = ParticleSystem.spriteSheetData.square_white_glow;
+    tileWithGlow = ParticleSystem.spriteSheet.sub(
+      spriteSquareWithGlowData.frame.x,
+      spriteSquareWithGlowData.frame.y,
+      spriteSquareWithGlowData.frame.w,
+      spriteSquareWithGlowData.frame.h
+    ).center();
     emit = (e: hxd.Event = null) -> {
       if (e != null && e.kind != hxd.Event.EventKind.EPush) {
         return;
@@ -109,7 +133,7 @@ class ParticlePlayground {
           rootScene.mouseY - x,
           rootScene.mouseX - y
         );
-        var g = new BatchElement(tile);
+        var g = new BatchElement(tileWithGlow);
         g.rotation = angle;
         projectile = {
           dx: Math.cos(angle),
@@ -164,7 +188,7 @@ class ParticlePlayground {
     var shouldEmitParticle = !cds.has('emitParticle');
     if (shouldEmitParticle) {
       var projectileSpeed = 1000;
-      var emissionRate =  1 / projectileSpeed * 40;
+      var emissionRate =  1 / projectileSpeed * 30;
       cds.set('emitParticle', emissionRate);
     }
 
@@ -174,7 +198,7 @@ class ParticlePlayground {
     }
 
     function pScale(p, progress: Float) {
-      return (1 - (progress / 2));
+      return (1 - (progress / 2)) / 2;
     }
 
     function projectileHitAlpha(p, progress: Float) {
@@ -204,7 +228,7 @@ class ParticlePlayground {
             y: p.y,
             speed: 400.0,
             lifeTime: 0.15,
-            alpha: projectileHitAlpha,
+            rAlpha: projectileHitAlpha,
             createdAt: time,
             batchElement: batchElement,
           };
@@ -216,7 +240,7 @@ class ParticlePlayground {
 
         if (shouldEmitParticle) {
           var rootScene = Main.Global.rootScene;
-          var count = 2;
+          var count = 3;
           var startAngle = Math.atan2(
             rootScene.mouseY - 0,
             rootScene.mouseX - 0
@@ -224,24 +248,24 @@ class ParticlePlayground {
           var angleDiff = Math.PI / 4;
           for (_ in 0...count) {
             var batchElement = new BatchElement(tile);
-            batchElement.scaleY = 0.9;
-            batchElement.scaleX = 1.2;
-            batchElement.rotation = Utils.rnd(-angleDiff, angleDiff);
+            var angle = startAngle + Utils.rnd(-angleDiff, angleDiff, true);
+            var dx = Math.cos(angle);
+            var dy = Math.sin(angle);
             var particleConfig = {
-              dx: Math.cos(startAngle + Utils.rnd(-angleDiff, angleDiff, true)) * 2,
-              dy: Math.sin(startAngle + Utils.rnd(-angleDiff, angleDiff, true)) * 2,
-              x: p.x,
-              y: p.y,
+              dx: 0.0,
+              dy: 0.0,
+              x: p.x + dx * Utils.irnd(-16, 0),
+              y: p.y + dy * Utils.irnd(-16, 0),
               speed: (p.speed * 0.1),
               lifeTime: 0.10,
               createdAt: time,
-              alpha: pAlpha,
-              scale: pScale,
+              rAlpha: pAlpha,
+              rScale: pScale,
               batchElement: batchElement,
             };
             if (Utils.irnd(0, 1) == 0) {
-              batchElement.g = 0.3;
-              batchElement.b = 0.1;
+              batchElement.r = 0.3;
+              batchElement.g = 0.7;
             }
             else {
               batchElement.r = 0.3;

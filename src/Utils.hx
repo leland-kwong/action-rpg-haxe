@@ -105,4 +105,12 @@ class Utils {
     **/
     return 0.0;
   }
+
+  public static function loadJsonFile(res: hxd.res.Resource) {
+    var path = Std.string(res);
+
+    return haxe.Json.parse(
+      hxd.Res.loader.load(path).toText()
+    );
+  }
 }
