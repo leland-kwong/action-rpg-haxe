@@ -7,6 +7,8 @@ typedef Particle = {
   var x: Float;
   var y: Float;
   var speed: Float;
+  var ?alpha: (p: Particle, progress: Float) -> Float;
+  var ?scale: (p: Particle, progress: Float) -> Float;
   var lifeTime: Float;
   var createdAt: Float;
   var batchElement: BatchElement;
@@ -18,6 +20,7 @@ class ParticleSystem {
   public static var spriteSheet: h2d.Tile;
   public static var debugText: h2d.Text;
   static var time = 0.0;
+  static var maxParticles = 0;
 
   static public function init() {
     spriteSheet = hxd.Res.sprites.shapes.toTile();
@@ -25,8 +28,6 @@ class ParticleSystem {
       spriteSheet,
       Main.Global.rootScene
     );
-    // var outlineFilter = new h2d.filter.Outline(1, Game.Colors.pureWhite);
-    // batch.filter = outlineFilter;
     batch.hasRotationScale = true;
 
     debugText = new h2d.Text(Fonts.primary.get(), Main.Global.rootScene);
@@ -35,17 +36,20 @@ class ParticleSystem {
     debugText.y = 10;
   }
 
-  static public function emit(config: Particle) {
+  static public function emit(config: Particle, before = false) {
     particles.push(config);
-    batch.add(config.batchElement);
+    batch.add(config.batchElement, before);
   }
 
   static public function update(dt: Float) {
     time += dt;
 
-    debugText.text = 'particles: ${particles.length}';
+    maxParticles = Math.round(Math.max(maxParticles, particles.length));
+    debugText.text = [
+      'particles: ${particles.length}',
+      'maxParticles: ${maxParticles}'
+    ].join('\n');
 
-    // batch.clear();
     {
       var i = 0;
       while (i < particles.length) {
@@ -64,10 +68,14 @@ class ParticleSystem {
           p.y += p.dy * p.speed * dt;
           var aliveTime = time - p.createdAt;
           var progress = (aliveTime / p.lifeTime);
-          var alpha = p.lifeTime - progress;
           p.batchElement.x = p.x;
           p.batchElement.y = p.y;
-          p.batchElement.alpha = alpha;
+          if (p.alpha != null) {
+            p.batchElement.alpha = p.alpha(p, progress);
+          }
+          if (p.scale != null) {
+            p.batchElement.scale = p.scale(p, progress);
+          }
         }
       }
     }
@@ -80,12 +88,14 @@ class ParticlePlayground {
   var projectileList = [];
   var time = 0.0;
   var tile: h2d.Tile;
+  var circleTile: h2d.Tile;
 
   public function new() {
     ParticleSystem.init();
 
     var rootScene = Main.Global.rootScene;
     tile = ParticleSystem.spriteSheet.sub(0, 0, 16, 16).center();
+    circleTile = ParticleSystem.spriteSheet.sub(0, 16, 16, 16).center();
     emit = (e: hxd.Event = null) -> {
       if (e != null && e.kind != hxd.Event.EventKind.EPush) {
         return;
@@ -99,19 +109,35 @@ class ParticlePlayground {
           rootScene.mouseY - x,
           rootScene.mouseX - y
         );
-        var g = new h2d.Bitmap(tile, Main.Global.rootScene);
+        var g = new BatchElement(tile);
+        g.rotation = angle;
         projectile = {
           dx: Math.cos(angle),
           dy: Math.sin(angle),
           x: x,
           y: y,
           lifeTime: 0.5,
-          speed: 1000,
-          startTime: time,
-          graphic: g,
-          direction: angle
+          speed: 1000.0,
+          createdAt: time,
+          batchElement: g,
         };
+        ParticleSystem.emit(projectile);
         projectileList.push(projectile);
+
+        // muzzle flash
+        var batchElement = new BatchElement(circleTile);
+        batchElement.scale = 2;
+        var particleConfig = {
+          dx: 0.0,
+          dy: 0.0,
+          x: projectile.x,
+          y: projectile.y,
+          speed: 0.0,
+          lifeTime: 0.01,
+          createdAt: time,
+          batchElement: batchElement,
+        };
+        ParticleSystem.emit(particleConfig);
       }
       return;
     }
@@ -120,8 +146,8 @@ class ParticlePlayground {
 
   public function remove() {
     ParticleSystem.particles = [];
-    ParticleSystem.batch.remove();
-    ParticleSystem.debugText.remove();
+    ParticleSystem.batch.clear();
+    ParticleSystem.debugText.text = '';
   }
 
   public function update(dt) {
@@ -129,54 +155,88 @@ class ParticlePlayground {
     cds.update(dt);
 
     if (!cds.has('makeProjectile') && Main.Global.mouse.buttonDown == 0) {
-      cds.set('makeProjectile', 1 / 10);
-      emit();
+      cds.set('makeProjectile', 1 / 20);
+      // for (_ in 0...10) {
+        emit();
+      // }
     }
 
     var shouldEmitParticle = !cds.has('emitParticle');
     if (shouldEmitParticle) {
       var projectileSpeed = 1000;
-      var emissionRate =  1 / projectileSpeed * 10;
+      var emissionRate =  1 / projectileSpeed * 40;
       cds.set('emitParticle', emissionRate);
     }
 
     var i = 0;
+    function pAlpha(p, progress: Float) {
+      return 1 - progress;
+    }
+
+    function pScale(p, progress: Float) {
+      return (1 - (progress / 2));
+    }
+
+    function projectileHitAlpha(p, progress: Float) {
+      return 1 - progress;
+    }
+
     while (i < projectileList.length) {
       var p = projectileList[i];
-      if (time - p.startTime >= p.lifeTime) {
-        p.graphic.remove();
+      // cleanup projectile
+      if (time - p.createdAt >= p.lifeTime) {
         projectileList.splice(i, 1);
+
+        for (_ in 0...3) {
+          var batchElement = new BatchElement(circleTile);
+          var angle = Math.atan2(p.dy, p.dx)
+            + Math.PI
+            + (Math.PI / 8 * Utils.irnd(-3, 3, true));
+
+          batchElement.scaleX = 1.2;
+          batchElement.scaleY = 0.4;
+          batchElement.rotation = angle;
+
+          var particleConfig = {
+            dx: Math.cos(angle),
+            dy: Math.sin(angle),
+            x: p.x,
+            y: p.y,
+            speed: 400.0,
+            lifeTime: 0.15,
+            alpha: projectileHitAlpha,
+            createdAt: time,
+            batchElement: batchElement,
+          };
+          ParticleSystem.emit(particleConfig);
+        }
       }
       else {
         i += 1;
 
-        p.x += p.dx * p.speed * dt;
-        p.y += p.dy * p.speed * dt;
-        p.graphic.x = p.x;
-        p.graphic.y = p.y;
-
         if (shouldEmitParticle) {
           var rootScene = Main.Global.rootScene;
-          var count = 1;
+          var count = 2;
           var startAngle = Math.atan2(
             rootScene.mouseY - 0,
             rootScene.mouseX - 0
           );
           var angleDiff = Math.PI / 4;
           for (_ in 0...count) {
-            // var t = Utils.irnd(0, 1) == 0
-            //   ? tile : tile2;
             var batchElement = new BatchElement(tile);
-            batchElement.rotation = Utils.rnd(0, 2) * Math.PI;
+            batchElement.scaleY = 0.9;
+            batchElement.scaleX = 1.2;
+            batchElement.rotation = Utils.rnd(-angleDiff, angleDiff);
             var particleConfig = {
               dx: Math.cos(startAngle + Utils.rnd(-angleDiff, angleDiff, true)) * 2,
               dy: Math.sin(startAngle + Utils.rnd(-angleDiff, angleDiff, true)) * 2,
-              // dy: 5 * Math.sin(Utils.rnd(angle1, angle2, true)),
               x: p.x,
               y: p.y,
-              speed: (p.speed * 0.1 * Math.random()),
-              lifeTime: 0.4,
+              speed: (p.speed * 0.1),
+              lifeTime: 0.10,
               createdAt: time,
+              alpha: pAlpha,
+              scale: pScale,
               batchElement: batchElement,
             };
             if (Utils.irnd(0, 1) == 0) {
@@ -187,7 +247,7 @@ class ParticlePlayground {
               batchElement.r = 0.3;
               batchElement.g = 0.6;
             }
-            ParticleSystem.emit(particleConfig);
+            ParticleSystem.emit(particleConfig, true);
           }
         }
       }

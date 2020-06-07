@@ -14,7 +14,7 @@ class Global {
   public static var debugCanvas: h2d.Graphics;
   public static var mainCamera: CameraRef;
   public static var mouse = {
-    buttonDown: null
+    buttonDown: -1
   }
   public static var mapRef: GridRef;
   public static var dynamicWorldRef: GridRef;
@@ -91,40 +91,34 @@ class HomeScreen extends h2d.Object {
     var btnFont = Fonts.primary.get().clone();
     btnFont.resizeTo(36);
 
-    var startGameBtn = new UiButton(
-      'Start Game', btnFont, () -> {
+    var buttons: Array<Dynamic> = [
+      ['Start Game', btnFont, () -> {
         this.remove();
         onGameStart();
+      }],
+      ['Map Editor', btnFont, onMapEditorMode],
+      ['Particle Playground', btnFont, onParticlePlaygroundMode],
+      ['Exit Game', btnFont, onGameExit],
+    ];
+
+    var btnGroup = {
+      x: leftMargin,
+      y: titleText.y + titleText.textHeight + 50
+    }
+    for (i in 0...buttons.length) {
+      var config: Array<Dynamic> = buttons[i];
+      var prevBtn = uiButtonsList[i - 1];
+      var btn = new UiButton(config[0], config[1], config[2]);
+      addChild(btn);
+      uiButtonsList.push(btn);
+
+      if (prevBtn != null) {
+        btnGroup.y += prevBtn.button.height;
       }
-    );
-    addChild(startGameBtn);
-    startGameBtn.x = leftMargin;
-    startGameBtn.y = titleText.y + titleText.textHeight + 50;
-    uiButtonsList.push(startGameBtn);
 
-    var exitGameBtn = new UiButton(
-      'Exit Game', btnFont, onGameExit
-    );
-    addChild(exitGameBtn);
-    exitGameBtn.x = startGameBtn.x;
-    exitGameBtn.y = startGameBtn.y + startGameBtn.button.height + 10;
-    uiButtonsList.push(exitGameBtn);
-
-    var mapEditorModeBtn = new UiButton(
-      'Map Editor', btnFont, onMapEditorMode
-    );
-    addChild(mapEditorModeBtn);
-    mapEditorModeBtn.x = exitGameBtn.x;
-    mapEditorModeBtn.y = exitGameBtn.y + startGameBtn.button.height + 10;
-    uiButtonsList.push(mapEditorModeBtn);
-
-    var particlePlaygroundModeBtn = new UiButton(
-      'Particle Playground', btnFont, onParticlePlaygroundMode
-    );
-    addChild(particlePlaygroundModeBtn);
-    particlePlaygroundModeBtn.x = mapEditorModeBtn.x;
-    particlePlaygroundModeBtn.y = mapEditorModeBtn.y + mapEditorModeBtn.button.height + 10;
-    uiButtonsList.push(particlePlaygroundModeBtn);
+      btn.x = btnGroup.x;
+      btn.y = btnGroup.y;
+    }
   }
 
   public function update(dt: Float) {
@@ -149,7 +143,7 @@ class Hud extends h2d.Object {
   }
 
   public function new(s2d: h2d.Scene) {
-    super();
+    super(s2d);
 
     scene = s2d;
     var font = Fonts.primary.get().clone();
@@ -159,7 +153,7 @@ class Hud extends h2d.Object {
     controlsHelpText('right-click: secondary', font);
   }
 
-  public function update() {
+  public function update(dt) {
     var _originX = scene.width - 10.0;
     var originY = scene.height - 10;
 
@@ -272,19 +266,18 @@ class Main extends hxd.App {
           Global.mouse.buttonDown = event.button;
         }
         if (event.kind == hxd.Event.EventKind.ERelease) {
-          Global.mouse.buttonDown = null;
+          Global.mouse.buttonDown = -1;
         }
       }
       hxd.Window.getInstance().addEventTarget(onEvent);
     }
-
-    hxd.Res.initEmbed();
 
     {
       var win = hxd.Window.getInstance();
 
       // make fullscreen
       #if !jsMode
+        win.resize(1920, 1080);
         win.displayMode = hxd.Window.DisplayMode.Fullscreen;
       #end
     }
@@ -292,6 +285,7 @@ class Main extends hxd.App {
     Global.uiRoot = new h2d.Scene();
     sevents.addScene(Global.uiRoot);
 
+    hxd.Res.initEmbed();
     Global.mainBackground = new h2d.Scene();
 
     background = addBackground(Global.mainBackground, 0x222222);
@@ -303,7 +297,8 @@ class Main extends hxd.App {
     switchMainScene(MainSceneType.PlayGame);
 
     #if debugMode
-      setupDebugInfo(Fonts.primary.get());
+      var font = Fonts.primary.get().clone();
+      setupDebugInfo(font);
     #end
 
     Global.debugCanvas = new h2d.Graphics(s2d);
