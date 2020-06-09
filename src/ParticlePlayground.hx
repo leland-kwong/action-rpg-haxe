@@ -129,10 +129,8 @@ class ParticlePlayground {
       {
         var x = 0.0;
         var y = 0.0;
-        var angle = Math.atan2(
-          rootScene.mouseY - x,
-          rootScene.mouseX - y
-        );
+        var angle = Math.atan2(rootScene.mouseY - x,
+																															rootScene.mouseX - y);
         var g = new BatchElement(tileWithGlow);
         g.rotation = angle;
         projectile = {
@@ -151,16 +149,14 @@ class ParticlePlayground {
         // muzzle flash
         var batchElement = new BatchElement(circleTile);
         batchElement.scale = 2;
-        var particleConfig = {
-          dx: 0.0,
-          dy: 0.0,
-          x: projectile.x,
-          y: projectile.y,
-          speed: 0.0,
-          lifeTime: 0.01,
-          createdAt: time,
-          batchElement: batchElement,
-        };
+        var particleConfig = { dx: 0.0,
+																															dy: 0.0,
+																															x: projectile.x,
+																															y: projectile.y,
+																															speed: 0.0,
+																															lifeTime: 0.01,
+																															createdAt: time,
+																															batchElement: batchElement, };
         ParticleSystem.emit(particleConfig);
       }
       return;
@@ -180,9 +176,7 @@ class ParticlePlayground {
 
     if (!cds.has('makeProjectile') && Main.Global.mouse.buttonDown == 0) {
       cds.set('makeProjectile', 1 / 20);
-      // for (_ in 0...10) {
-        emit();
-      // }
+						emit();
     }
 
     var shouldEmitParticle = !cds.has('emitParticle');
@@ -220,6 +214,8 @@ class ParticlePlayground {
           batchElement.scaleX = 1.2;
           batchElement.scaleY = 0.4;
           batchElement.rotation = angle;
+										batchElement.r = 0.2;
+										batchElement.g = 0.8;
 
           var particleConfig = {
             dx: Math.cos(angle),
@@ -264,12 +260,12 @@ class ParticlePlayground {
               batchElement: batchElement,
             };
             if (Utils.irnd(0, 1) == 0) {
-              batchElement.r = 0.3;
-              batchElement.g = 0.7;
+              batchElement.r = 0.1;
+              batchElement.g = 0.75;
             }
             else {
-              batchElement.r = 0.3;
-              batchElement.g = 0.6;
+              batchElement.r = 0.1;
+              batchElement.g = 0.55;
             }
             ParticleSystem.emit(particleConfig, true);
           }

@@ -37,10 +37,6 @@ compile(compileFile)
 let pending = null;
 
 const rebuild = (eventType, filename) => {
-  if (filename.indexOf('.hx') === -1) {
-    return
-  }
-
   console.log(`${ filename } changed`)
   clearTimeout(pending)
   pending = setTimeout(() => {

@@ -1,4 +1,5 @@
 # example: game.dist.js
 *.dist*
+*.*~
 
 node_modules
