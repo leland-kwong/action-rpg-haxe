@@ -88,7 +88,6 @@ class ParticleSystem {
 
 class ParticlePlayground {
   var cds = new Cooldown();
-  var emit = (e: hxd.Event = null) -> null;
   var projectileList = [];
   var time = 0.0;
   var tile: h2d.Tile;
@@ -98,7 +97,6 @@ class ParticlePlayground {
   public function new() {
     ParticleSystem.init();
 
-    var rootScene = Main.Global.rootScene;
     var spriteSquareData = ParticleSystem.spriteSheetData.square_white;
     tile = ParticleSystem.spriteSheet.sub(
       spriteSquareData.frame.x,
@@ -120,48 +118,52 @@ class ParticlePlayground {
       spriteSquareWithGlowData.frame.w,
       spriteSquareWithGlowData.frame.h
     ).center();
-    emit = (e: hxd.Event = null) -> {
-      if (e != null && e.kind != hxd.Event.EventKind.EPush) {
-        return;
-      }
+		}
 
-      var projectile = null;
-      {
-        var x = 0.0;
-        var y = 0.0;
-        var angle = Math.atan2(rootScene.mouseY - x,
-																															rootScene.mouseX - y);
-        var g = new BatchElement(tileWithGlow);
-        g.rotation = angle;
-        projectile = {
-          dx: Math.cos(angle),
-          dy: Math.sin(angle),
-          x: x,
-          y: y,
-          lifeTime: 0.5,
-          speed: 1000.0,
-          createdAt: time,
-          batchElement: g,
-        };
-        ParticleSystem.emit(projectile);
-        projectileList.push(projectile);
+		public function emit(e: hxd.Event = null) {
+    var rootScene = Main.Global.rootScene;
 
-        // muzzle flash
-        var batchElement = new BatchElement(circleTile);
-        batchElement.scale = 2;
-        var particleConfig = { dx: 0.0,
-																															dy: 0.0,
-																															x: projectile.x,
-																															y: projectile.y,
-																															speed: 0.0,
-																															lifeTime: 0.01,
-																															createdAt: time,
-																															batchElement: batchElement, };
-        ParticleSystem.emit(particleConfig);
-      }
-      return;
-    }
+				if (e != null && e.kind != hxd.Event.EventKind.EPush) {
+						return;
+				}
+
+				var projectile = null;
+				{
+						var x = 0.0;
+						var y = 0.0;
+						var angle = Math.atan2(rootScene.mouseY - x,
+																													rootScene.mouseX - y);
+						var g = new BatchElement(tileWithGlow);
+						g.rotation = angle;
+						projectile = {
+						dx: Math.cos(angle),
+						dy: Math.sin(angle),
+						x: x,
+						y: y,
+						lifeTime: 0.5,
+						speed: 1000.0,
+						createdAt: time,
+						batchElement: g,
+						};
+						ParticleSystem.emit(projectile);
+						projectileList.push(projectile);
+
+						// muzzle flash
+						var batchElement = new BatchElement(circleTile);
+						batchElement.scale = 2;
+						var particleConfig = { dx: 0.0,
+																													dy: 0.0,
+																													x: projectile.x,
+																													y: projectile.y,
+																													speed: 0.0,
+																													lifeTime: 0.01,
+																													createdAt: time,
+																													batchElement: batchElement, };
+						ParticleSystem.emit(particleConfig);
+				}
+				return;
   }
+				
 
 
   public function remove() {
