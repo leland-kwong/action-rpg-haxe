@@ -26,7 +26,7 @@ exec(`haxe --wait ${port}`, (err, stdout, stderr) => {
     //some err occurred
     console.error(err)
   } else {
-  // the *entire* stdout and stderr (buffered)
+    // the *entire* stdout and stderr (buffered)
     console.log('server ready')
   }
 });
@@ -37,6 +37,13 @@ compile(compileFile)
 let pending = null;
 
 const rebuild = (eventType, filename) => {
+  const isHaxeFile = /\.hx$/.test(filename);
+  const isSrcDir = filename.indexOf('src') === 0;
+  
+  if (!isHaxeFile && !isSrcDir) {
+    return;
+  }
+
   console.log(`${ filename } changed`)
   clearTimeout(pending)
   pending = setTimeout(() => {
@@ -44,5 +51,4 @@ const rebuild = (eventType, filename) => {
   }, 50)
 }
 
-fs.watch('Main.hx', rebuild);
-fs.watch('src', rebuild)
+fs.watch('./', rebuild);

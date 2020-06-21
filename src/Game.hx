@@ -7,6 +7,7 @@ import Fonts;
 import Easing;
 import Utils;
 import Camera;
+import ParticlePlayground;
 
 class SoundFx {
   public static var globalCds = new Cooldown();
@@ -25,43 +26,7 @@ class SoundFx {
 
     if(soundResource != null){
       //Play the music and loop it
-      soundResource.play(false, 0.4);
-    }
-  }
-
-  public static function clusterBombLaunch(cooldown = 0.1) {
-    if (globalCds.has('clusterBombLaunch')) {
-      return;
-    }
-    globalCds.set('clusterBombLaunch', cooldown);
-
-    var soundResource: hxd.res.Sound = null;
-
-    if(hxd.res.Sound.supportedFormat(Wav)){
-      soundResource = hxd.Res.sound_effects.cluster_bomb_launch;
-    }
-
-    if(soundResource != null){
-      //Play the music and loop it
-      soundResource.play(false);
-    }
-  }
-
-  public static function clusterBombExplosion(cooldown = 0.1) {
-    if (globalCds.has('clusterBombExplosion')) {
-      return;
-    }
-    globalCds.set('clusterBombExplosion', cooldown);
-
-    var soundResource: hxd.res.Sound = null;
-
-    if(hxd.res.Sound.supportedFormat(Wav)){
-      soundResource = hxd.Res.sound_effects.cluster_bomb_explosion;
-    }
-
-    if(soundResource != null){
-      //Play the music and loop it
-      soundResource.play(false);
+      soundResource.play(false, 0.2);
     }
   }
 }
@@ -128,7 +93,7 @@ class Entity extends h2d.Object {
   public var status = 'TARGETABLE';
   var time = 0.0;
 
-  public function new(props: Point, customId = null) {
+  public function new(props: point, customid = null) {
     super();
 
     x = props.x;
@@ -186,8 +151,7 @@ class Projectile extends Entity {
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
-    color = 0xffffff,
-    speed: Float,
+    speed = 0.0,
     radius = 10,
     nSegments: Int = null
   ) {
@@ -203,14 +167,6 @@ class Projectile extends Entity {
     forceMultiplier = 0.0;
 
     var aToTarget = Math.atan2(y2 - y1, x2 - x1);
-
-    var sprite = new h2d.Graphics();
-    addChild(sprite);
-    sprite.beginFill(color);
-    sprite.drawCircle(0, 0, radius, nSegments);
-    sprite.beginFill(color, 0.3);
-    sprite.drawCircle(0, 0, radius + 4, nSegments);
-    sprite.endFill();
 
     var _dx = Math.cos(aToTarget);
     var _dy = Math.sin(aToTarget);
@@ -252,9 +208,13 @@ class Projectile extends Entity {
 
 class Bullet extends Projectile {
   var launchSoundPlayed = false;
+  var particleSystemRef: ParticlePlayground;
+  var particle: Particle;
 
-  public function new(x1, y1, x2, y2, color, speed) {
-    super(x1, y1, x2, y2, color, speed, 10);
+  public function new(x1, y1, x2, y2, speed, sb) {
+    super(x1, y1, x2, y2, speed, 8);
+    particleSystemRef = sb;
+    particle = sb.emitProjectileGraphics(x1, y1, x2, y2, speed);
     lifeTime = 2.0;
   }
 
@@ -270,111 +230,10 @@ class Bullet extends Projectile {
     if (collidedWith != null) {
       health = 0;
       collidedWith.damageTaken += damage;
+      particleSystemRef.removeProjectile(particle);
     }
   }
 }
-
-class ClusterBombExplosion extends Entity {
-  var triggered = false;
-  var explosions: Array<Projectile> = [];
-  var explosionArea: Int;
-
-  public function new(x, y, radius) {
-    super({
-      x: x,
-      y: y,
-      color: Colors.pureWhite,
-      weight: 1.0,
-      radius: 0
-    });
-    explosionArea = radius;
-  }
-
-  function damageEachAgentInRadius(x, y, radius, damage) {
-    // hit all targets in area
-    for (a in Entity.ALL) {
-      if (a.type == 'ENEMY') {
-        var d = Utils.distance(a.x, a.y, x, y);
-        var min = a.radius + radius;
-        var conflict = d < min;
-        if (conflict) {
-          a.damageTaken += damage;
-        }
-      }
-    }
-  }
-
-  public override function update(dt: Float) {
-    super.update(dt);
-
-    var explosionDuration = 0.5;
-    var progress = Easing.progress(0, time, explosionDuration);
-    var sx = Easing.easeIn(progress);
-    if (progress >= 1) {
-      health = 0;
-      return;
-    }
-
-    if (triggered) {
-      // animate explosion
-      for (expl in explosions) {
-        expl.setScale(1 - sx);
-        expl.alpha = 0.8 - sx;
-      }
-      return;
-    }
-    triggered = true;
-
-    SoundFx.clusterBombExplosion();
-
-    for (_ in 0...3) {
-      var area = explosionArea;
-      var x2 = x + Utils.irnd(-area, area);
-      var y2 = y + Utils.irnd(-area, area);
-      var inst = new Projectile(
-        x2, y2, x2, y2, Colors.pureWhite,
-        0.0, 45
-      );
-      Main.Global.rootScene.addChild(inst);
-      damageEachAgentInRadius(x2, y2, inst.radius, 1);
-      explosions.push(inst);
-    }
-  }
-}
-
-class ClusterBomb extends Projectile {
-  var launchSoundPlayed = false;
-  var initialExplosionTriggered = false;
-  var explosionAreaRadius = 70;
-
-  public function new(x1, y1, x2, y2, color, speed, projectilRadius, explosionAreaRadius) {
-    super(x1, y1, x2, y2, color, speed, projectilRadius, 5);
-    lifeTime = 2.0;
-    this.explosionAreaRadius = explosionAreaRadius;
-  }
-
-  public override function update(dt: Float) {
-    super.update(dt);
-
-    set_rotation(time * 4);
-
-    if (!launchSoundPlayed) {
-      launchSoundPlayed = true;
-      SoundFx.clusterBombLaunch();
-    }
-
-    var shouldExplode = collidedWith != null ||
-      time >= lifeTime;
-    if (shouldExplode) {
-      health = 0;
-
-      Main.Global.rootScene.addChild(
-        new ClusterBombExplosion(x, y, explosionAreaRadius)
-      );
-    }
-  }
-}
-
 
 class Enemy extends Entity {
   static var healthBySize = [
@@ -574,6 +433,7 @@ class Player extends Entity {
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
+  var sb: ParticlePlayground;
 
   public function new(x, y, s2d: h2d.Scene) {
     super({
@@ -602,6 +462,8 @@ class Player extends Entity {
     hitFlashOverlay.drawRect(0, 0, s2d.width, s2d.height);
     // make it hidden initially
     hitFlashOverlay.color.set(1, 1, 1, 0);
+
+		sb = new ParticlePlayground();
   }
 
   function movePlayer() {
@@ -637,11 +499,13 @@ class Player extends Entity {
 
   override function onRemove() {
     hitFlashOverlay.remove();
+    sb.dispose();
   }
 
   public override function update(dt) {
     super.update(dt);
     cds.update(dt);
+    sb.update(dt);
 
     movePlayer();
     // pulsate player for visual juice
@@ -665,33 +529,23 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(x1, y1, ability: Int) {
+  public function useAbility(x1: Float, y1: Float, ability: Int) {
     switch ability {
       case 0: {
         if (cds.has('primaryAbility')) {
           return;
         }
+        var angle = Math.atan2(y1 - y, x1 - x);
         var b = new Bullet(
-          x, y, x1, y1,
-          Colors.pureWhite,
-          500.0
+          x + Math.cos(angle) * 30, 
+          y + Math.sin(angle) * 30,
+					x1,
+					y1,
+					800.0,
+					sb
         );
         Main.Global.rootScene.addChild(b);
-        cds.set('primaryAbility', 1 / 7);
-      }
-      case 1: {
-        if (cds.has('secondaryAbility')) {
-          return;
-        }
-        var b = new ClusterBomb(
-          x, y, x1, y1,
-          Colors.pureWhite,
-          200.0,
-          10,
-          70
-        );
-        Main.Global.rootScene.addChild(b);
-        cds.set('secondaryAbility', 1 / 3);
+        cds.set('primaryAbility', 1 / 10);
       }
     }
   }
