@@ -295,7 +295,7 @@ class Main extends hxd.App {
     Global.rootScene = s2d;
     Global.mainCamera = Camera.create();
 
-    switchMainScene(MainSceneType.ParticlePlayground);
+    switchMainScene(MainSceneType.PlayGame);
 
     #if debugMode
       var font = Fonts.primary.get().clone();

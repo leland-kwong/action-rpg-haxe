@@ -93,7 +93,7 @@ class Entity extends h2d.Object {
   public var status = 'TARGETABLE';
   var time = 0.0;
 
-  public function new(props: point, customid = null) {
+  public function new(props: Point, customId = null) {
     super();
 
     x = props.x;
@@ -185,10 +185,6 @@ class Projectile extends Entity {
 
     if (lifeTime <= 0) {
       health = 0;
-    }
-
-    if (neighbors.length > 0) {
-      trace('neighbors: ${neighbors.length}');
     }
 
     for (id in neighbors) {
