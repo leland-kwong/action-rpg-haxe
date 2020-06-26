@@ -430,6 +430,11 @@ class Player extends Entity {
   var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
   var sb: ParticlePlayground;
+  var runAnim: h2d.Anim;
+  var idleAnim: h2d.Anim;
+  var runAnimFrames: Array<h2d.Tile>;
+  var idleAnimFrames: Array<h2d.Tile>;
+  var facingX = 1;
 
   public function new(x, y, s2d: h2d.Scene) {
     super({
@@ -445,12 +450,57 @@ class Player extends Entity {
     forceMultiplier = 3.0;
 
     rootScene = s2d;
+
+    var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+    var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
+    var runFrames = [
+      'player/run1',
+      'player/run2',
+      'player/run3',
+      'player/run4',
+      'player/run5',
+      'player/run6',
+      'player/run7',
+      'player/run8',
+    ];
+    runAnimFrames = [];
+    var idleFrames = [
+      'player/idle'
+    ];
+    idleAnimFrames = [];
+
+    for (frameKey in runFrames) {
+      var frameData = Reflect.field(spriteSheetData, frameKey);
+      var t = spriteSheet.sub(
+        frameData.frame.x,
+        frameData.frame.y,
+        frameData.frame.w,
+        frameData.frame.h
+      ).center();
+      t.dy = -frameData.frame.h * frameData.pivot.y;
+      runAnimFrames.push(t);
+    }
+
+    for (frameKey in idleFrames) {
+      var frameData = Reflect.field(spriteSheetData, frameKey);
+      var t = spriteSheet.sub(
+        frameData.frame.x,
+        frameData.frame.y,
+        frameData.frame.w,
+        frameData.frame.h
+      ).center();
+      t.dy = -frameData.frame.h * frameData.pivot.y;
+      idleAnimFrames.push(t);
+    }
+    
+    // creates an animation for these tiles
+    runAnim = new h2d.Anim(runAnimFrames);
+    idleAnim = new h2d.Anim(idleAnimFrames);
+
     playerSprite = new h2d.Graphics(this);
     // make halo
-    playerSprite.beginFill(0xffffff, 0.3);
+    playerSprite.beginFill(0xffffff, 0.1);
     playerSprite.drawCircle(0, 0, radius + 4);
-    playerSprite.beginFill(color);
-    playerSprite.drawCircle(0, 0, radius);
     playerSprite.endFill();
 
     hitFlashOverlay = new h2d.Graphics(s2d);
@@ -485,6 +535,10 @@ class Player extends Entity {
       dy = 1;
     }
 
+    if (dx != 0) {
+      facingX = dx > 0 ? 1 : -1;
+    }
+
     var magnitude = Math.sqrt(dx * dx + dy * dy);
     var dxNormalized = magnitude == 0 ? dx : (dx / magnitude);
     var dyNormalized = magnitude == 0 ? dy : (dy / magnitude);
@@ -506,6 +560,22 @@ class Player extends Entity {
     movePlayer();
     // pulsate player for visual juice
     playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
+
+    var activeAnim;
+    if (dx != 0 || dy != 0) {
+      activeAnim = runAnim;
+      this.addChild(runAnim); 
+      idleAnim.remove();
+    } else {
+      activeAnim = idleAnim;
+      this.addChild(idleAnim); 
+      runAnim.remove();
+    }
+    activeAnim.scaleX = 4 * facingX;
+    activeAnim.scaleY = 4;
+    activeAnim.x = 0;
+    activeAnim.y = 0;
+
     useAbility(
       Main.Global.rootScene.mouseX,
       Main.Global.rootScene.mouseY,
@@ -658,7 +728,8 @@ class Game extends h2d.Object {
     enemySpawner = new EnemySpawner(
       s2d.width / 2,
       s2d.height / 2,
-      calcNumEnemies(level),
+      0,
+      //calcNumEnemies(level),
       s2d,
       player
     );

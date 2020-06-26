@@ -1,11 +1,4 @@
 # example: game.dist.js
 *.dist*
 
-# emacs session files
-*.*~
-
-# vim sessions files
-*.*.save
-*.*.swp
-
 node_modules

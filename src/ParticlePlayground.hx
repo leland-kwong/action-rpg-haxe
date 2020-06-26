@@ -2,40 +2,45 @@ import haxe.Json;
 import h2d.SpriteBatch;
 import Game.Cooldown;
 
-typedef Particle = { var dx: Float;
-																					var dy: Float;
-																					var x: Float;
-																					var y: Float;
-																					var speed: Float;
-																					var ?rAlpha: (p: Particle, progress: Float) -> Float;
-																					var ?rScale: (p: Particle, progress: Float) -> Float;
-																					var lifeTime: Float;
-																					var createdAt: Float;
-																					var batchElement: BatchElement; };
+typedef Particle = { 
+  var dx: Float;
+  var dy: Float;
+  var x: Float;
+  var y: Float;
+  var speed: Float;
+  var ?rAlpha: (p: Particle, progress: Float) -> Float;
+  var ?rScale: (p: Particle, progress: Float) -> Float;
+  var lifeTime: Float;
+  var createdAt: Float;
+  var batchElement: BatchElement; 
+};
 
-typedef PartSystem = { var particles: Array<Particle>; 																		
-																							var batch: h2d.SpriteBatch;
-																							var spriteSheet: h2d.Tile;
-																							var spriteSheetData: Dynamic;
-																							var time: Float; };
+typedef PartSystem = { 
+  var particles: Array<Particle>; 																		
+  var batch: h2d.SpriteBatch;
+  var spriteSheet: h2d.Tile;
+  var spriteSheetData: Dynamic;
+  var time: Float; 
+};
 
 class ParticleSystem {
   static public function init() {
-				var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-				var system: PartSystem = { particles: [],
-																															spriteSheetData: Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames,
-																															spriteSheet: spriteSheet,
-																															batch: new h2d.SpriteBatch(spriteSheet,
-																																																										Main.Global.rootScene),
-																															time: 0.0 }
+    var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+    var system: PartSystem = { 
+      particles: [],
+      spriteSheetData: Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames,
+      spriteSheet: spriteSheet,
+      batch: new h2d.SpriteBatch(spriteSheet, Main.Global.rootScene),
+      time: 0.0 
+    };
     system.batch.hasRotationScale = true;
-				return system;
+    return system;
   }
 
   static public function emit(s: PartSystem, config: Particle, before = false) {
     s.particles.push(config);
-				config.batchElement.x = config.x;
-				config.batchElement.y = config.y;
+    config.batchElement.x = config.x;
+    config.batchElement.y = config.y;
     s.batch.add(config.batchElement, before);
   }
 

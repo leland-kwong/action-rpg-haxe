@@ -1,4 +1,5 @@
 const { exec } = require('child_process');
+const chokidar = require('chokidar');
 const fs = require('fs');
 const [, , port] = process.argv;
 require('./dev-server/main');
@@ -48,7 +49,10 @@ const rebuild = (eventType, filename) => {
   clearTimeout(pending)
   pending = setTimeout(() => {
     compile(compileFile)
-  }, 50)
+  }, 500)
 }
 
-fs.watch('./', rebuild);
+chokidar.watch('.').on('all', (event, path) => {
+  rebuild(event, path);
+});
+
