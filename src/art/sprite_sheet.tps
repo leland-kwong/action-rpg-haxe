@@ -197,7 +197,10 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">player.gif</key>
+            <key type="filename">enemy-1/idle1.png</key>
+            <key type="filename">enemy-1/idle2.png</key>
+            <key type="filename">enemy-1/idle3.png</key>
+            <key type="filename">enemy-1/idle4.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -206,9 +209,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>13,8,25,15</rect>
+                <rect>5,5,10,10</rect>
                 <key>scale9Paddings</key>
-                <rect>13,8,25,15</rect>
+                <rect>5,5,10,10</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

@@ -289,7 +289,7 @@ class Main extends hxd.App {
     hxd.Res.initEmbed();
     Global.mainBackground = new h2d.Scene();
 
-    background = addBackground(Global.mainBackground, 0x222222);
+    background = addBackground(Global.mainBackground, 0x6c6c6c);
     runTests();
 
     Global.rootScene = s2d;

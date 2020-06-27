@@ -47,6 +47,7 @@ class Colors {
   public static final blue = 0x118ab2;
   public static final darkBlue = 0x073b4c;
   public static final pureWhite = 0xffffff;
+  public static final black = 0x000000;
 }
 
 class Cooldown {
@@ -248,7 +249,6 @@ class Enemy extends Entity {
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
-  var hasSnakeMotion: Bool;
   var spawnDuration: Float;
   var graphic: h2d.Graphics;
   var size: Int;
@@ -266,7 +266,6 @@ class Enemy extends Entity {
     speed = 0.0;
     spawnDuration = size * 0.2;
     health = healthBySize[size];
-    hasSnakeMotion = size == 1;
     avoidOthers = true;
     cds = new Cooldown();
     follow = followTarget;
@@ -385,13 +384,10 @@ class Enemy extends Entity {
       }
 
       var maxDelta = 1;
-      var waveVal = hasSnakeMotion
-        ? Math.abs(Math.sin(time * 2.5))
-        : 1;
       x += Utils.clamp(dx, -maxDelta, maxDelta) *
-        speed * dt * waveVal;
+        speed * dt;
       y += Utils.clamp(dy, -maxDelta, maxDelta) *
-        speed * dt * waveVal;
+        speed * dt;
     }
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
@@ -494,7 +490,7 @@ class Player extends Entity {
     }
     
     // creates an animation for these tiles
-    runAnim = new h2d.Anim(runAnimFrames);
+    runAnim = new h2d.Anim(runAnimFrames, 15);
     idleAnim = new h2d.Anim(idleAnimFrames);
 
     playerSprite = new h2d.Graphics(this);
@@ -746,7 +742,7 @@ class Game extends h2d.Object {
     Asset.loadMap(
       'test',
       (mapData: GridRef) -> {
-        var color = Game.Colors.pureWhite;
+        var color = Game.Colors.black;
         var radius = Math.round(mapData.cellSize / 2);
         var createEnvironmentItems = (x, y, items: Grid.GridItems) -> {
           for (id in items) {
@@ -760,7 +756,7 @@ class Game extends h2d.Object {
             }, id);
             wallEnt.type = 'OBSTACLE';
             var wallGraphic = new h2d.Graphics(wallEnt);
-            wallGraphic.beginFill(color, 0.5);
+            wallGraphic.beginFill(color, 0.8);
             wallGraphic.drawRect(-radius, -radius, radius * 2, radius * 2);
             Main.Global.rootScene.addChild(wallEnt);
           }
