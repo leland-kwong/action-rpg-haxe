@@ -239,7 +239,7 @@ class Enemy extends Entity {
     3 => 20,
   ];
   static var speedBySize = [
-    1 => 450.0,
+    1 => 250.0,
     2 => 160.0,
     3 => 100.0,
   ];
@@ -252,9 +252,11 @@ class Enemy extends Entity {
   var spawnDuration: Float;
   var graphic: h2d.Graphics;
   var size: Int;
-  var repelFilter: String;
+  var repelFilter= 'REPEL_NONE';
   var bounceAnimationStartTime = -1.0;
   var debugCenter = false;
+  var idleAnim: h2d.Anim;
+  var facingDir = 1;
   public var sightRange = 400;
   public var neighbors: Array<EntityId>;
   public var attackTarget: Entity;
@@ -270,25 +272,53 @@ class Enemy extends Entity {
     cds = new Cooldown();
     follow = followTarget;
     this.size = size;
-    if (size == 3) {
-      repelFilter = 'TURRET';
-    }
 
     cds.set('summoningSickness', 1.0);
     setScale(0);
 
-    graphic = new h2d.Graphics(this);
-    graphic.beginFill(color);
-    graphic.drawCircle(0, 0, radius);
+    if (size == 1) {
+      var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+      var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
+      var idleFrames = [
+        'enemy-1/idle1',
+        'enemy-1/idle2',
+        'enemy-1/idle3',
+        'enemy-1/idle4',
+        'enemy-1/idle5',
+        'enemy-1/idle6',
+        'enemy-1/idle7',
+        'enemy-1/idle8',
+        'enemy-1/idle9',
+        'enemy-1/idle10',
+      ];
+      var idleAnimFrames = [];
 
-    if (debugCenter) {
-      graphic.beginFill(0x000000);
-      graphic.drawCircle(0, 0, 3);
+      for (frameKey in idleFrames) {
+        var frameData = Reflect.field(spriteSheetData, frameKey);
+        var t = spriteSheet.sub(
+            frameData.frame.x,
+            frameData.frame.y,
+            frameData.frame.w,
+            frameData.frame.h
+            ).center();
+        t.dy = -frameData.frame.h * frameData.pivot.y;
+        idleAnimFrames.push(t);
+      }
+      idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
+      idleAnim.scaleY = 4;
     }
 
-    graphic.beginFill(0xffffff, 0.1);
-    graphic.drawCircle(0, 0, radius - 4);
-    graphic.endFill();
+    if (size != 1) {
+      graphic = new h2d.Graphics(this);
+      graphic.beginFill(color);
+      graphic.drawCircle(0, 0, radius);
+    }
+
+    if (debugCenter) {
+      graphic = graphic != null ? graphic : new h2d.Graphics(this);
+      graphic.beginFill(0xffffff);
+      graphic.drawCircle(0, 0, 3);
+    }
   }
 
   public override function update(dt) {
@@ -306,20 +336,6 @@ class Enemy extends Entity {
         : bounceAnimationStartTime;
       status = 'TARGETABLE';
       speed = speedBySize[size];
-
-      // bounce animation (stretch/squash)
-      {
-        var progress = Easing.progress(bounceAnimationStartTime, time, 1.0);
-        var ds = Easing.easeInOut(progress);
-
-        graphic.scaleY = 1 + ds / 6;
-        graphic.scaleX = 1 - ds / 6;
-        graphic.y = 1 + (1 / 6);
-
-        if (progress >= 1) {
-          bounceAnimationStartTime = time;
-        }
-      }
     }
 
     super.update(dt);
@@ -383,6 +399,13 @@ class Enemy extends Entity {
         }
       }
 
+      if (idleAnim != null) {
+        if (dx != 0 && idleAnim != null) {
+          facingDir = (dx > 0 ? -1 : 1);
+        }
+        idleAnim.scaleX = facingDir * 4;
+      }
+
       var maxDelta = 1;
       x += Utils.clamp(dx, -maxDelta, maxDelta) *
         speed * dt;
@@ -400,8 +423,9 @@ class Enemy extends Entity {
 
     for (child in iterator()) {
       var c:Dynamic = child;
+      var cl = Type.getClass(child);
 
-      if (Type.getClass(child) == h2d.Graphics) {
+      if (cl == h2d.Graphics || cl == h2d.Anim) {
         if (!cds.has('hitFlash')) {
           c.color.set(1, 1, 1, 1);
         }
@@ -488,7 +512,7 @@ class Player extends Entity {
       t.dy = -frameData.frame.h * frameData.pivot.y;
       idleAnimFrames.push(t);
     }
-    
+
     // creates an animation for these tiles
     runAnim = new h2d.Anim(runAnimFrames, 15);
     idleAnim = new h2d.Anim(idleAnimFrames);
@@ -560,11 +584,11 @@ class Player extends Entity {
     var activeAnim;
     if (dx != 0 || dy != 0) {
       activeAnim = runAnim;
-      this.addChild(runAnim); 
+      this.addChild(runAnim);
       idleAnim.remove();
     } else {
       activeAnim = idleAnim;
-      this.addChild(idleAnim); 
+      this.addChild(idleAnim);
       runAnim.remove();
     }
     activeAnim.scaleX = 4 * facingX;
@@ -599,7 +623,7 @@ class Player extends Entity {
         }
         var angle = Math.atan2(y1 - y, x1 - x);
         var b = new Bullet(
-          x + Math.cos(angle) * 30, 
+          x + Math.cos(angle) * 30,
           y + Math.sin(angle) * 30,
 					x1,
 					y1,
@@ -724,8 +748,7 @@ class Game extends h2d.Object {
     enemySpawner = new EnemySpawner(
       s2d.width / 2,
       s2d.height / 2,
-      0,
-      //calcNumEnemies(level),
+      calcNumEnemies(level),
       s2d,
       player
     );
