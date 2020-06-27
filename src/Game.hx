@@ -452,6 +452,7 @@ class Player extends Entity {
   var sb: ParticlePlayground;
   var runAnim: h2d.Anim;
   var idleAnim: h2d.Anim;
+  var attackAnim: h2d.Anim;
   var runAnimFrames: Array<h2d.Tile>;
   var idleAnimFrames: Array<h2d.Tile>;
   var facingX = 1;
@@ -484,10 +485,6 @@ class Player extends Entity {
       'player/run8',
     ];
     runAnimFrames = [];
-    var idleFrames = [
-      'player/idle'
-    ];
-    idleAnimFrames = [];
 
     for (frameKey in runFrames) {
       var frameData = Reflect.field(spriteSheetData, frameKey);
@@ -500,7 +497,13 @@ class Player extends Entity {
       t.dy = -frameData.frame.h * frameData.pivot.y;
       runAnimFrames.push(t);
     }
+    // creates an animation for these tiles
+    runAnim = new h2d.Anim(runAnimFrames, 15);
 
+    var idleFrames = [
+      'player/idle'
+    ];
+    idleAnimFrames = [];
     for (frameKey in idleFrames) {
       var frameData = Reflect.field(spriteSheetData, frameKey);
       var t = spriteSheet.sub(
@@ -512,10 +515,24 @@ class Player extends Entity {
       t.dy = -frameData.frame.h * frameData.pivot.y;
       idleAnimFrames.push(t);
     }
-
-    // creates an animation for these tiles
-    runAnim = new h2d.Anim(runAnimFrames, 15);
     idleAnim = new h2d.Anim(idleAnimFrames);
+
+    var attackSpriteFrames = [
+      'player/attack'
+    ];
+    var attackAnimFrames = [];
+    for (frameKey in attackSpriteFrames) {
+      var frameData = Reflect.field(spriteSheetData, frameKey);
+      var t = spriteSheet.sub(
+        frameData.frame.x,
+        frameData.frame.y,
+        frameData.frame.w,
+        frameData.frame.h
+      ).center();
+      t.dy = -frameData.frame.h * frameData.pivot.y;
+      attackAnimFrames.push(t);
+    }
+    attackAnim = new h2d.Anim(attackAnimFrames);
 
     playerSprite = new h2d.Graphics(this);
     // make halo
@@ -582,15 +599,25 @@ class Player extends Entity {
     playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
 
     var activeAnim;
-    if (dx != 0 || dy != 0) {
-      activeAnim = runAnim;
-      this.addChild(runAnim);
+    if (cds.has('recoveringFromAbility')) {
+      activeAnim = attackAnim;
       idleAnim.remove();
-    } else {
-      activeAnim = idleAnim;
-      this.addChild(idleAnim);
       runAnim.remove();
     }
+    else {
+      attackAnim.remove();
+      if (dx != 0 || dy != 0) {
+        activeAnim = runAnim;
+        idleAnim.remove();
+        attackAnim.remove();
+      } else {
+        activeAnim = idleAnim;
+        runAnim.remove();
+        attackAnim.remove();
+      }
+    }
+    this.addChild(activeAnim);
+
     activeAnim.scaleX = 4 * facingX;
     activeAnim.scaleY = 4;
     activeAnim.x = 0;
@@ -601,6 +628,7 @@ class Player extends Entity {
       Main.Global.rootScene.mouseY,
       Main.Global.mouse.buttonDown
     );
+
     {
       if (!cds.has('hitFlash')) {
         hitFlashOverlay.color.set(1, 1, 1, 0);
@@ -621,6 +649,8 @@ class Player extends Entity {
         if (cds.has('primaryAbility')) {
           return;
         }
+        cds.set('recoveringFromAbility', 0.2);
+
         var angle = Math.atan2(y1 - y, x1 - x);
         var b = new Bullet(
           x + Math.cos(angle) * 30,

@@ -198,9 +198,15 @@
                 <false/>
             </struct>
             <key type="filename">enemy-1/idle1.png</key>
+            <key type="filename">enemy-1/idle10.png</key>
             <key type="filename">enemy-1/idle2.png</key>
             <key type="filename">enemy-1/idle3.png</key>
             <key type="filename">enemy-1/idle4.png</key>
+            <key type="filename">enemy-1/idle5.png</key>
+            <key type="filename">enemy-1/idle6.png</key>
+            <key type="filename">enemy-1/idle7.png</key>
+            <key type="filename">enemy-1/idle8.png</key>
+            <key type="filename">enemy-1/idle9.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -215,6 +221,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">player/attack.png</key>
             <key type="filename">player/idle.png</key>
             <key type="filename">player/run1.png</key>
             <key type="filename">player/run2.png</key>
