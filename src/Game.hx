@@ -9,6 +9,8 @@ import Utils;
 import Camera;
 import ParticlePlayground;
 
+using Lambda;
+
 class SoundFx {
   public static var globalCds = new Cooldown();
 
@@ -148,12 +150,14 @@ class Projectile extends Entity {
   var damage = 1;
   var lifeTime = 5.0;
   var collidedWith: Entity;
+  var cFilter: Array<String>;
   public var neighbors: Array<EntityId>;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
     speed = 0.0,
     radius = 10,
+    collisionFilter,
     nSegments: Int = null
   ) {
     super({
@@ -166,6 +170,7 @@ class Projectile extends Entity {
     type = 'PROJECTILE';
     this.speed = speed;
     forceMultiplier = 0.0;
+    cFilter = collisionFilter;
 
     var aToTarget = Math.atan2(y2 - y1, x2 - x1);
 
@@ -190,7 +195,7 @@ class Projectile extends Entity {
 
     for (id in neighbors) {
       var a = Entity.ALL_BY_ID[id];
-      if (a.type == 'ENEMY' || a.type == 'OBSTACLE') {
+      if (Lambda.exists(cFilter, (t) -> t == a.type)) {
         var d = Utils.distance(x, y, a.x, a.y);
         var min = radius + a.radius * 1.0;
         var conflict = d < min;
@@ -208,10 +213,13 @@ class Bullet extends Projectile {
   var particleSystemRef: ParticlePlayground;
   var particle: Particle;
 
-  public function new(x1, y1, x2, y2, speed, sb) {
-    super(x1, y1, x2, y2, speed, 8);
-    particleSystemRef = sb;
-    particle = sb.emitProjectileGraphics(x1, y1, x2, y2, speed);
+  public function new(
+    x1, y1, x2, y2, speed, bulletType, collisionFilter
+  ) {
+    super(x1, y1, x2, y2, speed, 8, collisionFilter);
+    particleSystemRef = Main.Global.sb;
+    particle = particleSystemRef
+      .emitProjectileGraphics(x1, y1, x2, y2, speed, bulletType);
     lifeTime = 2.0;
   }
 
@@ -243,6 +251,10 @@ class Enemy extends Entity {
     2 => 120.0,
     3 => 100.0,
   ];
+  static var attackRangeByType = [
+    1 => 80,
+    2 => 300,
+  ];
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
 
@@ -255,7 +267,6 @@ class Enemy extends Entity {
   var graphic: h2d.Graphics;
   var size: Int;
   var repelFilter= 'REPEL_NONE';
-  var bounceAnimationStartTime = -1.0;
   var debugCenter = false;
   var idleAnim: h2d.Anim;
   var runAnim: h2d.Anim;
@@ -375,9 +386,6 @@ class Enemy extends Entity {
       setScale(spawnProgress);
     }
     if (isFullySpawned) {
-      bounceAnimationStartTime = bounceAnimationStartTime == -1
-        ? time
-        : bounceAnimationStartTime;
       status = 'TARGETABLE';
       speed = speedBySize[size];
     }
@@ -389,7 +397,7 @@ class Enemy extends Entity {
     if (!cds.has('attack')) {
       // distance to keep from destination
       var threshold = follow.radius + 20;
-      var attackRange = 80;
+      var attackRange = attackRangeByType[size];
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(0,
@@ -405,41 +413,44 @@ class Enemy extends Entity {
         // make entities avoid each other by repulsion
         for (oid in neighbors) {
           var o = Entity.ALL_BY_ID.get(oid);
-          if (o != this && o.forceMultiplier > 0) {
+          if (o != this) {
             var pt = this;
             var ept = o;
             var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
-            var separation = 5 + Math.sqrt(speed / 2);
-            var min = pt.radius + ept.radius + separation;
-            var isColliding = d < min;
-            if (isColliding) {
-              var conflict = min - d;
-              var adjustedConflict = Math.min(conflict, conflict * 60 / speed);
-              var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-              var w = pt.weight / (pt.weight + ept.weight);
-              // immobile entities have a stronger influence (obstacles such as walls, etc...)
-              var multiplier = ept.forceMultiplier;
-              var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
-              var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
 
-              dx -= avoidX;
-              dy -= avoidY;
+            if (o.forceMultiplier > 0) {
+              var separation = 5 + Math.sqrt(speed / 2);
+              var min = pt.radius + ept.radius + separation;
+              var isColliding = d < min;
+              if (isColliding) {
+                var conflict = min - d;
+                var adjustedConflict = Math.min(conflict, conflict * 60 / speed);
+                var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
+                var w = pt.weight / (pt.weight + ept.weight);
+                // immobile entities have a stronger influence (obstacles such as walls, etc...)
+                var multiplier = ept.forceMultiplier;
+                var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
+                var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
 
-              if (repelFilter == o.type) {
-                o.x += avoidX;
-                o.y += avoidY;
-              }
-            }
+                dx -= avoidX;
+                dy -= avoidY;
 
-            if (attackTarget == null) {
-              var attackDistance = d - pt.radius + ept.radius;
-              if (attackDistance <= attackRange &&
-                (o == follow)
-              ) {
-                attackTarget = o;
+                if (repelFilter == o.type) {
+                  o.x += avoidX;
+                  o.y += avoidY;
+                }
               }
             }
           }
+        }
+      }
+
+      if (attackTarget == null) {
+        var dFromTarget = Utils.distance(this.x, this.y, follow.x, follow.y);
+        var attackDistance = dFromTarget - this.radius + follow.radius;
+        var isInAttackRange = attackDistance <= attackRange;
+        if (isInAttackRange) {
+          attackTarget = follow;
         }
       }
 
@@ -474,11 +485,25 @@ class Enemy extends Entity {
       }
     }
 
+    // trigger attack
     if (!cds.has('summoningSickness') && attackTarget != null) {
       if (!cds.has('attack')) {
-        var attackCooldown = 0.0;
+        var attackCooldown = 1.0;
         cds.set('attack', attackCooldown);
-        attackTarget.damageTaken += damage;
+
+        var x2 = follow.x;
+        var y2 = follow.y;
+        var angle = Math.atan2(y2 - y, x2 - x);
+        var b = new Bullet(
+          x + Math.cos(angle) * 30,
+          y + Math.sin(angle) * 30,
+					x2,
+					y2,
+          300.0,
+          'bulletEnemyLarge',
+          ['PLAYER']
+        );
+        Main.Global.rootScene.addChild(b);
       }
     }
 
@@ -511,7 +536,6 @@ class Player extends Entity {
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
-  var sb: ParticlePlayground;
   var runAnim: h2d.Anim;
   var idleAnim: h2d.Anim;
   var attackAnim: h2d.Anim;
@@ -607,8 +631,6 @@ class Player extends Entity {
     hitFlashOverlay.drawRect(0, 0, s2d.width, s2d.height);
     // make it hidden initially
     hitFlashOverlay.color.set(1, 1, 1, 0);
-
-		sb = new ParticlePlayground();
   }
 
   function movePlayer() {
@@ -648,13 +670,11 @@ class Player extends Entity {
 
   override function onRemove() {
     hitFlashOverlay.remove();
-    sb.dispose();
   }
 
   public override function update(dt) {
     super.update(dt);
     cds.update(dt);
-    sb.update(dt);
 
     movePlayer();
     // pulsate player for visual juice
@@ -719,8 +739,9 @@ class Player extends Entity {
           y + Math.sin(angle) * 30,
 					x1,
 					y1,
-					800.0,
-					sb
+          800.0,
+          'playerBullet',
+          ['ENEMY']
         );
         Main.Global.rootScene.addChild(b);
         cds.set('primaryAbility', 1 / 10);
@@ -792,7 +813,7 @@ class EnemySpawner {
 }
 
 class Game extends h2d.Object {
-  public var level = 15;
+  public var level = 1;
   var player: Player;
   var target: h2d.Object;
   var playerInfo: h2d.Text;

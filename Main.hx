@@ -18,6 +18,7 @@ class Global {
   }
   public static var mapRef: GridRef;
   public static var dynamicWorldRef: GridRef;
+  public static var sb: ParticlePlayground;
 }
 
 enum UiState {
@@ -283,10 +284,11 @@ class Main extends hxd.App {
       #end
     }
 
+    hxd.Res.initEmbed();
+
     Global.uiRoot = new h2d.Scene();
     sevents.addScene(Global.uiRoot);
 
-    hxd.Res.initEmbed();
     Global.mainBackground = new h2d.Scene();
 
     background = addBackground(Global.mainBackground, 0x6c6c6c);
@@ -294,6 +296,7 @@ class Main extends hxd.App {
 
     Global.rootScene = s2d;
     Global.mainCamera = Camera.create();
+    Global.sb = new ParticlePlayground();
 
     switchMainScene(MainSceneType.PlayGame);
 
@@ -351,6 +354,7 @@ class Main extends hxd.App {
         }
 
         game.update(s2d, frameTime);
+        Global.sb.update(frameTime);
 
         if (game.isGameOver()) {
           switchMainScene(MainSceneType.PlayGame);
