@@ -112,7 +112,22 @@ class ParticlePlayground {
       spriteSquareWithGlowData.frame.w,
       spriteSquareWithGlowData.frame.h
     ).center();
-	}
+  }
+
+  function makeSprite(spriteKey: String) {
+    var spriteData = Reflect.field(pSystem.spriteSheetData, spriteKey);
+
+    if (spriteData == null) {
+      throw 'invalid spriteKey: `${spriteKey}`';
+    }
+
+    return pSystem.spriteSheet.sub(
+      spriteData.frame.x,
+      spriteData.frame.y,
+      spriteData.frame.w,
+      spriteData.frame.h
+    ).center();
+  }
 
   public function emitProjectileGraphics(
     x1: Float,
@@ -120,7 +135,7 @@ class ParticlePlayground {
     x2: Float,
     y2: Float,
     speed: Float,
-    spriteTypeValue: String
+    spriteKey: String
   ) {
     var projectile: Particle = null;
     {
@@ -128,7 +143,7 @@ class ParticlePlayground {
         y2 - y1,
         x2 - x1
       );
-      var g = new BatchElement(spriteTypes[spriteTypeValue]);
+      var g = new BatchElement(makeSprite(spriteKey));
       g.rotation = angle;
       g.scale = 4;
       projectile = {

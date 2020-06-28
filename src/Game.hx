@@ -445,10 +445,8 @@ class Enemy extends Entity {
         }
       }
 
-      if (attackTarget == null) {
-        var dFromTarget = Utils.distance(this.x, this.y, follow.x, follow.y);
-        var attackDistance = dFromTarget - this.radius + follow.radius;
-        var isInAttackRange = attackDistance <= attackRange;
+      if (canSeeTarget && attackTarget == null) {
+        var isInAttackRange = dFromTarget <= attackRange;
         if (isInAttackRange) {
           attackTarget = follow;
         }
@@ -500,8 +498,8 @@ class Enemy extends Entity {
 					x2,
 					y2,
           300.0,
-          'bulletEnemyLarge',
-          ['PLAYER']
+          'bullet_enemy_large',
+          ['PLAYER', 'OBSTACLE']
         );
         Main.Global.rootScene.addChild(b);
       }
@@ -552,7 +550,7 @@ class Player extends Entity {
       color: Colors.green,
     });
     type = 'PLAYER';
-    health = 10;
+    health = 1000;
     speed = 350.0;
     forceMultiplier = 3.0;
 
@@ -740,8 +738,8 @@ class Player extends Entity {
 					x1,
 					y1,
           800.0,
-          'playerBullet',
-          ['ENEMY']
+          'bullet_player_basic',
+          ['ENEMY', 'OBSTACLE']
         );
         Main.Global.rootScene.addChild(b);
         cds.set('primaryAbility', 1 / 10);
@@ -808,7 +806,8 @@ class EnemySpawner {
       weight: 1.0,
       color: colors[size],
     }, size, target);
-    parent.addChild(e);
+    // TODO add support for draw-order of elements based on position
+    parent.addChildAt(e, -1);
   }
 }
 
