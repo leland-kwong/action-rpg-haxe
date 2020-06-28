@@ -283,6 +283,18 @@
                 <false/>
             </struct>
             <key type="filename">player/attack.png</key>
+            <key type="filename">player/attack1.png</key>
+            <key type="filename">player/attack10.png</key>
+            <key type="filename">player/attack11.png</key>
+            <key type="filename">player/attack12.png</key>
+            <key type="filename">player/attack2.png</key>
+            <key type="filename">player/attack3.png</key>
+            <key type="filename">player/attack4.png</key>
+            <key type="filename">player/attack5.png</key>
+            <key type="filename">player/attack6.png</key>
+            <key type="filename">player/attack7.png</key>
+            <key type="filename">player/attack8.png</key>
+            <key type="filename">player/attack9.png</key>
             <key type="filename">player/idle.png</key>
             <key type="filename">player/run1.png</key>
             <key type="filename">player/run2.png</key>

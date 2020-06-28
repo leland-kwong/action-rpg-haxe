@@ -97,21 +97,6 @@ class ParticlePlayground {
 
   public function new() {
     pSystem = ParticleSystem.init();
-
-    var spriteBulletEnemyLargeData = pSystem.spriteSheetData.bullet_enemy_large;
-    spriteTypes['bulletEnemyLarge'] = pSystem.spriteSheet.sub(
-      spriteBulletEnemyLargeData.frame.x,
-      spriteBulletEnemyLargeData.frame.y,
-      spriteBulletEnemyLargeData.frame.w,
-      spriteBulletEnemyLargeData.frame.h
-    ).center();
-    var spriteSquareWithGlowData = pSystem.spriteSheetData.square_white_glow;
-    spriteTypes['playerBullet'] = pSystem.spriteSheet.sub(
-      spriteSquareWithGlowData.frame.x,
-      spriteSquareWithGlowData.frame.y,
-      spriteSquareWithGlowData.frame.w,
-      spriteSquareWithGlowData.frame.h
-    ).center();
   }
 
   function makeSprite(spriteKey: String) {
@@ -129,13 +114,15 @@ class ParticlePlayground {
     ).center();
   }
 
+  // TODO add support for animation
   public function emitProjectileGraphics(
     x1: Float,
     y1: Float,
     x2: Float,
     y2: Float,
     speed: Float,
-    spriteKey: String
+    spriteKey: String,
+    lifeTime = 9999.0
   ) {
     var projectile: Particle = null;
     {
@@ -151,7 +138,7 @@ class ParticlePlayground {
         dy: Math.sin(angle),
         x: x1,
         y: y1,
-        lifeTime: 9999.0,
+        lifeTime: lifeTime,
         speed: speed,
         createdAt: time,
         batchElement: g,

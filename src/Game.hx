@@ -582,7 +582,7 @@ class Player extends Entity {
       runAnimFrames.push(t);
     }
     // creates an animation for these tiles
-    runAnim = new h2d.Anim(runAnimFrames, 15);
+    runAnim = new h2d.Anim(runAnimFrames, 17);
 
     var idleFrames = [
       'player/idle'
@@ -602,7 +602,18 @@ class Player extends Entity {
     idleAnim = new h2d.Anim(idleAnimFrames);
 
     var attackSpriteFrames = [
-      'player/attack'
+      'player/attack1',
+      'player/attack2',
+      'player/attack3',
+      'player/attack4',
+      'player/attack5',
+      'player/attack6',
+      'player/attack7',
+      'player/attack8',
+      'player/attack9',
+      'player/attack10',
+      'player/attack11',
+      'player/attack12'
     ];
     var attackAnimFrames = [];
     for (frameKey in attackSpriteFrames) {
@@ -614,9 +625,10 @@ class Player extends Entity {
         frameData.frame.h
       ).center();
       t.dy = -frameData.frame.h * frameData.pivot.y;
+      t.dx = -frameData.frame.w * frameData.pivot.x;
       attackAnimFrames.push(t);
     }
-    attackAnim = new h2d.Anim(attackAnimFrames);
+    attackAnim = new h2d.Anim(attackAnimFrames, 60);
 
     playerSprite = new h2d.Graphics(this);
     // make halo
@@ -723,26 +735,30 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(x1: Float, y1: Float, ability: Int) {
+  public function useAbility(x2: Float, y2: Float, ability: Int) {
     switch ability {
       case 0: {
         if (cds.has('primaryAbility')) {
           return;
         }
-        cds.set('recoveringFromAbility', 0.2);
+        var abilityCooldown = 1/10;
+        cds.set('recoveringFromAbility', abilityCooldown + 0.01);
+        attackAnim.currentFrame = 0;
 
-        var angle = Math.atan2(y1 - y, x1 - x);
+        var angle = Math.atan2(y2 - y, x2 - x);
+        var x1 = x + Math.cos(angle) * 30;
+        var y1 = y + Math.sin(angle) * 30;
         var b = new Bullet(
-          x + Math.cos(angle) * 30,
-          y + Math.sin(angle) * 30,
-					x1,
-					y1,
+          x1,
+          y1,
+					x2,
+					y2,
           800.0,
           'bullet_player_basic',
           ['ENEMY', 'OBSTACLE']
         );
         Main.Global.rootScene.addChild(b);
-        cds.set('primaryAbility', 1 / 10);
+        cds.set('primaryAbility', abilityCooldown);
       }
     }
   }
@@ -914,7 +930,7 @@ class Game extends h2d.Object {
       s2d.height / 2,
       s2d
     );
-    addChild(player);
+    s2d.addChildAt(player, -1);
     Camera.follow(Main.Global.mainCamera, player);
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
