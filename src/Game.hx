@@ -239,10 +239,12 @@ class Enemy extends Entity {
     3 => 20,
   ];
   static var speedBySize = [
-    1 => 250.0,
-    2 => 160.0,
+    1 => 180.0,
+    2 => 120.0,
     3 => 100.0,
   ];
+  static var spriteSheet: h2d.Tile;
+  static var spriteSheetData: Dynamic;
 
   var font: h2d.Font = Fonts.primary.get().clone();
   var cds: Cooldown;
@@ -256,6 +258,7 @@ class Enemy extends Entity {
   var bounceAnimationStartTime = -1.0;
   var debugCenter = false;
   var idleAnim: h2d.Anim;
+  var runAnim: h2d.Anim;
   var facingDir = 1;
   public var sightRange = 400;
   public var neighbors: Array<EntityId>;
@@ -263,6 +266,12 @@ class Enemy extends Entity {
 
   public function new(props, size, followTarget: Entity) {
     super(props);
+
+    if (spriteSheet == null) {
+      spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+      spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
+    }
+
     type = 'ENEMY';
     status = 'UNTARGETABLE';
     speed = 0.0;
@@ -277,8 +286,6 @@ class Enemy extends Entity {
     setScale(0);
 
     if (size == 1) {
-      var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-      var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
       var idleFrames = [
         'enemy-1/idle1',
         'enemy-1/idle2',
@@ -306,16 +313,53 @@ class Enemy extends Entity {
       }
       idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
       idleAnim.scaleY = 4;
+
+      runAnim = idleAnim;
     }
 
-    if (size != 1) {
-      graphic = new h2d.Graphics(this);
-      graphic.beginFill(color);
-      graphic.drawCircle(0, 0, radius);
+    if (size == 2) {
+      var idleFrames = [
+        'enemy-2/idle',
+      ];
+      var idleAnimFrames = [];
+
+      for (frameKey in idleFrames) {
+        var frameData = Reflect.field(spriteSheetData, frameKey);
+        var t = spriteSheet.sub(
+            frameData.frame.x,
+            frameData.frame.y,
+            frameData.frame.w,
+            frameData.frame.h
+            ).center();
+        t.dy = -frameData.frame.h * frameData.pivot.y;
+        idleAnimFrames.push(t);
+      }
+      idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
+      idleAnim.scaleY = 4;
+
+      var runFrames = [
+        'enemy-2/move1',
+        'enemy-2/move2',
+      ];
+      var runAnimFrames = [];
+
+      for (frameKey in runFrames) {
+        var frameData = Reflect.field(spriteSheetData, frameKey);
+        var t = spriteSheet.sub(
+            frameData.frame.x,
+            frameData.frame.y,
+            frameData.frame.w,
+            frameData.frame.h
+            ).center();
+        t.dy = -frameData.frame.h * frameData.pivot.y;
+        runAnimFrames.push(t);
+      }
+      runAnim = new h2d.Anim(runAnimFrames, 60);
+      runAnim.scaleY = 4;
     }
 
     if (debugCenter) {
-      graphic = graphic != null ? graphic : new h2d.Graphics(this);
+      graphic = new h2d.Graphics(this);
       graphic.beginFill(0xffffff);
       graphic.drawCircle(0, 0, 3);
     }
@@ -399,18 +443,35 @@ class Enemy extends Entity {
         }
       }
 
-      if (idleAnim != null) {
-        if (dx != 0 && idleAnim != null) {
-          facingDir = (dx > 0 ? -1 : 1);
-        }
-        idleAnim.scaleX = facingDir * 4;
-      }
-
+      var origX = x;
+      var origY = y;
       var maxDelta = 1;
       x += Utils.clamp(dx, -maxDelta, maxDelta) *
         speed * dt;
       y += Utils.clamp(dy, -maxDelta, maxDelta) *
         speed * dt;
+
+      var activeAnim: h2d.Anim = null;
+
+      var hasMovedX = Math.abs(origX - x) >= 0.25;
+      var hasMovedY = Math.abs(origY - y) >= 0.25;
+      if (runAnim != null && (hasMovedX || hasMovedY)) {
+        idleAnim.remove();
+        activeAnim = runAnim;
+        this.addChild(runAnim);
+      }
+      else if (idleAnim != null) {
+        runAnim.remove();
+        activeAnim = idleAnim;
+        this.addChild(idleAnim);
+      }
+
+      if (activeAnim != null) {
+        if (dx != 0) {
+          facingDir = (dx > 0 ? -1 : 1);
+        }
+        activeAnim.scaleX = facingDir * 4;
+      }
     }
 
     if (!cds.has('summoningSickness') && attackTarget != null) {
@@ -421,6 +482,7 @@ class Enemy extends Entity {
       }
     }
 
+    // handle damage
     for (child in iterator()) {
       var c:Dynamic = child;
       var cl = Type.getClass(child);
@@ -715,7 +777,7 @@ class EnemySpawner {
     cds.set('recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
-    var size = Utils.irnd(1, 3);
+    var size = Utils.irnd(1, 2);
     var radius = 7 + size * 10;
     var posRange = 100;
     var e = new Enemy({
@@ -778,6 +840,7 @@ class Game extends h2d.Object {
     enemySpawner = new EnemySpawner(
       s2d.width / 2,
       s2d.height / 2,
+      // 2,
       calcNumEnemies(level),
       s2d,
       player

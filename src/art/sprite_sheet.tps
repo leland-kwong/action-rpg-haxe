@@ -221,6 +221,37 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">enemy-2/idle.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>7,10,14,20</rect>
+                <key>scale9Paddings</key>
+                <rect>7,10,14,20</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">enemy-2/move1.png</key>
+            <key type="filename">enemy-2/move2.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>10,10,20,20</rect>
+                <key>scale9Paddings</key>
+                <rect>10,10,20,20</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">player/attack.png</key>
             <key type="filename">player/idle.png</key>
             <key type="filename">player/run1.png</key>
