@@ -779,8 +779,8 @@ class Player extends Entity {
           'exported/kamehameha_tail'
         );
         var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
-        var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
-        var laserCenterLength = 200;
+        var laserTailXOffset = -(Utils.irnd(0, 1) * pixelScale);
+        var laserCenterLength = 200 + laserTailXOffset;
         cds.set('recoveringFromAbility', abilityCooldown + 0.01);
         var launchOffset = 30;
         var angle = Math.atan2(y2 - y, x2 - x);
@@ -790,10 +790,9 @@ class Player extends Entity {
         var y1 = y + vy * launchOffset;
         var laserCenterX1 = x + vx * (launchOffset + laserHeadWidth);
         var laserCenterY1 = y + vy * (launchOffset + laserHeadWidth);
-        var laserTailXOffset = -(Utils.irnd(0, 1) * pixelScale);
-        var laserTailX1 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + laserTailXOffset);
+        var laserTailX1 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth);
         var laserTailY1 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth);
-        var laserTailX2 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + laserTailXOffset + 1);
+        var laserTailX2 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + 1);
         var laserTailY2 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth + 1);
         var yScaleRand = Utils.irnd(0, 1) * 0.5;
         // trace(
@@ -813,7 +812,7 @@ class Player extends Entity {
           laserTailX2, laserTailY2,
           0, 'exported/kamehameha_center_width_1',
           0.01,
-          (p, progress) -> 200,
+          (p, progress) -> laserCenterLength,
           (p, progress) -> pixelScale + yScaleRand
         );
         Main.Global.sb.emitProjectileGraphics(
