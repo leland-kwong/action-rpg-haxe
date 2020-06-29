@@ -295,6 +295,7 @@ class Main extends hxd.App {
     runTests();
 
     Global.rootScene = s2d;
+
     Global.mainCamera = Camera.create();
     Global.sb = new ParticlePlayground();
 

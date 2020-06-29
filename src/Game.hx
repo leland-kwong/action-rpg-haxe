@@ -715,10 +715,11 @@ class Player extends Entity {
     activeAnim.x = 0;
     activeAnim.y = 0;
 
+    var abilityId = Main.Global.mouse.buttonDown;
     useAbility(
       Main.Global.rootScene.mouseX,
       Main.Global.rootScene.mouseY,
-      Main.Global.mouse.buttonDown
+      abilityId
     );
 
     {
@@ -759,6 +760,70 @@ class Player extends Entity {
         );
         Main.Global.rootScene.addChild(b);
         cds.set('primaryAbility', abilityCooldown);
+      }
+
+      case 1: {
+        if (cds.has('ability_2')) {
+          return;
+        }
+
+        var abilityCooldown = 0;
+        var pixelScale = 4;
+        var laserHeadSpriteData = Reflect.field(
+          Main.Global.sb.pSystem.spriteSheetData,
+          'exported/kamehameha_head'
+        );
+        var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
+        var laserTailSpriteData = Reflect.field(
+          Main.Global.sb.pSystem.spriteSheetData,
+          'exported/kamehameha_tail'
+        );
+        var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
+        var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
+        var laserCenterLength = 200;
+        cds.set('recoveringFromAbility', abilityCooldown + 0.01);
+        var launchOffset = 30;
+        var angle = Math.atan2(y2 - y, x2 - x);
+        var vx = Math.cos(angle);
+        var vy = Math.sin(angle);
+        var x1 = x + vx * launchOffset;
+        var y1 = y + vy * launchOffset;
+        var laserCenterX1 = x + vx * (launchOffset + laserHeadWidth);
+        var laserCenterY1 = y + vy * (launchOffset + laserHeadWidth);
+        var laserTailXOffset = -(Utils.irnd(0, 1) * pixelScale);
+        var laserTailX1 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + laserTailXOffset);
+        var laserTailY1 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth);
+        var laserTailX2 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + laserTailXOffset + 1);
+        var laserTailY2 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth + 1);
+        var yScaleRand = Utils.irnd(0, 1) * 0.5;
+        // trace(
+          // 'laser head size',
+          // Reflect.field(Main.Global.sb.pSystem.spriteSheetData, 'exported/kamehameha_head')
+        // );
+        Main.Global.sb.emitProjectileGraphics(
+          x1, y1,
+          laserTailX2, laserTailY2,
+          0, 'exported/kamehameha_head',
+          0.01,
+          null,
+          (p, progress) -> pixelScale + yScaleRand
+        );
+        Main.Global.sb.emitProjectileGraphics(
+          laserCenterX1, laserCenterY1,
+          laserTailX2, laserTailY2,
+          0, 'exported/kamehameha_center_width_1',
+          0.01,
+          (p, progress) -> 200,
+          (p, progress) -> pixelScale + yScaleRand
+        );
+        Main.Global.sb.emitProjectileGraphics(
+          laserTailX1, laserTailY1,
+          laserTailX2, laserTailY2,
+          0, 'exported/kamehameha_tail',
+          0.01,
+          null,
+          (p, progress) -> pixelScale + yScaleRand
+        );
       }
     }
   }

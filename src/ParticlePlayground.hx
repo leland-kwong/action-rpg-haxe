@@ -9,7 +9,8 @@ typedef Particle = {
   var y: Float;
   var speed: Float;
   var ?rAlpha: (p: Particle, progress: Float) -> Float;
-  var ?rScale: (p: Particle, progress: Float) -> Float;
+  var ?rScaleX: (p: Particle, progress: Float) -> Float;
+  var ?rScaleY: (p: Particle, progress: Float) -> Float;
   var lifeTime: Float;
   var createdAt: Float;
   var batchElement: BatchElement;
@@ -72,8 +73,11 @@ class ParticleSystem {
           if (p.rAlpha != null) {
             p.batchElement.alpha = p.rAlpha(p, progress);
           }
-          if (p.rScale != null) {
-            p.batchElement.scale = p.rScale(p, progress);
+          if (p.rScaleX != null) {
+            p.batchElement.scaleX = p.rScaleX(p, progress);
+          }
+          if (p.rScaleY != null) {
+            p.batchElement.scaleY = p.rScaleY(p, progress);
           }
         }
       }
@@ -93,7 +97,7 @@ class ParticlePlayground {
   var tileWithGlow: h2d.Tile;
   var circleTile: h2d.Tile;
   var spriteTypes: Map<String, h2d.Tile> = new Map();
-  var pSystem: PartSystem;
+  public var pSystem: PartSystem;
 
   public function new() {
     pSystem = ParticleSystem.init();
@@ -106,12 +110,17 @@ class ParticlePlayground {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    return pSystem.spriteSheet.sub(
+    var tile = pSystem.spriteSheet.sub(
       spriteData.frame.x,
       spriteData.frame.y,
       spriteData.frame.w,
       spriteData.frame.h
     ).center();
+
+    tile.dy = -spriteData.frame.h * spriteData.pivot.y;
+    tile.dx = -spriteData.frame.w * spriteData.pivot.x;
+
+    return tile;
   }
 
   // TODO add support for animation
@@ -122,7 +131,9 @@ class ParticlePlayground {
     y2: Float,
     speed: Float,
     spriteKey: String,
-    lifeTime = 9999.0
+    lifeTime = 9999.0,
+    rScaleX = null,
+    rScaleY = null
   ) {
     var projectile: Particle = null;
     {
@@ -142,6 +153,8 @@ class ParticlePlayground {
         speed: speed,
         createdAt: time,
         batchElement: g,
+        rScaleX: rScaleX,
+        rScaleY: rScaleY
       };
       ParticleSystem.emit(pSystem, projectile);
       projectileList.push(projectile);
