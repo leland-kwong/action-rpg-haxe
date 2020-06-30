@@ -769,18 +769,20 @@ class Player extends Entity {
 
         var abilityCooldown = 0;
         var pixelScale = 4;
+        var laserLength = 400;
+        var beamThickness = 60;
         var laserHeadSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
           'exported/kamehameha_head'
         );
-        var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
         var laserTailSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
           'exported/kamehameha_tail'
         );
         var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
+        var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
         var laserTailXOffset = -(Utils.irnd(0, 1) * pixelScale);
-        var laserCenterLength = 200 + laserTailXOffset;
+        var laserCenterLength = laserLength + laserTailXOffset;
         cds.set('recoveringFromAbility', abilityCooldown + 0.01);
         var launchOffset = 30;
         var angle = Math.atan2(y2 - y, x2 - x);
@@ -794,34 +796,131 @@ class Player extends Entity {
         var laserTailY1 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth);
         var laserTailX2 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + 1);
         var laserTailY2 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth + 1);
+        // laser tip
+        var laserEndX = laserTailX1 + (vx * laserTailWidth);
+        var laserEndY = laserTailY1 + (vy * laserTailWidth);
         var yScaleRand = Utils.irnd(0, 1) * 0.5;
-        // trace(
-          // 'laser head size',
-          // Reflect.field(Main.Global.sb.pSystem.spriteSheetData, 'exported/kamehameha_head')
-        // );
+        var beamOpacity = (p, progress) -> 0.2;
+
+        // laser head
         Main.Global.sb.emitProjectileGraphics(
           x1, y1,
           laserTailX2, laserTailY2,
           0, 'exported/kamehameha_head',
           0.01,
           null,
-          (p, progress) -> pixelScale + yScaleRand
+          (p, progress) -> pixelScale + yScaleRand,
+          beamOpacity
         );
+
+        // laser center
         Main.Global.sb.emitProjectileGraphics(
           laserCenterX1, laserCenterY1,
           laserTailX2, laserTailY2,
           0, 'exported/kamehameha_center_width_1',
           0.01,
           (p, progress) -> laserCenterLength,
-          (p, progress) -> pixelScale + yScaleRand
+          (p, progress) -> pixelScale + yScaleRand,
+          beamOpacity
         );
+
+        // laser tail
         Main.Global.sb.emitProjectileGraphics(
           laserTailX1, laserTailY1,
           laserTailX2, laserTailY2,
           0, 'exported/kamehameha_tail',
           0.01,
-          null,
-          (p, progress) -> pixelScale + yScaleRand
+          (p, progress) -> pixelScale + Utils.irnd(0, 1),
+          (p, progress) -> pixelScale + yScaleRand,
+          beamOpacity
+        );
+
+        var dynamicWorldRef = Main.Global.dynamicWorldRef;
+        var worldCellSize = dynamicWorldRef.cellSize;
+        var cellSize = 10;
+        var startGridX = Math.floor(x / cellSize);
+        var startGridY = Math.floor(y / cellSize);
+        var targetGridX = Math.floor(laserTailX2 / cellSize);
+        var targetGridY = Math.floor(laserTailY2 / cellSize);
+        var startPt = new h2d.col.Point(x1, y1);
+        var endPt = new h2d.col.Point(laserEndX, laserEndY);
+        var centerLine = new h2d.col.Line(startPt, endPt);
+
+        Main.Global.sb.emitProjectileGraphics(
+          laserEndX, laserEndY,
+          laserEndX, laserEndY,
+          0, 'exported/square_white',
+          0.01,
+          (p, progress) -> 10,
+          (p, progress) -> 10
+          // beamOpacity
+        );
+
+        Utils.bresenhamLine(
+          startGridX, startGridY, targetGridX, targetGridY, (ctx, x, y, i) -> {
+            // if (i % 2 != 0) {
+            //   return true;
+            // }
+
+            var worldX = Math.round(x * cellSize);
+            var worldY = Math.round(y * cellSize);
+
+            Main.Global.sb.emitProjectileGraphics(
+              worldX,
+              worldY,
+              worldX,
+              worldY,
+              0, 'exported/square_white',
+              0.01,
+              (p, progress) -> cellSize,
+              (p, progress) -> cellSize,
+              (p, progress) -> 0.2
+            );
+
+            // Main.Global.sb.emitProjectileGraphics(
+            //   worldX,
+            //   worldY,
+            //   worldX,
+            //   worldY,
+            //   0, 'exported/square_white',
+            //   0.01,
+            //   (p, progress) -> worldCellSize,
+            //   (p, progress) -> worldCellSize,
+            //   (p, progress) -> 0.2
+            // );
+
+            var items = Grid.getItemsInRect(dynamicWorldRef, worldX, worldY, worldCellSize, worldCellSize);
+
+            for (entityId in items) {
+              // for (entityId in items) {
+              var item = Entity.ALL_BY_ID[entityId];
+
+              if (item.type == 'PLAYER') {
+                return true;
+              }
+
+              var colPt = new h2d.col.Point(item.x, item.y);
+              var isIntersecting = centerLine.distance(colPt) <= item.radius + (beamThickness / 2);
+
+              if (isIntersecting) {
+                var p = centerLine.project(colPt);
+                Main.Global.sb.emitProjectileGraphics(
+                  p.x,
+                  p.y,
+                  p.x,
+                  p.y,
+                  0, 'exported/square_white',
+                  0.01,
+                  (p, progress) -> 10,
+                  (p, progress) -> 10
+                );
+              }
+
+              return !isIntersecting;
+            }
+
+            return true;
+          }
         );
       }
     }
@@ -876,7 +975,7 @@ class EnemySpawner {
     cds.set('recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
-    var size = Utils.irnd(1, 2);
+    var size = Utils.irnd(1, 1);
     var radius = 7 + size * 10;
     var posRange = 100;
     var e = new Enemy({
@@ -940,11 +1039,74 @@ class Game extends h2d.Object {
     enemySpawner = new EnemySpawner(
       s2d.width / 2,
       s2d.height / 2,
-      // 2,
-      calcNumEnemies(level),
+      1,
+      // calcNumEnemies(level),
       s2d,
       player
     );
+  }
+
+  public function lineOfSight(entity, x, y, i) {
+    var cellSize = mapRef.cellSize;
+    var debugLineOfSight = false;
+    var mapRef = Main.Global.mapRef;
+    var isClearPath = Grid.isEmptyCell(mapRef, x, y);
+    var isInSightRange = i * cellSize <= entity.sightRange;
+
+    if (!isClearPath || !isInSightRange) {
+      entity.canSeeTarget = false;
+      return false;
+    }
+
+    if (debugLineOfSight) {
+      var screenX = x * cellSize;
+      var screenY = y * cellSize;
+      var c = isClearPath
+        ? Game.Colors.pureWhite
+        : Game.Colors.red;
+      var lineWidth = isClearPath ? 0 : 2;
+      Main.Global.debugCanvas.beginFill(c, 0.4);
+      Main.Global.debugCanvas.lineStyle(lineWidth, c, 0.8);
+      Main.Global.debugCanvas.drawRect(screenX, screenY, cellSize, cellSize);
+    }
+
+    return isClearPath;
+  }
+
+  public function lineIntersectionTest(parent) {
+    var pt1_1 = new h2d.col.Point(100, 100);
+    var pt1_2 = new h2d.col.Point(300, 300);
+    var l1 = new h2d.col.Line(pt1_1, pt1_2);
+    var rootScene = Main.Global.rootScene;
+    var g = new h2d.Graphics(rootScene);
+
+    rootScene.addEventListener((ev: hxd.Event) -> {
+      var ptEntity = new h2d.col.Point(
+        rootScene.mouseX,
+        rootScene.mouseY
+      );
+
+      // trace('[pt line distance]', l1.distance(ptEntity));
+
+      var entityRadius = 50;
+      var lineWidth = 40;
+      var entityInteresects = l1.distance(ptEntity) <= entityRadius + (lineWidth / 2);
+      var entityColor = entityInteresects ? Game.Colors.green : Game.Colors.yellow;
+      var intersectPt = l1.project(ptEntity);
+
+      g.clear();
+      g.beginFill(entityColor);
+      g.drawCircle(ptEntity.x, ptEntity.y, entityRadius);
+      g.endFill();
+      g.lineStyle(40, 0xffffff);
+      g.lineTo(pt1_1.x, pt1_1.y);
+      g.lineTo(pt1_2.x, pt1_2.y);
+
+      g.moveTo(ptEntity.x, ptEntity.y);
+      g.lineStyle(1, 0xffffff);
+      g.lineTo(ptEntity.x, ptEntity.y);
+      g.lineTo(intersectPt.x, intersectPt.y);
+    });
   }
 
   public function new(
@@ -1012,6 +1174,9 @@ class Game extends h2d.Object {
     targetSprite = new h2d.Graphics(target);
     targetSprite.beginFill(0xffda3d, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
+
+    // TODO remove when finished
+    // lineIntersectionTest(this);
   }
 
   function cleanupDisposedEntities() {
@@ -1057,32 +1222,6 @@ class Game extends h2d.Object {
     }
 
     cleanupDisposedEntities();
-    var cellSize = mapRef.cellSize;
-
-    var debugLineOfSight = false;
-    var lineOfSightCheck = (entity, x, y, i) -> {
-      var isClearPath = Grid.isEmptyCell(mapRef, x, y);
-      var isInSightRange = i * cellSize <= entity.sightRange;
-
-      if (!isClearPath || !isInSightRange) {
-        entity.canSeeTarget = false;
-        return false;
-      }
-
-      if (debugLineOfSight) {
-        var screenX = x * cellSize;
-        var screenY = y * cellSize;
-        var c = isClearPath
-          ? Game.Colors.pureWhite
-          : Game.Colors.red;
-        var lineWidth = isClearPath ? 0 : 2;
-        Main.Global.debugCanvas.beginFill(c, 0.4);
-        Main.Global.debugCanvas.lineStyle(lineWidth, c, 0.8);
-        Main.Global.debugCanvas.drawRect(screenX, screenY, cellSize, cellSize);
-      }
-
-      return isClearPath;
-    }
 
     for (a in ALL) {
       var shouldFindNeighbors = a.type == 'ENEMY'
@@ -1118,12 +1257,15 @@ class Game extends h2d.Object {
 
         enemy.canSeeTarget = true;
         Utils.bresenhamLine(
-          startGridX, startGridY, targetGridX, targetGridY, lineOfSightCheck, enemy
+          startGridX, startGridY, targetGridX, targetGridY, lineOfSight, enemy
         );
       }
 
       a.update(dt);
-      Grid.setItemRect(dynamicWorldRef, a.x, a.y, a.radius, a.radius, a.id);
+
+      if (a.type != 'OBSTACLE') {
+        Grid.setItemRect(dynamicWorldRef, a.x, a.y, a.radius, a.radius, a.id);
+      }
     }
 
     target.x = s2d.mouseX;

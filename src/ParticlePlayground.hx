@@ -133,7 +133,8 @@ class ParticlePlayground {
     spriteKey: String,
     lifeTime = 9999.0,
     rScaleX = null,
-    rScaleY = null
+    rScaleY = null,
+    rAlpha = null
   ) {
     var projectile: Particle = null;
     {
@@ -153,6 +154,7 @@ class ParticlePlayground {
         speed: speed,
         createdAt: time,
         batchElement: g,
+        rAlpha: rAlpha,
         rScaleX: rScaleX,
         rScaleY: rScaleY
       };

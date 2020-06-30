@@ -2,8 +2,6 @@ import hxd.Key;
 import TestUtils.assert;
 import Fonts;
 import SaveState;
-import Config;
-import Asset;
 using StringTools;
 
 typedef GridKey = String;
