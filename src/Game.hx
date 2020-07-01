@@ -360,11 +360,11 @@ class Enemy extends Entity {
       for (frameKey in runFrames) {
         var frameData = Reflect.field(spriteSheetData, frameKey);
         var t = spriteSheet.sub(
-            frameData.frame.x,
-            frameData.frame.y,
-            frameData.frame.w,
-            frameData.frame.h
-            ).center();
+          frameData.frame.x,
+          frameData.frame.y,
+          frameData.frame.w,
+          frameData.frame.h
+        ).center();
         t.dy = -frameData.frame.h * frameData.pivot.y;
         t.dx = -frameData.frame.w * frameData.pivot.x;
         runAnimFrames.push(t);
@@ -1107,42 +1107,6 @@ class Game extends h2d.Object {
     return isClearPath;
   }
 
-  public function lineIntersectionTest(parent) {
-    var pt1_1 = new h2d.col.Point(100, 100);
-    var pt1_2 = new h2d.col.Point(300, 300);
-    var l1 = new h2d.col.Line(pt1_1, pt1_2);
-    var rootScene = Main.Global.rootScene;
-    var g = new h2d.Graphics(rootScene);
-
-    rootScene.addEventListener((ev: hxd.Event) -> {
-      var ptEntity = new h2d.col.Point(
-        rootScene.mouseX,
-        rootScene.mouseY
-      );
-
-      // trace('[pt line distance]', l1.distance(ptEntity));
-
-      var entityRadius = 50;
-      var lineWidth = 40;
-      var entityInteresects = l1.distance(ptEntity) <= entityRadius + (lineWidth / 2);
-      var entityColor = entityInteresects ? Game.Colors.green : Game.Colors.yellow;
-      var intersectPt = l1.project(ptEntity);
-
-      g.clear();
-      g.beginFill(entityColor);
-      g.drawCircle(ptEntity.x, ptEntity.y, entityRadius);
-      g.endFill();
-      g.lineStyle(40, 0xffffff);
-      g.lineTo(pt1_1.x, pt1_1.y);
-      g.lineTo(pt1_2.x, pt1_2.y);
-
-      g.moveTo(ptEntity.x, ptEntity.y);
-      g.lineStyle(1, 0xffffff);
-      g.lineTo(ptEntity.x, ptEntity.y);
-      g.lineTo(intersectPt.x, intersectPt.y);
-    });
-  }
-
   public function new(
     s2d: h2d.Scene,
     oldGame: Game
@@ -1208,9 +1172,6 @@ class Game extends h2d.Object {
     targetSprite = new h2d.Graphics(target);
     targetSprite.beginFill(0xffda3d, 0.3);
     targetSprite.drawCircle(0, 0, TARGET_RADIUS);
-
-    // TODO remove when finished
-    // lineIntersectionTest(this);
   }
 
   function cleanupDisposedEntities() {

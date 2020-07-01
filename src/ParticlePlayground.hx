@@ -82,11 +82,32 @@ class ParticleSystem {
         }
       }
     }
+
+    s.batch.clear();
+    // sort by y-position
+    particles.sort((a, b) -> {
+      var ay = a.y;
+      var by = b.y;
+
+      if (ay > by) {
+        return 1;
+      }
+
+      if (ay < by) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    for (p in particles) {
+      s.batch.add(p.batchElement, true);
+    }
   }
 
-		static public function dispose(s: PartSystem) {
-				s.batch.remove();
-		}
+  static public function dispose(s: PartSystem) {
+      s.batch.remove();
+  }
 }
 
 class ParticlePlayground {
