@@ -94,6 +94,7 @@ class Entity extends h2d.Object {
   public var health = 1;
   public var damageTaken = 0;
   public var status = 'TARGETABLE';
+  public var cds: Cooldown;
   var time = 0.0;
 
   public function new(props: Point, customId = null) {
@@ -259,7 +260,6 @@ class Enemy extends Entity {
   static var spriteSheetData: Dynamic;
 
   var font: h2d.Font = Fonts.primary.get().clone();
-  var cds: Cooldown;
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
@@ -277,6 +277,8 @@ class Enemy extends Entity {
 
   public function new(props, size, followTarget: Entity) {
     super(props);
+
+    cds = new Cooldown();
 
     if (spriteSheet == null) {
       spriteSheet = hxd.Res.sprite_sheet_png.toTile();
@@ -530,7 +532,6 @@ class Enemy extends Entity {
 
 class Player extends Entity {
   public var playerInfo: h2d.Text;
-  var cds = new Cooldown();
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
@@ -549,6 +550,7 @@ class Player extends Entity {
       weight: 1.0,
       color: Colors.green,
     });
+    cds = new Cooldown();
     type = 'PLAYER';
     health = 1000;
     speed = 350.0;
@@ -607,13 +609,13 @@ class Player extends Entity {
       'player/attack3',
       'player/attack4',
       'player/attack5',
-      'player/attack6',
-      'player/attack7',
-      'player/attack8',
-      'player/attack9',
-      'player/attack10',
-      'player/attack11',
-      'player/attack12'
+      'player/attack5',
+      'player/attack5',
+      'player/attack5',
+      'player/attack5',
+      'player/attack5',
+      'player/attack5',
+      'player/attack5',
     ];
     var attackAnimFrames = [];
     for (frameKey in attackSpriteFrames) {
@@ -769,7 +771,6 @@ class Player extends Entity {
 
         var abilityCooldown = 0;
         var pixelScale = 4;
-        var laserLength = 400;
         var beamThickness = 60;
         var laserHeadSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
@@ -781,8 +782,7 @@ class Player extends Entity {
         );
         var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
         var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
-        var laserTailXOffset = -(Utils.irnd(0, 1) * pixelScale);
-        var laserCenterLength = laserLength + laserTailXOffset;
+        var maxLength = 500;
         cds.set('recoveringFromAbility', abilityCooldown + 0.01);
         var launchOffset = 30;
         var angle = Math.atan2(y2 - y, x2 - x);
@@ -790,138 +790,171 @@ class Player extends Entity {
         var vy = Math.sin(angle);
         var x1 = x + vx * launchOffset;
         var y1 = y + vy * launchOffset;
-        var laserCenterX1 = x + vx * (launchOffset + laserHeadWidth);
-        var laserCenterY1 = y + vy * (launchOffset + laserHeadWidth);
-        var laserTailX1 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth);
-        var laserTailY1 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth);
-        var laserTailX2 = x + vx * (launchOffset + laserCenterLength + laserHeadWidth + 1);
-        var laserTailY2 = y + vy * (launchOffset + laserCenterLength + laserHeadWidth + 1);
-        // laser tip
-        var laserEndX = laserTailX1 + (vx * laserTailWidth);
-        var laserEndY = laserTailY1 + (vy * laserTailWidth);
+        var laserTailX1 = x1 + vx * maxLength;
+        var laserTailY1 = y1 + vy * maxLength;
         var yScaleRand = Utils.irnd(0, 1) * 0.5;
-        var beamOpacity = (p, progress) -> 0.2;
+        var beamOpacity = (p, progress) -> 1;
 
-        // laser head
-        Main.Global.sb.emitProjectileGraphics(
-          x1, y1,
-          laserTailX2, laserTailY2,
-          0, 'exported/kamehameha_head',
-          0.01,
-          null,
-          (p, progress) -> pixelScale + yScaleRand,
-          beamOpacity
-        );
+        var renderBeam = (startPt, endPt) -> {
+          var spriteLifetime = 1/60;
+          // laser head
+          Main.Global.sb.emitProjectileGraphics(
+            startPt.x, startPt.y,
+            endPt.x, endPt.y,
+            0, 'exported/kamehameha_head',
+            spriteLifetime ,
+            null,
+            (p, progress) -> pixelScale + yScaleRand,
+            beamOpacity
+          );
 
-        // laser center
-        Main.Global.sb.emitProjectileGraphics(
-          laserCenterX1, laserCenterY1,
-          laserTailX2, laserTailY2,
-          0, 'exported/kamehameha_center_width_1',
-          0.01,
-          (p, progress) -> laserCenterLength,
-          (p, progress) -> pixelScale + yScaleRand,
-          beamOpacity
-        );
+          var lcx = startPt.x + (vx * laserHeadWidth);
+          var lcy = startPt.y + (vy * laserHeadWidth);
+          var beamLength = Utils.distance(lcx, lcy, endPt.x, endPt.y) - laserTailWidth;
+          // laser center
+          Main.Global.sb.emitProjectileGraphics(
+            lcx, lcy,
+            endPt.x, endPt.y,
+            0, 'exported/kamehameha_center_width_1',
+            spriteLifetime,
+            (p, progress) -> beamLength,
+            (p, progress) -> pixelScale + yScaleRand,
+            beamOpacity
+          );
 
-        // laser tail
-        Main.Global.sb.emitProjectileGraphics(
-          laserTailX1, laserTailY1,
-          laserTailX2, laserTailY2,
-          0, 'exported/kamehameha_tail',
-          0.01,
-          (p, progress) -> pixelScale + Utils.irnd(0, 1),
-          (p, progress) -> pixelScale + yScaleRand,
-          beamOpacity
-        );
+          // laser tail
+          Main.Global.sb.emitProjectileGraphics(
+            endPt.x - (vx * laserTailWidth), endPt.y - (vy * laserTailWidth),
+            endPt.x, endPt.y,
+            0, 'exported/kamehameha_tail',
+            spriteLifetime,
+            (p, progress) -> pixelScale + Utils.irnd(0, 1),
+            (p, progress) -> pixelScale + yScaleRand,
+            beamOpacity
+          );
+        }
 
         var dynamicWorldRef = Main.Global.dynamicWorldRef;
         var worldCellSize = dynamicWorldRef.cellSize;
         var cellSize = 10;
-        var startGridX = Math.floor(x / cellSize);
-        var startGridY = Math.floor(y / cellSize);
-        var targetGridX = Math.floor(laserTailX2 / cellSize);
-        var targetGridY = Math.floor(laserTailY2 / cellSize);
+        var startGridX = Math.floor(x1 / cellSize);
+        var startGridY = Math.floor(y1 / cellSize);
+        var targetGridX = Math.floor(laserTailX1 / cellSize);
+        var targetGridY = Math.floor(laserTailY1 / cellSize);
         var startPt = new h2d.col.Point(x1, y1);
-        var endPt = new h2d.col.Point(laserEndX, laserEndY);
+        var endPt = new h2d.col.Point(laserTailX1, laserTailY1);
         var centerLine = new h2d.col.Line(startPt, endPt);
+        var debug = {
+          startPos: false,
+          queryRects: false,
+          endPos: false,
+        };
 
-        Main.Global.sb.emitProjectileGraphics(
-          laserEndX, laserEndY,
-          laserEndX, laserEndY,
-          0, 'exported/square_white',
-          0.01,
-          (p, progress) -> 10,
-          (p, progress) -> 10
-          // beamOpacity
-        );
+        if (debug.startPos) {
+          Main.Global.sb.emitProjectileGraphics(
+            laserTailX1, laserTailY1,
+            laserTailX1, laserTailY1,
+            0, 'exported/square_white',
+            0.01,
+            (p, progress) -> 10,
+            (p, progress) -> 10
+          );
+        }
+
+        var adjustedEndPt = endPt;
 
         Utils.bresenhamLine(
           startGridX, startGridY, targetGridX, targetGridY, (ctx, x, y, i) -> {
-            // if (i % 2 != 0) {
-            //   return true;
-            // }
-
             var worldX = Math.round(x * cellSize);
             var worldY = Math.round(y * cellSize);
 
-            Main.Global.sb.emitProjectileGraphics(
-              worldX,
-              worldY,
-              worldX,
-              worldY,
-              0, 'exported/square_white',
-              0.01,
-              (p, progress) -> cellSize,
-              (p, progress) -> cellSize,
-              (p, progress) -> 0.2
-            );
-
-            // Main.Global.sb.emitProjectileGraphics(
-            //   worldX,
-            //   worldY,
-            //   worldX,
-            //   worldY,
-            //   0, 'exported/square_white',
-            //   0.01,
-            //   (p, progress) -> worldCellSize,
-            //   (p, progress) -> worldCellSize,
-            //   (p, progress) -> 0.2
-            // );
-
-            var items = Grid.getItemsInRect(dynamicWorldRef, worldX, worldY, worldCellSize, worldCellSize);
-
-            for (entityId in items) {
-              // for (entityId in items) {
-              var item = Entity.ALL_BY_ID[entityId];
-
-              if (item.type == 'PLAYER') {
-                return true;
-              }
-
-              var colPt = new h2d.col.Point(item.x, item.y);
-              var isIntersecting = centerLine.distance(colPt) <= item.radius + (beamThickness / 2);
-
-              if (isIntersecting) {
-                var p = centerLine.project(colPt);
-                Main.Global.sb.emitProjectileGraphics(
-                  p.x,
-                  p.y,
-                  p.x,
-                  p.y,
-                  0, 'exported/square_white',
-                  0.01,
-                  (p, progress) -> 10,
-                  (p, progress) -> 10
-                );
-              }
-
-              return !isIntersecting;
+            if (debug.queryRects) {
+              Main.Global.sb.emitProjectileGraphics(
+                worldX,
+                worldY,
+                worldX,
+                worldY,
+                0, 'exported/square_white',
+                0.01,
+                (p, progress) -> cellSize,
+                (p, progress) -> cellSize,
+                (p, progress) -> 0.2
+              );
             }
 
-            return true;
+
+            var items = Grid.getItemsInRect(dynamicWorldRef, worldX, worldY, worldCellSize, worldCellSize);
+            var staticWorld = Main.Global.mapRef;
+            var obstacles = Grid.getItemsInRect(
+              staticWorld, worldX, worldY, beamThickness + 16, beamThickness + 16
+            );
+
+            var checkCollisions = (items: Map<String, String>) -> {
+              // trace(items);
+              for (entityId in items) {
+                var item = Entity.ALL_BY_ID[entityId];
+
+                if (item.type == 'PLAYER') {
+                  return false;
+                }
+
+                var colPt = new h2d.col.Point(item.x, item.y);
+                var distFromStart = Utils.distance(x1, y1, colPt.x, colPt.y);
+
+                // TODO add support for more accurate intersection point for line -> rectangle
+                // We can figure out the edge that the beam touches and then find the intersection
+                // point at the rectangle edge and the beam's center line.
+                var isIntersecting = distFromStart <= maxLength
+                  && centerLine.distance(colPt) <= item.radius + (beamThickness / 2);
+
+                if (isIntersecting) {
+                  // intersection point
+                  var p = centerLine.project(colPt);
+
+                  var laserHitCdKey = 'kamehamehaHit';
+                  if (item.type == 'ENEMY' && !item.cds.has(laserHitCdKey)) {
+                    item.cds.set(laserHitCdKey, 0.3);
+                    item.damageTaken += 1;
+                  }
+
+                  adjustedEndPt = p;
+
+                  if (debug.endPos) {
+                    Main.Global.sb.emitProjectileGraphics(
+                      x1,
+                      y1,
+                      x1,
+                      y1,
+                      0, 'exported/square_white',
+                      0.01,
+                      (p, progress) -> 10,
+                      (p, progress) -> 10
+                    );
+
+                    Main.Global.sb.emitProjectileGraphics(
+                      p.x,
+                      p.y,
+                      p.x,
+                      p.y,
+                      0, 'exported/square_white',
+                      0.01,
+                      (p, progress) -> 10,
+                      (p, progress) -> 10
+                    );
+                  };
+                }
+
+                return isIntersecting;
+              }
+
+              return false;
+            }
+
+            return !checkCollisions(items) && !checkCollisions(obstacles);
           }
         );
+
+        renderBeam(startPt, adjustedEndPt);
       }
     }
   }
@@ -975,7 +1008,7 @@ class EnemySpawner {
     cds.set('recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
-    var size = Utils.irnd(1, 1);
+    var size = Utils.irnd(1, 2);
     var radius = 7 + size * 10;
     var posRange = 100;
     var e = new Enemy({
@@ -1039,8 +1072,7 @@ class Game extends h2d.Object {
     enemySpawner = new EnemySpawner(
       s2d.width / 2,
       s2d.height / 2,
-      1,
-      // calcNumEnemies(level),
+      calcNumEnemies(level),
       s2d,
       player
     );
@@ -1136,7 +1168,7 @@ class Game extends h2d.Object {
             var wallGraphic = new h2d.Graphics(wallEnt);
             wallGraphic.beginFill(color, 0.8);
             wallGraphic.drawRect(-radius, -radius, radius * 2, radius * 2);
-            Main.Global.rootScene.addChild(wallEnt);
+            Main.Global.rootScene.addChildAt(wallEnt, -1);
           }
         }
         Grid.eachCell(mapData, createEnvironmentItems);
@@ -1263,7 +1295,8 @@ class Game extends h2d.Object {
 
       a.update(dt);
 
-      if (a.type != 'OBSTACLE') {
+      // TODO need a better way to determine what is a dynamic entity
+      if (a.type != 'OBSTACLE' && a.type != 'PROJECTILE') {
         Grid.setItemRect(dynamicWorldRef, a.x, a.y, a.radius, a.radius, a.id);
       }
     }
