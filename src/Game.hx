@@ -332,7 +332,8 @@ class Enemy extends Entity {
 
     if (size == 2) {
       var idleFrames = [
-        'enemy-2/idle',
+        'enemy-2/idle1',
+        'enemy-2/idle2',
       ];
       var idleAnimFrames = [];
 
@@ -343,11 +344,11 @@ class Enemy extends Entity {
             frameData.frame.y,
             frameData.frame.w,
             frameData.frame.h
-            ).center();
+        ).center();
         t.dy = -frameData.frame.h * frameData.pivot.y;
         idleAnimFrames.push(t);
       }
-      idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
+      idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
       idleAnim.scaleY = 4;
 
       var runFrames = [
@@ -365,6 +366,7 @@ class Enemy extends Entity {
             frameData.frame.h
             ).center();
         t.dy = -frameData.frame.h * frameData.pivot.y;
+        t.dx = -frameData.frame.w * frameData.pivot.x;
         runAnimFrames.push(t);
       }
       runAnim = new h2d.Anim(runAnimFrames, 60);

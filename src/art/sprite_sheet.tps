@@ -212,7 +212,6 @@
                 <false/>
             </struct>
             <key type="filename">circle_white.png</key>
-            <key type="filename">square_white.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -357,19 +356,26 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">player/attack.png</key>
+            <key type="filename">exported/square_white.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>0,0,1,1</rect>
+                <key>scale9Paddings</key>
+                <rect>0,0,1,1</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">player/attack1.png</key>
-            <key type="filename">player/attack10.png</key>
-            <key type="filename">player/attack11.png</key>
-            <key type="filename">player/attack12.png</key>
             <key type="filename">player/attack2.png</key>
             <key type="filename">player/attack3.png</key>
             <key type="filename">player/attack4.png</key>
             <key type="filename">player/attack5.png</key>
-            <key type="filename">player/attack6.png</key>
-            <key type="filename">player/attack7.png</key>
-            <key type="filename">player/attack8.png</key>
-            <key type="filename">player/attack9.png</key>
             <key type="filename">player/idle.png</key>
             <key type="filename">player/run1.png</key>
             <key type="filename">player/run2.png</key>
