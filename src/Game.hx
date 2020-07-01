@@ -952,7 +952,7 @@ class Player extends Entity {
               return false;
             }
 
-            return !checkCollisions(items) && !checkCollisions(obstacles);
+            return !checkCollisions(obstacles) && !checkCollisions(items);
           }
         );
 
