@@ -1183,6 +1183,19 @@ class Game extends h2d.Object {
       return;
     }
 
+    // sort dynamic objects in main world by their y position
+    Main.Global.rootScene.children.sort((a, b) -> {
+      if (a.y > b.y) {
+        return 1;
+      }
+
+      if (a.y < b.y) {
+        return -1;
+      }
+
+      return 0;
+    });
+
     Main.Global.mapRef = mapRef;
     Main.Global.dynamicWorldRef = dynamicWorldRef;
 

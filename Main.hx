@@ -8,9 +8,11 @@ import ParticlePlayground;
 import Camera;
 
 class Global {
-  public static var rootScene: h2d.Scene;
-  public static var uiRoot: h2d.Scene;
   public static var mainBackground: h2d.Scene;
+  public static var rootScene: h2d.Scene;
+  public static var particleScene: h2d.Scene;
+  public static var uiRoot: h2d.Scene;
+
   public static var debugCanvas: h2d.Graphics;
   public static var mainCamera: CameraRef;
   public static var mouse = {
@@ -230,6 +232,7 @@ class Main extends hxd.App {
   public override function render(e: h3d.Engine) {
     Global.mainBackground.render(e);
     super.render(e);
+    Global.particleScene.render(e);
     Global.uiRoot.render(e);
   }
 
@@ -289,6 +292,7 @@ class Main extends hxd.App {
     Global.uiRoot = new h2d.Scene();
     sevents.addScene(Global.uiRoot);
 
+    Global.particleScene = new h2d.Scene();
     Global.mainBackground = new h2d.Scene();
 
     background = addBackground(Global.mainBackground, 0x6c6c6c);
@@ -329,6 +333,8 @@ class Main extends hxd.App {
       Math.fround(Main.Global.mainCamera.w / 2);
     Main.Global.rootScene.y = -Main.Global.mainCamera.y +
       Math.fround(Main.Global.mainCamera.h / 2);
+    Main.Global.particleScene.x = Main.Global.rootScene.x;
+    Main.Global.particleScene.y = Main.Global.rootScene.y;
     handleGlobalHotkeys();
 
     for (it in reactiveItems) {

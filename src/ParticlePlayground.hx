@@ -31,7 +31,7 @@ class ParticleSystem {
       particles: [],
       spriteSheetData: Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames,
       spriteSheet: spriteSheet,
-      batch: new h2d.SpriteBatch(spriteSheet, Main.Global.rootScene),
+      batch: new h2d.SpriteBatch(spriteSheet, Main.Global.particleScene),
       time: 0.0
     };
     system.batch.hasRotationScale = true;
