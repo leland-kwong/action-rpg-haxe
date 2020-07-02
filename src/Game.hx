@@ -128,23 +128,6 @@ class Entity extends h2d.Object {
       }
     }
   }
-
-  public function findNearest(x, y, range, filter: String) {
-    var item = null;
-    var prevDist = 999999.0;
-
-    for (e in ALL) {
-      if (e != this && e.type == filter) {
-        var d = Utils.distance(x, y, e.x, e.y);
-        if (d <= range && d < prevDist) {
-          item = e;
-          prevDist = d;
-        }
-      }
-    }
-
-    return item;
-  }
 }
 
 class Projectile extends Entity {
@@ -270,6 +253,7 @@ class Enemy extends Entity {
   var debugCenter = false;
   var idleAnim: h2d.Anim;
   var runAnim: h2d.Anim;
+  var activeAnim: h2d.Anim;
   var facingDir = 1;
   public var sightRange = 400;
   public var neighbors: Array<EntityId>;
@@ -384,6 +368,12 @@ class Enemy extends Entity {
     dx = 0.0;
     dy = 0.0;
 
+    super.update(dt);
+    cds.update(dt);
+
+    var origX = x;
+    var origY = y;
+
     var spawnProgress = Math.min(1, time / spawnDuration);
     var isFullySpawned = spawnProgress >= 1;
     if (!isFullySpawned) {
@@ -393,10 +383,6 @@ class Enemy extends Entity {
       status = 'TARGETABLE';
       speed = speedBySize[size];
     }
-
-    super.update(dt);
-
-    cds.update(dt);
 
     if (!cds.has('attack')) {
       // distance to keep from destination
@@ -456,24 +442,25 @@ class Enemy extends Entity {
         }
       }
 
-      var origX = x;
-      var origY = y;
       var maxDelta = 1;
       x += Utils.clamp(dx, -maxDelta, maxDelta) *
         speed * dt;
       y += Utils.clamp(dy, -maxDelta, maxDelta) *
         speed * dt;
+    }
 
-      var activeAnim: h2d.Anim = null;
-
+    // update animation
+    {
       var hasMovedX = Math.abs(origX - x) >= 0.25;
       var hasMovedY = Math.abs(origY - y) >= 0.25;
+
       if (runAnim != null && (hasMovedX || hasMovedY)) {
         idleAnim.remove();
         activeAnim = runAnim;
         this.addChild(runAnim);
       }
-      else if (idleAnim != null) {
+      // set idle animation
+      else {
         runAnim.remove();
         activeAnim = idleAnim;
         this.addChild(idleAnim);
@@ -509,22 +496,19 @@ class Enemy extends Entity {
       }
     }
 
-    // handle damage
-    for (child in iterator()) {
-      var c:Dynamic = child;
-      var cl = Type.getClass(child);
+    // damage render effect
+    {
+      var c = activeAnim;
 
-      if (cl == h2d.Graphics || cl == h2d.Anim) {
-        if (!cds.has('hitFlash')) {
-          c.color.set(1, 1, 1, 1);
-        }
+      if (!cds.has('hitFlash')) {
+        c.color.set(1, 1, 1, 1);
+      }
 
-        if (damageTaken > 0) {
-          cds.set('hitFlash', 0.04);
-          c.color.set(255, 255, 255, 1);
-          health -= damageTaken;
-          damageTaken = 0;
-        }
+      if (damageTaken > 0) {
+        cds.set('hitFlash', 0.04);
+        c.color.set(255, 255, 255, 1);
+        health -= damageTaken;
+        damageTaken = 0;
       }
     }
 
