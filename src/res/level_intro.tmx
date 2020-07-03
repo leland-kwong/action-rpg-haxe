@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="100" height="100" tilewidth="16" tileheight="16" infinite="1" nextlayerid="4" nextobjectid="45">
+ <editorsettings>
+  <export target="level_intro.json" format="json"/>
+ </editorsettings>
+ <tileset firstgid="1" source="../art/background.tsx"/>
+ <layer id="1" name="background" width="100" height="100">
+  <data encoding="base64" compression="zstd">
+   <chunk x="0" y="64" width="16" height="16">
+   KLUv/WAAA20AACAAAAEAAgB7QYV3CrA=
+  </chunk>
+  </data>
+ </layer>
+ <objectgroup color="#008c00" id="2" name="traversable" tintcolor="#00a900">
+  <object id="1" x="367" y="67" width="128" height="192"/>
+  <object id="3" x="495" y="67" width="96" height="176"/>
+  <object id="4" x="719" y="67" width="144" height="144"/>
+  <object id="5" x="591" y="83" width="128" height="160"/>
+  <object id="6" x="559" y="243" width="288" height="48"/>
+  <object id="7" x="719" y="211" width="128" height="32"/>
+  <object id="10" x="543" y="291" width="96" height="192"/>
+  <object id="12" x="783" y="339" width="80" height="128"/>
+  <object id="13" x="639" y="291" width="208" height="48"/>
+  <object id="14" x="639" y="339" width="144" height="144"/>
+  <object id="16" x="559" y="483" width="288" height="160"/>
+  <object id="17" x="783" y="467" width="64" height="16"/>
+  <object id="18" x="543" y="643" width="304" height="80"/>
+  <object id="19" x="543" y="851" width="32" height="112"/>
+  <object id="20" x="559" y="723" width="288" height="128"/>
+  <object id="21" x="575" y="851" width="32" height="96"/>
+  <object id="22" x="607" y="851" width="64" height="112"/>
+  <object id="23" x="671" y="851" width="64" height="96"/>
+  <object id="24" x="735" y="851" width="128" height="112"/>
+  <object id="25" x="863" y="739" width="64" height="208"/>
+  <object id="26" x="847" y="739" width="16" height="112"/>
+  <object id="27" x="927" y="739" width="32" height="224"/>
+  <object id="28" x="959" y="739" width="16" height="208"/>
+  <object id="29" x="975" y="723" width="16" height="224"/>
+  <object id="30" x="991" y="723" width="64" height="240"/>
+  <object id="31" x="1055" y="739" width="64" height="208"/>
+  <object id="32" x="1103" y="595" width="272" height="80"/>
+  <object id="34" x="1119" y="675" width="128" height="288"/>
+  <object id="35" x="1247" y="675" width="64" height="272"/>
+  <object id="36" x="1311" y="675" width="48" height="288"/>
+  <object id="37" x="1359" y="851" width="16" height="112"/>
+  <object id="42" x="223" y="147" width="144" height="32"/>
+ </objectgroup>
+ <objectgroup color="#c810bf" id="3" name="objects">
+  <object id="44" name="player_start" x="253" y="163">
+   <point/>
+  </object>
+ </objectgroup>
+</map>

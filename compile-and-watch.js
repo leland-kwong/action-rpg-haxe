@@ -52,7 +52,10 @@ const rebuild = (eventType, filename) => {
   }, 500)
 }
 
-chokidar.watch('.').on('all', (event, path) => {
+chokidar.watch('.', {
+  // this prevents locking up the file system for other windows applications
+  usePolling: true,
+}).on('all', (event, path) => {
   rebuild(event, path);
 });
 

@@ -21,6 +21,7 @@ class Global {
   public static var mapRef: GridRef;
   public static var dynamicWorldRef: GridRef;
   public static var sb: ParticlePlayground;
+  public static var pixelScale = 4;
 }
 
 enum UiState {

@@ -357,6 +357,21 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">exported/level_intro.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>375,268,750,535</rect>
+                <key>scale9Paddings</key>
+                <rect>375,268,750,535</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">exported/square_white.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>

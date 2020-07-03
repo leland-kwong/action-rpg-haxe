@@ -2,6 +2,7 @@
   TODO: Add enemy destroyed animation (fade out or explode into pieces?)
 **/
 
+import h2d.Bitmap;
 import Grid.GridRef;
 import Fonts;
 import Easing;
@@ -538,7 +539,7 @@ class Player extends Entity {
     cds = new Cooldown();
     type = 'PLAYER';
     health = 1000;
-    speed = 350.0;
+    speed = 800.0;
     forceMultiplier = 3.0;
 
     rootScene = s2d;
@@ -1011,6 +1012,8 @@ class EnemySpawner {
   }
 }
 
+typedef TiledMapData = { layers:Array<{ data:Array<Int>}>, tilewidth:Int, tileheight:Int, width:Int, height:Int };
+
 class Game extends h2d.Object {
   public var level = 1;
   var player: Player;
@@ -1057,13 +1060,15 @@ class Game extends h2d.Object {
 
   public function newLevel(s2d: h2d.Scene) {
     level += 1;
-    enemySpawner = new EnemySpawner(
-      s2d.width / 2,
-      s2d.height / 2,
-      calcNumEnemies(level),
-      s2d,
-      player
-    );
+
+    // TODO re-enable when spawn positions are ready
+    // enemySpawner = new EnemySpawner(
+    //   s2d.width / 2,
+    //   s2d.height / 2,
+    //   calcNumEnemies(level),
+    //   s2d,
+    //   player
+    // );
   }
 
   public function lineOfSight(entity, x, y, i) {
@@ -1098,6 +1103,34 @@ class Game extends h2d.Object {
     oldGame: Game
   ) {
     super();
+
+    // load map background
+    {
+      var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+      var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
+      var bgData = Reflect.field(spriteSheetData, 'exported/level_intro');
+      var tile = spriteSheet.sub(
+        bgData.frame.x,
+        bgData.frame.y,
+        bgData.frame.w,
+        bgData.frame.h
+      );
+      var bmp = new h2d.Bitmap(tile, s2d);
+      var resolutionScale = 4;
+      bmp.setScale(resolutionScale);
+    }
+
+    // parse Tiled json file
+    var mapData:TiledMapData = haxe.Json.parse(hxd.Res.level_intro_json.entry.getText());
+    var layersByName: Map<String, Dynamic> = new Map();
+    var mapLayers: Array<Dynamic> = mapData.layers;
+
+    for (l in mapLayers) {
+      layersByName.set(l.name, l);
+    }
+
+    var mapObjects: Array<Dynamic> = layersByName.get('objects').objects;
+    var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
 
     Main.Global.rootScene = s2d;
 
@@ -1136,8 +1169,8 @@ class Game extends h2d.Object {
       oldGame.cleanupLevel();
     }
     player = new Player(
-      300,
-      s2d.height / 2,
+      playerStartPos.x * Main.Global.pixelScale,
+      playerStartPos.y * Main.Global.pixelScale - 25,
       s2d
     );
     s2d.addChildAt(player, 0);
