@@ -300,12 +300,12 @@ class Enemy extends Entity {
       for (frameKey in idleFrames) {
         var frameData = Reflect.field(spriteSheetData, frameKey);
         var t = spriteSheet.sub(
-            frameData.frame.x,
-            frameData.frame.y,
-            frameData.frame.w,
-            frameData.frame.h
-            ).center();
-        t.dy = -frameData.frame.h * frameData.pivot.y;
+          frameData.frame.x,
+          frameData.frame.y,
+          frameData.frame.w,
+          frameData.frame.h
+        );
+        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
         idleAnimFrames.push(t);
       }
       idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
@@ -328,8 +328,8 @@ class Enemy extends Entity {
             frameData.frame.y,
             frameData.frame.w,
             frameData.frame.h
-        ).center();
-        t.dy = -frameData.frame.h * frameData.pivot.y;
+        );
+        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
         idleAnimFrames.push(t);
       }
       idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
@@ -348,9 +348,8 @@ class Enemy extends Entity {
           frameData.frame.y,
           frameData.frame.w,
           frameData.frame.h
-        ).center();
-        t.dy = -frameData.frame.h * frameData.pivot.y;
-        t.dx = -frameData.frame.w * frameData.pivot.x;
+        );
+        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
         runAnimFrames.push(t);
       }
       runAnim = new h2d.Anim(runAnimFrames, 60);
@@ -565,8 +564,8 @@ class Player extends Entity {
         frameData.frame.y,
         frameData.frame.w,
         frameData.frame.h
-      ).center();
-      t.dy = -frameData.frame.h * frameData.pivot.y;
+      );
+      t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
       runAnimFrames.push(t);
     }
     // creates an animation for these tiles
@@ -583,8 +582,8 @@ class Player extends Entity {
         frameData.frame.y,
         frameData.frame.w,
         frameData.frame.h
-      ).center();
-      t.dy = -frameData.frame.h * frameData.pivot.y;
+      );
+      t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
       idleAnimFrames.push(t);
     }
     idleAnim = new h2d.Anim(idleAnimFrames);
@@ -611,9 +610,8 @@ class Player extends Entity {
         frameData.frame.y,
         frameData.frame.w,
         frameData.frame.h
-      ).center();
-      t.dy = -frameData.frame.h * frameData.pivot.y;
-      t.dx = -frameData.frame.w * frameData.pivot.x;
+      );
+      t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
       attackAnimFrames.push(t);
     }
     attackAnim = new h2d.Anim(attackAnimFrames, 60);
@@ -731,7 +729,7 @@ class Player extends Entity {
           return;
         }
         var abilityCooldown = 1/10;
-        cds.set('recoveringFromAbility', abilityCooldown + 0.01);
+        cds.set('recoveringFromAbility', abilityCooldown);
         attackAnim.currentFrame = 0;
 
         var angle = Math.atan2(y2 - y, x2 - x);
@@ -755,7 +753,7 @@ class Player extends Entity {
           return;
         }
 
-        var abilityCooldown = 0;
+        var abilityCooldown = 0.02;
         var pixelScale = 4;
         var beamThickness = 60;
         var laserHeadSpriteData = Reflect.field(
@@ -769,7 +767,7 @@ class Player extends Entity {
         var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
         var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
         var maxLength = 500;
-        cds.set('recoveringFromAbility', abilityCooldown + 0.01);
+        cds.set('recoveringFromAbility', abilityCooldown);
         var launchOffset = 30;
         var angle = Math.atan2(y2 - y, x2 - x);
         var vx = Math.cos(angle);
@@ -796,17 +794,21 @@ class Player extends Entity {
 
           var lcx = startPt.x + (vx * laserHeadWidth);
           var lcy = startPt.y + (vy * laserHeadWidth);
-          var beamLength = Utils.distance(lcx, lcy, endPt.x, endPt.y) - laserTailWidth;
-          // laser center
-          Main.Global.sb.emitProjectileGraphics(
-            lcx, lcy,
-            endPt.x, endPt.y,
-            0, 'exported/kamehameha_center_width_1',
-            spriteLifetime,
-            (p, progress) -> beamLength,
-            (p, progress) -> pixelScale + yScaleRand,
-            beamOpacity
-          );
+          {
+            var beamLength = (p, progress) -> Utils.distance(lcx, lcy, endPt.x, endPt.y) - laserTailWidth;
+            var beamScaleY = (p, progress) -> pixelScale + yScaleRand;
+
+            // laser center
+            Main.Global.sb.emitProjectileGraphics(
+              lcx, lcy,
+              endPt.x, endPt.y,
+              0, 'exported/kamehameha_center_width_1',
+              spriteLifetime,
+              beamLength,
+              beamScaleY,
+              beamOpacity
+            );
+          }
 
           // laser tail
           Main.Global.sb.emitProjectileGraphics(
@@ -1005,7 +1007,7 @@ class EnemySpawner {
       color: colors[size],
     }, size, target);
     // TODO add support for draw-order of elements based on position
-    parent.addChildAt(e, -1);
+    parent.addChildAt(e, 0);
   }
 }
 
@@ -1118,14 +1120,14 @@ class Game extends h2d.Object {
             var wallGraphic = new h2d.Graphics(wallEnt);
             wallGraphic.beginFill(color, 0.8);
             wallGraphic.drawRect(-radius, -radius, radius * 2, radius * 2);
-            Main.Global.rootScene.addChildAt(wallEnt, -1);
+            Main.Global.rootScene.addChildAt(wallEnt, 0);
           }
         }
         Grid.eachCell(mapData, createEnvironmentItems);
         mapRef = mapData;
       },
       (e) -> {
-        trace('error loading game map');
+        trace('error loading game map', e);
       }
     );
 
@@ -1138,7 +1140,7 @@ class Game extends h2d.Object {
       s2d.height / 2,
       s2d
     );
-    s2d.addChildAt(player, -1);
+    s2d.addChildAt(player, 0);
     Camera.follow(Main.Global.mainCamera, player);
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();

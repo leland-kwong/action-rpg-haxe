@@ -16,8 +16,8 @@ const compile = (buildFile) => {
       //some err occurred
       console.error(err)
     } else {
-    // the *entire* stdout and stderr (buffered)
-      console.log('build success')
+      // the *entire* stdout and stderr (buffered)
+      console.log(`build success ${buildFile}`)
     }
   });
 }
@@ -40,7 +40,7 @@ let pending = null;
 const rebuild = (eventType, filename) => {
   const isHaxeFile = /\.hx$/.test(filename);
   const isSrcDir = filename.indexOf('src') === 0;
-  
+
   if (!isHaxeFile && !isSrcDir) {
     return;
   }

@@ -47,8 +47,8 @@ class ParticleSystem {
 
   static public function update(s: PartSystem, dt: Float) {
     s.time += dt;
-				var time = s.time;
-				var particles = s.particles;
+    var time = s.time;
+    var particles = s.particles;
 
     {
       var i = 0;
@@ -136,10 +136,9 @@ class ParticlePlayground {
       spriteData.frame.y,
       spriteData.frame.w,
       spriteData.frame.h
-    ).center();
+    );
 
-    tile.dy = -spriteData.frame.h * spriteData.pivot.y;
-    tile.dx = -spriteData.frame.w * spriteData.pivot.x;
+    tile.setCenterRatio(spriteData.pivot.x, spriteData.pivot.y);
 
     return tile;
   }
@@ -196,106 +195,6 @@ class ParticlePlayground {
   public function update(dt) {
     time += dt;
     cds.update(dt);
-
-    /**
-      Commented code was for projectil particle trail effect. This was originally
-      for just the player's bullet, so we'll need to generalize it for more customizable
-      functionality.
-    **/
-
-    // var shouldEmitParticle = !cds.has('emitParticle');
-    // if (shouldEmitParticle) {
-    //   var projectileSpeed = 1000;
-    //   var emissionRate =  1 / projectileSpeed * 30;
-    //   cds.set('emitParticle', emissionRate);
-    // }
-
-    // var i = 0;
-    // function pAlpha(p, progress: Float) {
-    //   return 1 - progress;
-    // }
-
-    // function pScale(p, progress: Float) {
-    //   return (1 - (progress / 2)) / 2;
-    // }
-
-    // function projectileHitAlpha(p, progress: Float) {
-    //   return 1 - progress;
-    // }
-
-    // while (i < projectileList.length) {
-    //   var p = projectileList[i];
-    //   // cleanup projectile
-    //   if (time - p.createdAt >= p.lifeTime) {
-    //     projectileList.splice(i, 1);
-
-    //     for (_ in 0...3) {
-    //       var batchElement = new BatchElement(circleTile);
-    //       var angle = Math.atan2(p.dy, p.dx)
-    //         + Math.PI
-    //         + (Math.PI / 8 * Utils.irnd(-3, 3, true));
-
-    //       batchElement.scaleX = 1.2;
-    //       batchElement.scaleY = 0.4;
-    //       batchElement.rotation = angle;
-		// 								batchElement.r = 0.2;
-		// 								batchElement.g = 0.8;
-
-    //       var particleConfig = {
-    //         dx: Math.cos(angle),
-    //         dy: Math.sin(angle),
-    //         x: p.x,
-    //         y: p.y,
-    //         speed: 400.0,
-    //         lifeTime: 0.15,
-    //         rAlpha: projectileHitAlpha,
-    //         createdAt: time,
-    //         batchElement: batchElement,
-    //       };
-    //       ParticleSystem.emit(pSystem, particleConfig);
-    //     }
-    //   }
-    //   else {
-    //     i += 1;
-
-    //     if (shouldEmitParticle) {
-    //       var rootScene = Main.Global.rootScene;
-    //       var count = 3;
-    //       var startAngle = Math.atan2(
-    //         rootScene.mouseY - 0,
-    //         rootScene.mouseX - 0
-    //       );
-    //       var angleDiff = Math.PI / 4;
-    //       for (_ in 0...count) {
-    //         var batchElement = new BatchElement(tile);
-    //         var angle = startAngle + Utils.rnd(-angleDiff, angleDiff, true);
-    //         var dx = Math.cos(angle);
-    //         var dy = Math.sin(angle);
-    //         var particleConfig = {
-    //           dx: 0.0,
-    //           dy: 0.0,
-    //           x: p.x + dx * Utils.irnd(-8, 8, true),
-    //           y: p.y + dy * Utils.irnd(-8, 8, true),
-    //           speed: (p.speed * 0.1),
-    //           lifeTime: 0.10,
-    //           createdAt: time,
-    //           rAlpha: pAlpha,
-    //           rScale: pScale,
-    //           batchElement: batchElement,
-    //         };
-    //         if (Utils.irnd(0, 1) == 0) {
-    //           batchElement.r = 0.1;
-    //           batchElement.g = 0.75;
-    //         }
-    //         else {
-    //           batchElement.r = 0.1;
-    //           batchElement.g = 0.55;
-    //         }
-    //         ParticleSystem.emit(pSystem, particleConfig, true);
-    //       }
-    //     }
-    //   }
-    // }
 
     ParticleSystem.update(pSystem, dt);
   }

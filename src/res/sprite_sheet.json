@@ -169,7 +169,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":1,"h":17},
 	"sourceSize": {"w":1,"h":17},
-	"pivot": {"x":0.5,"y":0.5}
+	"pivot": {"x":0,"y":0.5}
 },
 "exported/kamehameha_center_width_3":
 {
@@ -178,7 +178,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":1,"h":21},
 	"sourceSize": {"w":1,"h":21},
-	"pivot": {"x":0.5,"y":0.5}
+	"pivot": {"x":0,"y":0.5}
 },
 "exported/kamehameha_head":
 {
@@ -349,6 +349,6 @@
 	"format": "RGBA8888",
 	"size": {"w":143,"h":124},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:aebc49bc399d9eaccf1348d46bbaa231:2dacd5b8dc1dc09fcf09a2c68f0cbb1c:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:843e99e66cfc45467fb8ac9e5af9f2cc:2dacd5b8dc1dc09fcf09a2c68f0cbb1c:6cc8953523e0367402f95f3c9a630665$"
 }
 }
