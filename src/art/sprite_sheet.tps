@@ -403,7 +403,7 @@
             <key type="filename">player/run8.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.7</point_f>
+                <point_f>0.5,0.829032</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>

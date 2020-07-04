@@ -12,14 +12,15 @@ class Global {
   public static var rootScene: h2d.Scene;
   public static var particleScene: h2d.Scene;
   public static var uiRoot: h2d.Scene;
+  public static var debugScene: h2d.Scene;
 
-  public static var debugCanvas: h2d.Graphics;
   public static var mainCamera: CameraRef;
   public static var mouse = {
     buttonDown: -1
   }
-  public static var mapRef: GridRef;
+  public static var obstacleGrid: GridRef;
   public static var dynamicWorldRef: GridRef;
+  public static var traversableGrid: GridRef;
   public static var sb: ParticlePlayground;
   public static var pixelScale = 4;
 }
@@ -235,6 +236,7 @@ class Main extends hxd.App {
     super.render(e);
     Global.particleScene.render(e);
     Global.uiRoot.render(e);
+    Global.debugScene.render(e);
   }
 
   function switchMainScene(sceneType: MainSceneType) {
@@ -295,6 +297,7 @@ class Main extends hxd.App {
 
     Global.particleScene = new h2d.Scene();
     Global.mainBackground = new h2d.Scene();
+    Global.debugScene = new h2d.Scene();
 
     background = addBackground(Global.mainBackground, 0x6c6c6c);
     runTests();
@@ -310,8 +313,6 @@ class Main extends hxd.App {
       var font = Fonts.primary.get().clone();
       setupDebugInfo(font);
     #end
-
-    Global.debugCanvas = new h2d.Graphics(s2d);
   }
 
   function handleGlobalHotkeys() {
@@ -330,12 +331,18 @@ class Main extends hxd.App {
       Main.Global.rootScene.height
     );
 
-    Main.Global.rootScene.x = -Main.Global.mainCamera.x +
-      Math.fround(Main.Global.mainCamera.w / 2);
-    Main.Global.rootScene.y = -Main.Global.mainCamera.y +
-      Math.fround(Main.Global.mainCamera.h / 2);
-    Main.Global.particleScene.x = Main.Global.rootScene.x;
-    Main.Global.particleScene.y = Main.Global.rootScene.y;
+    // update scenes to move relative to camera
+    var cam_center_x = -Main.Global.mainCamera.x + Math.fround(Main.Global.mainCamera.w / 2);
+    var cam_center_y = -Main.Global.mainCamera.y + Math.fround(Main.Global.mainCamera.h / 2);
+    for (scene in [
+      Main.Global.rootScene,
+      Main.Global.particleScene,
+      Main.Global.debugScene
+    ]) {
+      scene.x = cam_center_x;
+      scene.y = cam_center_y;
+    }
+
     handleGlobalHotkeys();
 
     for (it in reactiveItems) {
@@ -352,8 +359,6 @@ class Main extends hxd.App {
     // handle fixed dt here
     if (isNextFrame) {
       acc -= frameTime;
-
-      Global.debugCanvas.clear();
 
       if (game != null) {
         var levelCleared = game.isLevelComplete();

@@ -906,7 +906,7 @@ class Game extends h2d.Object {
       return;
     }
 
-    Main.Global.mapRef = mapRef;
+    Main.Global.obstacleGrid = mapRef;
     Main.Global.dynamicWorldRef = dynamicWorldRef;
 
     var ALL = Entity.ALL;

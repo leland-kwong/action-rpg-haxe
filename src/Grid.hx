@@ -385,7 +385,8 @@ class Grid {
 
   public static function create(
     cellSize,
-    // automatically cleans up empty rows and cells after each item removal
+    // Automatically cleans up empty rows and cells after each item removal.
+    // This is necessary to prevent empty data structures from being serialized.
     pruneEmptyCell = true
   ): GridRef {
     return {

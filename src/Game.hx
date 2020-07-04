@@ -121,11 +121,39 @@ class Entity extends h2d.Object {
       var max = 1;
 
       if (dx != 0) {
-        x += Utils.clamp(dx, -max, max) * speed * dt;
+        var nextPos = x + Utils.clamp(dx, -max, max) * speed * dt;
+        var direction = dx > 0 ? 1 : -1;
+        var isTraversable = Lambda.count(
+          Grid.getItemsInRect(
+            Main.Global.traversableGrid,
+            Math.floor(x + (radius * direction)),
+            Math.floor(y),
+            1,
+            1
+          )
+        ) > 0;
+
+        if (isTraversable) {
+          x = nextPos;
+        }
       }
 
       if (dy != 0) {
-        y += Utils.clamp(dy, -max, max) * speed * dt;
+        var nextPos = y + Utils.clamp(dy, -max, max) * speed * dt;
+        var direction = dy > 0 ? 1 : -1;
+        var isTraversable = Lambda.count(
+          Grid.getItemsInRect(
+            Main.Global.traversableGrid,
+            Math.floor(x),
+            Math.floor(y + (radius * direction)),
+            1,
+            1
+          )
+        ) > 0;
+
+        if (isTraversable) {
+          y = nextPos;
+        }
       }
     }
   }
@@ -310,7 +338,7 @@ class Enemy extends Entity {
         idleAnimFrames.push(t);
       }
       idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
-      idleAnim.scaleY = 4;
+      idleAnim.scaleY = Main.Global.pixelScale;
 
       runAnim = idleAnim;
     }
@@ -334,7 +362,7 @@ class Enemy extends Entity {
         idleAnimFrames.push(t);
       }
       idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
-      idleAnim.scaleY = 4;
+      idleAnim.scaleY = Main.Global.pixelScale;
 
       var runFrames = [
         'enemy-2/move1',
@@ -354,7 +382,7 @@ class Enemy extends Entity {
         runAnimFrames.push(t);
       }
       runAnim = new h2d.Anim(runAnimFrames, 60);
-      runAnim.scaleY = 4;
+      runAnim.scaleY = Main.Global.pixelScale;
     }
 
     if (debugCenter) {
@@ -697,8 +725,8 @@ class Player extends Entity {
     }
     this.addChild(activeAnim);
 
-    activeAnim.scaleX = 4 * facingX;
-    activeAnim.scaleY = 4;
+    activeAnim.scaleX = Main.Global.pixelScale * facingX;
+    activeAnim.scaleY = Main.Global.pixelScale;
     activeAnim.x = 0;
     activeAnim.y = 0;
 
@@ -724,6 +752,9 @@ class Player extends Entity {
   }
 
   public function useAbility(x2: Float, y2: Float, ability: Int) {
+    var yCenterOffset = -7 * Main.Global.pixelScale;
+    var startY = y + yCenterOffset;
+
     switch ability {
       case 0: {
         if (cds.has('primaryAbility')) {
@@ -733,9 +764,9 @@ class Player extends Entity {
         cds.set('recoveringFromAbility', abilityCooldown);
         attackAnim.currentFrame = 0;
 
-        var angle = Math.atan2(y2 - y, x2 - x);
+        var angle = Math.atan2(y2 - startY, x2 - x);
         var x1 = x + Math.cos(angle) * 30;
-        var y1 = y + Math.sin(angle) * 30;
+        var y1 = startY + Math.sin(angle) * 30;
         var b = new Bullet(
           x1,
           y1,
@@ -755,7 +786,7 @@ class Player extends Entity {
         }
 
         var abilityCooldown = 0.02;
-        var pixelScale = 4;
+        var pixelScale = Main.Global.pixelScale;
         var beamThickness = 60;
         var laserHeadSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
@@ -770,11 +801,11 @@ class Player extends Entity {
         var maxLength = 500;
         cds.set('recoveringFromAbility', abilityCooldown);
         var launchOffset = 30;
-        var angle = Math.atan2(y2 - y, x2 - x);
+        var angle = Math.atan2(y2 - startY, x2 - x);
         var vx = Math.cos(angle);
         var vy = Math.sin(angle);
         var x1 = x + vx * launchOffset;
-        var y1 = y + vy * launchOffset;
+        var y1 = startY + vy * launchOffset;
         var laserTailX1 = x1 + vx * maxLength;
         var laserTailY1 = y1 + vy * maxLength;
         var yScaleRand = Utils.irnd(0, 1) * 0.5;
@@ -873,7 +904,7 @@ class Player extends Entity {
 
 
             var items = Grid.getItemsInRect(dynamicWorldRef, worldX, worldY, worldCellSize, worldCellSize);
-            var staticWorld = Main.Global.mapRef;
+            var staticWorld = Main.Global.obstacleGrid;
             var obstacles = Grid.getItemsInRect(
               staticWorld, worldX, worldY, beamThickness + 16, beamThickness + 16
             );
@@ -1073,26 +1104,13 @@ class Game extends h2d.Object {
 
   public function lineOfSight(entity, x, y, i) {
     var cellSize = mapRef.cellSize;
-    var debugLineOfSight = false;
-    var mapRef = Main.Global.mapRef;
+    var mapRef = Main.Global.obstacleGrid;
     var isClearPath = Grid.isEmptyCell(mapRef, x, y);
     var isInSightRange = i * cellSize <= entity.sightRange;
 
     if (!isClearPath || !isInSightRange) {
       entity.canSeeTarget = false;
       return false;
-    }
-
-    if (debugLineOfSight) {
-      var screenX = x * cellSize;
-      var screenY = y * cellSize;
-      var c = isClearPath
-        ? Game.Colors.pureWhite
-        : Game.Colors.red;
-      var lineWidth = isClearPath ? 0 : 2;
-      Main.Global.debugCanvas.beginFill(c, 0.4);
-      Main.Global.debugCanvas.lineStyle(lineWidth, c, 0.8);
-      Main.Global.debugCanvas.drawRect(screenX, screenY, cellSize, cellSize);
     }
 
     return isClearPath;
@@ -1103,6 +1121,8 @@ class Game extends h2d.Object {
     oldGame: Game
   ) {
     super();
+
+    Main.Global.traversableGrid = Grid.create(16 * Main.Global.pixelScale);
 
     // load map background
     {
@@ -1116,8 +1136,7 @@ class Game extends h2d.Object {
         bgData.frame.h
       );
       var bmp = new h2d.Bitmap(tile, s2d);
-      var resolutionScale = 4;
-      bmp.setScale(resolutionScale);
+      bmp.setScale(Main.Global.pixelScale);
     }
 
     // parse Tiled json file
@@ -1134,35 +1153,50 @@ class Game extends h2d.Object {
 
     Main.Global.rootScene = s2d;
 
-    Asset.loadMap(
-      'test',
-      (mapData: GridRef) -> {
-        var color = Game.Colors.black;
-        var radius = Math.round(mapData.cellSize / 2);
-        var createEnvironmentItems = (x, y, items: Grid.GridItems) -> {
-          for (id in items) {
-            var padding = 10;
-            var wallEnt = new Entity({
-              x: x * mapData.cellSize + radius,
-              y: y * mapData.cellSize + radius,
-              radius: radius + padding,
-              weight: 1.0,
-              color: color
-            }, id);
-            wallEnt.type = 'OBSTACLE';
-            var wallGraphic = new h2d.Graphics(wallEnt);
-            wallGraphic.beginFill(color, 0.8);
-            wallGraphic.drawRect(-radius, -radius, radius * 2, radius * 2);
-            Main.Global.rootScene.addChildAt(wallEnt, 0);
-          }
-        }
-        Grid.eachCell(mapData, createEnvironmentItems);
-        mapRef = mapData;
-      },
-      (e) -> {
-        trace('error loading game map', e);
+    // setup traversible grid
+    {
+      var traversableRects: Array<Dynamic> = layersByName.get('traversable').objects;
+      var pixelScale = Main.Global.pixelScale;
+      var updateTraversableGrid = (item) -> {
+        // trace(item);
+        Grid.setItemRect(
+          Main.Global.traversableGrid,
+          (item.x + item.width / 2) * pixelScale,
+          (item.y + item.height / 2) * pixelScale,
+          item.width * pixelScale,
+          item.height * pixelScale,
+          item.id
+        );
+        return true;
       }
-    );
+      Lambda.foreach(traversableRects, updateTraversableGrid);
+
+      var debugTraversalGrid = false;
+      if (debugTraversalGrid) {
+        // debug traversable positions
+        var traversableGridItems = Main.Global.traversableGrid.itemCache;
+        var g = new h2d.Graphics(Main.Global.debugScene);
+        g.beginFill(Game.Colors.yellow, 0.3);
+        var cellSize = Main.Global.traversableGrid.cellSize;
+        trace('cellSize', cellSize);
+        for (key => item in traversableGridItems) {
+          trace(key, item);
+          var xMin = item[0] * cellSize;
+          var xMax = item[1] * cellSize;
+          var yMin = item[2] * cellSize;
+          var yMax = item[3] * cellSize;
+          var width = xMax - xMin;
+          var height = yMax - yMin;
+
+          g.drawRect(xMin, yMin, width, height);
+        }
+      }
+    }
+
+    // setup environment obstacle colliders
+    {
+      mapRef = Grid.create(64);
+    }
 
     s2d.addChild(this);
     if (oldGame != null) {
@@ -1170,7 +1204,7 @@ class Game extends h2d.Object {
     }
     player = new Player(
       playerStartPos.x * Main.Global.pixelScale,
-      playerStartPos.y * Main.Global.pixelScale - 25,
+      playerStartPos.y * Main.Global.pixelScale - 6,
       s2d
     );
     s2d.addChildAt(player, 0);
@@ -1231,7 +1265,7 @@ class Game extends h2d.Object {
       return 0;
     });
 
-    Main.Global.mapRef = mapRef;
+    Main.Global.obstacleGrid = mapRef;
     Main.Global.dynamicWorldRef = dynamicWorldRef;
 
     var ALL = Entity.ALL;
