@@ -1067,12 +1067,12 @@ class MapData {
 class Game extends h2d.Object {
   public var level = 1;
   var player: Player;
-  var target: h2d.Object;
+  var mousePointer: h2d.Object;
+  var mousePointerSprite: h2d.Graphics;
   var playerInfo: h2d.Text;
   var mapRef: GridRef;
   var dynamicWorldRef: GridRef = Grid.create(64);
   var TARGET_RADIUS = 20.0;
-  var targetSprite: h2d.Graphics;
   var enemySpawner: EnemySpawner;
 
   function calcNumEnemies(level: Int) {
@@ -1099,7 +1099,7 @@ class Game extends h2d.Object {
       e.health = 0;
     }
 
-    target.remove();
+    mousePointer.remove();
     playerInfo.remove();
   }
 
@@ -1256,10 +1256,10 @@ class Game extends h2d.Object {
       .addChild(playerInfo);
 
     // mouse pointer
-    target = new h2d.Object(this);
-    targetSprite = new h2d.Graphics(target);
-    targetSprite.beginFill(0xffda3d, 0.3);
-    targetSprite.drawCircle(0, 0, TARGET_RADIUS);
+    mousePointer = new h2d.Object(this);
+    mousePointerSprite = new h2d.Graphics(mousePointer);
+    mousePointerSprite.beginFill(0xffda3d, 0.3);
+    mousePointerSprite.drawCircle(0, 0, TARGET_RADIUS);
   }
 
   function cleanupDisposedEntities() {
@@ -1365,7 +1365,7 @@ class Game extends h2d.Object {
       }
     }
 
-    target.x = s2d.mouseX;
-    target.y = s2d.mouseY;
+    mousePointer.x = s2d.mouseX;
+    mousePointer.y = s2d.mouseY;
   }
 }
