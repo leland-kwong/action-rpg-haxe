@@ -264,7 +264,28 @@ class Main extends hxd.App {
   }
 
   override function init() {
-    Tests.run();
+    // setup scenes
+    {
+      Global.uiRoot = new h2d.Scene();
+      sevents.addScene(Global.uiRoot);
+
+      Global.particleScene = new h2d.Scene();
+      Global.mainBackground = new h2d.Scene();
+      Global.debugScene = new h2d.Scene();
+
+      background = addBackground(Global.mainBackground, 0x333333);
+    }
+
+    try {
+      Tests.run();
+    } catch (err) {
+      var font = Fonts.primary.get().clone();
+      font.resizeTo(12 * 3);
+      var tf = new h2d.Text(font, Global.debugScene);
+      tf.textColor = Game.Colors.red;
+      tf.textAlign = Align.Center;
+      tf.text = err.message;
+    }
 
     {
       function onEvent(event : hxd.Event) {
@@ -289,15 +310,6 @@ class Main extends hxd.App {
     }
 
     hxd.Res.initEmbed();
-
-    Global.uiRoot = new h2d.Scene();
-    sevents.addScene(Global.uiRoot);
-
-    Global.particleScene = new h2d.Scene();
-    Global.mainBackground = new h2d.Scene();
-    Global.debugScene = new h2d.Scene();
-
-    background = addBackground(Global.mainBackground, 0x6c6c6c);
 
     Global.rootScene = s2d;
 
