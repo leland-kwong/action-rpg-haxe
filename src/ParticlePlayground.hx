@@ -116,7 +116,7 @@ class ParticleSystem {
 
 class ParticlePlayground {
   var cds = new Cooldown();
-  var projectileList = [];
+  var spriteList = [];
   var time = 0.0;
   var bulletEnemyLarge: h2d.Tile;
   var tileWithGlow: h2d.Tile;
@@ -128,7 +128,7 @@ class ParticlePlayground {
     pSystem = ParticleSystem.init();
   }
 
-  function makeSprite(spriteKey: String) {
+  function makeTile(spriteKey: String) {
     var spriteData = Reflect.field(pSystem.spriteSheetData, spriteKey);
 
     if (spriteData == null) {
@@ -148,7 +148,7 @@ class ParticlePlayground {
   }
 
   // TODO add support for animation
-  public function emitProjectileGraphics(
+  public function emitSprite(
     x1: Float,
     y1: Float,
     x2: Float,
@@ -161,16 +161,16 @@ class ParticlePlayground {
     rAlpha = null,
     rColor = null
   ) {
-    var projectile: Particle = null;
+    var sprite: Particle = null;
     {
       var angle = Math.atan2(
         y2 - y1,
         x2 - x1
       );
-      var g = new BatchElement(makeSprite(spriteKey));
+      var g = new BatchElement(makeTile(spriteKey));
       g.rotation = angle;
       g.scale = 4;
-      projectile = {
+      sprite = {
         dx: Math.cos(angle),
         dy: Math.sin(angle),
         x: x1,
@@ -184,14 +184,14 @@ class ParticlePlayground {
         rScaleY: rScaleY,
         rColor: rColor,
       };
-      ParticleSystem.emit(pSystem, projectile);
-      projectileList.push(projectile);
+      ParticleSystem.emit(pSystem, sprite);
+      spriteList.push(sprite);
     }
-    return projectile;
+    return sprite;
   }
 
-  public function removeProjectile(projectileRef: Particle) {
-    projectileRef.lifeTime = 0.0;
+  public function removeSprite(spriteRef: Particle) {
+    spriteRef.lifeTime = 0.0;
   }
 
   public function dispose() {

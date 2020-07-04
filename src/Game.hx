@@ -233,7 +233,7 @@ class Bullet extends Projectile {
     lifeTime = 2.0;
     particleSystemRef = Main.Global.sb;
     particle = particleSystemRef
-      .emitProjectileGraphics(
+      .emitSprite(
         x1, y1, x2, y2, speed, bulletType, lifeTime
       );
   }
@@ -250,7 +250,7 @@ class Bullet extends Projectile {
     if (collidedWith != null) {
       health = 0;
       collidedWith.damageTaken += damage;
-      particleSystemRef.removeProjectile(particle);
+      particleSystemRef.removeSprite(particle);
     }
   }
 }
@@ -504,7 +504,7 @@ class Enemy extends Entity {
           facingDir = (dx > 0 ? -1 : 1);
         }
         var currentFrameName = core.Anim.getFrame(activeAnim, Main.Global.time);
-        Main.Global.sb.emitProjectileGraphics(
+        Main.Global.sb.emitSprite(
           x, y,
           x, y,
           0,
@@ -711,7 +711,7 @@ class Player extends Entity {
       }
     }
 
-    Main.Global.sb.emitProjectileGraphics(
+    Main.Global.sb.emitSprite(
       x, y,
       x, y,
       0,
@@ -805,7 +805,7 @@ class Player extends Entity {
         var renderBeam = (startPt, endPt) -> {
           var spriteLifetime = 1/60;
           // laser head
-          Main.Global.sb.emitProjectileGraphics(
+          Main.Global.sb.emitSprite(
             startPt.x, startPt.y,
             endPt.x, endPt.y,
             0, 'exported/kamehameha_head',
@@ -822,7 +822,7 @@ class Player extends Entity {
             var beamScaleY = (p, progress) -> pixelScale + yScaleRand;
 
             // laser center
-            Main.Global.sb.emitProjectileGraphics(
+            Main.Global.sb.emitSprite(
               lcx, lcy,
               endPt.x, endPt.y,
               0, 'exported/kamehameha_center_width_1',
@@ -834,7 +834,7 @@ class Player extends Entity {
           }
 
           // laser tail
-          Main.Global.sb.emitProjectileGraphics(
+          Main.Global.sb.emitSprite(
             endPt.x - (vx * laserTailWidth), endPt.y - (vy * laserTailWidth),
             endPt.x, endPt.y,
             0, 'exported/kamehameha_tail',
@@ -862,7 +862,7 @@ class Player extends Entity {
         };
 
         if (debug.startPos) {
-          Main.Global.sb.emitProjectileGraphics(
+          Main.Global.sb.emitSprite(
             laserTailX1, laserTailY1,
             laserTailX1, laserTailY1,
             0, 'exported/square_white',
@@ -880,7 +880,7 @@ class Player extends Entity {
             var worldY = Math.round(y * cellSize);
 
             if (debug.queryRects) {
-              Main.Global.sb.emitProjectileGraphics(
+              Main.Global.sb.emitSprite(
                 worldX,
                 worldY,
                 worldX,
@@ -931,7 +931,7 @@ class Player extends Entity {
                   adjustedEndPt = p;
 
                   if (debug.endPos) {
-                    Main.Global.sb.emitProjectileGraphics(
+                    Main.Global.sb.emitSprite(
                       x1,
                       y1,
                       x1,
@@ -942,7 +942,7 @@ class Player extends Entity {
                       (p, progress) -> 10
                     );
 
-                    Main.Global.sb.emitProjectileGraphics(
+                    Main.Global.sb.emitSprite(
                       p.x,
                       p.y,
                       p.x,

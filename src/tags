@@ -173,7 +173,7 @@ editEnvironment	Grid.hx	/^      function editEnvironment(ev, editMode) {$/;"	f
 editMode	Grid.hx	/^  var editMode = GridEditMode.Normal;$/;"	v
 emissionRate	ParticlePlayground.hx	/^      var emissionRate =  1 \/ projectileSpeed * 30;$/;"	v
 emit	ParticlePlayground.hx	/^  static public function emit(s: PartSystem, config: Particle, before = false) {$/;"	f
-emitProjectileGraphics	ParticlePlayground.hx	/^		public function emitProjectileGraphics(x1: Float,$/;"	f
+emitSprite	ParticlePlayground.hx	/^		public function emitSprite(x1: Float,$/;"	f
 endPos	Grid.hx	/^              var endPos = dragState.endObjectPosition;$/;"	v
 enemiesLeftToSpawn	Game.hx	/^  var enemiesLeftToSpawn: Int;$/;"	v
 enemy	Game.hx	/^        var enemy:Dynamic = a;$/;"	v
@@ -339,7 +339,7 @@ ref	Grid.hx	/^      var ref = Grid.create(1);$/;"	v
 ref	Grid.hx	/^      var ref = Grid.create(cellSize);$/;"	v
 remove	Grid.hx	/^  public function remove() {$/;"	f
 removeItem	Grid.hx	/^  public static function removeItem(ref: GridRef, key: GridKey) {$/;"	f
-removeProjectile	ParticlePlayground.hx	/^		public function removeProjectile(projectileRef: Particle) {$/;"	f
+removeSprite	ParticlePlayground.hx	/^		public function removeSprite(spriteRef: Particle) {$/;"	f
 repelFilter	Game.hx	/^  var repelFilter: String;$/;"	v
 rnd	Utils.hx	/^  public static function rnd(min:Float, max:Float, ?sign=false) {$/;"	f
 rootScene	Game.hx	/^  var rootScene: h2d.Scene;$/;"	v
