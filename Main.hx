@@ -6,6 +6,7 @@ import Game;
 import Grid;
 import ParticlePlayground;
 import Camera;
+import Tests;
 
 class Global {
   public static var mainBackground: h2d.Scene;
@@ -23,6 +24,7 @@ class Global {
   public static var traversableGrid: GridRef;
   public static var sb: ParticlePlayground;
   public static var pixelScale = 4;
+  public static var time = 0.0;
 }
 
 enum UiState {
@@ -182,7 +184,6 @@ class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
   var tickCount = 0;
-  var t = 0.0;
   var acc = 0.0;
   var game: Game;
   var background: h2d.Bitmap;
@@ -226,11 +227,6 @@ class Main extends hxd.App {
     );
   }
 
-  function runTests() {
-    Grid.tests();
-    SaveState.tests();
-  }
-
   public override function render(e: h3d.Engine) {
     Global.mainBackground.render(e);
     super.render(e);
@@ -268,6 +264,8 @@ class Main extends hxd.App {
   }
 
   override function init() {
+    Tests.run();
+
     {
       function onEvent(event : hxd.Event) {
         if (event.kind == hxd.Event.EventKind.EPush) {
@@ -300,7 +298,6 @@ class Main extends hxd.App {
     Global.debugScene = new h2d.Scene();
 
     background = addBackground(Global.mainBackground, 0x6c6c6c);
-    runTests();
 
     Global.rootScene = s2d;
 
@@ -325,6 +322,8 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
+    Main.Global.time += dt;
+
     Camera.setSize(
       Main.Global.mainCamera,
       Main.Global.rootScene.width,
@@ -349,7 +348,6 @@ class Main extends hxd.App {
       it.update(dt);
     }
 
-    t += dt;
     acc += dt;
 
     // set to 1/60 for a fixed 60fps
@@ -378,7 +376,7 @@ class Main extends hxd.App {
 
       if (debugText != null) {
         var text = [
-          'time: ${t}',
+          'time: ${Main.Global.time}',
           'fpsTrue: ${fps}',
           'fps: ${Math.round(1/frameTime)}',
           'drawCalls: ${engine.drawCalls}',

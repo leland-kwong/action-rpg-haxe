@@ -5,7 +5,6 @@
 import h2d.Bitmap;
 import Grid.GridRef;
 import Fonts;
-import Easing;
 import Utils;
 import Camera;
 import ParticlePlayground;
