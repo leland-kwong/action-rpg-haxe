@@ -845,8 +845,8 @@ class Player extends Entity {
           );
         }
 
-        var dynamicWorldRef = Main.Global.dynamicWorldRef;
-        var worldCellSize = dynamicWorldRef.cellSize;
+        var dynamicWorldGrid = Main.Global.dynamicWorldGrid;
+        var worldCellSize = dynamicWorldGrid.cellSize;
         var cellSize = 10;
         var startGridX = Math.floor(x1 / cellSize);
         var startGridY = Math.floor(y1 / cellSize);
@@ -894,7 +894,7 @@ class Player extends Entity {
             }
 
 
-            var items = Grid.getItemsInRect(dynamicWorldRef, worldX, worldY, worldCellSize, worldCellSize);
+            var items = Grid.getItemsInRect(dynamicWorldGrid, worldX, worldY, worldCellSize, worldCellSize);
             var staticWorld = Main.Global.obstacleGrid;
             var obstacles = Grid.getItemsInRect(
               staticWorld, worldX, worldY, beamThickness + 16, beamThickness + 16
@@ -1071,7 +1071,7 @@ class Game extends h2d.Object {
   var mousePointerSprite: h2d.Graphics;
   var playerInfo: h2d.Text;
   var mapRef: GridRef;
-  var dynamicWorldRef: GridRef = Grid.create(64);
+  var dynamicWorldGrid: GridRef = Grid.create(64);
   var TARGET_RADIUS = 20.0;
   var enemySpawner: EnemySpawner;
 
@@ -1271,7 +1271,7 @@ class Game extends h2d.Object {
       if (isDisposed) {
         ALL.splice(i, 1);
         Entity.ALL_BY_ID.remove(a.id);
-        Grid.removeItem(dynamicWorldRef, a.id);
+        Grid.removeItem(dynamicWorldGrid, a.id);
         Grid.removeItem(mapRef, a.id);
         a.remove();
       } else {
@@ -1301,7 +1301,7 @@ class Game extends h2d.Object {
     });
 
     Main.Global.obstacleGrid = mapRef;
-    Main.Global.dynamicWorldRef = dynamicWorldRef;
+    Main.Global.dynamicWorldGrid = dynamicWorldGrid;
 
     var ALL = Entity.ALL;
 
@@ -1327,7 +1327,7 @@ class Game extends h2d.Object {
         var neighbors: Array<String> = [];
         var nRange = 100;
         var dynamicNeighbors = Grid.getItemsInRect(
-          dynamicWorldRef, a.x, a.y, a.radius + nRange, a.radius + nRange
+          dynamicWorldGrid, a.x, a.y, a.radius + nRange, a.radius + nRange
         );
         var obstacleNeighbors = Grid.getItemsInRect(
           mapRef, a.x, a.y, a.radius + nRange, a.radius + nRange
@@ -1361,7 +1361,7 @@ class Game extends h2d.Object {
 
       // TODO need a better way to determine what is a dynamic entity
       if (a.type != 'OBSTACLE' && a.type != 'PROJECTILE') {
-        Grid.setItemRect(dynamicWorldRef, a.x, a.y, a.radius, a.radius, a.id);
+        Grid.setItemRect(dynamicWorldGrid, a.x, a.y, a.radius, a.radius, a.id);
       }
     }
 

@@ -20,7 +20,7 @@ class Global {
     buttonDown: -1
   }
   public static var obstacleGrid: GridRef;
-  public static var dynamicWorldRef: GridRef;
+  public static var dynamicWorldGrid: GridRef;
   public static var traversableGrid: GridRef;
   public static var sb: ParticlePlayground;
   public static var pixelScale = 4;

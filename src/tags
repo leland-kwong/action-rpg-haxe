@@ -157,7 +157,7 @@ dy	Utils.hx	/^    var dy = Math.abs(y2 - y1);$/;"	v
 dyNormalized	Game.hx	/^    var dyNormalized = magnitude == 0 ? _dy : _dy \/ magnitude;$/;"	v
 dyNormalized	Game.hx	/^    var dyNormalized = magnitude == 0 ? dy : (dy \/ magnitude);$/;"	v
 dynamicNeighbors	Game.hx	/^        var dynamicNeighbors = Grid.getItemsInRect($/;"	v
-dynamicWorldRef	Game.hx	/^  var dynamicWorldRef: GridRef = Grid.create(64);$/;"	v
+dynamicWorldGrid	Game.hx	/^  var dynamicWorldGrid: GridRef = Grid.create(64);$/;"	v
 e	Game.hx	/^    var e = new Enemy({$/;"	v
 e2	Utils.hx	/^      var e2 = 2 * err;$/;"	v
 eachCell	Grid.hx	/^  public static function eachCell(ref: GridRef, callback) {$/;"	f
