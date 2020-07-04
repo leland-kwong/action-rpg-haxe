@@ -230,10 +230,12 @@ class Bullet extends Projectile {
     x1, y1, x2, y2, speed, bulletType, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
+    lifeTime = 2.0;
     particleSystemRef = Main.Global.sb;
     particle = particleSystemRef
-      .emitProjectileGraphics(x1, y1, x2, y2, speed, bulletType);
-    lifeTime = 2.0;
+      .emitProjectileGraphics(
+        x1, y1, x2, y2, speed, bulletType, lifeTime
+      );
   }
 
   public override function update(dt: Float) {
@@ -281,9 +283,9 @@ class Enemy extends Entity {
   var size: Int;
   var repelFilter= 'REPEL_NONE';
   var debugCenter = false;
-  var idleAnim: h2d.Anim;
-  var runAnim: h2d.Anim;
-  var activeAnim: h2d.Anim;
+  var idleAnim: core.Anim.AnimRef;
+  var runAnim: core.Anim.AnimRef;
+  var activeAnim: core.Anim.AnimRef;
   var facingDir = 1;
   public var sightRange = 400;
   public var neighbors: Array<EntityId>;
@@ -317,124 +319,102 @@ class Enemy extends Entity {
     cds.set('summoningSickness', 1.0);
     setScale(0);
 
-    if (size == 1) {
-      var idleFrames = [
-        'enemy-1/idle1',
-        'enemy-1/idle2',
-        'enemy-1/idle3',
-        'enemy-1/idle4',
-        'enemy-1/idle5',
-        'enemy-1/idle6',
-        'enemy-1/idle7',
-        'enemy-1/idle8',
-        'enemy-1/idle9',
-        'enemy-1/idle10',
-      ];
-      var idleAnimFrames = [];
+    // if (size == 1) {
+    //   var idleFrames = [
+    //     'enemy-1/idle1',
+    //     'enemy-1/idle2',
+    //     'enemy-1/idle3',
+    //     'enemy-1/idle4',
+    //     'enemy-1/idle5',
+    //     'enemy-1/idle6',
+    //     'enemy-1/idle7',
+    //     'enemy-1/idle8',
+    //     'enemy-1/idle9',
+    //     'enemy-1/idle10',
+    //   ];
+    //   var idleAnimFrames = [];
 
-      for (frameKey in idleFrames) {
-        var frameData = Reflect.field(spriteSheetData, frameKey);
-        var t = spriteSheet.sub(
-          frameData.frame.x,
-          frameData.frame.y,
-          frameData.frame.w,
-          frameData.frame.h
-        );
-        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-        idleAnimFrames.push(t);
-      }
-      idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
-      idleAnim.scaleY = Main.Global.pixelScale;
+    //   for (frameKey in idleFrames) {
+    //     var frameData = Reflect.field(spriteSheetData, frameKey);
+    //     var t = spriteSheet.sub(
+    //       frameData.frame.x,
+    //       frameData.frame.y,
+    //       frameData.frame.w,
+    //       frameData.frame.h
+    //     );
+    //     t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
+    //     idleAnimFrames.push(t);
+    //   }
+    //   idleAnim = new h2d.Anim(idleAnimFrames, 10, this);
+    //   idleAnim.scaleY = Main.Global.pixelScale;
 
-      runAnim = idleAnim;
-    }
+    //   runAnim = idleAnim;
+    // }
 
-    if (size == 2) {
-      var idleFrames = [
-        'enemy-2/idle1',
-        'enemy-2/idle2',
-      ];
-      var idleAnimFrames = [];
+    // if (size == 2) {
+    //   var idleFrames = [
+    //     'enemy-2/idle1',
+    //     'enemy-2/idle2',
+    //   ];
+    //   var idleAnimFrames = [];
 
-      for (frameKey in idleFrames) {
-        var frameData = Reflect.field(spriteSheetData, frameKey);
-        var t = spriteSheet.sub(
-            frameData.frame.x,
-            frameData.frame.y,
-            frameData.frame.w,
-            frameData.frame.h
-        );
-        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-        idleAnimFrames.push(t);
-      }
-      idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
-      idleAnim.scaleY = Main.Global.pixelScale;
+    //   for (frameKey in idleFrames) {
+    //     var frameData = Reflect.field(spriteSheetData, frameKey);
+    //     var t = spriteSheet.sub(
+    //         frameData.frame.x,
+    //         frameData.frame.y,
+    //         frameData.frame.w,
+    //         frameData.frame.h
+    //     );
+    //     t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
+    //     idleAnimFrames.push(t);
+    //   }
+    //   idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
+    //   idleAnim.scaleY = Main.Global.pixelScale;
 
-      var runFrames = [
-        'enemy-2/move1',
-        'enemy-2/move2',
-      ];
-      var runAnimFrames = [];
+    //   var runFrames = [
+    //     'enemy-2/move1',
+    //     'enemy-2/move2',
+    //   ];
+    //   var runAnimFrames = [];
 
-      for (frameKey in runFrames) {
-        var frameData = Reflect.field(spriteSheetData, frameKey);
-        var t = spriteSheet.sub(
-          frameData.frame.x,
-          frameData.frame.y,
-          frameData.frame.w,
-          frameData.frame.h
-        );
-        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-        runAnimFrames.push(t);
-      }
-      runAnim = new h2d.Anim(runAnimFrames, 60);
-      runAnim.scaleY = Main.Global.pixelScale;
-    }
+    //   for (frameKey in runFrames) {
+    //     var frameData = Reflect.field(spriteSheetData, frameKey);
+    //     var t = spriteSheet.sub(
+    //       frameData.frame.x,
+    //       frameData.frame.y,
+    //       frameData.frame.w,
+    //       frameData.frame.h
+    //     );
+    //     t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
+    //     runAnimFrames.push(t);
+    //   }
+    //   runAnim = new h2d.Anim(runAnimFrames, 60);
+    //   runAnim.scaleY = Main.Global.pixelScale;
+    // }
 
     if (size == 3) {
-      var idleFrames = [
+      idleAnim = {
+        frames: [
         'intro_boss/idle',
-      ];
-      var idleAnimFrames = [];
+      ],
+        duration: 1,
+        startTime: Main.Global.time
+      };
 
-      for (frameKey in idleFrames) {
-        var frameData = Reflect.field(spriteSheetData, frameKey);
-        var t = spriteSheet.sub(
-            frameData.frame.x,
-            frameData.frame.y,
-            frameData.frame.w,
-            frameData.frame.h
-        );
-        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-        idleAnimFrames.push(t);
-      }
-      idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
-      idleAnim.scaleY = Main.Global.pixelScale;
-
-      var runFrames = [
-        'intro_boss/walk1',
-        'intro_boss/walk2',
-        'intro_boss/walk3',
-        'intro_boss/walk4',
-        'intro_boss/walk5',
-        'intro_boss/walk6',
-        'intro_boss/walk7',
-      ];
-      var runAnimFrames = [];
-
-      for (frameKey in runFrames) {
-        var frameData = Reflect.field(spriteSheetData, frameKey);
-        var t = spriteSheet.sub(
-          frameData.frame.x,
-          frameData.frame.y,
-          frameData.frame.w,
-          frameData.frame.h
-        );
-        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-        runAnimFrames.push(t);
-      }
-      runAnim = new h2d.Anim(runAnimFrames, 10);
-      runAnim.scaleY = Main.Global.pixelScale;
+      runAnim = {
+        frames: [
+          'intro_boss/walk1',
+          'intro_boss/walk2',
+          'intro_boss/walk3',
+          'intro_boss/walk4',
+          'intro_boss/walk5',
+          'intro_boss/walk6',
+          'intro_boss/walk7',
+        ],
+        duration: 1,
+        startTime: Main.Global.time
+      };
     }
 
     if (debugCenter) {
@@ -535,22 +515,45 @@ class Enemy extends Entity {
       var hasMovedY = Math.abs(origY - y) >= 0.25;
 
       if (runAnim != null && (hasMovedX || hasMovedY)) {
-        idleAnim.remove();
+        var isDiffAnim = activeAnim != runAnim;
         activeAnim = runAnim;
-        this.addChild(runAnim);
+        if (isDiffAnim) {
+          activeAnim.startTime = Main.Global.time;
+        }
       }
       // set idle animation
       else {
-        runAnim.remove();
+        var isDiffAnim = activeAnim != runAnim;
         activeAnim = idleAnim;
-        this.addChild(idleAnim);
+        if (isDiffAnim) {
+          activeAnim.startTime = Main.Global.time;
+        }
       }
 
       if (activeAnim != null) {
         if (dx != 0) {
           facingDir = (dx > 0 ? -1 : 1);
         }
-        activeAnim.scaleX = facingDir * 4;
+        var currentFrameName = core.Anim.getFrame(activeAnim, Main.Global.time);
+        Main.Global.sb.emitProjectileGraphics(
+          x, y,
+          x, y,
+          0,
+          currentFrameName,
+          1/60,
+          (p, progress) -> facingDir * Main.Global.pixelScale,
+          null,
+          null,
+          (p, progress) -> {
+            if (cds.has('hitFlash')) {
+              var b: h2d.SpriteBatch.BatchElement = p.batchElement;
+              b.r = 255;
+              b.g = 255;
+              b.b = 255;
+              b.a = 1;
+            }
+          }
+        );
       }
     }
 
@@ -580,13 +583,8 @@ class Enemy extends Entity {
     {
       var c = activeAnim;
 
-      if (!cds.has('hitFlash')) {
-        c.color.set(1, 1, 1, 1);
-      }
-
       if (damageTaken > 0) {
         cds.set('hitFlash', 0.04);
-        c.color.set(255, 255, 255, 1);
         health -= damageTaken;
         damageTaken = 0;
       }
@@ -601,9 +599,9 @@ class Player extends Entity {
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
-  var runAnim: h2d.Anim;
-  var idleAnim: h2d.Anim;
-  var attackAnim: h2d.Anim;
+  var runAnim: core.Anim.AnimRef;
+  var idleAnim: core.Anim.AnimRef;
+  var attackAnim: core.Anim.AnimRef;
   var runAnimFrames: Array<h2d.Tile>;
   var idleAnimFrames: Array<h2d.Tile>;
   var facingX = 1;
@@ -624,8 +622,6 @@ class Player extends Entity {
 
     rootScene = s2d;
 
-    var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-    var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
     var runFrames = [
       'player/run1',
       'player/run2',
@@ -636,38 +632,23 @@ class Player extends Entity {
       'player/run7',
       'player/run8',
     ];
-    runAnimFrames = [];
 
-    for (frameKey in runFrames) {
-      var frameData = Reflect.field(spriteSheetData, frameKey);
-      var t = spriteSheet.sub(
-        frameData.frame.x,
-        frameData.frame.y,
-        frameData.frame.w,
-        frameData.frame.h
-      );
-      t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-      runAnimFrames.push(t);
-    }
     // creates an animation for these tiles
-    runAnim = new h2d.Anim(runAnimFrames, 17);
+    runAnim = {
+      frames: runFrames,
+      duration: 0.3,
+      startTime: Main.Global.time
+    };
 
     var idleFrames = [
       'player/idle'
     ];
-    idleAnimFrames = [];
-    for (frameKey in idleFrames) {
-      var frameData = Reflect.field(spriteSheetData, frameKey);
-      var t = spriteSheet.sub(
-        frameData.frame.x,
-        frameData.frame.y,
-        frameData.frame.w,
-        frameData.frame.h
-      );
-      t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-      idleAnimFrames.push(t);
-    }
-    idleAnim = new h2d.Anim(idleAnimFrames);
+
+    idleAnim = {
+      frames: idleFrames,
+      duration: 1,
+      startTime: Main.Global.time
+    };
 
     var attackSpriteFrames = [
       'player/attack1',
@@ -683,19 +664,11 @@ class Player extends Entity {
       'player/attack5',
       'player/attack5',
     ];
-    var attackAnimFrames = [];
-    for (frameKey in attackSpriteFrames) {
-      var frameData = Reflect.field(spriteSheetData, frameKey);
-      var t = spriteSheet.sub(
-        frameData.frame.x,
-        frameData.frame.y,
-        frameData.frame.w,
-        frameData.frame.h
-      );
-      t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
-      attackAnimFrames.push(t);
-    }
-    attackAnim = new h2d.Anim(attackAnimFrames, 60);
+    attackAnim = {
+      frames: attackSpriteFrames,
+      duration: 0.3,
+      startTime: Main.Global.time
+    };
 
     playerSprite = new h2d.Graphics(this);
     // make halo
@@ -757,30 +730,27 @@ class Player extends Entity {
     // pulsate player for visual juice
     playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
 
-    var activeAnim;
+    var activeAnim: core.Anim.AnimRef;
     if (cds.has('recoveringFromAbility')) {
       activeAnim = attackAnim;
-      idleAnim.remove();
-      runAnim.remove();
     }
     else {
-      attackAnim.remove();
       if (dx != 0 || dy != 0) {
         activeAnim = runAnim;
-        idleAnim.remove();
-        attackAnim.remove();
       } else {
         activeAnim = idleAnim;
-        runAnim.remove();
-        attackAnim.remove();
       }
     }
-    this.addChild(activeAnim);
 
-    activeAnim.scaleX = Main.Global.pixelScale * facingX;
-    activeAnim.scaleY = Main.Global.pixelScale;
-    activeAnim.x = 0;
-    activeAnim.y = 0;
+    Main.Global.sb.emitProjectileGraphics(
+      x, y,
+      x, y,
+      0,
+      core.Anim.getFrame(activeAnim, Main.Global.time),
+      1/60,
+      (_, _) ->  Main.Global.pixelScale * facingX,
+      (_, _) -> Main.Global.pixelScale
+    );
 
     var abilityId = Main.Global.mouse.buttonDown;
     useAbility(
@@ -814,7 +784,7 @@ class Player extends Entity {
         }
         var abilityCooldown = 1/10;
         cds.set('recoveringFromAbility', abilityCooldown);
-        attackAnim.currentFrame = 0;
+        attackAnim.startTime = Main.Global.time;
 
         var angle = Math.atan2(y2 - startY, x2 - x);
         var x1 = x + Math.cos(angle) * 30;

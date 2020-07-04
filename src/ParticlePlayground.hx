@@ -11,6 +11,7 @@ typedef Particle = {
   var ?rAlpha: (p: Particle, progress: Float) -> Float;
   var ?rScaleX: (p: Particle, progress: Float) -> Float;
   var ?rScaleY: (p: Particle, progress: Float) -> Float;
+  var ?rColor: (p: Particle, progress: Float) -> Void;
   var lifeTime: Float;
   var createdAt: Float;
   var batchElement: BatchElement;
@@ -79,6 +80,9 @@ class ParticleSystem {
           if (p.rScaleY != null) {
             p.batchElement.scaleY = p.rScaleY(p, progress);
           }
+          if (p.rColor != null) {
+            p.rColor(p, progress);
+          }
         }
       }
     }
@@ -89,11 +93,11 @@ class ParticleSystem {
       var ay = a.y;
       var by = b.y;
 
-      if (ay > by) {
+      if (ay < by) {
         return 1;
       }
 
-      if (ay < by) {
+      if (ay > by) {
         return -1;
       }
 
@@ -151,10 +155,11 @@ class ParticlePlayground {
     y2: Float,
     speed: Float,
     spriteKey: String,
-    lifeTime = 9999.0,
+    lifeTime = 1.0,
     rScaleX = null,
     rScaleY = null,
-    rAlpha = null
+    rAlpha = null,
+    rColor = null
   ) {
     var projectile: Particle = null;
     {
@@ -176,7 +181,8 @@ class ParticlePlayground {
         batchElement: g,
         rAlpha: rAlpha,
         rScaleX: rScaleX,
-        rScaleY: rScaleY
+        rScaleY: rScaleY,
+        rColor: rColor,
       };
       ParticleSystem.emit(pSystem, projectile);
       projectileList.push(projectile);

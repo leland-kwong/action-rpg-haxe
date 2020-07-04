@@ -388,11 +388,14 @@ class Main extends hxd.App {
 
       if (debugText != null) {
         var text = [
-          'time: ${Main.Global.time}',
-          'fpsTrue: ${fps}',
-          'fps: ${Math.round(1/frameTime)}',
-          'drawCalls: ${engine.drawCalls}',
-          'numEntities: ${Entity.ALL.length}',
+          'stats: ${Json.stringify({
+            time: Main.Global.time,
+            fpsTrue: fps,
+            fps: Math.round(1/frameTime),
+            drawCalls: engine.drawCalls,
+            numEntities: Entity.ALL.length,
+            numParticles: Main.Global.sb.pSystem.particles.length
+          }, null, '  ')}',
           'mouse: ${Json.stringify(Global.mouse, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;

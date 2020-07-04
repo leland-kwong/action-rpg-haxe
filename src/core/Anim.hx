@@ -3,7 +3,7 @@ package core;
 import TestUtils.assert;
 
 typedef AnimRef = {
-  var frames: Array<h2d.Tile>;
+  var frames: Array<Dynamic>;
   var duration: core.Types.Time;
   var startTime: core.Types.Time;
 }
