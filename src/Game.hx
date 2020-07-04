@@ -39,7 +39,8 @@ typedef Point = {
   var y: Float;
   var radius: Int;
   var weight: Float;
-  var color: Int;
+  var ?color: Int;
+  var ?sightRange: Int;
 }
 
 class Colors {
@@ -257,16 +258,17 @@ class Enemy extends Entity {
   static var healthBySize = [
     1 => 5,
     2 => 10,
-    3 => 20,
+    3 => 100,
   ];
   static var speedBySize = [
     1 => 180.0,
     2 => 120.0,
-    3 => 100.0,
+    3 => 80.0,
   ];
   static var attackRangeByType = [
     1 => 80,
     2 => 300,
+    3 => 200,
   ];
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
@@ -304,6 +306,11 @@ class Enemy extends Entity {
     spawnDuration = size * 0.2;
     health = healthBySize[size];
     avoidOthers = true;
+
+    if (props.sightRange != null) {
+      sightRange = props.sightRange;
+    }
+
     cds = new Cooldown();
     follow = followTarget;
     this.size = size;
@@ -385,10 +392,56 @@ class Enemy extends Entity {
       runAnim.scaleY = Main.Global.pixelScale;
     }
 
+    if (size == 3) {
+      var idleFrames = [
+        'intro_boss/idle',
+      ];
+      var idleAnimFrames = [];
+
+      for (frameKey in idleFrames) {
+        var frameData = Reflect.field(spriteSheetData, frameKey);
+        var t = spriteSheet.sub(
+            frameData.frame.x,
+            frameData.frame.y,
+            frameData.frame.w,
+            frameData.frame.h
+        );
+        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
+        idleAnimFrames.push(t);
+      }
+      idleAnim = new h2d.Anim(idleAnimFrames, 60, this);
+      idleAnim.scaleY = Main.Global.pixelScale;
+
+      var runFrames = [
+        'intro_boss/walk1',
+        'intro_boss/walk2',
+        'intro_boss/walk3',
+        'intro_boss/walk4',
+        'intro_boss/walk5',
+        'intro_boss/walk6',
+        'intro_boss/walk7',
+      ];
+      var runAnimFrames = [];
+
+      for (frameKey in runFrames) {
+        var frameData = Reflect.field(spriteSheetData, frameKey);
+        var t = spriteSheet.sub(
+          frameData.frame.x,
+          frameData.frame.y,
+          frameData.frame.w,
+          frameData.frame.h
+        );
+        t.setCenterRatio(frameData.pivot.x, frameData.pivot.y);
+        runAnimFrames.push(t);
+      }
+      runAnim = new h2d.Anim(runAnimFrames, 10);
+      runAnim.scaleY = Main.Global.pixelScale;
+    }
+
     if (debugCenter) {
       graphic = new h2d.Graphics(this);
       graphic.beginFill(0xffffff);
-      graphic.drawCircle(0, 0, 3);
+      graphic.drawCircle(0, 0, radius);
     }
   }
 
@@ -1038,12 +1091,40 @@ class EnemySpawner {
       weight: 1.0,
       color: colors[size],
     }, size, target);
-    // TODO add support for draw-order of elements based on position
     parent.addChildAt(e, 0);
   }
 }
 
 typedef TiledMapData = { layers:Array<{ data:Array<Int>}>, tilewidth:Int, tileheight:Int, width:Int, height:Int };
+typedef MapDataRef = {
+  var data: TiledMapData;
+  var layersByName: Map<String, Dynamic>;
+}
+
+class MapData {
+  static var cache: MapDataRef;
+  static var previousTiledRes: hxd.res.Resource;
+
+  static public function create(tiledRes: hxd.res.Resource) {
+    if (previousTiledRes == tiledRes) {
+      return cache;
+    }
+
+    // parse Tiled json file
+    var mapData:TiledMapData = haxe.Json.parse(hxd.Res.level_intro_json.entry.getText());
+    var layersByName: Map<String, Dynamic> = new Map();
+    var mapLayers: Array<Dynamic> = mapData.layers;
+
+    for (l in mapLayers) {
+      layersByName.set(l.name, l);
+    }
+
+    return {
+      data: mapData,
+      layersByName: layersByName
+    };
+  }
+}
 
 class Game extends h2d.Object {
   public var level = 1;
@@ -1100,6 +1181,26 @@ class Game extends h2d.Object {
     //   s2d,
     //   player
     // );
+
+
+    // intro_boss
+    {
+      var parsedTiledMap = MapData.create(hxd.Res.level_intro_json);
+      var layersByName = parsedTiledMap.layersByName;
+      var mapObjects: Array<Dynamic> = layersByName.get('objects').objects;
+      var miniBossPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'mini_boss_position');
+      var size = 3;
+
+      var e = new Enemy({
+        x: miniBossPos.x * Main.Global.pixelScale,
+        y: miniBossPos.y * Main.Global.pixelScale,
+        radius: 15 * Main.Global.pixelScale,
+        sightRange: 600,
+        weight: 1.0,
+        color: Game.Colors.yellow,
+      }, size, player);
+      Main.Global.rootScene.addChildAt(e, 0);
+    }
   }
 
   public function lineOfSight(entity, x, y, i) {
@@ -1139,17 +1240,13 @@ class Game extends h2d.Object {
       bmp.setScale(Main.Global.pixelScale);
     }
 
-    // parse Tiled json file
-    var mapData:TiledMapData = haxe.Json.parse(hxd.Res.level_intro_json.entry.getText());
-    var layersByName: Map<String, Dynamic> = new Map();
-    var mapLayers: Array<Dynamic> = mapData.layers;
-
-    for (l in mapLayers) {
-      layersByName.set(l.name, l);
-    }
-
+    var parsedTiledMap = MapData.create(hxd.Res.level_intro_json);
+    var layersByName = parsedTiledMap.layersByName;
     var mapObjects: Array<Dynamic> = layersByName.get('objects').objects;
-    var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
+    // var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
+
+    var miniBossPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'mini_boss_position');
+    var playerStartPos = { x: miniBossPos.x - 35 * Main.Global.pixelScale, y: miniBossPos.y };
 
     Main.Global.rootScene = s2d;
 

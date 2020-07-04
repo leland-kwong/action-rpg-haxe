@@ -387,6 +387,28 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">intro_boss/idle.png</key>
+            <key type="filename">intro_boss/walk1.png</key>
+            <key type="filename">intro_boss/walk2.png</key>
+            <key type="filename">intro_boss/walk3.png</key>
+            <key type="filename">intro_boss/walk4.png</key>
+            <key type="filename">intro_boss/walk5.png</key>
+            <key type="filename">intro_boss/walk6.png</key>
+            <key type="filename">intro_boss/walk7.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.52,0.9</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>75,50,150,100</rect>
+                <key>scale9Paddings</key>
+                <rect>75,50,150,100</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">player/attack1.png</key>
             <key type="filename">player/attack2.png</key>
             <key type="filename">player/attack3.png</key>
