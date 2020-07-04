@@ -1,4 +1,3 @@
-import haxe.Json;
 import h2d.SpriteBatch;
 import Game.Cooldown;
 
@@ -47,7 +46,6 @@ class ParticleSystem {
   }
 
   static public function update(s: PartSystem, dt: Float) {
-    s.time += dt;
     var time = s.time;
     var particles = s.particles;
 
@@ -107,6 +105,8 @@ class ParticleSystem {
     for (p in particles) {
       s.batch.add(p.batchElement, true);
     }
+
+    s.time += dt;
   }
 
   static public function dispose(s: PartSystem) {
