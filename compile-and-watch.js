@@ -40,8 +40,10 @@ let pending = null;
 const rebuild = (eventType, filename) => {
   const isHaxeFile = /\.hx$/.test(filename);
   const isSrcDir = filename.indexOf('src') === 0;
+  const isVimFile = filename.endsWith('swp') 
+    || filename.endsWith('save');
 
-  if (!isHaxeFile && !isSrcDir) {
+  if (isVimFile || (!isHaxeFile && !isSrcDir)) {
     return;
   }
 

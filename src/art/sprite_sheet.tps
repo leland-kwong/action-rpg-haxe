@@ -397,7 +397,7 @@
             <key type="filename">intro_boss/walk7.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.52,0.9</point_f>
+                <point_f>0.515,0.608333</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
@@ -406,6 +406,21 @@
                 <rect>75,50,150,100</rect>
                 <key>scale9Paddings</key>
                 <rect>75,50,150,100</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">intro_boss/walk8.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.515,0.608333</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>50,30,100,60</rect>
+                <key>scale9Paddings</key>
+                <rect>50,30,100,60</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

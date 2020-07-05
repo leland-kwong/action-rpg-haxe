@@ -223,7 +223,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":73,"y":30,"w":63,"h":86},
 	"sourceSize": {"w":63,"h":86},
-	"pivot": {"x":0.492063,"y":0.906977}
+	"pivot": {"x":0.47619,"y":0.5}
 },
 "intro_boss/walk1":
 {
@@ -232,7 +232,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":72,"y":30,"w":64,"h":86},
 	"sourceSize": {"w":64,"h":86},
-	"pivot": {"x":0.5,"y":0.906977}
+	"pivot": {"x":0.484375,"y":0.5}
 },
 "intro_boss/walk2":
 {
@@ -241,7 +241,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":72,"y":29,"w":64,"h":87},
 	"sourceSize": {"w":64,"h":87},
-	"pivot": {"x":0.5,"y":0.908046}
+	"pivot": {"x":0.484375,"y":0.505747}
 },
 "intro_boss/walk3":
 {
@@ -250,7 +250,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":71,"y":29,"w":65,"h":87},
 	"sourceSize": {"w":65,"h":87},
-	"pivot": {"x":0.507692,"y":0.908046}
+	"pivot": {"x":0.492308,"y":0.505747}
 },
 "intro_boss/walk4":
 {
@@ -259,7 +259,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":71,"y":30,"w":65,"h":86},
 	"sourceSize": {"w":65,"h":86},
-	"pivot": {"x":0.507692,"y":0.906977}
+	"pivot": {"x":0.492308,"y":0.5}
 },
 "intro_boss/walk5":
 {
@@ -268,7 +268,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":73,"y":30,"w":63,"h":86},
 	"sourceSize": {"w":63,"h":86},
-	"pivot": {"x":0.492063,"y":0.906977}
+	"pivot": {"x":0.47619,"y":0.5}
 },
 "intro_boss/walk6":
 {
@@ -277,7 +277,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":73,"y":29,"w":63,"h":87},
 	"sourceSize": {"w":63,"h":87},
-	"pivot": {"x":0.492063,"y":0.908046}
+	"pivot": {"x":0.47619,"y":0.505747}
 },
 "intro_boss/walk7":
 {
@@ -286,7 +286,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":73,"y":29,"w":63,"h":87},
 	"sourceSize": {"w":63,"h":87},
-	"pivot": {"x":0.492063,"y":0.908046}
+	"pivot": {"x":0.47619,"y":0.505747}
 },
 "intro_boss/walk8":
 {
@@ -295,7 +295,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":73,"y":30,"w":63,"h":86},
 	"sourceSize": {"w":63,"h":86},
-	"pivot": {"x":0.428571,"y":0.348837}
+	"pivot": {"x":0.47619,"y":0.5}
 },
 "player/attack1":
 {
@@ -439,6 +439,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1522,"h":1273},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:fd72852e7a653d097a47368503b996c8:913b70dd43703495f2f18a89713d35c9:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:f1815f85bfa95d54622b467b3a5ad233:913b70dd43703495f2f18a89713d35c9:6cc8953523e0367402f95f3c9a630665$"
 }
 }

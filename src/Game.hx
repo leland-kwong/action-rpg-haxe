@@ -8,6 +8,7 @@ import Fonts;
 import Utils;
 import Camera;
 import ParticlePlayground;
+import Collision;
 
 using Lambda;
 
@@ -279,7 +280,6 @@ class Enemy extends Entity {
   public var follow: Entity;
   public var canSeeTarget = true;
   var spawnDuration: Float;
-  var graphic: h2d.Graphics;
   var size: Int;
   var repelFilter= 'REPEL_NONE';
   var debugCenter = false;
@@ -386,12 +386,6 @@ class Enemy extends Entity {
         duration: 1,
         startTime: Main.Global.time
       };
-    }
-
-    if (debugCenter) {
-      graphic = new h2d.Graphics(this);
-      graphic.beginFill(0xffffff);
-      graphic.drawCircle(0, 0, radius);
     }
   }
 
@@ -523,6 +517,18 @@ class Enemy extends Entity {
             }
           }
         );
+      }
+      
+      if (debugCenter) {
+        var rScale = (_, _) -> 20;
+        Main.Global.sb.emitSprite(
+            x, y + 1,
+            x, y + 1,
+            0,
+            'exported/square_white',
+            0.001,
+            rScale,
+            rScale);
       }
     }
 
@@ -789,12 +795,13 @@ class Player extends Entity {
         );
         var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
         var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
-        var maxLength = 500;
+        var maxLength = 700;
         cds.set('recoveringFromAbility', abilityCooldown);
         var launchOffset = 30;
         var angle = Math.atan2(y2 - startY, x2 - x);
         var vx = Math.cos(angle);
         var vy = Math.sin(angle);
+        // initial launch point
         var x1 = x + vx * launchOffset;
         var y1 = startY + vy * launchOffset;
         var laserTailX1 = x1 + vx * maxLength;
@@ -818,7 +825,7 @@ class Player extends Entity {
           var lcx = startPt.x + (vx * laserHeadWidth);
           var lcy = startPt.y + (vy * laserHeadWidth);
           {
-            var beamLength = (p, progress) -> Utils.distance(lcx, lcy, endPt.x, endPt.y) - laserTailWidth;
+            var beamLength = (p, progress) -> Utils.distance(lcx, lcy, endPt.x, endPt.y);
             var beamScaleY = (p, progress) -> pixelScale + yScaleRand;
 
             // laser center
@@ -835,8 +842,8 @@ class Player extends Entity {
 
           // laser tail
           Main.Global.sb.emitSprite(
-            endPt.x - (vx * laserTailWidth), endPt.y - (vy * laserTailWidth),
             endPt.x, endPt.y,
+            endPt.x + vx, endPt.y + vy,
             0, 'exported/kamehameha_tail',
             spriteLifetime,
             (p, progress) -> pixelScale + Utils.irnd(0, 1),
@@ -889,10 +896,9 @@ class Player extends Entity {
                 0.01,
                 (p, progress) -> cellSize,
                 (p, progress) -> cellSize,
-                (p, progress) -> 0.2
+                (p, progress) -> 0.8
               );
             }
-
 
             var items = Grid.getItemsInRect(dynamicWorldGrid, worldX, worldY, worldCellSize, worldCellSize);
             var staticWorld = Main.Global.obstacleGrid;
@@ -909,18 +915,40 @@ class Player extends Entity {
                   return false;
                 }
 
-                var colPt = new h2d.col.Point(item.x, item.y);
-                var distFromStart = Utils.distance(x1, y1, colPt.x, colPt.y);
+                var colCircle = new h2d.col.Circle(item.x, item.y, item.radius);
+                // var colPt = new h2d.col.Point(item.x, item.y);
+                var intersectionPoint = Collision.beamCircleIntersectTest(
+                    startPt, 
+                    endPt,
+                    colCircle,
+                    beamThickness);
+                var isIntersecting = intersectionPoint != endPt;
+                Main.Global.sb.emitSprite(
+                  intersectionPoint.x, intersectionPoint.y,
+                  intersectionPoint.x, intersectionPoint.y,
+                  0, 'exported/square_white',
+                  0.01,
+                  (p, progress) -> 10,
+                  (p, progress) -> 10
+                );
 
-                // TODO add support for more accurate intersection point for line -> rectangle
-                // We can figure out the edge that the beam touches and then find the intersection
-                // point at the rectangle edge and the beam's center line.
-                var isIntersecting = distFromStart <= maxLength
-                  && centerLine.distance(colPt) <= item.radius + (beamThickness / 2);
+                // var distFromStart = Utils.distance(x1, y1, colPt.x, colPt.y);
+                // var endPtCircleIntersects = Utils.distance(colPt.x, colPt.y, worldX, worldY)
+                //   <= item.radius;
+
+                // // TODO add support for more accurate intersection point for line -> rectangle
+                // // We can figure out the edge that the beam touches and then find the intersection
+                // // point at the rectangle edge and the beam's center line.
+                // var isIntersecting = endPtCircleIntersects || (
+                //   distFromStart <= maxLength
+                //     && centerLine.distance(colPt) <= item.radius + (beamThickness / 2)
+                // );
 
                 if (isIntersecting) {
+                  var circleCol = new h2d.col.Circle(item.x, item.y, item.radius);
+                  var trueIntersectionPts = circleCol.lineIntersect(centerLine.p1, centerLine.p2);
                   // intersection point
-                  var p = centerLine.project(colPt);
+                  var p = intersectionPoint;
 
                   var laserHitCdKey = 'kamehamehaHit';
                   if (item.type == 'ENEMY' && !item.cds.has(laserHitCdKey)) {
@@ -1132,7 +1160,7 @@ class Game extends h2d.Object {
       var e = new Enemy({
         x: miniBossPos.x * Main.Global.pixelScale,
         y: miniBossPos.y * Main.Global.pixelScale,
-        radius: 15 * Main.Global.pixelScale,
+        radius: 30 * Main.Global.pixelScale,
         sightRange: 600,
         weight: 1.0,
         color: Game.Colors.yellow,
@@ -1326,11 +1354,13 @@ class Game extends h2d.Object {
       if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];
         var nRange = 100;
+        var height = a.radius * 2 + nRange;
+        var width = height;
         var dynamicNeighbors = Grid.getItemsInRect(
-          dynamicWorldGrid, a.x, a.y, a.radius + nRange, a.radius + nRange
+          dynamicWorldGrid, a.x, a.y, width, height
         );
         var obstacleNeighbors = Grid.getItemsInRect(
-          mapRef, a.x, a.y, a.radius + nRange, a.radius + nRange
+          mapRef, a.x, a.y, width, height
         );
         for (n in dynamicNeighbors) {
           neighbors.push(n);
@@ -1361,11 +1391,33 @@ class Game extends h2d.Object {
 
       // TODO need a better way to determine what is a dynamic entity
       if (a.type != 'OBSTACLE' && a.type != 'PROJECTILE') {
-        Grid.setItemRect(dynamicWorldGrid, a.x, a.y, a.radius, a.radius, a.id);
+        Grid.setItemRect(
+          dynamicWorldGrid,
+          a.x,
+          a.y,
+          a.radius * 2,
+          a.radius * 2,
+          a.id
+        );
       }
     }
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
+
+    // display hovered object
+    {
+      var mouseNeighbors = Grid.getItemsInRect(
+        Main.Global.dynamicWorldGrid,
+        mousePointer.x,
+        mousePointer.y,
+        1,
+        1
+      );
+
+      for (item in mouseNeighbors) {
+        trace(item);
+      }
+    }
   }
 }
