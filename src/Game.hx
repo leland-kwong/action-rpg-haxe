@@ -933,17 +933,9 @@ class Player extends Entity {
                   (p, progress) -> 10
                 );
 
-                // var distFromStart = Utils.distance(x1, y1, colPt.x, colPt.y);
-                // var endPtCircleIntersects = Utils.distance(colPt.x, colPt.y, worldX, worldY)
-                //   <= item.radius;
-
-                // // TODO add support for more accurate intersection point for line -> rectangle
-                // // We can figure out the edge that the beam touches and then find the intersection
-                // // point at the rectangle edge and the beam's center line.
-                // var isIntersecting = endPtCircleIntersects || (
-                //   distFromStart <= maxLength
-                //     && centerLine.distance(colPt) <= item.radius + (beamThickness / 2)
-                // );
+                // TODO add support for more accurate intersection point for line -> rectangle
+                // We can figure out the edge that the beam touches and then find the intersection
+                // point at the rectangle edge and the beam's center line.
 
                 if (isIntersecting) {
                   var circleCol = new h2d.col.Circle(item.x, item.y, item.radius);

@@ -32,10 +32,12 @@ class Collision {
       ? Math.max(0, min - normalCollisionDist)
       : Math.max(0, min - endPtCollisionDist);
     var isCollided = penetrationDist > 0 && distToNormalColPt <= length;
-    var cutOffPoint = new h2d.col.Point(
-        isCollided ? coarseIntersections[0].x : line.p2.x,
-        isCollided ? coarseIntersections[0].y : line.p2.y
-        );
+    var cutOffPoint = isCollided 
+      ? new h2d.col.Point(
+          coarseIntersections[0].x,
+          coarseIntersections[0].y
+          )
+      : desiredEndPoint;
 
     if (debugGraphics != null) {
       var g = debugGraphics;

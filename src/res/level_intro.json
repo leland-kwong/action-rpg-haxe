@@ -451,8 +451,8 @@
                  "type":"pillar",
                  "visible":true,
                  "width":38,
-                 "x":416,
-                 "y":192
+                 "x":413,
+                 "y":199
                 }, 
                 {
                  "gid":2,
@@ -463,8 +463,80 @@
                  "type":"pillar",
                  "visible":true,
                  "width":38,
-                 "x":416,
-                 "y":320
+                 "x":413,
+                 "y":327
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":49,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":829,
+                 "y":199
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":50,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":653,
+                 "y":199
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":51,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":573,
+                 "y":439
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":52,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":813,
+                 "y":391
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":53,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":589,
+                 "y":679
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":54,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":813,
+                 "y":679
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -473,7 +545,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":49,
+ "nextobjectid":55,
  "orientation":"orthogonal",
  "renderorder":"left-down",
  "tiledversion":"1.4.1",
