@@ -8,16 +8,17 @@ if (port === undefined) {
   throw new Error('port must be provided');
 }
 
+const compileLogger = require('debug')('compileWatch');
 const compile = (buildFile) => {
   console.log(`compiling ${buildFile}`);
 
   exec(`haxe ${buildFile} --connect ${port}`, (err, stdout, stderr) => {
     if (err) {
-      console.error(err)
+      compileLogger(err)
     } else if (stderr) {
-      console.error(stderr)
+      compileLogger(stderr)
     } else {
-      console.log(`build success ${buildFile}`)
+      compileLogger(`build success ${buildFile}`)
     }
   });
 }
@@ -32,6 +33,7 @@ const cleanupAsepriteExport = async (exportDir) => {
   return fs.remove(exportDir);
 }
 
+const asepriteLogger = require('debug')('asepriteWatch');
 const asepriteExport = async (fileEvent, filename, exportDir, exportFile) => {
   try {
     console.log(`[aseprite] cleaning export directory \`${exportDir}\`...`);
@@ -52,11 +54,11 @@ const asepriteExport = async (fileEvent, filename, exportDir, exportFile) => {
     console.log(`[aseprite] exporting file \`${filename}\`...`);
     exec(`${asepriteExecutable} ${asepriteArgs}`, (err, stdout, stderr) => {
       if (err) {
-        console.error(err)
+        asepriteLogger(err)
       } else if (stderr) {
-        console.error(stderr)
+        asepriteLogger(stderr)
       } else {
-        console.log(`[aseprite success] exported \`${filename}\` to \`${exportFullPath}\``)
+        asepriteLogger(`[aseprite success] exported \`${filename}\` to \`${exportFullPath}\``)
       }
     });
   } catch (err) {
@@ -138,6 +140,7 @@ const startAsepriteWatcher = (options) => {
 
 // [Tiled App](https://www.mapeditor.org/)
 const startTiledWatcher = (options = {}) => {
+  const tiledLogger = require('debug')('tiledWatch');
   const debounceStates = new Map();
   const handleTiledExport = (eventType, path) => {
     const previousPending = debounceStates.get(path);
@@ -156,11 +159,11 @@ const startTiledWatcher = (options = {}) => {
       // [Tiled cli export instructions](https://github.com/bjorn/tiled/issues/903)
       exec(`${tiledExecutable} --export-map ${path} ${outputPath}`, (err, stdout, stderr) => {
         if (err) {
-          console.error(err)
+          tiledLogger(err)
         } else if (stderr) {
-          console.error(stderr)
+          tiledLogger(stderr)
         } else {
-          console.log(`[tiledExport][export success] \`${path}\` to \`${outputPath}\``);
+          tiledLogger(`[tiledExport][export success] \`${path}\` to \`${outputPath}\``);
         }
       });
     }
@@ -174,6 +177,7 @@ const startTiledWatcher = (options = {}) => {
 }
 
 const startTexturePackerWatcher = (options = {}) => {
+  const tpLogger = require('debug')('texturePackerWatch');
   let pending = 0; 
   const {
     destination,
@@ -188,11 +192,11 @@ const startTexturePackerWatcher = (options = {}) => {
       console.log('[tiledExport]', eventType, sourceFile);
       exec(cmd, (err, stdout, stderr) => {
         if (err) {
-          console.error(err)
+          tpLogger(err)
         } else if (stderr) {
-          console.error(stderr)
+          tpLogger(stderr)
         } else {
-          console.log(`[texturePackerExport][export success] \`${sourceFile}\` to \`${destination}\``);
+          tpLogger(`[texturePackerExport][export success] \`${sourceFile}\` to \`${destination}\``);
         }
       });
     }, 1000);
