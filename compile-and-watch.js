@@ -8,7 +8,7 @@ if (port === undefined) {
   throw new Error('port must be provided');
 }
 
-const compileLogger = require('debug')('compileWatch');
+const compileLogger = require('debug')('watcher.compile');
 const compile = (buildFile) => {
   console.log(`compiling ${buildFile}`);
 
@@ -33,7 +33,7 @@ const cleanupAsepriteExport = async (exportDir) => {
   return fs.remove(exportDir);
 }
 
-const asepriteLogger = require('debug')('asepriteWatch');
+const asepriteLogger = require('debug')('watcher.aseprite');
 const asepriteExport = async (fileEvent, filename, exportDir, exportFile) => {
   try {
     console.log(`[aseprite] cleaning export directory \`${exportDir}\`...`);
@@ -140,7 +140,7 @@ const startAsepriteWatcher = (options) => {
 
 // [Tiled App](https://www.mapeditor.org/)
 const startTiledWatcher = (options = {}) => {
-  const tiledLogger = require('debug')('tiledWatch');
+  const tiledLogger = require('debug')('watcher.tiled');
   const debounceStates = new Map();
   const handleTiledExport = (eventType, path) => {
     const previousPending = debounceStates.get(path);
@@ -177,7 +177,7 @@ const startTiledWatcher = (options = {}) => {
 }
 
 const startTexturePackerWatcher = (options = {}) => {
-  const tpLogger = require('debug')('texturePackerWatch');
+  const tpLogger = require('debug')('watcher.texturePacker');
   let pending = 0; 
   const {
     destination,
