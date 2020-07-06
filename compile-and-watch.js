@@ -79,7 +79,8 @@ compile(compileFile)
 
 let pending = null;
 
-const rebuild = (eventType, filename, options = {}) => {
+const rebuild = (eventType, filename, options) => {
+  const { delay } = options;
   const isHaxeFile = /\.hx$/.test(filename);
   const isSrcDir = filename.indexOf('src') === 0;
   const isVimFile = filename.endsWith('swp') 
@@ -92,18 +93,19 @@ const rebuild = (eventType, filename, options = {}) => {
   if (options.verbose) {
     console.log(`${ filename } changed`)
   }
+
   clearTimeout(pending)
   pending = setTimeout(() => {
     compile(compileFile)
-  }, 1000)
+  }, delay)
 }
 
-const startCompileWatcher = () => {
+const startCompileWatcher = (options = {}) => {
   chokidar.watch('.', {
     // this prevents locking up the file system for other windows applications
     usePolling: true,
   }).on('all', (event, path) => {
-    rebuild(event, path);
+    rebuild(event, path, options);
   });
 }
 
@@ -171,13 +173,50 @@ const startTiledWatcher = (options = {}) => {
   }).on('all', handleTiledExport);
 }
 
-startCompileWatcher();
+const startTexturePackerWatcher = (options = {}) => {
+  let pending = 0; 
+  const {
+    destination,
+    sourceFile
+  } = options;
+  const handleTexturePackerExport = (eventType) => {
+    clearTimeout(pending)
 
+    pending = setTimeout(() => {
+      const tpExecutable = '\'/mnt/c/Program Files/CodeAndWeb/TexturePacker/bin/TexturePacker.exe\''; 
+      const cmd = `${tpExecutable} --sheet ${destination} ${sourceFile}`; 
+      console.log('[tiledExport]', eventType, sourceFile);
+      exec(cmd, (err, stdout, stderr) => {
+        if (err) {
+          console.error(err)
+        } else if (stderr) {
+          console.error(stderr)
+        } else {
+          console.log(`[texturePackerExport][export success] \`${sourceFile}\` to \`${destination}\``);
+        }
+      });
+    }, 1000);
+  }
+
+  chokidar.watch([
+    './src/art/*.tps',
+    './src/art/*.aseprite',
+  ], {
+    usePolling: true,
+  }).on('all', handleTexturePackerExport);
+}
+
+startCompileWatcher({
+  delay: 1500
+});
 startAsepriteWatcher({
   // verbose: true,
   animationFilePattern: /_animation$/
 });
-
 startTiledWatcher({
   verbose: true
+});
+startTexturePackerWatcher({
+  sourceFile: './src/art/sprite_sheet.tps',
+  destination: './src/res/sprite_sheet.png'
 });
