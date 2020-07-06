@@ -321,16 +321,16 @@ class Enemy extends Entity {
 
     if (size == 1) {
       var idleFrames = [
-        'enemy-1/idle1',
-        'enemy-1/idle2',
-        'enemy-1/idle3',
-        'enemy-1/idle4',
-        'enemy-1/idle5',
-        'enemy-1/idle6',
-        'enemy-1/idle7',
-        'enemy-1/idle8',
-        'enemy-1/idle9',
-        'enemy-1/idle10',
+        'enemy-1_animation/idle-0',
+        'enemy-1_animation/idle-1',
+        'enemy-1_animation/idle-2',
+        'enemy-1_animation/idle-3',
+        'enemy-1_animation/idle-4',
+        'enemy-1_animation/idle-5',
+        'enemy-1_animation/idle-6',
+        'enemy-1_animation/idle-7',
+        'enemy-1_animation/idle-8',
+        'enemy-1_animation/idle-9',
       ];
       idleAnim = {
         frames: idleFrames,
@@ -342,8 +342,8 @@ class Enemy extends Entity {
 
     if (size == 2) {
       var idleFrames = [
-        'enemy-2/idle1',
-        'enemy-2/idle2',
+        'enemy-2_animation/idle-0',
+        'enemy-2_animation/idle-1',
       ];
 
       idleAnim = {
@@ -353,8 +353,8 @@ class Enemy extends Entity {
       }
 
       var runFrames = [
-        'enemy-2/move1',
-        'enemy-2/move2',
+        'enemy-2_animation/move-0',
+        'enemy-2_animation/move-1',
       ];
 
       runAnim = {
@@ -367,7 +367,7 @@ class Enemy extends Entity {
     if (size == 3) {
       idleAnim = {
         frames: [
-        'intro_boss/idle',
+        'intro_boss_animation/idle-0',
       ],
         duration: 1,
         startTime: Main.Global.time
@@ -375,13 +375,14 @@ class Enemy extends Entity {
 
       runAnim = {
         frames: [
-          'intro_boss/walk1',
-          'intro_boss/walk2',
-          'intro_boss/walk3',
-          'intro_boss/walk4',
-          'intro_boss/walk5',
-          'intro_boss/walk6',
-          'intro_boss/walk7',
+          'intro_boss_animation/walk-0',
+          'intro_boss_animation/walk-1',
+          'intro_boss_animation/walk-2',
+          'intro_boss_animation/walk-3',
+          'intro_boss_animation/walk-4',
+          'intro_boss_animation/walk-5',
+          'intro_boss_animation/walk-6',
+          'intro_boss_animation/walk-7',
         ],
         duration: 1,
         startTime: Main.Global.time
@@ -525,7 +526,7 @@ class Enemy extends Entity {
             x, y + 1,
             x, y + 1,
             0,
-            'exported/square_white',
+            'ui/square_white',
             0.001,
             rScale,
             rScale);
@@ -598,14 +599,14 @@ class Player extends Entity {
     rootScene = s2d;
 
     var runFrames = [
-      'player/run1',
-      'player/run2',
-      'player/run3',
-      'player/run4',
-      'player/run5',
-      'player/run6',
-      'player/run7',
-      'player/run8',
+      'player_animation/run-0',
+      'player_animation/run-1',
+      'player_animation/run-2',
+      'player_animation/run-3',
+      'player_animation/run-4',
+      'player_animation/run-5',
+      'player_animation/run-6',
+      'player_animation/run-7',
     ];
 
     // creates an animation for these tiles
@@ -616,7 +617,7 @@ class Player extends Entity {
     };
 
     var idleFrames = [
-      'player/idle'
+      'player_animation/idle-0'
     ];
 
     idleAnim = {
@@ -626,18 +627,18 @@ class Player extends Entity {
     };
 
     var attackSpriteFrames = [
-      'player/attack1',
-      'player/attack2',
-      'player/attack3',
-      'player/attack4',
-      'player/attack5',
-      'player/attack5',
-      'player/attack5',
-      'player/attack5',
-      'player/attack5',
-      'player/attack5',
-      'player/attack5',
-      'player/attack5',
+      'player_animation/attack-0',
+      'player_animation/attack-1',
+      'player_animation/attack-2',
+      'player_animation/attack-3',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
+      'player_animation/attack-4',
     ];
     attackAnim = {
       frames: attackSpriteFrames,
@@ -770,7 +771,7 @@ class Player extends Entity {
 					x2,
 					y2,
           800.0,
-          'bullet_player_basic',
+          'ui/bullet_player_basic',
           ['ENEMY', 'OBSTACLE']
         );
         Main.Global.rootScene.addChild(b);
@@ -787,11 +788,11 @@ class Player extends Entity {
         var beamThickness = 60;
         var laserHeadSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
-          'exported/kamehameha_head'
+          'ui/kamehameha_head'
         );
         var laserTailSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
-          'exported/kamehameha_tail'
+          'ui/kamehameha_tail'
         );
         var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
         var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
@@ -815,7 +816,7 @@ class Player extends Entity {
           Main.Global.sb.emitSprite(
             startPt.x, startPt.y,
             endPt.x, endPt.y,
-            0, 'exported/kamehameha_head',
+            0, 'ui/kamehameha_head',
             spriteLifetime ,
             null,
             (p, progress) -> pixelScale + yScaleRand,
@@ -832,7 +833,7 @@ class Player extends Entity {
             Main.Global.sb.emitSprite(
               lcx, lcy,
               endPt.x, endPt.y,
-              0, 'exported/kamehameha_center_width_1',
+              0, 'ui/kamehameha_center_width_1',
               spriteLifetime,
               beamLength,
               beamScaleY,
@@ -844,7 +845,7 @@ class Player extends Entity {
           Main.Global.sb.emitSprite(
             endPt.x, endPt.y,
             endPt.x + vx, endPt.y + vy,
-            0, 'exported/kamehameha_tail',
+            0, 'ui/kamehameha_tail',
             spriteLifetime,
             (p, progress) -> pixelScale + Utils.irnd(0, 1),
             (p, progress) -> pixelScale + yScaleRand,
@@ -872,7 +873,7 @@ class Player extends Entity {
           Main.Global.sb.emitSprite(
             laserTailX1, laserTailY1,
             laserTailX1, laserTailY1,
-            0, 'exported/square_white',
+            0, 'ui/square_white',
             0.01,
             (p, progress) -> 10,
             (p, progress) -> 10
@@ -892,7 +893,7 @@ class Player extends Entity {
                 worldY,
                 worldX,
                 worldY,
-                0, 'exported/square_white',
+                0, 'ui/square_white',
                 0.01,
                 (p, progress) -> cellSize,
                 (p, progress) -> cellSize,
@@ -926,7 +927,7 @@ class Player extends Entity {
                 Main.Global.sb.emitSprite(
                   intersectionPoint.x, intersectionPoint.y,
                   intersectionPoint.x, intersectionPoint.y,
-                  0, 'exported/square_white',
+                  0, 'ui/square_white',
                   0.01,
                   (p, progress) -> 10,
                   (p, progress) -> 10
@@ -964,7 +965,7 @@ class Player extends Entity {
                       y1,
                       x1,
                       y1,
-                      0, 'exported/square_white',
+                      0, 'ui/square_white',
                       0.01,
                       (p, progress) -> 10,
                       (p, progress) -> 10
@@ -975,7 +976,7 @@ class Player extends Entity {
                       p.y,
                       p.x,
                       p.y,
-                      0, 'exported/square_white',
+                      0, 'ui/square_white',
                       0.01,
                       (p, progress) -> 10,
                       (p, progress) -> 10
@@ -1047,7 +1048,7 @@ class EnemySpawner {
     cds.set('recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
-    var size = Utils.irnd(1, 1);
+    var size = Utils.irnd(1, 2);
     var radius = 7 + size * 10;
     var posRange = 100;
     var e = new Enemy({
@@ -1155,13 +1156,13 @@ class Game extends h2d.Object {
     level += 1;
 
     // TODO re-enable when spawn positions are setup
-    // enemySpawner = new EnemySpawner(
-    //   800 * Main.Global.pixelScale,
-    //   800 * Main.Global.pixelScale,
-    //   calcNumEnemies(level),
-    //   s2d,
-    //   player
-    // );
+    enemySpawner = new EnemySpawner(
+      800 * Main.Global.pixelScale,
+      900 * Main.Global.pixelScale,
+      calcNumEnemies(level),
+      s2d,
+      player
+    );
 
 
     // intro_boss
@@ -1210,7 +1211,7 @@ class Game extends h2d.Object {
     {
       var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
       var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
-      var bgData = Reflect.field(spriteSheetData, 'exported/level_intro');
+      var bgData = Reflect.field(spriteSheetData, 'ui/level_intro');
       var tile = spriteSheet.sub(
         bgData.frame.x,
         bgData.frame.y,

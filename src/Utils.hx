@@ -37,6 +37,10 @@ class Utils {
       return min + Std.random(max-min+1);
   }
 
+  public static function rollValues(values: Array<Dynamic>) {
+    return Math.round(Math.random() * values.length);
+  }
+
   static var idsCreated = 0;
   static var idSeed = '${Math.random()}'.substring(2, 8);
   public static function uid(
