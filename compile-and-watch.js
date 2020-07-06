@@ -95,7 +95,7 @@ const rebuild = (eventType, filename, options = {}) => {
   clearTimeout(pending)
   pending = setTimeout(() => {
     compile(compileFile)
-  }, 500)
+  }, 1000)
 }
 
 const startCompileWatcher = () => {
@@ -107,26 +107,77 @@ const startCompileWatcher = () => {
   });
 }
 
+// [Aseprite](https://www.aseprite.org/)
 const startAsepriteWatcher = (options) => {
-  const handleAesepriteExport = (ev, path) => {
-    const isAsepriteFile = path.endsWith('.aseprite');
+  const debounceStates = new Map();
 
-    if (!isAsepriteFile) {
-      return;
+  const handleAesepriteExport = (eventType, path) => {
+    if (options.verbose) {
+      console.log(`[aseprite watch][${eventType}] \`${path}\``);
     }
 
-    // filenames with the pattern {my_file}_animation.aseprite
-    const isAnimationDir = options.animationFilePattern.test(filenameWithoutExtension(path));
-    const filePath = isAnimationDir ? '{tag}-{frame}.png' : '{slice}.png';
-    asepriteExport(ev, path, exportDir(path), filePath);
+    const previousPendingBuild = debounceStates.get(path);
+    clearTimeout(previousPendingBuild);
+
+    const triggerBuild = () => {
+      // filenames with the pattern {my_file}_animation.aseprite
+      const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
+      const filePath = isAnimationFile ? '{tag}-{frame}.png' : '{slice}.png';
+      asepriteExport(eventType, path, exportDir(path), filePath);
+    }
+    const newPendingBuild = setTimeout(triggerBuild, 300);
+    debounceStates.set(path, newPendingBuild);
   }
 
-  chokidar.watch('./src/art', {
+  chokidar.watch('./src/art/*.aseprite', {
     usePolling: true,
   }).on('all', handleAesepriteExport);
 }
 
+// [Tiled App](https://www.mapeditor.org/)
+const startTiledWatcher = (options = {}) => {
+  const debounceStates = new Map();
+  const handleTiledExport = (eventType, path) => {
+    const previousPending = debounceStates.get(path);
+    clearTimeout(previousPending);
+
+    if (options.verbose) {
+      console.log(`[tiledExport watch][${eventType}] \`${path}\``);
+    }
+
+    const triggerExport = () => {
+      console.log(`[tiledExport][export start] \`${path}\``);
+      const tiledExecutable = '\'/mnt/c/Program\ Files/Tiled/tiled.exe\''; 
+      // outputs file type based on file extension
+      const outputPath = path.replace(/\.tmx/, '.json');
+
+      // [Tiled cli export instructions](https://github.com/bjorn/tiled/issues/903)
+      exec(`${tiledExecutable} --export-map ${path} ${outputPath}`, (err, stdout, stderr) => {
+        if (err) {
+          console.error(err)
+        } else if (stderr) {
+          console.error(stderr)
+        } else {
+          console.log(`[tiledExport][export success] \`${path}\` to \`${outputPath}\``);
+        }
+      });
+    }
+    const newPending = setTimeout(triggerExport, 300);
+    debounceStates.set(path, newPending);
+  }
+
+  chokidar.watch('./src/res/*.tmx', {
+    usePolling: true,
+  }).on('all', handleTiledExport);
+}
+
 startCompileWatcher();
+
 startAsepriteWatcher({
+  // verbose: true,
   animationFilePattern: /_animation$/
+});
+
+startTiledWatcher({
+  verbose: true
 });

@@ -548,7 +548,7 @@ class Enemy extends Entity {
 					x2,
 					y2,
           300.0,
-          'bullet_enemy_large',
+          'ui/bullet_enemy_large',
           ['PLAYER', 'OBSTACLE']
         );
         Main.Global.rootScene.addChild(b);

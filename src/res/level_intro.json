@@ -441,6 +441,30 @@
                  "width":0,
                  "x":1232,
                  "y":928
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":47,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":416,
+                 "y":192
+                }, 
+                {
+                 "gid":2,
+                 "height":71,
+                 "id":48,
+                 "name":"pillar",
+                 "rotation":0,
+                 "type":"pillar",
+                 "visible":true,
+                 "width":38,
+                 "x":416,
+                 "y":320
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -449,7 +473,7 @@
          "y":0
         }],
  "nextlayerid":4,
- "nextobjectid":47,
+ "nextobjectid":49,
  "orientation":"orthogonal",
  "renderorder":"left-down",
  "tiledversion":"1.4.1",
@@ -457,7 +481,7 @@
  "tilesets":[
         {
          "firstgid":1,
-         "source":"..\/art\/background.tsx"
+         "source":"background.tsx"
         }],
  "tilewidth":16,
  "type":"map",

@@ -276,7 +276,7 @@ class Main extends hxd.App {
     }
 
     try {
-      // Tests.run();
+      Tests.run();
     } catch (err: Dynamic) {
       var font = Fonts.primary.get().clone();
       font.resizeTo(12 * 2);

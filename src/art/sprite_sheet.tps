@@ -277,7 +277,7 @@
             <key type="filename">aseprite_exports/player_animation/run-7.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.919355</point_f>
+                <point_f>0.5,0.883871</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
@@ -289,7 +289,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/Slice 1.png</key>
+            <key type="filename">aseprite_exports/ui/bullet_enemy_large.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -298,9 +298,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>10,18,19,35</rect>
+                <rect>4,4,7,7</rect>
                 <key>scale9Paddings</key>
-                <rect>10,18,19,35</rect>
+                <rect>4,4,7,7</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -406,6 +406,21 @@
                 <rect>380,296,760,592</rect>
                 <key>scale9Paddings</key>
                 <rect>380,296,760,592</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/pillar.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>10,18,19,35</rect>
+                <key>scale9Paddings</key>
+                <rect>10,18,19,35</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
