@@ -1,3 +1,5 @@
+# [reference](https://github.com/HaxeFoundation/hashlink/wiki/Distribution-&--Packaging)
+
 -D resourcesPath=./src/res
 
 # class paths

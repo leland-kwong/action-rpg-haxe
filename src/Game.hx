@@ -1061,10 +1061,25 @@ class EnemySpawner {
   }
 }
 
-typedef TiledMapData = { layers:Array<{ data:Array<Int>}>, tilewidth:Int, tileheight:Int, width:Int, height:Int };
+typedef TiledMapData = { 
+  layers:Array<{ data:Array<Int>}>, 
+  tilewidth:Int, 
+  tileheight:Int, 
+  width:Int, 
+  height:Int 
+};
+
 typedef MapDataRef = {
   var data: TiledMapData;
   var layersByName: Map<String, Dynamic>;
+}
+
+typedef TiledObject = {
+  var id: Int;
+  var x: Int;
+  var y: Int;
+  var width: Int;
+  var height: Int;
 }
 
 class MapData {
@@ -1220,7 +1235,7 @@ class Game extends h2d.Object {
     {
       var traversableRects: Array<Dynamic> = layersByName.get('traversable').objects;
       var pixelScale = Main.Global.pixelScale;
-      var updateTraversableGrid = (item) -> {
+      var updateTraversableGrid = (item: TiledObject) -> {
         // trace(item);
         Grid.setItemRect(
           Main.Global.traversableGrid,
@@ -1228,7 +1243,7 @@ class Game extends h2d.Object {
           (item.y + item.height / 2) * pixelScale,
           item.width * pixelScale,
           item.height * pixelScale,
-          item.id
+          Std.string(item.id)
         );
         return true;
       }
@@ -1416,7 +1431,7 @@ class Game extends h2d.Object {
       );
 
       for (item in mouseNeighbors) {
-        trace(item);
+        // trace(item);
       }
     }
   }

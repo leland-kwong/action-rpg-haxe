@@ -180,7 +180,6 @@ enum abstract MainSceneType(String) {
   var ParticlePlayground;
 }
 
-
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
@@ -205,7 +204,6 @@ class Main extends hxd.App {
   }
 
   function onGameExit() {
-    trace('on game exit');
     hxd.System.exit();
   }
 
@@ -277,41 +275,11 @@ class Main extends hxd.App {
       background = addBackground(Global.mainBackground, 0x333333);
     }
 
-    var testBeamCircleIntersect = false;
-    if (testBeamCircleIntersect)  {
-      var g = new h2d.Graphics(Global.uiRoot);
-      // render full-screen background
-      g.beginFill(0x333333);
-      g.drawRect(0, 0, 1920, 1080);
-
-      var collisionCircle = new h2d.col.Circle(800, 500, 60);
-      var lineThickness = collisionCircle.ray;
-      Main.Global.uiRoot.addEventListener((ev: hxd.Event) -> {
-        g.clear();
-
-        Collision.beamCircleIntersectTest(
-            new h2d.col.Point(1200, 300),
-            new h2d.col.Point(ev.relX, ev.relY),
-            collisionCircle,
-            lineThickness * 4,
-            g
-            );
-
-        Collision.beamCircleIntersectTest(
-            new h2d.col.Point(300, 300),
-            new h2d.col.Point(ev.relX, ev.relY),
-            collisionCircle,
-            lineThickness * 4,
-            g
-            );
-      });
-    }
-
     try {
-      Tests.run();
+      // Tests.run();
     } catch (err: Dynamic) {
       var font = Fonts.primary.get().clone();
-      font.resizeTo(12 * 3);
+      font.resizeTo(12 * 2);
       var tf = new h2d.Text(font, Global.debugScene);
       tf.textColor = Game.Colors.red;
       tf.textAlign = Align.Center;
