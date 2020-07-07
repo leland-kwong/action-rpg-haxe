@@ -23,11 +23,13 @@ const compile = (buildFile) => {
   });
 }
 
+const asepriteExportDir = './src/art/aseprite_exports';
+
 const filenameWithoutExtension = (filePath) => 
   filePath.split('/').slice(-1)[0].replace(/\.[^]+/g, '');
 
 const exportDir = (filename) => 
-  `./src/art/aseprite_exports/${filenameWithoutExtension(filename)}`
+  `${asepriteExportDir}/${filenameWithoutExtension(filename)}`
 
 const cleanupAsepriteExport = async (exportDir) => {
   return fs.remove(exportDir);
@@ -204,7 +206,7 @@ const startTexturePackerWatcher = (options = {}) => {
 
   chokidar.watch([
     './src/art/*.tps',
-    './src/art/aseprite_exports',
+    asepriteExportDir,
   ], {
     usePolling: true,
   }).on('all', handleTexturePackerExport);
