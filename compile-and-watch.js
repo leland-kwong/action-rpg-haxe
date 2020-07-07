@@ -199,12 +199,12 @@ const startTexturePackerWatcher = (options = {}) => {
           tpLogger(`[texturePackerExport][export success] \`${sourceFile}\` to \`${destination}\``);
         }
       });
-    }, 1000);
+    }, 500);
   }
 
   chokidar.watch([
     './src/art/*.tps',
-    './src/art/*.aseprite',
+    './src/art/aseprite_exports',
   ], {
     usePolling: true,
   }).on('all', handleTexturePackerExport);
