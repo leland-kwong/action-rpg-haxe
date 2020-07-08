@@ -377,7 +377,6 @@ class Main extends hxd.App {
         }
 
         game.update(s2d, frameTime);
-        Global.sb.update(frameTime);
 
         if (game.isGameOver()) {
           switchMainScene(MainSceneType.PlayGame);
@@ -385,6 +384,7 @@ class Main extends hxd.App {
       }
 
       Camera.update(Main.Global.mainCamera, dt);
+      Global.sb.update(frameTime);
 
       if (debugText != null) {
         var text = [
