@@ -11,6 +11,7 @@ typedef Particle = {
   var ?rScaleX: (p: Particle, progress: Float) -> Float;
   var ?rScaleY: (p: Particle, progress: Float) -> Float;
   var ?rColor: (p: Particle, progress: Float) -> Void;
+  var ?sortOrder: Int;
   var lifeTime: Float;
   var createdAt: Float;
   var batchElement: BatchElement;
@@ -25,13 +26,13 @@ typedef PartSystem = {
 };
 
 class ParticleSystem {
-  static public function init() {
+  static public function init(scene: h2d.Scene) {
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     var system: PartSystem = {
       particles: [],
       spriteSheetData: Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames,
       spriteSheet: spriteSheet,
-      batch: new h2d.SpriteBatch(spriteSheet, Main.Global.particleScene),
+      batch: new h2d.SpriteBatch(spriteSheet, scene),
       time: 0.0
     };
     system.batch.hasRotationScale = true;
@@ -88,14 +89,16 @@ class ParticleSystem {
     s.batch.clear();
     // sort by y-position
     particles.sort((a, b) -> {
-      var ay = a.y;
-      var by = b.y;
+      var sortA = a.sortOrder == null 
+        ? a.y : a.sortOrder;
+      var sortB = b.sortOrder == null 
+        ? b.y : b.sortOrder;
 
-      if (ay < by) {
+      if (sortA < sortB) {
         return 1;
       }
 
-      if (ay > by) {
+      if (sortA > sortB) {
         return -1;
       }
 
@@ -124,8 +127,8 @@ class ParticlePlayground {
   var spriteTypes: Map<String, h2d.Tile> = new Map();
   public var pSystem: PartSystem;
 
-  public function new() {
-    pSystem = ParticleSystem.init();
+  public function new(scene: h2d.Scene) {
+    pSystem = ParticleSystem.init(scene);
   }
 
   function makeTile(spriteKey: String) {
@@ -169,7 +172,7 @@ class ParticlePlayground {
       );
       var g = new BatchElement(makeTile(spriteKey));
       g.rotation = angle;
-      g.scale = 4;
+      g.scale = Main.Global.pixelScale;
       sprite = {
         dx: Math.cos(angle),
         dy: Math.sin(angle),

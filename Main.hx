@@ -24,6 +24,7 @@ class Global {
   public static var dynamicWorldGrid: GridRef;
   public static var traversableGrid: GridRef;
   public static var sb: ParticlePlayground;
+  public static var uiSpriteBatch: ParticlePlayground;
   public static var pixelScale = 4;
   public static var time = 0.0;
 }
@@ -82,7 +83,6 @@ class HomeScreen extends h2d.Object {
   public function new(
     onGameStart,
     onGameExit,
-    onMapEditorMode,
     onParticlePlaygroundMode
   ) {
     super();
@@ -105,7 +105,6 @@ class HomeScreen extends h2d.Object {
         this.remove();
         onGameStart();
       }],
-      ['Map Editor', btnFont, onMapEditorMode],
       ['Particle Playground', btnFont, onParticlePlaygroundMode],
       ['Exit Game', btnFont, onGameExit],
     ];
@@ -176,7 +175,6 @@ class Hud extends h2d.Object {
 
 enum abstract MainSceneType(String) {
   var PlayGame;
-  var MapEditor;
   var ParticlePlayground;
 }
 
@@ -218,9 +216,6 @@ class Main extends hxd.App {
     return new HomeScreen(
       onGameStart, onGameExit,
       () -> {
-        switchMainScene(MainSceneType.MapEditor);
-      },
-      () -> {
         switchMainScene(MainSceneType.ParticlePlayground);
       }
     );
@@ -250,13 +245,8 @@ class Main extends hxd.App {
         reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
       }
 
-      case MainSceneType.MapEditor: {
-        var editor = new GridEditor(s2d);
-        reactiveItems['MainScene_GridEditor'] = editor;
-      }
-
       case MainSceneType.ParticlePlayground: {
-        var ref = new ParticlePlayground();
+        var ref = new ParticlePlayground(Global.uiRoot);
         reactiveItems['MainScene_ParticlePlayground'] = ref;
       }
     }
@@ -314,7 +304,8 @@ class Main extends hxd.App {
     Global.rootScene = s2d;
 
     Global.mainCamera = Camera.create();
-    Global.sb = new ParticlePlayground();
+    Global.sb = new ParticlePlayground(Global.particleScene);
+    Global.uiSpriteBatch = new ParticlePlayground(Global.uiRoot);
 
     switchMainScene(MainSceneType.PlayGame);
 
@@ -322,6 +313,8 @@ class Main extends hxd.App {
       var font = Fonts.primary.get().clone();
       setupDebugInfo(font);
     #end
+
+    Examples.start();
   }
 
   function handleGlobalHotkeys() {
@@ -334,6 +327,8 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
+    Examples.update(dt);
+
     Main.Global.time += dt;
 
     Camera.setSize(
@@ -385,6 +380,7 @@ class Main extends hxd.App {
 
       Camera.update(Main.Global.mainCamera, dt);
       Global.sb.update(frameTime);
+      Global.uiSpriteBatch.update(frameTime);
 
       if (debugText != null) {
         var text = [

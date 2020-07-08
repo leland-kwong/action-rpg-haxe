@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="44">
+ <tileset firstgid="1" source="ui.tsx"/>
+ <objectgroup id="3" name="cockpit_underlay">
+  <object id="29" type="hud_main" gid="1" x="166" y="265" width="148" height="34"/>
+ </objectgroup>
+ <objectgroup id="2" name="health_bars">
+  <object id="15" gid="2" x="170" y="239" width="6" height="4"/>
+  <object id="16" gid="2" x="174" y="239" width="6" height="4"/>
+  <object id="17" gid="2" x="178" y="239" width="6" height="4"/>
+  <object id="18" gid="2" x="182" y="239" width="6" height="4"/>
+  <object id="19" gid="2" x="186" y="239" width="6" height="4"/>
+  <object id="20" gid="2" x="190" y="239" width="6" height="4"/>
+  <object id="21" gid="2" x="194" y="239" width="6" height="4"/>
+  <object id="22" gid="2" x="198" y="239" width="6" height="4"/>
+  <object id="23" gid="2" x="202" y="239" width="6" height="4"/>
+  <object id="24" gid="2" x="206" y="239" width="6" height="4"/>
+  <object id="25" gid="2" x="210" y="239" width="6" height="4"/>
+  <object id="26" gid="2" x="214" y="239" width="6" height="4"/>
+  <object id="27" gid="2" x="218" y="239" width="6" height="4"/>
+  <object id="28" gid="2" x="222" y="239" width="6" height="4"/>
+ </objectgroup>
+ <objectgroup id="4" name="energy_bars">
+  <object id="30" gid="3" x="252" y="239" width="6" height="4"/>
+  <object id="31" gid="3" x="256" y="239" width="6" height="4"/>
+  <object id="32" gid="3" x="260" y="239" width="6" height="4"/>
+  <object id="33" gid="3" x="264" y="239" width="6" height="4"/>
+  <object id="34" gid="3" x="268" y="239" width="6" height="4"/>
+  <object id="35" gid="3" x="272" y="239" width="6" height="4"/>
+  <object id="36" gid="3" x="276" y="239" width="6" height="4"/>
+  <object id="37" gid="3" x="280" y="239" width="6" height="4"/>
+  <object id="38" gid="3" x="284" y="239" width="6" height="4"/>
+  <object id="39" gid="3" x="288" y="239" width="6" height="4"/>
+  <object id="40" gid="3" x="292" y="239" width="6" height="4"/>
+  <object id="41" gid="3" x="296" y="239" width="6" height="4"/>
+  <object id="42" gid="3" x="300" y="239" width="6" height="4"/>
+  <object id="43" gid="3" x="304" y="239" width="6" height="4"/>
+ </objectgroup>
+</map>
