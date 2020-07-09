@@ -23,3 +23,4 @@ typedef TiledObject = {
   var width: Int;
   var height: Int;
 }
+

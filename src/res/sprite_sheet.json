@@ -380,11 +380,11 @@
 },
 "ui/cockpit_underlay":
 {
-	"frame": {"x":444,"y":1,"w":148,"h":34},
+	"frame": {"x":444,"y":1,"w":148,"h":38},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":148,"h":34},
-	"sourceSize": {"w":148,"h":34},
+	"spriteSourceSize": {"x":0,"y":0,"w":148,"h":38},
+	"sourceSize": {"w":148,"h":38},
 	"pivot": {"x":0,"y":1}
 },
 "ui/kamehameha_center_width_1":
@@ -466,6 +466,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1522,"h":1275},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:566d319da34ad9b86e7c424a7ebc0141:8fb915c66c723f924a88e93483787274:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:7e2b5ea6da766c92993eadf7112de282:4fac096d3d4cc5dc64d717c955adaa40:6cc8953523e0367402f95f3c9a630665$"
 }
 }

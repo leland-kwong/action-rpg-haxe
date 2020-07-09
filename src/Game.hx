@@ -573,7 +573,6 @@ class Enemy extends Entity {
 }
 
 class Player extends Entity {
-  public var playerInfo: h2d.Text;
   var hitFlashOverlay: h2d.Graphics;
   var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
@@ -599,6 +598,7 @@ class Player extends Entity {
     forceMultiplier = 3.0;
 
     rootScene = s2d;
+    Main.Global.playerStats = PlayerStats.create();
 
     var runFrames = [
       'player_animation/run-0',
@@ -778,6 +778,13 @@ class Player extends Entity {
         );
         Main.Global.rootScene.addChild(b);
         cds.set('primaryAbility', abilityCooldown);
+
+        PlayerStats.addEvent(
+            Main.Global.playerStats, 
+            {
+              type: 'ENERGY_SPEND',
+              value: -1
+            });
       }
 
       case 1: {
@@ -828,7 +835,7 @@ class Player extends Entity {
           var lcx = startPt.x + (vx * laserHeadWidth);
           var lcy = startPt.y + (vy * laserHeadWidth);
           {
-            var beamLength = (p, progress) -> Utils.distance(lcx, lcy, endPt.x, endPt.y);
+            var beamLength = (p, progress) -> Math.round(Utils.distance(lcx, lcy, endPt.x, endPt.y));
             var beamScaleY = (p, progress) -> pixelScale + yScaleRand;
 
             // laser center
@@ -1086,7 +1093,6 @@ class Game extends h2d.Object {
   var player: Player;
   var mousePointer: h2d.Object;
   var mousePointerSprite: h2d.Graphics;
-  var playerInfo: h2d.Text;
   var mapRef: GridRef;
   var dynamicWorldGrid: GridRef = Grid.create(64);
   var TARGET_RADIUS = 20.0;
@@ -1117,7 +1123,6 @@ class Game extends h2d.Object {
     }
 
     mousePointer.remove();
-    playerInfo.remove();
   }
 
   override function onRemove() {
@@ -1264,13 +1269,6 @@ class Game extends h2d.Object {
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
-    playerInfo = new h2d.Text(font);
-    playerInfo.textAlign = Left;
-    playerInfo.textColor = 0xffffff;
-    playerInfo.x = 10;
-    playerInfo.y = 10;
-    Main.Global.uiRoot
-      .addChild(playerInfo);
 
     // mouse pointer
     mousePointer = new h2d.Object(this);
@@ -1304,6 +1302,10 @@ class Game extends h2d.Object {
       return;
     }
 
+    PlayerStats.update(
+        Main.Global.playerStats, 
+        dt);
+
     // sort dynamic objects in main world by their y position
     Main.Global.rootScene.children.sort((a, b) -> {
       if (a.y > b.y) {
@@ -1327,12 +1329,6 @@ class Game extends h2d.Object {
     }
 
     SoundFx.globalCds.update(dt);
-
-    {
-      playerInfo.text = [
-        'health: ${player.health}',
-      ].join('\n');
-    }
 
     cleanupDisposedEntities();
 

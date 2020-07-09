@@ -27,6 +27,8 @@ class Global {
   public static var uiSpriteBatch: ParticlePlayground;
   public static var pixelScale = 4;
   public static var time = 0.0;
+  public static var playerStats = PlayerStats.create(); 
+  public static var _log = {};
 }
 
 enum UiState {
@@ -137,42 +139,6 @@ class HomeScreen extends h2d.Object {
   }
 }
 
-class Hud extends h2d.Object {
-  var helpTextList: Array<h2d.Text> = [];
-  var scene: h2d.Scene;
-
-  function controlsHelpText(text, font) {
-    var t = new h2d.Text(font, this);
-    t.text = text;
-    t.textAlign = Right;
-    t.textColor = Game.Colors.pureWhite;
-    helpTextList.push(t);
-    return t;
-  }
-
-  public function new(s2d: h2d.Scene) {
-    super(s2d);
-
-    scene = s2d;
-    var font = Fonts.primary.get().clone();
-    font.resizeTo(24);
-    controlsHelpText('wasd: move', font);
-    controlsHelpText('left-click: primary', font);
-    controlsHelpText('right-click: secondary', font);
-  }
-
-  public function update(dt) {
-    var _originX = scene.width - 10.0;
-    var originY = scene.height - 10;
-
-    for (t in helpTextList) {
-      t.x = _originX;
-      t.y = originY - t.textHeight;
-      _originX -= t.textWidth + 20;
-    }
-  }
-}
-
 enum abstract MainSceneType(String) {
   var PlayGame;
   var ParticlePlayground;
@@ -237,9 +203,6 @@ class Main extends hxd.App {
 
     switch(sceneType) {
       case MainSceneType.PlayGame: {
-        var hud = new Hud(Global.uiRoot);
-        Global.uiRoot.addChild(hud);
-        reactiveItems['MainScene_PlayGame_Hud'] = hud;
         var hs = showHomeScreen();
         Global.uiRoot.addChild(hs);
         reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
@@ -314,7 +277,7 @@ class Main extends hxd.App {
       setupDebugInfo(font);
     #end
 
-    Examples.start();
+    Hud.start();
   }
 
   function handleGlobalHotkeys() {
@@ -327,7 +290,7 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
-    Examples.update(dt);
+    Hud.update(dt);
 
     Main.Global.time += dt;
 
@@ -390,9 +353,11 @@ class Main extends hxd.App {
             fps: Math.round(1/frameTime),
             drawCalls: engine.drawCalls,
             numEntities: Entity.ALL.length,
-            numParticles: Main.Global.sb.pSystem.particles.length
+            numSprites: Main.Global.sb.pSystem.particles.length 
+              + Main.Global.uiSpriteBatch.pSystem.particles.length
           }, null, '  ')}',
-          'mouse: ${Json.stringify(Global.mouse, null, '  ')}'
+          'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
+          'log: ${Json.stringify(Global._log, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;
         debugText.x = debugUiMargin;
