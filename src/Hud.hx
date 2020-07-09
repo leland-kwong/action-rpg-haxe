@@ -51,17 +51,24 @@ class Hud {
           p.sortOrder = 0;
           return Main.Global.pixelScale;
         });
- 
-    for (item in healthBars) {
-      Main.Global.uiSpriteBatch.emitSprite(
-          item.x * Main.Global.pixelScale,
-          item.y * Main.Global.pixelScale,
-          item.x * Main.Global.pixelScale,
-          item.y * Main.Global.pixelScale,
-          0,
-          'ui/cockpit_resource_bar_health',
-          0.001,
-          barsCallback);
+
+    {
+      var healthRemaining = ps.currentHealth / ps.maxHealth;
+      var numSegments = Math.ceil(healthRemaining * healthBars.length);
+      var indexAdjust = healthBars.length - numSegments;
+
+        for (i in 0...numSegments) {
+          var item = healthBars[i + indexAdjust];
+          Main.Global.uiSpriteBatch.emitSprite(
+              item.x * Main.Global.pixelScale,
+              item.y * Main.Global.pixelScale,
+              item.x * Main.Global.pixelScale,
+              item.y * Main.Global.pixelScale,
+              0,
+              'ui/cockpit_resource_bar_health',
+              0.001,
+              barsCallback);
+        }
     }
 
     {

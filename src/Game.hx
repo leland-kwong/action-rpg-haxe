@@ -516,7 +516,7 @@ class Enemy extends Entity {
               b.r = 255;
               b.g = 255;
               b.b = 255;
-              b.a = 1;
+              b.a = 0.7;
             }
           }
         );
@@ -562,7 +562,7 @@ class Enemy extends Entity {
       var c = activeAnim;
 
       if (damageTaken > 0) {
-        cds.set('hitFlash', 0.04);
+        cds.set('hitFlash', 0.015);
         health -= damageTaken;
         damageTaken = 0;
       }
@@ -745,7 +745,10 @@ class Player extends Entity {
       if (damageTaken > 0) {
         cds.set('hitFlash', 0.02);
         hitFlashOverlay.color.set(1, 1, 1, 0.5);
-        health -= damageTaken;
+        PlayerStats.addEvent(
+            Main.Global.playerStats, 
+            { type: 'DAMAGE_RECEIVED', 
+              value: damageTaken });
         damageTaken = 0;
       }
     }
@@ -757,7 +760,10 @@ class Player extends Entity {
 
     switch ability {
       case 0: {
-        if (cds.has('primaryAbility')) {
+        var energyCost = 2;
+        var hasEnoughEnergy = energyCost <= Main.Global.playerStats.currentEnergy;
+
+        if (cds.has('primaryAbility') || !hasEnoughEnergy) {
           return;
         }
         var abilityCooldown = 1/10;
@@ -781,10 +787,8 @@ class Player extends Entity {
 
         PlayerStats.addEvent(
             Main.Global.playerStats, 
-            {
-              type: 'ENERGY_SPEND',
-              value: -1
-            });
+            { type: 'ENERGY_SPEND',
+              value: energyCost });
       }
 
       case 1: {

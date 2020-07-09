@@ -29,7 +29,13 @@ class PlayerStats {
     for (e in events) {
       switch(e.type) {
         case 'ENERGY_SPEND': 
-          statsRef.currentEnergy += e.value;
+          var value = e.value;
+          // NOTE: type system bugging out when using -=
+          statsRef.currentEnergy += -1.0 * value;
+
+        case 'DAMAGE_RECEIVED': 
+          var value = e.value; 
+          statsRef.currentHealth += -1.0 * value;
       }
     }
 
