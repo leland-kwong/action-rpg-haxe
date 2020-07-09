@@ -113,18 +113,16 @@ class ParticleSystem {
   }
 
   static public function dispose(s: PartSystem) {
-      s.batch.remove();
+    s.batch.remove();
   }
 }
 
 class ParticlePlayground {
   var cds = new Cooldown();
-  var spriteList = [];
   var time = 0.0;
   var bulletEnemyLarge: h2d.Tile;
   var tileWithGlow: h2d.Tile;
   var circleTile: h2d.Tile;
-  var spriteTypes: Map<String, h2d.Tile> = new Map();
   public var pSystem: PartSystem;
 
   public function new(scene: h2d.Scene) {
@@ -159,12 +157,13 @@ class ParticlePlayground {
     speed: Float,
     spriteKey: String,
     lifeTime = 1.0,
-    rScaleX = null,
-    rScaleY = null,
-    rAlpha = null,
-    rColor = null
+    ?rScaleX,
+    ?rScaleY,
+    ?rAlpha,
+    ?rColor
   ) {
-    var sprite: Particle = null;
+    var spriteRef: Particle = null;
+
     {
       var angle = Math.atan2(
         y2 - y1,
@@ -173,7 +172,7 @@ class ParticlePlayground {
       var g = new BatchElement(makeTile(spriteKey));
       g.rotation = angle;
       g.scale = Main.Global.pixelScale;
-      sprite = {
+      spriteRef = {
         dx: Math.cos(angle),
         dy: Math.sin(angle),
         x: x1,
@@ -187,10 +186,10 @@ class ParticlePlayground {
         rScaleY: rScaleY,
         rColor: rColor,
       };
-      ParticleSystem.emit(pSystem, sprite);
-      spriteList.push(sprite);
+      ParticleSystem.emit(pSystem, spriteRef);
     }
-    return sprite;
+
+    return spriteRef;
   }
 
   public function removeSprite(spriteRef: Particle) {
