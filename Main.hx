@@ -28,7 +28,6 @@ class Global {
   public static var pixelScale = 4;
   public static var time = 0.0;
   public static var playerStats = PlayerStats.create(); 
-  public static var _log = {};
 }
 
 enum UiState {
@@ -363,7 +362,6 @@ class Main extends hxd.App {
               + Main.Global.uiSpriteBatch.pSystem.particles.length
           }, null, '  ')}',
           'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
-          'log: ${Json.stringify(Global._log, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;
         debugText.x = debugUiMargin;

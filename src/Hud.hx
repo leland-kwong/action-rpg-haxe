@@ -37,8 +37,6 @@ class Hud {
       return Main.Global.pixelScale;
     }
 
-    Main.Global._log = ps;
-
     Main.Global.uiSpriteBatch.emitSprite(
         cockpitUnderlay.x * Main.Global.pixelScale,
         cockpitUnderlay.y * Main.Global.pixelScale,

@@ -1,8 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="5" nextobjectid="44">
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="56">
  <tileset firstgid="1" source="ui.tsx"/>
  <objectgroup id="3" name="cockpit_underlay">
   <object id="29" type="hud_main" gid="1" x="166" y="266" width="148" height="38"/>
+ </objectgroup>
+ <objectgroup id="5" name="skill_tree" tintcolor="#18afd1">
+  <object id="49" x="210" y="27">
+   <properties>
+    <property name="connection" type="object" value="55"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="53" x="184" y="112">
+   <properties>
+    <property name="connection" type="object" value="54"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="54" x="111" y="101">
+   <properties>
+    <property name="connection" type="object" value="50"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="55" x="166" y="44">
+   <properties>
+    <property name="connection" type="object" value="53"/>
+   </properties>
+   <ellipse/>
+  </object>
  </objectgroup>
  <objectgroup id="2" name="health_bars">
   <object id="15" gid="2" x="170" y="238" width="6" height="4"/>

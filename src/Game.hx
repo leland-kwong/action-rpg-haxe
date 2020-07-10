@@ -921,7 +921,6 @@ class Player extends Entity {
             );
 
             var checkCollisions = (items: Map<String, String>) -> {
-              // trace(items);
               for (entityId in items) {
                 var item = Entity.ALL_BY_ID[entityId];
 

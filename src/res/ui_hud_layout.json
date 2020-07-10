@@ -27,6 +27,90 @@
         }, 
         {
          "draworder":"topdown",
+         "id":5,
+         "name":"skill_tree",
+         "objects":[
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":49,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"connection",
+                         "type":"object",
+                         "value":55
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":210,
+                 "y":27
+                }, 
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":53,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"connection",
+                         "type":"object",
+                         "value":54
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":184,
+                 "y":112
+                }, 
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":54,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"connection",
+                         "type":"object",
+                         "value":50
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":111,
+                 "y":101
+                }, 
+                {
+                 "ellipse":true,
+                 "height":0,
+                 "id":55,
+                 "name":"",
+                 "properties":[
+                        {
+                         "name":"connection",
+                         "type":"object",
+                         "value":53
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":166,
+                 "y":44
+                }],
+         "opacity":1,
+         "tintcolor":"#18afd1",
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":2,
          "name":"health_bars",
          "objects":[
@@ -383,8 +467,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":5,
- "nextobjectid":44,
+ "nextlayerid":6,
+ "nextobjectid":56,
  "orientation":"orthogonal",
  "renderorder":"left-down",
  "tiledversion":"1.4.1",

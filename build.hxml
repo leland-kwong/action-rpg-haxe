@@ -1,6 +1,7 @@
 # [reference](https://github.com/HaxeFoundation/hashlink/wiki/Distribution-&--Packaging)
 
 -D resourcesPath=./src/res
+-D debugMode
 
 # class paths
 -cp src
