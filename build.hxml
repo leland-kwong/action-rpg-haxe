@@ -1,7 +1,7 @@
 # [reference](https://github.com/HaxeFoundation/hashlink/wiki/Distribution-&--Packaging)
 
+# [compilation flags](https://haxe.org/manual/lf-condition-compilation.html)
 -D resourcesPath=./src/res
--D debugMode
 
 # class paths
 -cp src

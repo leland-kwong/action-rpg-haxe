@@ -116,8 +116,11 @@ class ParticleSystem {
 }
 
 // TODO: Rename this to *batch system*
-// TODO: Refactor to be simpler and only allow
-// one side-effect callback per sprite
+// TODO: Refactor to be simpler and only handle drawing.
+// All update logic should be handled separately in their
+// own systems. This way we can keep the render batching
+// system performant by only doing mutations on sprites
+// that actually need it.
 // TODO: Refactor to take in a sprite object
 // directly so we can do optimizations such as
 // reusing sprites each frame if needed.
