@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "DEBUG=watcher.* node compile-and-watch.js 6001",
+    "productionBuild": "haxe -D production build.hxml",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

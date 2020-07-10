@@ -12,7 +12,9 @@ const compileLogger = require('debug')('watcher.compile');
 const compile = (buildFile) => {
   console.log(`compiling ${buildFile}`);
 
-  exec(`haxe ${buildFile} --connect ${port}`, (err, stdout, stderr) => {
+  const flags = '-D debugMode';
+  const cmd = `haxe ${flags} ${buildFile} --connect ${port}`;
+  exec(cmd, (err, stdout, stderr) => {
     if (err) {
       compileLogger(err)
     } else if (stderr) {
@@ -36,7 +38,9 @@ const cleanupAsepriteExport = async (exportDir) => {
 }
 
 const asepriteLogger = require('debug')('watcher.aseprite');
-const asepriteExport = async (fileEvent, filename, exportDir, exportFile) => {
+const asepriteExport = async (
+  fileEvent, filename, exportDir, exportFile
+) => {
   try {
     console.log(`[aseprite] cleaning export directory \`${exportDir}\`...`);
     await cleanupAsepriteExport(exportDir);
@@ -54,7 +58,8 @@ const asepriteExport = async (fileEvent, filename, exportDir, exportFile) => {
     const asepriteArgs = `-b ${filename} --save-as ${exportFullPath}`;
 
     console.log(`[aseprite] exporting file \`${filename}\`...`);
-    exec(`${asepriteExecutable} ${asepriteArgs}`, (err, stdout, stderr) => {
+    const cmd = `${asepriteExecutable} ${asepriteArgs}`;
+    exec(cmd, (err, stdout, stderr) => {
       if (err) {
         asepriteLogger(err)
       } else if (stderr) {
