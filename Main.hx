@@ -257,7 +257,13 @@ class Main extends hxd.App {
 
       // make fullscreen
       #if !jsMode
-        win.resize(1920, 1080);
+        var nativePixelResolution = {
+          x: 480,
+          y: 270
+        }
+        win.resize(
+            nativePixelResolution.x * Main.Global.pixelScale, 
+            nativePixelResolution.y * Main.Global.pixelScale);
         win.displayMode = hxd.Window.DisplayMode.Fullscreen;
       #end
     }
