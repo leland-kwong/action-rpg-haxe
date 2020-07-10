@@ -31,7 +31,6 @@ class PlayerStats {
 
   public static function addEvent(
       statsRef, event: EventObject) {
-    // trace(event);
 
     statsRef.recentEvents.push(event);
   }

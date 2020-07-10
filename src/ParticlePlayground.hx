@@ -14,6 +14,7 @@ typedef Particle = {
   var ?sortOrder: Int;
   var lifeTime: Float;
   var createdAt: Float;
+  var isNew: Bool;
   var batchElement: BatchElement;
 };
 
@@ -22,7 +23,6 @@ typedef PartSystem = {
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
   var spriteSheetData: Dynamic;
-  var time: Float;
 };
 
 class ParticleSystem {
@@ -33,7 +33,6 @@ class ParticleSystem {
       spriteSheetData: Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames,
       spriteSheet: spriteSheet,
       batch: new h2d.SpriteBatch(spriteSheet, scene),
-      time: 0.0
     };
     system.batch.hasRotationScale = true;
     return system;
@@ -47,7 +46,7 @@ class ParticleSystem {
   }
 
   static public function update(s: PartSystem, dt: Float) {
-    var time = s.time;
+    var time = Main.Global.time;
     var particles = s.particles;
 
     {
@@ -56,7 +55,7 @@ class ParticleSystem {
         var p = particles[i];
         var aliveTime = time - p.createdAt;
         // clear old particles
-        if (aliveTime >= p.lifeTime) {
+        if (aliveTime >= p.lifeTime && !p.isNew) {
           particles.splice(i, 1);
           p.batchElement.remove();
 
@@ -64,6 +63,7 @@ class ParticleSystem {
         } else {
           i += 1;
 
+          p.isNew = false;
           p.x += p.dx * p.speed * dt;
           p.y += p.dy * p.speed * dt;
           var aliveTime = time - p.createdAt;
@@ -89,9 +89,9 @@ class ParticleSystem {
     s.batch.clear();
     // sort by y-position
     particles.sort((a, b) -> {
-      var sortA = a.sortOrder == null 
+      var sortA = a.sortOrder == null
         ? a.y : a.sortOrder;
-      var sortB = b.sortOrder == null 
+      var sortB = b.sortOrder == null
         ? b.y : b.sortOrder;
 
       if (sortA < sortB) {
@@ -108,8 +108,6 @@ class ParticleSystem {
     for (p in particles) {
       s.batch.add(p.batchElement, true);
     }
-
-    s.time += dt;
   }
 
   static public function dispose(s: PartSystem) {
@@ -117,12 +115,13 @@ class ParticleSystem {
   }
 }
 
+// TODO: Rename this to *batch system*
+// TODO: Refactor to be simpler and only allow
+// one side-effect callback per sprite
+// TODO: Refactor to take in a sprite object
+// directly so we can do optimizations such as
+// reusing sprites each frame if needed.
 class ParticlePlayground {
-  var cds = new Cooldown();
-  var time = 0.0;
-  var bulletEnemyLarge: h2d.Tile;
-  var tileWithGlow: h2d.Tile;
-  var circleTile: h2d.Tile;
   public var pSystem: PartSystem;
 
   public function new(scene: h2d.Scene) {
@@ -130,7 +129,9 @@ class ParticlePlayground {
   }
 
   function makeTile(spriteKey: String) {
-    var spriteData = Reflect.field(pSystem.spriteSheetData, spriteKey);
+    var spriteData = Reflect.field(
+        pSystem.spriteSheetData,
+        spriteKey);
 
     if (spriteData == null) {
       throw 'invalid spriteKey: `${spriteKey}`';
@@ -143,12 +144,13 @@ class ParticlePlayground {
       spriteData.frame.h
     );
 
-    tile.setCenterRatio(spriteData.pivot.x, spriteData.pivot.y);
+    tile.setCenterRatio(
+        spriteData.pivot.x,
+        spriteData.pivot.y);
 
     return tile;
   }
 
-  // TODO add support for animation
   public function emitSprite(
     x1: Float,
     y1: Float,
@@ -162,32 +164,30 @@ class ParticlePlayground {
     ?rAlpha,
     ?rColor
   ) {
-    var spriteRef: Particle = null;
-
-    {
-      var angle = Math.atan2(
+    final angle = Math.atan2(
         y2 - y1,
-        x2 - x1
-      );
-      var g = new BatchElement(makeTile(spriteKey));
-      g.rotation = angle;
-      g.scale = Main.Global.pixelScale;
-      spriteRef = {
-        dx: Math.cos(angle),
-        dy: Math.sin(angle),
-        x: x1,
-        y: y1,
-        lifeTime: lifeTime,
-        speed: speed,
-        createdAt: time,
-        batchElement: g,
-        rAlpha: rAlpha,
-        rScaleX: rScaleX,
-        rScaleY: rScaleY,
-        rColor: rColor,
-      };
-      ParticleSystem.emit(pSystem, spriteRef);
+        x2 - x1);
+    final g = new BatchElement(makeTile(spriteKey));
+    g.rotation = angle;
+    g.scale = Main.Global.pixelScale;
+    final spriteRef: Particle = {
+      dx: Math.cos(angle),
+      dy: Math.sin(angle),
+      x: x1,
+      y: y1,
+      lifeTime: lifeTime,
+      speed: speed,
+      createdAt: Main.Global.time,
+      batchElement: g,
+      rAlpha: rAlpha,
+      rScaleX: rScaleX,
+      rScaleY: rScaleY,
+      rColor: rColor,
+      // guarantees it lasts at least 1 frame
+      isNew: true
     }
+
+    ParticleSystem.emit(pSystem, spriteRef);
 
     return spriteRef;
   }
@@ -196,14 +196,7 @@ class ParticlePlayground {
     spriteRef.lifeTime = 0.0;
   }
 
-  public function dispose() {
-    ParticleSystem.dispose(pSystem);
-  }
-
   public function update(dt) {
-    time += dt;
-    cds.update(dt);
-
     ParticleSystem.update(pSystem, dt);
   }
 }
