@@ -90,14 +90,6 @@ let pending = null;
 
 const rebuild = (eventType, filename, options) => {
   const { delay } = options;
-  const isHaxeFile = /\.hx$/.test(filename);
-  const isSrcDir = filename.indexOf('src') === 0;
-  const isVimFile = filename.endsWith('swp') 
-    || filename.endsWith('save');
-
-  if (isVimFile || (!isHaxeFile && !isSrcDir)) {
-    return;
-  }
 
   if (options.verbose) {
     console.log(`${ filename } changed`)
@@ -110,7 +102,10 @@ const rebuild = (eventType, filename, options) => {
 }
 
 const startCompileWatcher = (options = {}) => {
-  chokidar.watch('.', {
+  chokidar.watch([
+    './**/*.hx',
+    './src/res',
+  ], {
     // this prevents locking up the file system for other windows applications
     usePolling: true,
   }).on('all', (event, path) => {
