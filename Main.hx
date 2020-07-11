@@ -25,9 +25,10 @@ class Global {
   public static var traversableGrid: GridRef;
   public static var sb: ParticlePlayground;
   public static var uiSpriteBatch: ParticlePlayground;
-  public static var pixelScale = 1;
   public static var time = 0.0;
   public static var playerStats = PlayerStats.create(); 
+  public static var pixelScale = 1;
+  public static var resolutionScale = 4;
 }
 
 enum UiState {
@@ -215,21 +216,22 @@ class Main extends hxd.App {
   }
 
   override function init() {
-    final resolutionScale = 4;
-
     // setup scenes
     {
       Global.rootScene = s2d;
-      s2d.scaleMode = ScaleMode.Zoom(4);
+      s2d.scaleMode = ScaleMode.Zoom(
+          Main.Global.resolutionScale);
 
       Global.uiRoot = new h2d.Scene();
       sevents.addScene(Global.uiRoot);
 
       Global.particleScene = new h2d.Scene();
-      Global.particleScene.scaleMode = ScaleMode.Zoom(4);
+      Global.particleScene.scaleMode = ScaleMode.Zoom(
+          Main.Global.resolutionScale);
 
       Global.mainBackground = new h2d.Scene();
-      Global.mainBackground.scaleMode = ScaleMode.Zoom(4);
+      Global.mainBackground.scaleMode = ScaleMode.Zoom(
+          Main.Global.resolutionScale);
       Global.debugScene = new h2d.Scene();
 
       background = addBackground(
