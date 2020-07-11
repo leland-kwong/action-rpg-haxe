@@ -25,7 +25,7 @@ class Global {
   public static var traversableGrid: GridRef;
   public static var sb: ParticlePlayground;
   public static var uiSpriteBatch: ParticlePlayground;
-  public static var pixelScale = 4;
+  public static var pixelScale = 1;
   public static var time = 0.0;
   public static var playerStats = PlayerStats.create(); 
 }
@@ -215,16 +215,25 @@ class Main extends hxd.App {
   }
 
   override function init() {
+    final resolutionScale = 4;
+
     // setup scenes
     {
+      Global.rootScene = s2d;
+      s2d.scaleMode = ScaleMode.Zoom(4);
+
       Global.uiRoot = new h2d.Scene();
       sevents.addScene(Global.uiRoot);
 
       Global.particleScene = new h2d.Scene();
+      Global.particleScene.scaleMode = ScaleMode.Zoom(4);
+
       Global.mainBackground = new h2d.Scene();
+      Global.mainBackground.scaleMode = ScaleMode.Zoom(4);
       Global.debugScene = new h2d.Scene();
 
-      background = addBackground(Global.mainBackground, 0x333333);
+      background = addBackground(
+          Global.mainBackground, 0x333333);
     }
 
     try {
@@ -257,22 +266,21 @@ class Main extends hxd.App {
       // make fullscreen
       #if !jsMode
         var nativePixelResolution = {
-          x: 480,
-          y: 270
+          x: 1920,
+          y: 1080
         }
         win.resize(
-            nativePixelResolution.x * Main.Global.pixelScale, 
-            nativePixelResolution.y * Main.Global.pixelScale);
+            nativePixelResolution.x, 
+            nativePixelResolution.y);
         win.displayMode = hxd.Window.DisplayMode.Fullscreen;
       #end
     }
 
     hxd.Res.initEmbed();
 
-    Global.rootScene = s2d;
-
     Global.mainCamera = Camera.create();
     Global.sb = new ParticlePlayground(Global.particleScene);
+
     Global.uiSpriteBatch = new ParticlePlayground(Global.uiRoot);
 
     switchMainScene(MainSceneType.PlayGame);

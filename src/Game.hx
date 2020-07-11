@@ -265,14 +265,14 @@ class Enemy extends Entity {
     3 => 100,
   ];
   static var speedBySize = [
-    1 => 180.0,
-    2 => 120.0,
-    3 => 80.0,
+    1 => 90.0,
+    2 => 60.0,
+    3 => 40.0,
   ];
   static var attackRangeByType = [
-    1 => 80,
-    2 => 300,
-    3 => 200,
+    1 => 30,
+    2 => 120,
+    3 => 80,
   ];
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
@@ -289,7 +289,7 @@ class Enemy extends Entity {
   var runAnim: core.Anim.AnimRef;
   var activeAnim: core.Anim.AnimRef;
   var facingDir = 1;
-  public var sightRange = 400;
+  public var sightRange = 200;
   public var neighbors: Array<EntityId>;
   public var attackTarget: Entity;
 
@@ -414,7 +414,7 @@ class Enemy extends Entity {
 
     if (!cds.has('attack')) {
       // distance to keep from destination
-      var threshold = follow.radius + 20;
+      var threshold = follow.radius + 5;
       var attackRange = attackRangeByType[size];
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
@@ -442,7 +442,7 @@ class Enemy extends Entity {
               var isColliding = d < min;
               if (isColliding) {
                 var conflict = min - d;
-                var adjustedConflict = Math.min(conflict, conflict * 60 / speed);
+                var adjustedConflict = Math.min(conflict, conflict * 15 / speed);
                 var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
                 var w = pt.weight / (pt.weight + ept.weight);
                 // immobile entities have a stronger influence (obstacles such as walls, etc...)
@@ -523,7 +523,8 @@ class Enemy extends Entity {
       }
       
       if (debugCenter) {
-        var rScale = (_, _) -> 20;
+        var rScale = (_, _) -> radius * 2;
+        var rAlpha = (_, _) -> 0.2;
         Main.Global.sb.emitSprite(
             x, y + 1,
             x, y + 1,
@@ -531,7 +532,8 @@ class Enemy extends Entity {
             'ui/square_white',
             0.001,
             rScale,
-            rScale);
+            rScale,
+            rAlpha);
       }
     }
 
@@ -543,13 +545,14 @@ class Enemy extends Entity {
 
         var x2 = follow.x;
         var y2 = follow.y;
+        var launchOffset = radius;
         var angle = Math.atan2(y2 - y, x2 - x);
         var b = new Bullet(
-          x + Math.cos(angle) * 30,
-          y + Math.sin(angle) * 30,
+          x + Math.cos(angle) * launchOffset,
+          y + Math.sin(angle) * launchOffset,
 					x2,
 					y2,
-          300.0,
+          100.0,
           'ui/bullet_enemy_large',
           ['PLAYER', 'OBSTACLE']
         );
@@ -587,14 +590,14 @@ class Player extends Entity {
     super({
       x: x,
       y: y,
-      radius: 23,
+      radius: 6,
       weight: 1.0,
       color: Colors.green,
     });
     cds = new Cooldown();
     type = 'PLAYER';
     health = 1000;
-    speed = 800.0;
+    speed = 200.0;
     forceMultiplier = 3.0;
 
     rootScene = s2d;
@@ -757,6 +760,7 @@ class Player extends Entity {
   public function useAbility(x2: Float, y2: Float, ability: Int) {
     var yCenterOffset = -7 * Main.Global.pixelScale;
     var startY = y + yCenterOffset;
+    var launchOffset = 15;
 
     switch ability {
       case 0: {
@@ -771,14 +775,14 @@ class Player extends Entity {
         attackAnim.startTime = Main.Global.time;
 
         var angle = Math.atan2(y2 - startY, x2 - x);
-        var x1 = x + Math.cos(angle) * 30;
-        var y1 = startY + Math.sin(angle) * 30;
+        var x1 = x + Math.cos(angle) * launchOffset;
+        var y1 = startY + Math.sin(angle) * launchOffset;
         var b = new Bullet(
           x1,
           y1,
 					x2,
 					y2,
-          800.0,
+          250.0,
           'ui/bullet_player_basic',
           ['ENEMY', 'OBSTACLE']
         );
@@ -796,32 +800,38 @@ class Player extends Entity {
           return;
         }
 
-        var abilityCooldown = 0.02;
-        var pixelScale = Main.Global.pixelScale;
-        var beamThickness = 60;
-        var laserHeadSpriteData = Reflect.field(
+        final abilityCooldown = 0.02;
+        final pixelScale = Main.Global.pixelScale;
+        final laserHeadSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
           'ui/kamehameha_head'
         );
-        var laserTailSpriteData = Reflect.field(
+        final laserCenterSpriteData = Reflect.field(
+          Main.Global.sb.pSystem.spriteSheetData,
+          'ui/kamehameha_center_width_1'
+        );
+        final beamThickness = 
+          laserCenterSpriteData.frame.h;
+        final laserTailSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
           'ui/kamehameha_tail'
         );
-        var laserHeadWidth = laserHeadSpriteData.frame.w * pixelScale;
-        var laserTailWidth = laserTailSpriteData.frame.w * pixelScale;
-        var maxLength = 700;
+        final laserHeadWidth = laserHeadSpriteData.frame.w 
+          * pixelScale;
+        final laserTailWidth = laserTailSpriteData.frame.w 
+          * pixelScale;
+        final maxLength = 175;
         cds.set('recoveringFromAbility', abilityCooldown);
-        var launchOffset = 30;
-        var angle = Math.atan2(y2 - startY, x2 - x);
-        var vx = Math.cos(angle);
-        var vy = Math.sin(angle);
+        final angle = Math.atan2(y2 - startY, x2 - x);
+        final vx = Math.cos(angle);
+        final vy = Math.sin(angle);
         // initial launch point
-        var x1 = x + vx * launchOffset;
-        var y1 = startY + vy * launchOffset;
-        var laserTailX1 = x1 + vx * maxLength;
-        var laserTailY1 = y1 + vy * maxLength;
-        var yScaleRand = Utils.irnd(0, 1) * 0.5;
-        var beamOpacity = (p, progress) -> 1;
+        final x1 = x + vx * launchOffset;
+        final y1 = startY + vy * launchOffset;
+        final laserTailX1 = x1 + vx * maxLength;
+        final laserTailY1 = y1 + vy * maxLength;
+        final yScaleRand = Utils.irnd(0, 1) * 0.125;
+        final beamOpacity = (p, progress) -> 1;
 
         var renderBeam = (startPt, endPt) -> {
           var spriteLifetime = 1/60;
@@ -860,7 +870,7 @@ class Player extends Entity {
             endPt.x + vx, endPt.y + vy,
             0, 'ui/kamehameha_tail',
             spriteLifetime,
-            (p, progress) -> pixelScale + Utils.irnd(0, 1),
+            (p, progress) -> pixelScale + Utils.irnd(0, 1) * 0.25,
             (p, progress) -> pixelScale + yScaleRand,
             beamOpacity
           );
@@ -868,7 +878,7 @@ class Player extends Entity {
 
         var dynamicWorldGrid = Main.Global.dynamicWorldGrid;
         var worldCellSize = dynamicWorldGrid.cellSize;
-        var cellSize = 10;
+        var cellSize = 3;
         var startGridX = Math.floor(x1 / cellSize);
         var startGridY = Math.floor(y1 / cellSize);
         var targetGridX = Math.floor(laserTailX1 / cellSize);
@@ -928,22 +938,16 @@ class Player extends Entity {
                   return false;
                 }
 
-                var colCircle = new h2d.col.Circle(item.x, item.y, item.radius);
+                var colCircle = new h2d.col.Circle(
+                    item.x, item.y, item.radius);
                 // var colPt = new h2d.col.Point(item.x, item.y);
-                var intersectionPoint = Collision.beamCircleIntersectTest(
-                    startPt, 
-                    endPt,
-                    colCircle,
-                    beamThickness);
+                var intersectionPoint = Collision
+                  .beamCircleIntersectTest(
+                      startPt, 
+                      endPt,
+                      colCircle,
+                      beamThickness);
                 var isIntersecting = intersectionPoint != endPt;
-                Main.Global.sb.emitSprite(
-                  intersectionPoint.x, intersectionPoint.y,
-                  intersectionPoint.x, intersectionPoint.y,
-                  0, 'ui/square_white',
-                  0.01,
-                  (p, progress) -> 10,
-                  (p, progress) -> 10
-                );
 
                 // TODO add support for more accurate intersection point for line -> rectangle
                 // We can figure out the edge that the beam touches and then find the intersection
@@ -951,12 +955,14 @@ class Player extends Entity {
 
                 if (isIntersecting) {
                   var circleCol = new h2d.col.Circle(item.x, item.y, item.radius);
-                  var trueIntersectionPts = circleCol.lineIntersect(centerLine.p1, centerLine.p2);
+                  var trueIntersectionPts = circleCol
+                    .lineIntersect(centerLine.p1, centerLine.p2);
                   // intersection point
                   var p = intersectionPoint;
 
                   var laserHitCdKey = 'kamehamehaHit';
-                  if (item.type == 'ENEMY' && !item.cds.has(laserHitCdKey)) {
+                  if (item.type == 'ENEMY' 
+                      && !item.cds.has(laserHitCdKey)) {
                     item.cds.set(laserHitCdKey, 0.3);
                     item.damageTaken += 1;
                   }
@@ -1053,7 +1059,7 @@ class EnemySpawner {
     enemiesLeftToSpawn -= 1;
 
     var size = Utils.irnd(1, 2);
-    var radius = 7 + size * 10;
+    var radius = 3 + size * 6;
     var posRange = 100;
     var e = new Enemy({
       x: x + Utils.irnd(-posRange, posRange),
@@ -1092,13 +1098,13 @@ class MapData {
 }
 
 class Game extends h2d.Object {
-  public var level = 1;
+  public var level = 4;
   var player: Player;
   var mousePointer: h2d.Object;
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
-  var dynamicWorldGrid: GridRef = Grid.create(64);
-  var TARGET_RADIUS = 20.0;
+  var dynamicWorldGrid: GridRef = Grid.create(16);
+  var MOUSE_POINTER_RADIUS = 5.0;
   var enemySpawner: EnemySpawner;
 
   function calcNumEnemies(level: Int) {
@@ -1158,7 +1164,7 @@ class Game extends h2d.Object {
         x: miniBossPos.x * Main.Global.pixelScale,
         y: miniBossPos.y * Main.Global.pixelScale,
         radius: 30 * Main.Global.pixelScale,
-        sightRange: 600,
+        sightRange: 150,
         weight: 1.0,
         color: Game.Colors.yellow,
       }, size, player);
@@ -1255,7 +1261,7 @@ class Game extends h2d.Object {
 
     // setup environment obstacle colliders
     {
-      mapRef = Grid.create(64);
+      mapRef = Grid.create(16);
     }
 
     s2d.addChild(this);
@@ -1277,7 +1283,7 @@ class Game extends h2d.Object {
     mousePointer = new h2d.Object(this);
     mousePointerSprite = new h2d.Graphics(mousePointer);
     mousePointerSprite.beginFill(0xffda3d, 0.3);
-    mousePointerSprite.drawCircle(0, 0, TARGET_RADIUS);
+    mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
   }
 
   function cleanupDisposedEntities() {
