@@ -507,7 +507,7 @@ class Enemy extends Entity {
           0,
           currentFrameName,
           0.001,
-          (p, progress) -> facingDir * Main.Global.pixelScale,
+          (p, progress) -> facingDir * 1,
           null,
           null,
           (p, progress) -> {
@@ -729,8 +729,7 @@ class Player extends Entity {
       0,
       core.Anim.getFrame(activeAnim, Main.Global.time),
       0.001,
-      (_, _) ->  Main.Global.pixelScale * facingX,
-      (_, _) -> Main.Global.pixelScale
+      (_, _) ->  facingX
     );
 
     var abilityId = Main.Global.mouse.buttonDown;
@@ -758,7 +757,7 @@ class Player extends Entity {
   }
 
   public function useAbility(x2: Float, y2: Float, ability: Int) {
-    var yCenterOffset = -7 * Main.Global.pixelScale;
+    var yCenterOffset = -7;
     var startY = y + yCenterOffset;
     var launchOffset = 15;
 
@@ -801,7 +800,6 @@ class Player extends Entity {
         }
 
         final abilityCooldown = 0.02;
-        final pixelScale = Main.Global.pixelScale;
         final laserHeadSpriteData = Reflect.field(
           Main.Global.sb.pSystem.spriteSheetData,
           'ui/kamehameha_head'
@@ -816,10 +814,8 @@ class Player extends Entity {
           Main.Global.sb.pSystem.spriteSheetData,
           'ui/kamehameha_tail'
         );
-        final laserHeadWidth = laserHeadSpriteData.frame.w 
-          * pixelScale;
-        final laserTailWidth = laserTailSpriteData.frame.w 
-          * pixelScale;
+        final laserHeadWidth = laserHeadSpriteData.frame.w;
+        final laserTailWidth = laserTailSpriteData.frame.w;
         final maxLength = 175;
         cds.set('recoveringFromAbility', abilityCooldown);
         final angle = Math.atan2(y2 - startY, x2 - x);
@@ -842,7 +838,7 @@ class Player extends Entity {
             0, 'ui/kamehameha_head',
             spriteLifetime ,
             null,
-            (p, progress) -> pixelScale + yScaleRand,
+            (p, progress) -> 1 + yScaleRand,
             beamOpacity
           );
 
@@ -850,7 +846,7 @@ class Player extends Entity {
           var lcy = startPt.y + (vy * laserHeadWidth);
           {
             var beamLength = (p, progress) -> Math.round(Utils.distance(lcx, lcy, endPt.x, endPt.y));
-            var beamScaleY = (p, progress) -> pixelScale + yScaleRand;
+            var beamScaleY = (p, progress) -> 1 + yScaleRand;
 
             // laser center
             Main.Global.sb.emitSprite(
@@ -870,8 +866,8 @@ class Player extends Entity {
             endPt.x + vx, endPt.y + vy,
             0, 'ui/kamehameha_tail',
             spriteLifetime,
-            (p, progress) -> pixelScale + Utils.irnd(0, 1) * 0.25,
-            (p, progress) -> pixelScale + yScaleRand,
+            (p, progress) -> 1 + Utils.irnd(0, 1) * 0.25,
+            (p, progress) -> 1 + yScaleRand,
             beamOpacity
           );
         }
@@ -1144,8 +1140,8 @@ class Game extends h2d.Object {
 
     // TODO re-enable when spawn positions are setup
     enemySpawner = new EnemySpawner(
-      800 * Main.Global.pixelScale,
-      900 * Main.Global.pixelScale,
+      800,
+      900,
       calcNumEnemies(level),
       s2d,
       player
@@ -1161,9 +1157,9 @@ class Game extends h2d.Object {
       var size = 3;
 
       var e = new Enemy({
-        x: miniBossPos.x * Main.Global.pixelScale,
-        y: miniBossPos.y * Main.Global.pixelScale,
-        radius: 30 * Main.Global.pixelScale,
+        x: miniBossPos.x,
+        y: miniBossPos.y,
+        radius: 30,
         sightRange: 150,
         weight: 1.0,
         color: Game.Colors.yellow,
@@ -1192,13 +1188,16 @@ class Game extends h2d.Object {
   ) {
     super();
 
-    Main.Global.traversableGrid = Grid.create(16 * Main.Global.pixelScale);
+    Main.Global.traversableGrid = Grid.create(16);
 
     // load map background
     {
       var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-      var spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
-      var bgData = Reflect.field(spriteSheetData, 'ui/level_intro');
+      var spriteSheetData = Utils.loadJsonFile(
+          hxd.Res.sprite_sheet_json).frames;
+      var bgData = Reflect.field(
+          spriteSheetData, 
+          'ui/level_intro');
       var tile = spriteSheet.sub(
         bgData.frame.x,
         bgData.frame.y,
@@ -1206,31 +1205,36 @@ class Game extends h2d.Object {
         bgData.frame.h
       );
       var bmp = new h2d.Bitmap(tile, s2d);
-      bmp.setScale(Main.Global.pixelScale);
     }
 
-    var parsedTiledMap = MapData.create(hxd.Res.level_intro_json);
+    var parsedTiledMap = MapData.create(
+        hxd.Res.level_intro_json);
     var layersByName = parsedTiledMap.layersByName;
-    var mapObjects: Array<Dynamic> = layersByName.get('objects').objects;
+    var mapObjects: Array<Dynamic> = 
+      layersByName.get('objects').objects;
     // var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
 
-    var miniBossPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'mini_boss_position');
-    var playerStartPos = { x: miniBossPos.x - 35 * Main.Global.pixelScale, y: miniBossPos.y };
+    var miniBossPos: Dynamic = Lambda.find(
+        mapObjects, 
+        (item) -> item.name == 'mini_boss_position');
+    var playerStartPos = { 
+      x: miniBossPos.x - 100, 
+      y: miniBossPos.y };
 
     Main.Global.rootScene = s2d;
 
     // setup traversible grid
     {
-      var traversableRects: Array<Dynamic> = layersByName.get('traversable').objects;
-      var pixelScale = Main.Global.pixelScale;
+      var traversableRects: Array<Dynamic> = 
+        layersByName.get('traversable').objects;
       var updateTraversableGrid = (item: TiledObject) -> {
         // trace(item);
         Grid.setItemRect(
           Main.Global.traversableGrid,
-          (item.x + item.width / 2) * pixelScale,
-          (item.y + item.height / 2) * pixelScale,
-          item.width * pixelScale,
-          item.height * pixelScale,
+          (item.x + item.width / 2),
+          (item.y + item.height / 2),
+          item.width,
+          item.height,
           Std.string(item.id)
         );
         return true;
@@ -1269,8 +1273,8 @@ class Game extends h2d.Object {
       oldGame.cleanupLevel();
     }
     player = new Player(
-      playerStartPos.x * Main.Global.pixelScale,
-      playerStartPos.y * Main.Global.pixelScale - 6,
+      playerStartPos.x,
+      playerStartPos.y - 6,
       s2d
     );
     s2d.addChildAt(player, 0);

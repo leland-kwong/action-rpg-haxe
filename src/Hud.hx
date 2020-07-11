@@ -34,20 +34,20 @@ class Hud {
     var ps = Main.Global.playerStats;
     var barsCallback = (p, _) -> {
       p.sortOrder = 1;
-      return Main.Global.pixelScale;
+      return 1;
     }
 
     Main.Global.uiSpriteBatch.emitSprite(
-        cockpitUnderlay.x * Main.Global.pixelScale,
-        cockpitUnderlay.y * Main.Global.pixelScale,
-        cockpitUnderlay.x * Main.Global.pixelScale,
-        cockpitUnderlay.y * Main.Global.pixelScale,
+        cockpitUnderlay.x,
+        cockpitUnderlay.y,
+        cockpitUnderlay.x,
+        cockpitUnderlay.y,
         0,
         'ui/cockpit_underlay',
         0.001, 
         (p, _) -> {
           p.sortOrder = 0;
-          return Main.Global.pixelScale;
+          return 1;
         });
 
     {
@@ -59,10 +59,10 @@ class Hud {
         var item = healthBars[i + indexAdjust];
 
         Main.Global.uiSpriteBatch.emitSprite(
-            item.x * Main.Global.pixelScale,
-            item.y * Main.Global.pixelScale,
-            item.x * Main.Global.pixelScale,
-            item.y * Main.Global.pixelScale,
+            item.x,
+            item.y,
+            item.x,
+            item.y,
             0,
             'ui/cockpit_resource_bar_health',
             0.001,
@@ -78,10 +78,10 @@ class Hud {
         var item = energyBars[i];
 
         Main.Global.uiSpriteBatch.emitSprite(
-            item.x * Main.Global.pixelScale,
-            item.y * Main.Global.pixelScale,
-            item.x * Main.Global.pixelScale,
-            item.y * Main.Global.pixelScale,
+            item.x,
+            item.y,
+            item.x,
+            item.y,
             0,
             'ui/cockpit_resource_bar_energy',
             0.001,

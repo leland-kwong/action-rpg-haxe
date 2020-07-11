@@ -27,7 +27,6 @@ class Global {
   public static var uiSpriteBatch: ParticlePlayground;
   public static var time = 0.0;
   public static var playerStats = PlayerStats.create(); 
-  public static var pixelScale = 1;
   public static var resolutionScale = 4;
 }
 

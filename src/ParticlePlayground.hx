@@ -172,7 +172,6 @@ class ParticlePlayground {
         x2 - x1);
     final g = new BatchElement(makeTile(spriteKey));
     g.rotation = angle;
-    g.scale = Main.Global.pixelScale;
     final spriteRef: Particle = {
       dx: Math.cos(angle),
       dy: Math.sin(angle),
