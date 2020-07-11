@@ -124,7 +124,8 @@ class Entity extends h2d.Object {
       var max = 1;
 
       if (dx != 0) {
-        var nextPos = x + Utils.clamp(dx, -max, max) * speed * dt;
+        var nextPos = x + Utils.clamp(dx, -max, max) 
+          * speed * dt;
         var direction = dx > 0 ? 1 : -1;
         var isTraversable = Lambda.count(
           Grid.getItemsInRect(
@@ -142,7 +143,8 @@ class Entity extends h2d.Object {
       }
 
       if (dy != 0) {
-        var nextPos = y + Utils.clamp(dy, -max, max) * speed * dt;
+        var nextPos = y + Utils.clamp(dy, -max, max) 
+          * speed * dt;
         var direction = dy > 0 ? 1 : -1;
         var isTraversable = Lambda.count(
           Grid.getItemsInRect(
@@ -193,8 +195,10 @@ class Projectile extends Entity {
     var _dx = Math.cos(aToTarget);
     var _dy = Math.sin(aToTarget);
     var magnitude = Math.sqrt(_dx * _dx + _dy * _dy);
-    var dxNormalized = magnitude == 0 ? _dx : _dx / magnitude;
-    var dyNormalized = magnitude == 0 ? _dy : _dy / magnitude;
+    var dxNormalized = magnitude == 0 
+      ? _dx : _dx / magnitude;
+    var dyNormalized = magnitude == 0 
+      ? _dy : _dy / magnitude;
     dx = dxNormalized;
     dy = dyNormalized;
   }
@@ -300,7 +304,8 @@ class Enemy extends Entity {
 
     if (spriteSheet == null) {
       spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-      spriteSheetData = Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames;
+      spriteSheetData = Utils.loadJsonFile(
+          hxd.Res.sprite_sheet_json).frames;
     }
 
     type = 'ENEMY';
@@ -418,9 +423,10 @@ class Enemy extends Entity {
       var attackRange = attackRangeByType[size];
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
-      var speedAdjust = Math.max(0,
-                                Math.min(1,
-                                          Math.pow((dFromTarget - threshold) / threshold, 2)));
+      var speedAdjust = Math.max(
+          0, Math.min(
+            1, Math.pow(
+              (dFromTarget - threshold) / threshold, 2)));
       if (canSeeTarget && dFromTarget > threshold) {
         var aToTarget = Math.atan2(follow.y - y, follow.x - x);
         dx += Math.cos(aToTarget) * speedAdjust;
@@ -442,13 +448,16 @@ class Enemy extends Entity {
               var isColliding = d < min;
               if (isColliding) {
                 var conflict = min - d;
-                var adjustedConflict = Math.min(conflict, conflict * 15 / speed);
+                var adjustedConflict = Math.min(
+                    conflict, conflict * 15 / speed);
                 var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
                 var w = pt.weight / (pt.weight + ept.weight);
                 // immobile entities have a stronger influence (obstacles such as walls, etc...)
                 var multiplier = ept.forceMultiplier;
-                var avoidX = Math.cos(a) * adjustedConflict * w * multiplier;
-                var avoidY = Math.sin(a) * adjustedConflict * w * multiplier;
+                var avoidX = Math.cos(a) * adjustedConflict 
+                  * w * multiplier;
+                var avoidY = Math.sin(a) * adjustedConflict 
+                  * w * multiplier;
 
                 dx -= avoidX;
                 dy -= avoidY;
@@ -500,7 +509,8 @@ class Enemy extends Entity {
         if (dx != 0) {
           facingDir = (dx > 0 ? -1 : 1);
         }
-        var currentFrameName = core.Anim.getFrame(activeAnim, Main.Global.time);
+        var currentFrameName = core.Anim.getFrame(
+            activeAnim, Main.Global.time);
         Main.Global.sb.emitSprite(
           x, y,
           x, y,
@@ -512,7 +522,8 @@ class Enemy extends Entity {
           null,
           (p, progress) -> {
             if (cds.has('hitFlash')) {
-              var b: h2d.SpriteBatch.BatchElement = p.batchElement;
+              var b: h2d.SpriteBatch.BatchElement = 
+                p.batchElement;
               b.r = 255;
               b.g = 255;
               b.b = 255;
@@ -692,8 +703,10 @@ class Player extends Entity {
     }
 
     var magnitude = Math.sqrt(dx * dx + dy * dy);
-    var dxNormalized = magnitude == 0 ? dx : (dx / magnitude);
-    var dyNormalized = magnitude == 0 ? dy : (dy / magnitude);
+    var dxNormalized = magnitude == 0 
+      ? dx : (dx / magnitude);
+    var dyNormalized = magnitude == 0 
+      ? dy : (dy / magnitude);
 
     dx = dxNormalized;
     dy = dyNormalized;
@@ -709,7 +722,8 @@ class Player extends Entity {
 
     movePlayer();
     // pulsate player for visual juice
-    playerSprite.setScale(1 - Math.abs(Math.sin(time * 2.5) / 10));
+    playerSprite.setScale(
+        1 - Math.abs(Math.sin(time * 2.5) / 10));
 
     var activeAnim: core.Anim.AnimRef;
     if (cds.has('recoveringFromAbility')) {
@@ -756,19 +770,24 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(x2: Float, y2: Float, ability: Int) {
-    var yCenterOffset = -7;
+  public function useAbility(
+      x2: Float, y2: Float, ability: Int) {
+    var yCenterOffset = -8;
     var startY = y + yCenterOffset;
-    var launchOffset = 15;
+    var launchOffset = 12;
 
     switch ability {
       case 0: {
         var energyCost = 2;
-        var hasEnoughEnergy = energyCost <= Main.Global.playerStats.currentEnergy;
+        var hasEnoughEnergy = energyCost 
+          <= Main.Global.playerStats.currentEnergy;
+        var canUse = cds.has('primaryAbility') 
+          || !hasEnoughEnergy;
 
-        if (cds.has('primaryAbility') || !hasEnoughEnergy) {
+        if (!canUse) {
           return;
         }
+
         var abilityCooldown = 1/10;
         cds.set('recoveringFromAbility', abilityCooldown);
         attackAnim.startTime = Main.Global.time;
@@ -845,7 +864,8 @@ class Player extends Entity {
           var lcx = startPt.x + (vx * laserHeadWidth);
           var lcy = startPt.y + (vy * laserHeadWidth);
           {
-            var beamLength = (p, progress) -> Math.round(Utils.distance(lcx, lcy, endPt.x, endPt.y));
+            var beamLength = (p, progress) -> Math.round(
+                Utils.distance(lcx, lcy, endPt.x, endPt.y));
             var beamScaleY = (p, progress) -> 1 + yScaleRand;
 
             // laser center
@@ -902,7 +922,9 @@ class Player extends Entity {
         var adjustedEndPt = endPt;
 
         Utils.bresenhamLine(
-          startGridX, startGridY, targetGridX, targetGridY, (ctx, x, y, i) -> {
+            startGridX, startGridY, targetGridX, 
+            targetGridY, (ctx, x, y, i) -> {
+
             var worldX = Math.round(x * cellSize);
             var worldY = Math.round(y * cellSize);
 
@@ -920,11 +942,14 @@ class Player extends Entity {
               );
             }
 
-            var items = Grid.getItemsInRect(dynamicWorldGrid, worldX, worldY, worldCellSize, worldCellSize);
+            var items = Grid.getItemsInRect(
+                dynamicWorldGrid, worldX, worldY, 
+                worldCellSize, worldCellSize);
             var staticWorld = Main.Global.obstacleGrid;
+            var obsWorldCellSize = beamThickness + 16;
             var obstacles = Grid.getItemsInRect(
-              staticWorld, worldX, worldY, beamThickness + 16, beamThickness + 16
-            );
+              staticWorld, worldX, worldY, 
+              obsWorldCellSize, obsWorldCellSize);
 
             var checkCollisions = (items: Map<String, String>) -> {
               for (entityId in items) {
@@ -950,7 +975,8 @@ class Player extends Entity {
                 // point at the rectangle edge and the beam's center line.
 
                 if (isIntersecting) {
-                  var circleCol = new h2d.col.Circle(item.x, item.y, item.radius);
+                  var circleCol = new h2d.col.Circle(
+                      item.x, item.y, item.radius);
                   var trueIntersectionPts = circleCol
                     .lineIntersect(centerLine.p1, centerLine.p2);
                   // intersection point
@@ -996,7 +1022,8 @@ class Player extends Entity {
               return false;
             }
 
-            return !checkCollisions(obstacles) && !checkCollisions(items);
+            return !checkCollisions(obstacles) 
+              && !checkCollisions(items);
           }
         );
 
@@ -1078,7 +1105,8 @@ class MapData {
     }
 
     // parse Tiled json file
-    var mapData:TiledMapData = haxe.Json.parse(hxd.Res.level_intro_json.entry.getText());
+    var mapData:TiledMapData = haxe.Json.parse(
+        hxd.Res.level_intro_json.entry.getText());
     var layersByName: Map<String, Dynamic> = new Map();
     var mapLayers: Array<Dynamic> = mapData.layers;
 
@@ -1150,10 +1178,14 @@ class Game extends h2d.Object {
 
     // intro_boss
     {
-      var parsedTiledMap = MapData.create(hxd.Res.level_intro_json);
+      var parsedTiledMap = MapData.create(
+          hxd.Res.level_intro_json);
       var layersByName = parsedTiledMap.layersByName;
-      var mapObjects: Array<Dynamic> = layersByName.get('objects').objects;
-      var miniBossPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'mini_boss_position');
+      var mapObjects: Array<Dynamic> = 
+        layersByName.get('objects').objects;
+      var miniBossPos: Dynamic = Lambda.find(
+          mapObjects, 
+          (item) -> item.name == 'mini_boss_position');
       var size = 3;
 
       var e = new Enemy({
@@ -1244,7 +1276,8 @@ class Game extends h2d.Object {
       var debugTraversalGrid = false;
       if (debugTraversalGrid) {
         // debug traversable positions
-        var traversableGridItems = Main.Global.traversableGrid.itemCache;
+        var traversableGridItems = Main.Global
+          .traversableGrid.itemCache;
         var g = new h2d.Graphics(Main.Global.debugScene);
         g.beginFill(Game.Colors.yellow, 0.3);
         var cellSize = Main.Global.traversableGrid.cellSize;
@@ -1381,13 +1414,14 @@ class Game extends h2d.Object {
 
         enemy.canSeeTarget = true;
         Utils.bresenhamLine(
-          startGridX, startGridY, targetGridX, targetGridY, lineOfSight, enemy
-        );
+          startGridX, startGridY, targetGridX, 
+          targetGridY, lineOfSight, enemy);
       }
 
       a.update(dt);
 
-      // TODO need a better way to determine what is a dynamic entity
+      // TODO need a better way to determine what 
+      // is a dynamic entity
       if (a.type != 'OBSTACLE' && a.type != 'PROJECTILE') {
         Grid.setItemRect(
           dynamicWorldGrid,

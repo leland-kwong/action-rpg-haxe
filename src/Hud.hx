@@ -18,6 +18,7 @@ class Hud {
   }
 
   public static function update(dt: Float) {
+    var rScale = Main.Global.resolutionScale;
     var mapLayers: Array<Dynamic> = mapData.layers;
     var cockpitUnderlay = Lambda
       .find(mapLayers, (l: Dynamic) -> {
@@ -34,20 +35,24 @@ class Hud {
     var ps = Main.Global.playerStats;
     var barsCallback = (p, _) -> {
       p.sortOrder = 1;
-      return 1;
+      p.batchElement.scaleX = rScale * 1.0;
+      p.batchElement.scaleY = rScale * 1.0;
+      return rScale;
     }
 
     Main.Global.uiSpriteBatch.emitSprite(
-        cockpitUnderlay.x,
-        cockpitUnderlay.y,
-        cockpitUnderlay.x,
-        cockpitUnderlay.y,
+        cockpitUnderlay.x * rScale,
+        cockpitUnderlay.y * rScale,
+        cockpitUnderlay.x * rScale,
+        cockpitUnderlay.y * rScale,
         0,
         'ui/cockpit_underlay',
         0.001, 
         (p, _) -> {
           p.sortOrder = 0;
-          return 1;
+          p.batchElement.scaleX = rScale * 1.0;
+          p.batchElement.scaleY = rScale * 1.0;
+          return rScale;
         });
 
     {
@@ -59,10 +64,10 @@ class Hud {
         var item = healthBars[i + indexAdjust];
 
         Main.Global.uiSpriteBatch.emitSprite(
-            item.x,
-            item.y,
-            item.x,
-            item.y,
+            item.x * rScale,
+            item.y * rScale,
+            item.x * rScale,
+            item.y * rScale,
             0,
             'ui/cockpit_resource_bar_health',
             0.001,
@@ -78,10 +83,10 @@ class Hud {
         var item = energyBars[i];
 
         Main.Global.uiSpriteBatch.emitSprite(
-            item.x,
-            item.y,
-            item.x,
-            item.y,
+            item.x * rScale,
+            item.y * rScale,
+            item.x * rScale,
+            item.y * rScale,
             0,
             'ui/cockpit_resource_bar_energy',
             0.001,
