@@ -5,26 +5,31 @@ typedef EventObject = {
   final ?duration: Float;
 }
 
+private typedef RecentEvents = Array<EventObject>;
+
 typedef StatsRef = {
   var maxHealth: Int;
   var maxEnergy: Int;
   var currentHealth: Float;
   var currentEnergy: Float;
   var energyRegeneration: Int; // per second
-  var recentEvents: Array<EventObject>;
+  var recentEvents: RecentEvents;
 }
 
 // TODO
 // We should rename this since we'll be able to 
 // use this this for npcs and enemies as well
 class PlayerStats {
-  public static function create(): StatsRef {
+  public static function create(props): StatsRef {
+    final p = props;
+
     return {
-      maxHealth: 100,
-      maxEnergy: 100,
-      currentHealth: 100.0,
-      currentEnergy: 100.0,
-      energyRegeneration: 2, // per second
+      maxHealth: p.maxHealth,
+      maxEnergy: p.maxEnergy,
+      currentHealth: p.currentHealth,
+      currentEnergy: p.currentEnergy,
+      // per second
+      energyRegeneration: p.energyRegeneration, 
       recentEvents: []
     };
   }
@@ -39,8 +44,7 @@ class PlayerStats {
   public static function update(
       sr: StatsRef, dt: Float) {
 
-    var events: Array<EventObject> = 
-      sr.recentEvents;
+    final events = sr.recentEvents;
     var i = 0;
 
     while (i < events.length) {

@@ -19,7 +19,14 @@ class Hud {
   }
 
   public static function update(dt: Float) {
-    var rScale = Main.Global.resolutionScale;
+    var ps = Main.Global.playerStats;
+
+    if (ps == null) {
+      return;
+    }
+
+    // resolution scale
+    var rScale = 4;
     var mapLayers: Array<Dynamic> = mapData.layers;
     var cockpitUnderlay = Lambda
       .find(mapLayers, (l: Dynamic) -> {
@@ -33,7 +40,6 @@ class Hud {
       .find(mapLayers, (l: Dynamic) -> {
         return l.name == 'energy_bars';
       }).objects; 
-    var ps = Main.Global.playerStats;
     var barsCallback = (p, _) -> {
       p.sortOrder = 1;
       p.batchElement.scaleX = rScale * 1.0;

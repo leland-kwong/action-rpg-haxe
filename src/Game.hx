@@ -612,7 +612,13 @@ class Player extends Entity {
     forceMultiplier = 3.0;
 
     rootScene = s2d;
-    Main.Global.playerStats = PlayerStats.create();
+    Main.Global.playerStats = PlayerStats.create({
+      maxHealth: 100,
+      maxEnergy: 100,
+      currentHealth: 100.0,
+      currentEnergy: 100.0,
+      energyRegeneration: 10, // per second
+    });
 
     var runFrames = [
       'player_animation/run-0',
