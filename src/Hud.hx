@@ -14,7 +14,8 @@ class Hud {
   static var mapData: TiledMapData;
 
   public static function start() {
-    mapData = TiledParser.loadFile(hxd.Res.ui_hud_layout_json);
+    mapData = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json);
   }
 
   public static function update(dt: Float) {
@@ -56,9 +57,12 @@ class Hud {
         });
 
     {
-      var healthRemaining = ps.currentHealth / ps.maxHealth;
-      var numSegments = Math.ceil(healthRemaining * healthBars.length);
-      var indexAdjust = healthBars.length - numSegments;
+      var healthRemaining = 
+        ps.currentHealth / ps.maxHealth;
+      var numSegments = Math.ceil(
+          healthRemaining * healthBars.length);
+      var indexAdjust = 
+        healthBars.length - numSegments;
 
       for (i in 0...numSegments) {
         var item = healthBars[i + indexAdjust];
@@ -76,8 +80,10 @@ class Hud {
     }
 
     {
-      var energyRemaining = ps.currentEnergy / ps.maxEnergy;
-      var numSegments = Math.ceil(energyRemaining * energyBars.length);
+      var energyRemaining = 
+        ps.currentEnergy / ps.maxEnergy;
+      var numSegments = Math.ceil(
+          energyRemaining * energyBars.length);
 
       for (i in 0...numSegments) {
         var item = energyBars[i];

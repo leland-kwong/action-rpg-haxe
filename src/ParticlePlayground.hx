@@ -30,7 +30,8 @@ class ParticleSystem {
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     var system: PartSystem = {
       particles: [],
-      spriteSheetData: Utils.loadJsonFile(hxd.Res.sprite_sheet_json).frames,
+      spriteSheetData: Utils.loadJsonFile(
+          hxd.Res.sprite_sheet_json).frames,
       spriteSheet: spriteSheet,
       batch: new h2d.SpriteBatch(spriteSheet, scene),
     };
@@ -38,50 +39,53 @@ class ParticleSystem {
     return system;
   }
 
-  static public function emit(s: PartSystem, config: Particle, before = false) {
+  static public function emit(
+      s: PartSystem,
+      config: Particle,
+      before = false) {
     s.particles.push(config);
     config.batchElement.x = config.x;
     config.batchElement.y = config.y;
     s.batch.add(config.batchElement, before);
   }
 
-  static public function update(s: PartSystem, dt: Float) {
-    var time = Main.Global.time;
-    var particles = s.particles;
+  static public function update(
+      s: PartSystem, 
+      dt: Float) {
+    final time = Main.Global.time;
+    final particles = s.particles;
+    var i = 0;
 
-    {
-      var i = 0;
-      while (i < particles.length) {
-        var p = particles[i];
-        var aliveTime = time - p.createdAt;
-        // clear old particles
-        if (aliveTime >= p.lifeTime && !p.isNew) {
-          particles.splice(i, 1);
-          p.batchElement.remove();
+    while (i < particles.length) {
+      final p = particles[i];
+      final aliveTime = time - p.createdAt;
+      final progress = (aliveTime / p.lifeTime);
+
+      // clear old particles
+      if (aliveTime >= p.lifeTime && !p.isNew) {
+        particles.splice(i, 1);
+        p.batchElement.remove();
 
         // update particle
-        } else {
-          i += 1;
+      } else {
+        i += 1;
 
-          p.isNew = false;
-          p.x += p.dx * p.speed * dt;
-          p.y += p.dy * p.speed * dt;
-          var aliveTime = time - p.createdAt;
-          var progress = (aliveTime / p.lifeTime);
-          p.batchElement.x = p.x;
-          p.batchElement.y = p.y;
-          if (p.rAlpha != null) {
-            p.batchElement.alpha = p.rAlpha(p, progress);
-          }
-          if (p.rScaleX != null) {
-            p.batchElement.scaleX = p.rScaleX(p, progress);
-          }
-          if (p.rScaleY != null) {
-            p.batchElement.scaleY = p.rScaleY(p, progress);
-          }
-          if (p.rColor != null) {
-            p.rColor(p, progress);
-          }
+        p.isNew = false;
+        p.x += p.dx * p.speed * dt;
+        p.y += p.dy * p.speed * dt;
+        p.batchElement.x = p.x;
+        p.batchElement.y = p.y;
+        if (p.rAlpha != null) {
+          p.batchElement.alpha = p.rAlpha(p, progress);
+        }
+        if (p.rScaleX != null) {
+          p.batchElement.scaleX = p.rScaleX(p, progress);
+        }
+        if (p.rScaleY != null) {
+          p.batchElement.scaleY = p.rScaleY(p, progress);
+        }
+        if (p.rColor != null) {
+          p.rColor(p, progress);
         }
       }
     }
