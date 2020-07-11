@@ -781,10 +781,10 @@ class Player extends Entity {
         var energyCost = 2;
         var hasEnoughEnergy = energyCost 
           <= Main.Global.playerStats.currentEnergy;
-        var canUse = cds.has('primaryAbility') 
+        var isUnavailable = cds.has('primaryAbility') 
           || !hasEnoughEnergy;
 
-        if (!canUse) {
+        if (isUnavailable) {
           return;
         }
 
