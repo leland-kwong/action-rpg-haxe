@@ -514,33 +514,35 @@ class Enemy extends Entity {
           x, y,
           currentFrameName,
           (p) -> {
+            var b: h2d.SpriteBatch.BatchElement = 
+              p.batchElement;
+
             if (cds.has('hitFlash')) {
-              var b: h2d.SpriteBatch.BatchElement = 
-                p.batchElement;
               b.r = 255;
               b.g = 255;
               b.b = 255;
               b.a = 0.7;
             }
 
-            return facingDir * 1;
+            b.scaleX = facingDir * 1;
           }
         );
       }
       
       if (debugCenter) {
-        var rScale = (p) -> {
+        var spriteEffect = (p) -> {
+          final scale = radius * 2;
           final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-          b.alpha = 0.2;
 
-          return radius * 2;
+          b.alpha = 0.2;
+          b.scaleX = scale;
+          b.scaleY = scale;
         }
         Main.Global.sb.emitSprite(
             x, y + 1,
             x, y + 1,
             'ui/square_white',
-            rScale,
-            rScale);
+            spriteEffect);
       }
     }
 
@@ -744,7 +746,9 @@ class Player extends Entity {
       x, y,
       x, y,
       core.Anim.getFrame(activeAnim, Main.Global.time),
-      (_) ->  facingX
+      (p) ->  {
+        p.batchElement.scaleX = facingX;
+      }
     );
 
     var abilityId = Main.Global.mouse.buttonDown;
@@ -855,26 +859,28 @@ class Player extends Entity {
             startPt.x, startPt.y,
             endPt.x, endPt.y,
             'ui/kamehameha_head',
-            null,
             (p) -> {
-              return 1 + yScaleRand;
+              p.batchElement.scaleY = 1 + yScaleRand;
             }
           );
 
           var lcx = startPt.x + (vx * laserHeadWidth);
           var lcy = startPt.y + (vy * laserHeadWidth);
           {
-            var beamLength = (p) -> Math.round(
+            var beamCallback = (p) -> {
+              final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+
+              b.scaleX = Math.round(
                 Utils.distance(lcx, lcy, endPt.x, endPt.y));
-            var beamScaleY = (p) -> 1 + yScaleRand;
+              b.scaleY = 1 + yScaleRand; 
+            };
 
             // laser center
             Main.Global.sb.emitSprite(
               lcx, lcy,
               endPt.x, endPt.y,
               'ui/kamehameha_center_width_1',
-              beamLength,
-              beamScaleY
+              beamCallback
             );
           }
 
@@ -883,8 +889,10 @@ class Player extends Entity {
             endPt.x, endPt.y,
             endPt.x + vx, endPt.y + vy,
             'ui/kamehameha_tail',
-            (p) -> 1 + Utils.irnd(0, 1) * 0.25,
-            (p) -> 1 + yScaleRand
+            (p) -> {
+              p.batchElement.scaleX = 1 + Utils.irnd(0, 1) * 0.25;
+              p.batchElement.scaleY = 1 + yScaleRand; 
+            }
           );
         }
 
@@ -909,8 +917,13 @@ class Player extends Entity {
             laserTailX1, laserTailY1,
             laserTailX1, laserTailY1,
             'ui/square_white',
-            (p) -> 10,
-            (p) -> 10
+            (p) -> {
+              final scale = 10;
+              final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+
+              b.scaleX = scale;
+              b.scaleY = 1 + yScaleRand; 
+            }
           );
         }
 
@@ -930,8 +943,13 @@ class Player extends Entity {
                 worldX,
                 worldY,
                 'ui/square_white',
-                (p) -> cellSize,
-                (p) -> cellSize
+                (p) -> {
+                  final scale = cellSize;
+                  final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+
+                  b.scaleX = scale;
+                  b.scaleY = scale; 
+                }
               );
             }
 
@@ -991,8 +1009,12 @@ class Player extends Entity {
                       x1,
                       y1,
                       'ui/square_white',
-                      (p) -> 10,
-                      (p) -> 10
+                      (p) -> {
+                        final scale = 10;
+
+                        p.batchElement.scaleX = scale;
+                        p.batchElement.scaleY = scale;
+                      }
                     );
 
                     Main.Global.sb.emitSprite(
@@ -1001,8 +1023,12 @@ class Player extends Entity {
                       p.x,
                       p.y,
                       'ui/square_white',
-                      (p) -> 10,
-                      (p) -> 10
+                      (p) -> {
+                        final scale = 10;
+
+                        p.batchElement.scaleX = scale;
+                        p.batchElement.scaleY = scale;
+                      }
                     );
                   };
                 }

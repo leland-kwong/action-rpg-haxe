@@ -2,10 +2,7 @@ import h2d.SpriteBatch;
 import Game.Cooldown;
 
 typedef SpriteRef = {
-  var dx: Float;
-  var dy: Float;
-  var ?rScaleX: (p: SpriteRef) -> Float;
-  var ?rScaleY: (p: SpriteRef) -> Float;
+  var ?rScaleX: (p: SpriteRef) -> Void;
   var ?sortOrder: Int;
   var isOld: Bool;
   var batchElement: BatchElement;
@@ -61,12 +58,7 @@ class ParticleSystem {
 
         p.isOld = true;
         if (p.rScaleX != null) {
-          p.batchElement.scaleX = 
-            p.rScaleX(p);
-        }
-        if (p.rScaleY != null) {
-          p.batchElement.scaleY = 
-            p.rScaleY(p);
+          p.rScaleX(p);
         }
       }
     }
@@ -140,22 +132,22 @@ class SpriteBatchSystem {
     x2: Float,
     y2: Float,
     spriteKey: String,
-    ?rScaleX,
-    ?rScaleY
+    ?rScaleX
   ) {
     final angle = Math.atan2(
         y2 - y1,
         x2 - x1);
+    // TODO makeSpriteRef a class
+    // that extends from `BatchElement` 
+    // so we don't have to create an extra
+    // anonymous structure just for a few props
     final g = new BatchElement(makeTile(spriteKey));
     g.rotation = angle;
     g.x = x1;
     g.y = y1;
     final spriteRef: SpriteRef = {
-      dx: Math.cos(angle),
-      dy: Math.sin(angle),
       batchElement: g,
       rScaleX: rScaleX,
-      rScaleY: rScaleY,
       // guarantees it lasts at least 1 frame
       isOld: false,
     }

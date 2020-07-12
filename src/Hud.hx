@@ -44,7 +44,6 @@ class Hud {
       p.sortOrder = 1;
       p.batchElement.scaleX = rScale * 1.0;
       p.batchElement.scaleY = rScale * 1.0;
-      return rScale;
     }
 
     Main.Global.uiSpriteBatch.emitSprite(
@@ -57,7 +56,6 @@ class Hud {
           p.sortOrder = 0;
           p.batchElement.scaleX = rScale * 1.0;
           p.batchElement.scaleY = rScale * 1.0;
-          return rScale;
         });
 
     {
