@@ -40,7 +40,7 @@ class Hud {
       .find(mapLayers, (l: Dynamic) -> {
         return l.name == 'energy_bars';
       }).objects; 
-    var barsCallback = (p, _) -> {
+    var barsCallback = (p) -> {
       p.sortOrder = 1;
       p.batchElement.scaleX = rScale * 1.0;
       p.batchElement.scaleY = rScale * 1.0;
@@ -54,8 +54,7 @@ class Hud {
         cockpitUnderlay.y * rScale,
         0,
         'ui/cockpit_underlay',
-        0.001, 
-        (p, _) -> {
+        (p) -> {
           p.sortOrder = 0;
           p.batchElement.scaleX = rScale * 1.0;
           p.batchElement.scaleY = rScale * 1.0;
@@ -80,7 +79,6 @@ class Hud {
             item.y * rScale,
             0,
             'ui/cockpit_resource_bar_health',
-            0.001,
             barsCallback);
       }
     }
@@ -101,7 +99,6 @@ class Hud {
             item.y * rScale,
             0,
             'ui/cockpit_resource_bar_energy',
-            0.001,
             barsCallback);
       }
     }

@@ -256,7 +256,7 @@ class Bullet extends Projectile {
 
     Main.Global.sb.emitSprite(
         x, y, x + dx, y + dy, 
-        speed, spriteKey, 0);
+        speed, spriteKey);
   }
 }
 
@@ -514,8 +514,7 @@ class Enemy extends Entity {
           x, y,
           0,
           currentFrameName,
-          0.001,
-          (p, progress) -> {
+          (p) -> {
             if (cds.has('hitFlash')) {
               var b: h2d.SpriteBatch.BatchElement = 
                 p.batchElement;
@@ -531,7 +530,7 @@ class Enemy extends Entity {
       }
       
       if (debugCenter) {
-        var rScale = (p, _) -> {
+        var rScale = (p) -> {
           final b: h2d.SpriteBatch.BatchElement = p.batchElement;
           b.alpha = 0.2;
 
@@ -542,7 +541,6 @@ class Enemy extends Entity {
             x, y + 1,
             0,
             'ui/square_white',
-            0.001,
             rScale,
             rScale);
       }
@@ -749,8 +747,7 @@ class Player extends Entity {
       x, y,
       0,
       core.Anim.getFrame(activeAnim, Main.Global.time),
-      0.001,
-      (_, _) ->  facingX
+      (_) ->  facingX
     );
 
     var abilityId = Main.Global.mouse.buttonDown;
@@ -860,10 +857,10 @@ class Player extends Entity {
           Main.Global.sb.emitSprite(
             startPt.x, startPt.y,
             endPt.x, endPt.y,
-            0, 'ui/kamehameha_head',
-            spriteLifetime ,
+            0, 
+            'ui/kamehameha_head',
             null,
-            (p, progress) -> {
+            (p) -> {
               return 1 + yScaleRand;
             }
           );
@@ -871,16 +868,15 @@ class Player extends Entity {
           var lcx = startPt.x + (vx * laserHeadWidth);
           var lcy = startPt.y + (vy * laserHeadWidth);
           {
-            var beamLength = (p, progress) -> Math.round(
+            var beamLength = (p) -> Math.round(
                 Utils.distance(lcx, lcy, endPt.x, endPt.y));
-            var beamScaleY = (p, progress) -> 1 + yScaleRand;
+            var beamScaleY = (p) -> 1 + yScaleRand;
 
             // laser center
             Main.Global.sb.emitSprite(
               lcx, lcy,
               endPt.x, endPt.y,
               0, 'ui/kamehameha_center_width_1',
-              spriteLifetime,
               beamLength,
               beamScaleY
             );
@@ -891,9 +887,8 @@ class Player extends Entity {
             endPt.x, endPt.y,
             endPt.x + vx, endPt.y + vy,
             0, 'ui/kamehameha_tail',
-            spriteLifetime,
-            (p, progress) -> 1 + Utils.irnd(0, 1) * 0.25,
-            (p, progress) -> 1 + yScaleRand
+            (p) -> 1 + Utils.irnd(0, 1) * 0.25,
+            (p) -> 1 + yScaleRand
           );
         }
 
@@ -918,9 +913,8 @@ class Player extends Entity {
             laserTailX1, laserTailY1,
             laserTailX1, laserTailY1,
             0, 'ui/square_white',
-            0.01,
-            (p, progress) -> 10,
-            (p, progress) -> 10
+            (p) -> 10,
+            (p) -> 10
           );
         }
 
@@ -940,9 +934,8 @@ class Player extends Entity {
                 worldX,
                 worldY,
                 0, 'ui/square_white',
-                0.01,
-                (p, progress) -> cellSize,
-                (p, progress) -> cellSize
+                (p) -> cellSize,
+                (p) -> cellSize
               );
             }
 
@@ -1001,10 +994,10 @@ class Player extends Entity {
                       y1,
                       x1,
                       y1,
-                      0, 'ui/square_white',
-                      0.01,
-                      (p, progress) -> 10,
-                      (p, progress) -> 10
+                      0, 
+                      'ui/square_white',
+                      (p) -> 10,
+                      (p) -> 10
                     );
 
                     Main.Global.sb.emitSprite(
@@ -1012,10 +1005,10 @@ class Player extends Entity {
                       p.y,
                       p.x,
                       p.y,
-                      0, 'ui/square_white',
-                      0.01,
-                      (p, progress) -> 10,
-                      (p, progress) -> 10
+                      0, 
+                      'ui/square_white',
+                      (p) -> 10,
+                      (p) -> 10
                     );
                   };
                 }

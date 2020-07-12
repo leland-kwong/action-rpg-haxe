@@ -5,14 +5,9 @@ typedef SpriteRef = {
   var dx: Float;
   var dy: Float;
   var speed: Float;
-  var ?rScaleX: (
-      p: SpriteRef, 
-      progress: Float) -> Float;
-  var ?rScaleY: (
-      p: SpriteRef, 
-      progress: Float) -> Float;
+  var ?rScaleX: (p: SpriteRef) -> Float;
+  var ?rScaleY: (p: SpriteRef) -> Float;
   var ?sortOrder: Int;
-  var lifeTime: Float;
   var createdAt: Float;
   var isNew: Bool;
   var batchElement: BatchElement;
@@ -58,8 +53,6 @@ class ParticleSystem {
 
     while (i < particles.length) {
       final p = particles[i];
-      final aliveTime = time - p.createdAt;
-      final progress = (aliveTime / p.lifeTime);
 
       // clear old particles
       if (!p.isNew) {
@@ -73,11 +66,11 @@ class ParticleSystem {
         p.isNew = false;
         if (p.rScaleX != null) {
           p.batchElement.scaleX = 
-            p.rScaleX(p, progress);
+            p.rScaleX(p);
         }
         if (p.rScaleY != null) {
           p.batchElement.scaleY = 
-            p.rScaleY(p, progress);
+            p.rScaleY(p);
         }
       }
     }
@@ -157,7 +150,6 @@ class ParticlePlayground {
     y2: Float,
     speed: Float,
     spriteKey: String,
-    lifeTime = 0.0,
     ?rScaleX,
     ?rScaleY
   ) {
@@ -171,7 +163,6 @@ class ParticlePlayground {
     final spriteRef: SpriteRef = {
       dx: Math.cos(angle),
       dy: Math.sin(angle),
-      lifeTime: lifeTime,
       speed: speed,
       createdAt: Main.Global.time,
       batchElement: g,
