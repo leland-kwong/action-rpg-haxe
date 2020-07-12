@@ -40,3 +40,34 @@ class Anim {
     });
   }
 }
+
+class AnimEffect {
+  static var animations: 
+    Array<AnimRef> = [];
+
+  public static function add(ref: AnimRef) {
+    animations.push(ref);
+  }
+
+  public static function update(
+      dt: Float, 
+      time: Float) {
+    var i = 0;
+
+    while (i < animations.length) {
+      final ref = animations[i];
+      final aliveTime = time - ref.startTime;
+      final isDone = aliveTime > ref.duration;
+
+      if (isDone) {
+        animations.splice(i, 1);
+      } else {
+        i += 1;
+        Main.Global.sb.emitSprite(
+            ref.x,
+            ref.y,
+            core.Anim.getFrame(ref, time));
+      }
+    }
+  }
+}

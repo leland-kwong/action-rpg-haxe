@@ -227,35 +227,6 @@ class Projectile extends Entity {
   }
 }
 
-class AnimationEffect {
-  static var animations: 
-    Array<core.Anim.AnimRef> = [];
-
-  public static function add(ref: core.Anim.AnimRef) {
-    animations.push(ref);
-  }
-
-  public static function update(dt: Float) {
-    var i = 0;
-
-    while (i < animations.length) {
-      final t = Main.Global.time;
-      final ref = animations[i];
-      final aliveTime = t - ref.startTime;
-      final isDone = aliveTime > ref.duration;
-
-      if (isDone) {
-        animations.splice(i, 1);
-      } else {
-        i += 1;
-        Main.Global.sb.emitSprite(
-            ref.x,
-            ref.y,
-            core.Anim.getFrame(ref, t));
-      }
-    }
-  }
-}
 
 class Bullet extends Projectile {
   static var onHitFrames = [
@@ -286,7 +257,7 @@ class Bullet extends Projectile {
   }
 
   public override function onRemove() {
-    AnimationEffect.add({
+    core.Anim.AnimEffect.add({
       frames: onHitFrames,
       startTime: Main.Global.time,
       duration: 0.15,
@@ -1513,7 +1484,8 @@ class Game extends h2d.Object {
       }
     }
 
-    AnimationEffect.update(dt);
+    core.Anim.AnimEffect
+      .update(dt, Main.Global.time);
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
