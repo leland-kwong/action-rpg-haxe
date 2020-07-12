@@ -147,15 +147,15 @@ class Entity extends h2d.Object {
         var nextPos = y + Utils.clamp(dy, -max, max) 
           * speed * dt;
         var direction = dy > 0 ? 1 : -1;
-        var isTraversable = Lambda.count(
-          Grid.getItemsInRect(
-            Main.Global.traversableGrid,
-            Math.floor(x),
-            Math.floor(y + (radius * direction)),
-            1,
-            1
-          )
-        ) > 0;
+        var isTraversable = traversableGrid != null 
+          ? Lambda.count(
+              Grid.getItemsInRect(
+                traversableGrid,
+                Math.floor(x),
+                Math.floor(y + (radius * direction)),
+                1,
+                1)) > 0
+          : true;
 
         if (isTraversable) {
           y = nextPos;

@@ -61,7 +61,7 @@ class ParticleSystem {
       final progress = (aliveTime / p.lifeTime);
 
       // clear old particles
-      if (aliveTime >= p.lifeTime && !p.isNew) {
+      if (!p.isNew) {
         particles.splice(i, 1);
         p.batchElement.remove();
 
