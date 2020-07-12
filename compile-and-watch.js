@@ -14,12 +14,19 @@ const compile = (buildFile) => {
 
   const flags = '-D debugMode';
   const cmd = `haxe ${flags} ${buildFile} --connect ${port}`;
+  const logSeparator = (logType) => {
+    compileLogger(`\n\n  === ${logType.toUpperCase()} ===`);
+  }
+
   exec(cmd, (err, stdout, stderr) => {
     if (err) {
+      logSeparator('error');
       compileLogger(err)
     } else if (stderr) {
+      logSeparator('stderror');
       compileLogger(stderr)
     } else {
+      logSeparator('success');
       compileLogger(`build success ${buildFile}`)
     }
   });
