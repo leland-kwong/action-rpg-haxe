@@ -7,15 +7,14 @@ typedef Particle = {
   var x: Float;
   var y: Float;
   var speed: Float;
-  var ?rAlpha: (p: Particle, progress: Float) -> Float;
   var ?rScaleX: (p: Particle, progress: Float) -> Float;
   var ?rScaleY: (p: Particle, progress: Float) -> Float;
-  var ?rColor: (p: Particle, progress: Float) -> Void;
   var ?sortOrder: Int;
   var lifeTime: Float;
   var createdAt: Float;
   var isNew: Bool;
   var batchElement: BatchElement;
+  var spriteKey: String;
 };
 
 typedef PartSystem = {
@@ -75,17 +74,11 @@ class ParticleSystem {
         p.y += p.dy * p.speed * dt;
         p.batchElement.x = p.x;
         p.batchElement.y = p.y;
-        if (p.rAlpha != null) {
-          p.batchElement.alpha = p.rAlpha(p, progress);
-        }
         if (p.rScaleX != null) {
           p.batchElement.scaleX = p.rScaleX(p, progress);
         }
         if (p.rScaleY != null) {
           p.batchElement.scaleY = p.rScaleY(p, progress);
-        }
-        if (p.rColor != null) {
-          p.rColor(p, progress);
         }
       }
     }
@@ -167,9 +160,7 @@ class ParticlePlayground {
     spriteKey: String,
     lifeTime = 1.0,
     ?rScaleX,
-    ?rScaleY,
-    ?rAlpha,
-    ?rColor
+    ?rScaleY
   ) {
     final angle = Math.atan2(
         y2 - y1,
@@ -185,12 +176,11 @@ class ParticlePlayground {
       speed: speed,
       createdAt: Main.Global.time,
       batchElement: g,
-      rAlpha: rAlpha,
       rScaleX: rScaleX,
       rScaleY: rScaleY,
-      rColor: rColor,
       // guarantees it lasts at least 1 frame
-      isNew: true
+      isNew: true,
+      spriteKey: spriteKey
     }
 
     ParticleSystem.emit(pSystem, spriteRef);

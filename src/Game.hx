@@ -99,6 +99,7 @@ class Entity extends h2d.Object {
   public var damageTaken = 0;
   public var status = 'TARGETABLE';
   public var cds: Cooldown;
+  public var traversableGrid: GridRef;
   var time = 0.0;
 
   public function new(props: Point, customId = null) {
@@ -127,15 +128,15 @@ class Entity extends h2d.Object {
         var nextPos = x + Utils.clamp(dx, -max, max) 
           * speed * dt;
         var direction = dx > 0 ? 1 : -1;
-        var isTraversable = Lambda.count(
-          Grid.getItemsInRect(
-            Main.Global.traversableGrid,
-            Math.floor(x + (radius * direction)),
-            Math.floor(y),
-            1,
-            1
-          )
-        ) > 0;
+        var isTraversable = traversableGrid != null 
+          ? Lambda.count(
+              Grid.getItemsInRect(
+                traversableGrid,
+                Math.floor(x + (radius * direction)),
+                Math.floor(y),
+                1,
+                1)) > 0
+          : true;
 
         if (isTraversable) {
           x = nextPos;
@@ -230,19 +231,14 @@ class Projectile extends Entity {
 
 class Bullet extends Projectile {
   var launchSoundPlayed = false;
-  var particleSystemRef: ParticlePlayground;
-  var particle: Particle;
+  var spriteKey: String;
 
   public function new(
     x1, y1, x2, y2, speed, bulletType, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
     lifeTime = 2.0;
-    particleSystemRef = Main.Global.sb;
-    particle = particleSystemRef
-      .emitSprite(
-        x1, y1, x2, y2, speed, bulletType, lifeTime
-      );
+    spriteKey = bulletType;
   }
 
   public override function update(dt: Float) {
@@ -257,8 +253,11 @@ class Bullet extends Projectile {
     if (collidedWith != null) {
       health = 0;
       collidedWith.damageTaken += damage;
-      particleSystemRef.removeSprite(particle);
     }
+
+    Main.Global.sb.emitSprite(
+        x, y, x + dx, y + dy, 
+        speed, spriteKey, 0);
   }
 }
 
@@ -517,9 +516,6 @@ class Enemy extends Entity {
           0,
           currentFrameName,
           0.001,
-          (p, progress) -> facingDir * 1,
-          null,
-          null,
           (p, progress) -> {
             if (cds.has('hitFlash')) {
               var b: h2d.SpriteBatch.BatchElement = 
@@ -529,13 +525,19 @@ class Enemy extends Entity {
               b.b = 255;
               b.a = 0.7;
             }
+
+            return facingDir * 1;
           }
         );
       }
       
       if (debugCenter) {
-        var rScale = (_, _) -> radius * 2;
-        var rAlpha = (_, _) -> 0.2;
+        var rScale = (p, _) -> {
+          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+          b.alpha = 0.2;
+
+          return radius * 2;
+        }
         Main.Global.sb.emitSprite(
             x, y + 1,
             x, y + 1,
@@ -543,8 +545,7 @@ class Enemy extends Entity {
             'ui/square_white',
             0.001,
             rScale,
-            rScale,
-            rAlpha);
+            rScale);
       }
     }
 
@@ -610,6 +611,7 @@ class Player extends Entity {
     health = 1000;
     speed = 200.0;
     forceMultiplier = 3.0;
+    traversableGrid = Main.Global.traversableGrid;
 
     rootScene = s2d;
     Main.Global.playerStats = PlayerStats.create({
@@ -852,10 +854,9 @@ class Player extends Entity {
         final laserTailX1 = x1 + vx * maxLength;
         final laserTailY1 = y1 + vy * maxLength;
         final yScaleRand = Utils.irnd(0, 1) * 0.125;
-        final beamOpacity = (p, progress) -> 1;
 
         var renderBeam = (startPt, endPt) -> {
-          var spriteLifetime = 1/60;
+          var spriteLifetime = 0;
           // laser head
           Main.Global.sb.emitSprite(
             startPt.x, startPt.y,
@@ -863,8 +864,9 @@ class Player extends Entity {
             0, 'ui/kamehameha_head',
             spriteLifetime ,
             null,
-            (p, progress) -> 1 + yScaleRand,
-            beamOpacity
+            (p, progress) -> {
+              return 1 + yScaleRand;
+            }
           );
 
           var lcx = startPt.x + (vx * laserHeadWidth);
@@ -881,8 +883,7 @@ class Player extends Entity {
               0, 'ui/kamehameha_center_width_1',
               spriteLifetime,
               beamLength,
-              beamScaleY,
-              beamOpacity
+              beamScaleY
             );
           }
 
@@ -893,8 +894,7 @@ class Player extends Entity {
             0, 'ui/kamehameha_tail',
             spriteLifetime,
             (p, progress) -> 1 + Utils.irnd(0, 1) * 0.25,
-            (p, progress) -> 1 + yScaleRand,
-            beamOpacity
+            (p, progress) -> 1 + yScaleRand
           );
         }
 
@@ -943,8 +943,7 @@ class Player extends Entity {
                 0, 'ui/square_white',
                 0.01,
                 (p, progress) -> cellSize,
-                (p, progress) -> cellSize,
-                (p, progress) -> 0.8
+                (p, progress) -> cellSize
               );
             }
 
@@ -1266,7 +1265,6 @@ class Game extends h2d.Object {
       var traversableRects: Array<Dynamic> = 
         layersByName.get('traversable').objects;
       var updateTraversableGrid = (item: TiledObject) -> {
-        // trace(item);
         Grid.setItemRect(
           Main.Global.traversableGrid,
           (item.x + item.width / 2),
@@ -1287,9 +1285,7 @@ class Game extends h2d.Object {
         var g = new h2d.Graphics(Main.Global.debugScene);
         g.beginFill(Game.Colors.yellow, 0.3);
         var cellSize = Main.Global.traversableGrid.cellSize;
-        trace('cellSize', cellSize);
         for (key => item in traversableGridItems) {
-          trace(key, item);
           var xMin = item[0] * cellSize;
           var xMax = item[1] * cellSize;
           var yMin = item[2] * cellSize;
