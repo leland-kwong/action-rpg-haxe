@@ -2,7 +2,7 @@ import h2d.SpriteBatch;
 import Game.Cooldown;
 
 typedef SpriteRef = {
-  var ?rScaleX: (p: SpriteRef) -> Void;
+  var ?effectCallback: (p: SpriteRef) -> Void;
   var ?sortOrder: Int;
   var isOld: Bool;
   var batchElement: BatchElement;
@@ -57,8 +57,8 @@ class ParticleSystem {
         i += 1;
 
         p.isOld = true;
-        if (p.rScaleX != null) {
-          p.rScaleX(p);
+        if (p.effectCallback != null) {
+          p.effectCallback(p);
         }
       }
     }
@@ -132,7 +132,7 @@ class SpriteBatchSystem {
     x2: Float,
     y2: Float,
     spriteKey: String,
-    ?rScaleX
+    ?effectCallback
   ) {
     final angle = Math.atan2(
         y2 - y1,
@@ -147,7 +147,7 @@ class SpriteBatchSystem {
     g.y = y1;
     final spriteRef: SpriteRef = {
       batchElement: g,
-      rScaleX: rScaleX,
+      effectCallback: effectCallback,
       // guarantees it lasts at least 1 frame
       isOld: false,
     }
