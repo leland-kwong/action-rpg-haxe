@@ -17,10 +17,11 @@ typedef MapDataRef = {
 }
 
 typedef TiledObject = {
-  var id: Int;
-  var x: Int;
-  var y: Int;
-  var width: Int;
-  var height: Int;
+  final id: Int;
+  final x: Int;
+  final y: Int;
+  final width: Int;
+  final height: Int;
+  final type: String;
 }
 

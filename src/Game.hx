@@ -36,11 +36,14 @@ class SoundFx {
   }
 }
 
+typedef EntityId = String;
+
 typedef EntityProps = {
   var x: Float;
   var y: Float;
   var radius: Int;
-  var weight: Float;
+  var ?id: EntityId;
+  var ?weight: Float;
   var ?color: Int;
   var ?sightRange: Int;
 }
@@ -78,7 +81,6 @@ class Cooldown {
   }
 }
 
-typedef EntityId = String;
 
 class Entity extends h2d.Object {
   static var idGenerated = 0;
@@ -101,16 +103,18 @@ class Entity extends h2d.Object {
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
 
-  public function new(props: EntityProps, customId = null) {
+  public function new(props: EntityProps) {
     super();
 
     x = props.x;
     y = props.y;
-    id = customId == null
+    id = props.id == null
       ? 'entity_${idGenerated++}'
-      : customId;
+      : props.id;
     radius = props.radius;
-    weight = props.weight;
+    if (props.weight != null) {
+      weight = props.weight;
+    }
     color = props.color;
 
     ALL.push(this);
@@ -250,11 +254,6 @@ class Bullet extends Projectile {
     spriteKey = _spriteKey;
   }
 
-  function spriteEffect(spriteRef: SpriteBatchSystem.SpriteRef) {
-    // draw all bullets on top
-    spriteRef.sortOrder = 99999999;
-  }
-
   public override function onRemove() {
     core.Anim.AnimEffect.add({
       frames: onHitFrames,
@@ -285,7 +284,7 @@ class Bullet extends Projectile {
         y + dy - y,
         x + dx - x);
     Main.Global.sb.emitSprite(
-        x, y, spriteKey, angle, spriteEffect);
+        x, y, spriteKey, angle);
   }
 }
 
@@ -1104,6 +1103,12 @@ class MapObstacle extends Entity {
   public function new(props: EntityProps) {
     super(props);
     type = 'OBSTACLE';
+    forceMultiplier = 3.0;
+  }
+
+  public override function render(_) {
+    Main.Global.sb.emitSprite(
+      x, y, 'ui/pillar');
   }
 }
 
@@ -1371,9 +1376,23 @@ class Game extends h2d.Object {
     // setup environment obstacle colliders
     {
       mapRef = Grid.create(16);
-      final objectsRects: Array<Dynamic> = 
+      final objectsRects: Array<core.Types.TiledObject> = 
         layersByName.get('objects').objects;
-      Lambda.foreach(objectsRects, (item) -> {
+      final pillarObjects = Lambda
+        .filter(objectsRects, (item) -> {
+          return item.type == 'pillar';
+        });
+      Lambda.foreach(pillarObjects, (item) -> {
+        final cx = item.x + item.width / 2;
+        final pivotYOffset = 50;
+        final cy = item.y - item.height
+          + pivotYOffset;
+        new MapObstacle({
+          id: 'pillar_${item.id}',
+          x: cx,
+          y: cy,
+          radius: Std.int((item.width - 5) / 2)
+        });
         return true;
       });
     }
@@ -1469,7 +1488,7 @@ class Game extends h2d.Object {
           dynamicWorldGrid, a.x, a.y, width, height
         );
         var obstacleNeighbors = Grid.getItemsInRect(
-          mapRef, a.x, a.y, width, height
+          Main.Global.obstacleGrid, a.x, a.y, width, height
         );
         for (n in dynamicNeighbors) {
           neighbors.push(n);
@@ -1500,14 +1519,24 @@ class Game extends h2d.Object {
 
       // TODO need a better way to determine what 
       // is a dynamic entity
-      if (a.type != 'OBSTACLE' && a.type != 'PROJECTILE') {
+      final isDynamic = a.type != 'OBSTACLE' 
+        && a.type != 'PROJECTILE';
+      if (isDynamic) {
         Grid.setItemRect(
-          dynamicWorldGrid,
-          a.x,
-          a.y,
-          a.radius * 2,
-          a.radius * 2,
-          a.id);
+            Main.Global.dynamicWorldGrid,
+            a.x,
+            a.y,
+            a.radius * 2,
+            a.radius * 2,
+            a.id);
+      } else if (a.type == 'OBSTACLE') {
+        Grid.setItemRect(
+            Main.Global.obstacleGrid,
+            a.x,
+            a.y,
+            a.radius * 2,
+            a.radius * 2,
+            a.id);
       }
 
       Grid.setItemRect(

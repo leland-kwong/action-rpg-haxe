@@ -289,6 +289,14 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-0.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-1.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-2.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-3.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-4.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-5.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-6.png</key>
+            <key type="filename">aseprite_exports/projectile_hit_animation/burst-7.png</key>
             <key type="filename">aseprite_exports/ui/bullet_enemy_large.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -313,9 +321,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>4,3,9,7</rect>
+                <rect>4,3,7,7</rect>
                 <key>scale9Paddings</key>
-                <rect>4,3,9,7</rect>
+                <rect>4,3,7,7</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -344,9 +352,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>37,9,74,17</rect>
+                <rect>37,10,74,19</rect>
                 <key>scale9Paddings</key>
-                <rect>37,9,74,17</rect>
+                <rect>37,10,74,19</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -443,7 +451,7 @@
             <key type="filename">aseprite_exports/ui/pillar.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.690141</point_f>
+                <point_f>0.5,0.7</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
