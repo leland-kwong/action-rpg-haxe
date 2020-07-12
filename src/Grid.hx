@@ -81,21 +81,21 @@ class Grid {
   // NOTE: origin is at center of rect
   public static function setItemRect(
     ref: GridRef,
-    x: Float,
-    y: Float,
+    cx: Float,
+    cy: Float,
     w: Int,
     h: Int,
     key: GridKey
   ) {
     var fromCache = ref.itemCache[key];
     var xMin = Math.floor(
-        Math.round(x - (w / 2)) / ref.cellSize);
+        Math.round(cx - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(
-        Math.round(x + (w / 2)) / ref.cellSize);
+        Math.round(cx + (w / 2)) / ref.cellSize);
     var yMin = Math.floor(
-        Math.round(y - (h / 2)) / ref.cellSize);
+        Math.round(cy - (h / 2)) / ref.cellSize);
     var yMax = Math.ceil(
-        Math.round(y + (h / 2)) / ref.cellSize);
+        Math.round(cy + (h / 2)) / ref.cellSize);
 
     if (
       fromCache != null
@@ -118,15 +118,15 @@ class Grid {
   }
 
   public static function getItemsInRect(
-      ref: GridRef, x: Float, y: Float, w, h) {
+      ref: GridRef, cx: Float, cy: Float, w, h) {
     var xMin = Math.floor(
-        Math.round(x - (w / 2)) / ref.cellSize);
+        Math.round(cx - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(
-        Math.round(x + (w / 2)) / ref.cellSize);
+        Math.round(cx + (w / 2)) / ref.cellSize);
     var yMin = Math.floor(
-        Math.round(y - (h / 2)) / ref.cellSize);
+        Math.round(cy - (h / 2)) / ref.cellSize);
     var yMax = Math.ceil(
-        Math.round(y + (h / 2)) / ref.cellSize);
+        Math.round(cy + (h / 2)) / ref.cellSize);
     var items: GridItems = new Map();
 
     for (y in yMin...yMax) {
@@ -143,11 +143,23 @@ class Grid {
     return items;
   }
 
-  public static function eachCell(
-      ref: GridRef, callback) {
-    for (y => row in ref.data) {
-      for (x => items in row) {
-        callback(x, y, items);
+  public static function eachCellInRect(
+      ref: GridRef, 
+      cx: Float, cy: Float, w, h, 
+      callback) {
+    var xMin = Math.floor(
+        Math.round(cx - (w / 2)) / ref.cellSize);
+    var xMax = Math.ceil(
+        Math.round(cx + (w / 2)) / ref.cellSize);
+    var yMin = Math.floor(
+        Math.round(cy - (h / 2)) / ref.cellSize);
+    var yMax = Math.ceil(
+        Math.round(cy + (h / 2)) / ref.cellSize);
+
+    for (y in yMin...yMax) {
+      for (x in xMin...xMax) {
+        callback(x, y,
+            getCell(ref, x, y));
       }
     }
   }

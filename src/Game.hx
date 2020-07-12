@@ -1411,6 +1411,9 @@ class Game extends h2d.Object {
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(dynamicWorldGrid, a.id);
         Grid.removeItem(mapRef, a.id);
+        Grid.removeItem(
+            Main.Global.entitiesInViewGrid,
+            a.id);
         a.remove();
       } else {
         i += 1;
@@ -1504,9 +1507,16 @@ class Game extends h2d.Object {
           a.y,
           a.radius * 2,
           a.radius * 2,
-          a.id
-        );
+          a.id);
       }
+
+      Grid.setItemRect(
+          Main.Global.entitiesInViewGrid,
+          a.x,
+          a.y,
+          a.radius * 2,
+          a.radius * 2,
+          a.id);
     }
 
     core.Anim.AnimEffect
@@ -1517,9 +1527,55 @@ class Game extends h2d.Object {
   }
 
   public function render(time: Float) {
-    for (entity in Entity.ALL) {
-      entity.render(time);
-    }
+    final mainCam = Main.Global.mainCamera;
+    final debugActiveRenderCell = false;
+    final cellSize = Main.Global
+      .entitiesInViewGrid.cellSize;
+    // prevent duplicate renders which can
+    // happen due to an entity overlapping
+    // in the spatial grid
+    final renderedEntities = new Map();
+    final renderEntities = (x, y, 
+        cellData: Grid.GridItems) -> {
+
+      if (debugActiveRenderCell) {
+        final gap = 2;
+        Main.Global.sb.emitSprite(
+            x * cellSize + gap + cellSize / 2, 
+            y * cellSize + gap + cellSize / 2,
+            'ui/square_white',
+            null,
+            (p) -> {
+              final b = p.batchElement;
+              b.scaleX = cellSize - gap;
+              b.scaleY = cellSize - gap;
+              b.alpha = 0.3;
+            });
+      }
+
+      if (cellData == null) {
+        return;
+      }
+
+      for (entityId => _ in cellData) {
+        final alreadyRendered = renderedEntities
+          .exists(entityId);
+
+        if (!alreadyRendered) {
+          final entity = Entity.ALL_BY_ID[entityId];
+          entity.render(time);
+          renderedEntities.set(entityId, true);
+        }
+      }
+    };
+
+    Grid.eachCellInRect(
+        Main.Global.entitiesInViewGrid,
+        mainCam.x,
+        mainCam.y,
+        mainCam.w,
+        mainCam.h,
+        renderEntities);
 
     core.Anim.AnimEffect
       .render(time);

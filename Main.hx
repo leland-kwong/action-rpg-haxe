@@ -22,6 +22,8 @@ class Global {
   }
   public static var obstacleGrid: GridRef;
   public static var dynamicWorldGrid: GridRef;
+  public static var entitiesInViewGrid = 
+    Grid.create(135);
   public static var traversableGrid: GridRef;
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
@@ -253,6 +255,7 @@ class Main extends hxd.App {
         hxd.Window.getInstance().addEventTarget(onEvent);
       }
 
+      // setup viewport
       {
         var win = hxd.Window.getInstance();
 
@@ -273,8 +276,10 @@ class Main extends hxd.App {
 
       Global.mainCamera = Camera.create();
       
-      Global.sb = new SpriteBatchSystem(Global.particleScene);
-      Global.uiSpriteBatch = new SpriteBatchSystem(Global.uiRoot);
+      Global.sb = new SpriteBatchSystem(
+          Global.particleScene);
+      Global.uiSpriteBatch = new SpriteBatchSystem(
+          Global.uiRoot);
 
       switchMainScene(MainSceneType.PlayGame);
 
@@ -346,9 +351,9 @@ class Main extends hxd.App {
 
       // update scenes to move relative to camera
       var cam_center_x = -Global.mainCamera.x 
-        + Math.fround(Global.mainCamera.w / 2);
+        + Math.fround(Global.rootScene.width / 2);
       var cam_center_y = -Global.mainCamera.y 
-        + Math.fround(Global.mainCamera.h / 2);
+        + Math.fround(Global.rootScene.height / 2);
       for (scene in [
           Global.rootScene,
           Global.particleScene,
