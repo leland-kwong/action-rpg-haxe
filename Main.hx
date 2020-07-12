@@ -252,25 +252,28 @@ class Main extends hxd.App {
             Global.mouse.buttonDown = -1;
           }
         }
-        hxd.Window.getInstance().addEventTarget(onEvent);
+        hxd.Window.getInstance()
+          .addEventTarget(onEvent);
       }
 
       // setup viewport
+#if !jsMode
       {
         var win = hxd.Window.getInstance();
-
         // make fullscreen
-#if !jsMode
         var nativePixelResolution = {
+          // TODO this should be based on
+          // the actual screen's resolution
           x: 1920,
           y: 1080
         }
         win.resize(
             nativePixelResolution.x, 
             nativePixelResolution.y);
-        win.displayMode = hxd.Window.DisplayMode.Fullscreen;
-#end
+        win.displayMode = hxd.Window.DisplayMode
+          .Fullscreen;
       }
+#end
 
       hxd.Res.initEmbed();
 
