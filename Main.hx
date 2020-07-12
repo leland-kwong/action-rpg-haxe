@@ -83,10 +83,9 @@ class HomeScreen extends h2d.Object {
   var uiButtonsList = [];
 
   public function new(
-    onGameStart,
-    onGameExit,
-    onSpriteBatchSystemMode
-  ) {
+      onGameStart,
+      onGameExit
+      ) {
     super();
 
     var leftMargin = 100;
@@ -107,7 +106,6 @@ class HomeScreen extends h2d.Object {
         this.remove();
         onGameStart();
       }],
-      ['Particle Playground', btnFont, onSpriteBatchSystemMode],
       ['Exit Game', btnFont, onGameExit],
     ];
 
@@ -141,7 +139,6 @@ class HomeScreen extends h2d.Object {
 
 enum abstract MainSceneType(String) {
   var PlayGame;
-  var SpriteBatchSystem;
 }
 
 class Main extends hxd.App {
@@ -180,11 +177,7 @@ class Main extends hxd.App {
     }
 
     return new HomeScreen(
-      onGameStart, onGameExit,
-      () -> {
-        switchMainScene(MainSceneType.SpriteBatchSystem);
-      }
-    );
+      onGameStart, onGameExit);
   }
 
   public override function render(e: h3d.Engine) {
@@ -194,8 +187,7 @@ class Main extends hxd.App {
     }
     Hud.render(Global.time);
     // run sprite batches before engine rendering
-    Global.sb.render(Global.time);
-    Global.uiSpriteBatch.render(Global.time);
+    SpriteBatchSystem.renderAll(Global.time);
 
     Global.mainBackground.render(e);
     super.render(e);
@@ -215,11 +207,6 @@ class Main extends hxd.App {
         var hs = showHomeScreen();
         Global.uiRoot.addChild(hs);
         reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
-      }
-
-      case MainSceneType.SpriteBatchSystem: {
-        var ref = new SpriteBatchSystem(Global.uiRoot);
-        reactiveItems['MainScene_SpriteBatchSystem'] = ref;
       }
     }
   }
@@ -285,8 +272,8 @@ class Main extends hxd.App {
       hxd.Res.initEmbed();
 
       Global.mainCamera = Camera.create();
+      
       Global.sb = new SpriteBatchSystem(Global.particleScene);
-
       Global.uiSpriteBatch = new SpriteBatchSystem(Global.uiRoot);
 
       switchMainScene(MainSceneType.PlayGame);
@@ -323,17 +310,19 @@ class Main extends hxd.App {
       var fps = Math.round(1/dt);
 
       if (debugText != null) {
+        final formattedStats = Json.stringify({
+          time: Global.time,
+          fpsTrue: fps,
+          fps: Math.round(1/frameTime),
+          drawCalls: engine.drawCalls,
+          numEntities: Entity.ALL.length,
+          numSprites: Lambda.fold(SpriteBatchSystem.instances, (ref, count) -> {
+            return count + ref.particles.length;
+          }, 0)
+        }, null, '  ');
         var text = [
-          'stats: ${Json.stringify({
-            time: Global.time,
-            fpsTrue: fps,
-            fps: Math.round(1/frameTime),
-            drawCalls: engine.drawCalls,
-            numEntities: Entity.ALL.length,
-            numSprites: Global.sb.pSystem.particles.length 
-              + Global.uiSpriteBatch.pSystem.particles.length
-          }, null, '  ')}',
-        'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
+          'stats: ${formattedStats}',
+          'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
         ].join('\n');
         var debugUiMargin = 10;
         debugText.x = debugUiMargin;
@@ -344,9 +333,7 @@ class Main extends hxd.App {
       Global.dt = dt;
       Global.time += dt;
 
-      // update sprite batches 
-      Global.sb.update(dt);
-      Global.uiSpriteBatch.update(dt);
+      SpriteBatchSystem.updateAll(dt);
 
       Camera.setSize(
           Global.mainCamera,

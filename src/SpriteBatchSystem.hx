@@ -8,17 +8,17 @@ typedef SpriteRef = {
   var batchElement: BatchElement;
 };
 
-typedef PartSystem = {
+typedef BatchManagerRef = {
   var particles: Array<SpriteRef>;
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
   var spriteSheetData: Dynamic;
 };
 
-class ParticleSystem {
+class BatchManager {
   static public function init(scene: h2d.Scene) {
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-    var system: PartSystem = {
+    var system: BatchManagerRef = {
       particles: [],
       spriteSheetData: Utils.loadJsonFile(
           hxd.Res.sprite_sheet_json).frames,
@@ -30,14 +30,14 @@ class ParticleSystem {
   }
 
   static public function emit(
-      s: PartSystem,
+      s: BatchManagerRef,
       config: SpriteRef) {
 
     s.particles.push(config);
   }
 
   static public function update(
-      s: PartSystem, 
+      s: BatchManagerRef, 
       dt: Float) {
 
     // reset for next cycle
@@ -46,7 +46,7 @@ class ParticleSystem {
   }
 
   static public function render(
-      s: PartSystem, 
+      s: BatchManagerRef, 
       time: Float) {
 
     final particles = s.particles;
@@ -74,27 +74,25 @@ class ParticleSystem {
   }
 }
 
-// TODO: Rename this to *batch system*
-// TODO: Refactor to take in a sprite object
-// directly so we can do optimizations such as
-// reusing sprites each frame if needed.
 class SpriteBatchSystem {
-  public var pSystem: PartSystem;
+  public static final instances: Array<BatchManagerRef> = [];
+  public var batchManager: BatchManagerRef;
 
   public function new(scene: h2d.Scene) {
-    pSystem = ParticleSystem.init(scene);
+    batchManager = BatchManager.init(scene);
+    instances.push(batchManager);
   }
 
   function makeTile(spriteKey: String) {
     var spriteData = Reflect.field(
-        pSystem.spriteSheetData,
+        batchManager.spriteSheetData,
         spriteKey);
 
     if (spriteData == null) {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    var tile = pSystem.spriteSheet.sub(
+    var tile = batchManager.spriteSheet.sub(
         spriteData.frame.x,
         spriteData.frame.y,
         spriteData.frame.w,
@@ -132,16 +130,20 @@ class SpriteBatchSystem {
       effectCallback(spriteRef);
     }
 
-    ParticleSystem.emit(pSystem, spriteRef);
+    BatchManager.emit(batchManager, spriteRef);
 
     return spriteRef;
   }
 
-  public function update(update: Float) {
-    ParticleSystem.update(pSystem, update);
+  public static function updateAll(dt: Float) {
+    for (bm in instances) {
+      BatchManager.update(bm, dt);
+    }
   }
   
-  public function render(time: Float) {
-    ParticleSystem.render(pSystem, time);
+  public static function renderAll(time: Float) {
+    for (bm in instances) {
+      BatchManager.render(bm, time);
+    }
   }
 }

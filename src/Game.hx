@@ -838,17 +838,17 @@ class Player extends Entity {
 
         final abilityCooldown = 0.02;
         final laserHeadSpriteData = Reflect.field(
-          Main.Global.sb.pSystem.spriteSheetData,
+          Main.Global.sb.batchManager.spriteSheetData,
           'ui/kamehameha_head'
         );
         final laserCenterSpriteData = Reflect.field(
-          Main.Global.sb.pSystem.spriteSheetData,
+          Main.Global.sb.batchManager.spriteSheetData,
           'ui/kamehameha_center_width_1'
         );
         final beamThickness = 
           laserCenterSpriteData.frame.h;
         final laserTailSpriteData = Reflect.field(
-          Main.Global.sb.pSystem.spriteSheetData,
+          Main.Global.sb.batchManager.spriteSheetData,
           'ui/kamehameha_tail'
         );
         final laserHeadWidth = laserHeadSpriteData.frame.w;
