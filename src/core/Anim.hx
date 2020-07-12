@@ -41,48 +41,34 @@ class Anim {
   }
 }
 
+// creates long-lived animations
+// and automatically cleans up old animations
 class AnimEffect {
-  static final animations: 
+  public static var nextAnimations: 
     Array<AnimRef> = [];
-  static final oldAnimations:
-    Map<Int, Bool> = new Map();
+  static var curAnimations: 
+    Array<AnimRef> = [];
 
   public static function add(ref: AnimRef) {
-    animations.push(ref);
+    nextAnimations.push(ref);
   }
 
   public static function update(dt: Float) {
-    // cleanup old animations
-    {
-      var numRemoved = 0;
-      for (i => _ in oldAnimations) {
-        animations.splice(i - numRemoved, 1);
-        numRemoved += 1;
-      }
-      oldAnimations.clear();
-    }
+    curAnimations = nextAnimations;
+    nextAnimations = [];
   }
 
-  public static function render(
-      time: Float) {
-
-    for (i in 0...animations.length) {
-      final ref = animations[i];
+  public static function render(time: Float) {
+    for (ref in curAnimations) {
       final aliveTime = time - ref.startTime;
-      final isDone = aliveTime > ref.duration 
-        || oldAnimations.exists(i);
+      final isAlive = aliveTime < ref.duration;
 
-      if (isDone) {
-        // TODO: cleanup using the same method
-        // as the SpriteBatchSystem because
-        // iterating over hash maps is way
-        // slower than an array
-        oldAnimations.set(i, false);
-      } else {
+      if (isAlive) {
         Main.Global.sb.emitSprite(
             ref.x,
             ref.y,
             core.Anim.getFrame(ref, time));
+        nextAnimations.push(ref);
       }
     }
   }

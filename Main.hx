@@ -316,9 +316,13 @@ class Main extends hxd.App {
           fps: Math.round(1/frameTime),
           drawCalls: engine.drawCalls,
           numEntities: Entity.ALL.length,
-          numSprites: Lambda.fold(SpriteBatchSystem.instances, (ref, count) -> {
-            return count + ref.particles.length;
-          }, 0)
+          numSprites: Lambda.fold(
+              SpriteBatchSystem.instances, 
+              (ref, count) -> {
+                return count + ref.particles.length;
+              }, 0),
+          numAnimations: core.Anim.AnimEffect
+            .nextAnimations.length
         }, null, '  ');
         var text = [
           'stats: ${formattedStats}',
