@@ -4,11 +4,9 @@ import Game.Cooldown;
 typedef SpriteRef = {
   var dx: Float;
   var dy: Float;
-  var speed: Float;
   var ?rScaleX: (p: SpriteRef) -> Float;
   var ?rScaleY: (p: SpriteRef) -> Float;
   var ?sortOrder: Int;
-  var createdAt: Float;
   var isNew: Bool;
   var batchElement: BatchElement;
   var spriteKey: String;
@@ -47,7 +45,6 @@ class ParticleSystem {
   static public function update(
       s: PartSystem, 
       dt: Float) {
-    final time = Main.Global.time;
     final particles = s.particles;
     var i = 0;
 
@@ -148,7 +145,6 @@ class ParticlePlayground {
     y1: Float,
     x2: Float,
     y2: Float,
-    speed: Float,
     spriteKey: String,
     ?rScaleX,
     ?rScaleY
@@ -163,8 +159,6 @@ class ParticlePlayground {
     final spriteRef: SpriteRef = {
       dx: Math.cos(angle),
       dy: Math.sin(angle),
-      speed: speed,
-      createdAt: Main.Global.time,
       batchElement: g,
       rScaleX: rScaleX,
       rScaleY: rScaleY,

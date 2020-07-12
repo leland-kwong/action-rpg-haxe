@@ -52,7 +52,6 @@ class Hud {
         cockpitUnderlay.y * rScale,
         cockpitUnderlay.x * rScale,
         cockpitUnderlay.y * rScale,
-        0,
         'ui/cockpit_underlay',
         (p) -> {
           p.sortOrder = 0;
@@ -77,7 +76,6 @@ class Hud {
             item.y * rScale,
             item.x * rScale,
             item.y * rScale,
-            0,
             'ui/cockpit_resource_bar_health',
             barsCallback);
       }
@@ -97,7 +95,6 @@ class Hud {
             item.y * rScale,
             item.x * rScale,
             item.y * rScale,
-            0,
             'ui/cockpit_resource_bar_energy',
             barsCallback);
       }
