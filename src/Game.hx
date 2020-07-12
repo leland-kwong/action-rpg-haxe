@@ -121,45 +121,43 @@ class Entity extends h2d.Object {
   public function update(dt: Float) {
     time += dt;
 
-    if (speed != 0) {
-      var max = 1;
+    final max = 1;
 
-      if (dx != 0) {
-        var nextPos = x + Utils.clamp(dx, -max, max) 
-          * speed * dt;
-        var direction = dx > 0 ? 1 : -1;
-        var isTraversable = traversableGrid != null 
-          ? Lambda.count(
-              Grid.getItemsInRect(
-                traversableGrid,
-                Math.floor(x + (radius * direction)),
-                Math.floor(y),
-                1,
-                1)) > 0
-          : true;
+    if (dx != 0) {
+      final nextPos = x + Utils.clamp(dx, -max, max) 
+        * speed * dt;
+      final direction = dx > 0 ? 1 : -1;
+      final isTraversable = traversableGrid != null 
+        ? Lambda.count(
+            Grid.getItemsInRect(
+              traversableGrid,
+              Math.floor(x + (radius * direction)),
+              Math.floor(y),
+              1,
+              1)) > 0
+        : true;
 
-        if (isTraversable) {
-          x = nextPos;
-        }
+      if (isTraversable) {
+        x = nextPos;
       }
+    }
 
-      if (dy != 0) {
-        var nextPos = y + Utils.clamp(dy, -max, max) 
-          * speed * dt;
-        var direction = dy > 0 ? 1 : -1;
-        var isTraversable = traversableGrid != null 
-          ? Lambda.count(
-              Grid.getItemsInRect(
-                traversableGrid,
-                Math.floor(x),
-                Math.floor(y + (radius * direction)),
-                1,
-                1)) > 0
-          : true;
+    if (dy != 0) {
+      final nextPos = y + Utils.clamp(dy, -max, max) 
+        * speed * dt;
+      final direction = dy > 0 ? 1 : -1;
+      final isTraversable = traversableGrid != null 
+        ? Lambda.count(
+            Grid.getItemsInRect(
+              traversableGrid,
+              Math.floor(x),
+              Math.floor(y + (radius * direction)),
+              1,
+              1)) > 0
+        : true;
 
-        if (isTraversable) {
-          y = nextPos;
-        }
+      if (isTraversable) {
+        y = nextPos;
       }
     }
   }
