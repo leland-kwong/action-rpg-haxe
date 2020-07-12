@@ -46,17 +46,19 @@ class Hud {
       p.batchElement.scaleY = rScale * 1.0;
     }
 
-    Main.Global.uiSpriteBatch.emitSprite(
-        cockpitUnderlay.x * rScale,
-        cockpitUnderlay.y * rScale,
-        cockpitUnderlay.x * rScale,
-        cockpitUnderlay.y * rScale,
-        'ui/cockpit_underlay',
-        (p) -> {
-          p.sortOrder = 0;
-          p.batchElement.scaleX = rScale * 1.0;
-          p.batchElement.scaleY = rScale * 1.0;
-        });
+    {
+      Main.Global.uiSpriteBatch.emitSprite(
+          cockpitUnderlay.x * rScale,
+          cockpitUnderlay.y * rScale,
+          cockpitUnderlay.x * rScale,
+          cockpitUnderlay.y * rScale,
+          'ui/cockpit_underlay',
+          (p) -> {
+            p.sortOrder = 0;
+            p.batchElement.scaleX = rScale * 1.0;
+            p.batchElement.scaleY = rScale * 1.0;
+          });
+    }
 
     {
       var healthRemaining = 
