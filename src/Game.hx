@@ -229,14 +229,15 @@ class Projectile extends Entity {
 
 class Bullet extends Projectile {
   var launchSoundPlayed = false;
+  // var spriteRef: ParticlePlayground.SpriteRef;
   var spriteKey: String;
 
   public function new(
-    x1, y1, x2, y2, speed, bulletType, collisionFilter
+    x1, y1, x2, y2, speed, _spriteKey, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
     lifeTime = 2.0;
-    spriteKey = bulletType;
+    spriteKey = _spriteKey;
   }
 
   public override function update(dt: Float) {

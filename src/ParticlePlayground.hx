@@ -1,14 +1,16 @@
 import h2d.SpriteBatch;
 import Game.Cooldown;
 
-typedef Particle = {
+typedef SpriteRef = {
   var dx: Float;
   var dy: Float;
-  var x: Float;
-  var y: Float;
   var speed: Float;
-  var ?rScaleX: (p: Particle, progress: Float) -> Float;
-  var ?rScaleY: (p: Particle, progress: Float) -> Float;
+  var ?rScaleX: (
+      p: SpriteRef, 
+      progress: Float) -> Float;
+  var ?rScaleY: (
+      p: SpriteRef, 
+      progress: Float) -> Float;
   var ?sortOrder: Int;
   var lifeTime: Float;
   var createdAt: Float;
@@ -18,7 +20,7 @@ typedef Particle = {
 };
 
 typedef PartSystem = {
-  var particles: Array<Particle>;
+  var particles: Array<SpriteRef>;
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
   var spriteSheetData: Dynamic;
@@ -38,13 +40,12 @@ class ParticleSystem {
     return system;
   }
 
-  static public function emit(
-      s: PartSystem,
-      config: Particle,
-      before = false) {
+  static public function emit
+    (s: PartSystem,
+     config: SpriteRef,
+     before = false) {
+
     s.particles.push(config);
-    config.batchElement.x = config.x;
-    config.batchElement.y = config.y;
     s.batch.add(config.batchElement, before);
   }
 
@@ -70,15 +71,13 @@ class ParticleSystem {
         i += 1;
 
         p.isNew = false;
-        p.x += p.dx * p.speed * dt;
-        p.y += p.dy * p.speed * dt;
-        p.batchElement.x = p.x;
-        p.batchElement.y = p.y;
         if (p.rScaleX != null) {
-          p.batchElement.scaleX = p.rScaleX(p, progress);
+          p.batchElement.scaleX = 
+            p.rScaleX(p, progress);
         }
         if (p.rScaleY != null) {
-          p.batchElement.scaleY = p.rScaleY(p, progress);
+          p.batchElement.scaleY = 
+            p.rScaleY(p, progress);
         }
       }
     }
@@ -87,9 +86,9 @@ class ParticleSystem {
     // sort by y-position
     particles.sort((a, b) -> {
       var sortA = a.sortOrder == null
-        ? a.y : a.sortOrder;
+        ? a.batchElement.y : a.sortOrder;
       var sortB = b.sortOrder == null
-        ? b.y : b.sortOrder;
+        ? b.batchElement.y : b.sortOrder;
 
       if (sortA < sortB) {
         return 1;
@@ -158,7 +157,7 @@ class ParticlePlayground {
     y2: Float,
     speed: Float,
     spriteKey: String,
-    lifeTime = 1.0,
+    lifeTime = 0.0,
     ?rScaleX,
     ?rScaleY
   ) {
@@ -167,11 +166,11 @@ class ParticlePlayground {
         x2 - x1);
     final g = new BatchElement(makeTile(spriteKey));
     g.rotation = angle;
-    final spriteRef: Particle = {
+    g.x = x1;
+    g.y = y1;
+    final spriteRef: SpriteRef = {
       dx: Math.cos(angle),
       dy: Math.sin(angle),
-      x: x1,
-      y: y1,
       lifeTime: lifeTime,
       speed: speed,
       createdAt: Main.Global.time,
@@ -186,10 +185,6 @@ class ParticlePlayground {
     ParticleSystem.emit(pSystem, spriteRef);
 
     return spriteRef;
-  }
-
-  public function removeSprite(spriteRef: Particle) {
-    spriteRef.lifeTime = 0.0;
   }
 
   public function update(dt) {
