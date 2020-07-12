@@ -6,6 +6,8 @@ typedef AnimRef = {
   var frames: Array<Dynamic>;
   var duration: core.Types.Time;
   var startTime: core.Types.Time;
+  var ?x: Float;
+  var ?y: Float;
 }
 
 class Anim {

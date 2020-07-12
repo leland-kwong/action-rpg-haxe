@@ -227,7 +227,47 @@ class Projectile extends Entity {
   }
 }
 
+class AnimationEffect {
+  static var animations: 
+    Array<core.Anim.AnimRef> = [];
+
+  public static function add(ref: core.Anim.AnimRef) {
+    animations.push(ref);
+  }
+
+  public static function update(dt: Float) {
+    var i = 0;
+
+    while (i < animations.length) {
+      final t = Main.Global.time;
+      final ref = animations[i];
+      final aliveTime = t - ref.startTime;
+      final isDone = aliveTime > ref.duration;
+
+      if (isDone) {
+        animations.splice(i, 1);
+      } else {
+        i += 1;
+        Main.Global.sb.emitSprite(
+            ref.x,
+            ref.y,
+            core.Anim.getFrame(ref, t));
+      }
+    }
+  }
+}
+
 class Bullet extends Projectile {
+  static var onHitFrames = [
+    'projectile_hit_animation/burst-0',
+    'projectile_hit_animation/burst-1',
+    'projectile_hit_animation/burst-2', 
+    'projectile_hit_animation/burst-3', 
+    'projectile_hit_animation/burst-4', 
+    'projectile_hit_animation/burst-5', 
+    'projectile_hit_animation/burst-6', 
+    'projectile_hit_animation/burst-7', 
+  ];
   var launchSoundPlayed = false;
   var spriteKey: String;
 
@@ -243,6 +283,16 @@ class Bullet extends Projectile {
   function spriteEffect(spriteRef: SpriteBatchSystem.SpriteRef) {
     // draw all bullets on top
     spriteRef.sortOrder = 99999999;
+  }
+
+  public override function onRemove() {
+    AnimationEffect.add({
+      frames: onHitFrames,
+      startTime: Main.Global.time,
+      duration: 0.15,
+      x: x,
+      y: y
+    }); 
   }
 
   public override function update(dt: Float) {
@@ -1462,6 +1512,8 @@ class Game extends h2d.Object {
         );
       }
     }
+
+    AnimationEffect.update(dt);
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
