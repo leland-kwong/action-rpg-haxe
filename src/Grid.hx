@@ -23,8 +23,10 @@ typedef GridRef = {
 
 class Grid {
   // snaps to the center of a cell
-  public static function snapPosition(v: Dynamic, cellSize) {
-    return Math.ceil(v / cellSize) * cellSize - Math.floor(cellSize / 2);
+  public static function snapPosition(
+      v: Dynamic, cellSize) {
+    return Math.ceil(v / cellSize) 
+      * cellSize - Math.floor(cellSize / 2);
   }
 
   public static function create(
@@ -42,11 +44,13 @@ class Grid {
     }
   }
 
-  public static function has(ref: GridRef, key: GridKey) {
+  public static function has(
+      ref: GridRef, key: GridKey) {
     return ref.itemCache.exists(key);
   }
 
-  public static function isEmptyCell(ref: GridRef, x, y) {
+  public static function isEmptyCell(
+      ref: GridRef, x, y) {
     var cellData = getCell(ref, x, y);
 
     if (cellData == null) {
@@ -56,17 +60,21 @@ class Grid {
     return Lambda.count(cellData) == 0;
   }
 
-  inline public static function getCell(ref: GridRef, x, y) {
+  inline public static function getCell(
+      ref: GridRef, x, y) {
     var row = ref.data[y];
 
     return row != null ? row[x] : null;
   }
 
-  static function addItem(ref: GridRef, x, y, key: GridKey) {
+  static function addItem(
+      ref: GridRef, x, y, key: GridKey) {
     var curRow = ref.data[y];
-    ref.data[y] = curRow == null ? new Map() : curRow;
+    ref.data[y] = curRow == null 
+      ? new Map() : curRow;
     var curCell = ref.data[y][x];
-    ref.data[y][x] = curCell == null ? new Map() : curCell;
+    ref.data[y][x] = curCell == null 
+      ? new Map() : curCell;
     ref.data[y][x][key] = key;
   }
 
@@ -80,10 +88,14 @@ class Grid {
     key: GridKey
   ) {
     var fromCache = ref.itemCache[key];
-    var xMin = Math.floor(Math.round(x - (w / 2)) / ref.cellSize);
-    var xMax = Math.ceil(Math.round(x + (w / 2)) / ref.cellSize);
-    var yMin = Math.floor(Math.round(y - (h / 2)) / ref.cellSize);
-    var yMax = Math.ceil(Math.round(y + (h / 2)) / ref.cellSize);
+    var xMin = Math.floor(
+        Math.round(x - (w / 2)) / ref.cellSize);
+    var xMax = Math.ceil(
+        Math.round(x + (w / 2)) / ref.cellSize);
+    var yMin = Math.floor(
+        Math.round(y - (h / 2)) / ref.cellSize);
+    var yMax = Math.ceil(
+        Math.round(y + (h / 2)) / ref.cellSize);
 
     if (
       fromCache != null
@@ -105,11 +117,16 @@ class Grid {
     }
   }
 
-  public static function getItemsInRect(ref: GridRef, x: Float, y: Float, w, h) {
-    var xMin = Math.floor(Math.round(x - (w / 2)) / ref.cellSize);
-    var xMax = Math.ceil(Math.round(x + (w / 2)) / ref.cellSize);
-    var yMin = Math.floor(Math.round(y - (h / 2)) / ref.cellSize);
-    var yMax = Math.ceil(Math.round(y + (h / 2)) / ref.cellSize);
+  public static function getItemsInRect(
+      ref: GridRef, x: Float, y: Float, w, h) {
+    var xMin = Math.floor(
+        Math.round(x - (w / 2)) / ref.cellSize);
+    var xMax = Math.ceil(
+        Math.round(x + (w / 2)) / ref.cellSize);
+    var yMin = Math.floor(
+        Math.round(y - (h / 2)) / ref.cellSize);
+    var yMax = Math.ceil(
+        Math.round(y + (h / 2)) / ref.cellSize);
     var items: GridItems = new Map();
 
     for (y in yMin...yMax) {
@@ -126,7 +143,8 @@ class Grid {
     return items;
   }
 
-  public static function eachCell(ref: GridRef, callback) {
+  public static function eachCell(
+      ref: GridRef, callback) {
     for (y => row in ref.data) {
       for (x => items in row) {
         callback(x, y, items);
@@ -134,7 +152,8 @@ class Grid {
     }
   }
 
-  public static function removeItem(ref: GridRef, key: GridKey) {
+  public static function removeItem(
+      ref: GridRef, key: GridKey) {
     var cache = ref.itemCache[key];
 
     if (cache == null) {
