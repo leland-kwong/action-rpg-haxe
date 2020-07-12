@@ -215,57 +215,52 @@ class Main extends hxd.App {
   }
 
   override function init() {
-    // setup scenes
-    {
-      Global.rootScene = s2d;
-      s2d.scaleMode = ScaleMode.Zoom(
-          Main.Global.resolutionScale);
-
-      Global.uiRoot = new h2d.Scene();
-      sevents.addScene(Global.uiRoot);
-
-      Global.particleScene = new h2d.Scene();
-      Global.particleScene.scaleMode = ScaleMode.Zoom(
-          Main.Global.resolutionScale);
-
-      Global.mainBackground = new h2d.Scene();
-      Global.mainBackground.scaleMode = ScaleMode.Zoom(
-          Main.Global.resolutionScale);
-      Global.debugScene = new h2d.Scene();
-
-      background = addBackground(
-          Global.mainBackground, 0x333333);
-    }
-
     try {
-      Tests.run();
-    } catch (err: Dynamic) {
-      var font = Fonts.primary.get().clone();
-      font.resizeTo(12 * 2);
-      var tf = new h2d.Text(font, Global.debugScene);
-      tf.textColor = Game.Colors.red;
-      tf.textAlign = Align.Center;
-      var stack = haxe.CallStack.exceptionStack();
-      tf.text = haxe.CallStack.toString(stack);
-    }
+      // setup scenes
+      {
+        Global.rootScene = s2d;
+        s2d.scaleMode = ScaleMode.Zoom(
+            Global.resolutionScale);
 
-    {
-      function onEvent(event : hxd.Event) {
-        if (event.kind == hxd.Event.EventKind.EPush) {
-          Global.mouse.buttonDown = event.button;
-        }
-        if (event.kind == hxd.Event.EventKind.ERelease) {
-          Global.mouse.buttonDown = -1;
-        }
+        Global.uiRoot = new h2d.Scene();
+        sevents.addScene(Global.uiRoot);
+
+        Global.particleScene = new h2d.Scene();
+        Global.particleScene.scaleMode = ScaleMode.Zoom(
+            Global.resolutionScale);
+
+        Global.mainBackground = new h2d.Scene();
+        Global.mainBackground.scaleMode = ScaleMode.Zoom(
+            Global.resolutionScale);
+        Global.debugScene = new h2d.Scene();
+
+        background = addBackground(
+            Global.mainBackground, 0x333333);
       }
-      hxd.Window.getInstance().addEventTarget(onEvent);
-    }
 
-    {
-      var win = hxd.Window.getInstance();
+#if !production
 
-      // make fullscreen
-      #if !jsMode
+      Tests.run();      
+
+#end
+
+      {
+        function onEvent(event : hxd.Event) {
+          if (event.kind == hxd.Event.EventKind.EPush) {
+            Global.mouse.buttonDown = event.button;
+          }
+          if (event.kind == hxd.Event.EventKind.ERelease) {
+            Global.mouse.buttonDown = -1;
+          }
+        }
+        hxd.Window.getInstance().addEventTarget(onEvent);
+      }
+
+      {
+        var win = hxd.Window.getInstance();
+
+        // make fullscreen
+#if !jsMode
         var nativePixelResolution = {
           x: 1920,
           y: 1080
@@ -274,24 +269,32 @@ class Main extends hxd.App {
             nativePixelResolution.x, 
             nativePixelResolution.y);
         win.displayMode = hxd.Window.DisplayMode.Fullscreen;
-      #end
-    }
+#end
+      }
 
-    hxd.Res.initEmbed();
+      hxd.Res.initEmbed();
 
-    Global.mainCamera = Camera.create();
-    Global.sb = new SpriteBatchSystem(Global.particleScene);
+      Global.mainCamera = Camera.create();
+      Global.sb = new SpriteBatchSystem(Global.particleScene);
 
-    Global.uiSpriteBatch = new SpriteBatchSystem(Global.uiRoot);
+      Global.uiSpriteBatch = new SpriteBatchSystem(Global.uiRoot);
 
-    switchMainScene(MainSceneType.PlayGame);
+      switchMainScene(MainSceneType.PlayGame);
 
-    #if debugMode
+#if debugMode
       var font = Fonts.primary.get().clone();
       setupDebugInfo(font);
-    #end
+#end
 
-    Hud.start();
+      Hud.start();
+
+    } catch (error: Dynamic) {
+
+      final stack = haxe.CallStack.exceptionStack();
+      trace(haxe.CallStack.toString(stack));
+      hxd.System.exit();
+
+    }
   }
 
   function handleGlobalHotkeys() {
@@ -304,83 +307,94 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
-    Hud.update(dt);
+    try {
 
-    Main.Global.time += dt;
+      Hud.update(dt);
 
-    Camera.setSize(
-      Main.Global.mainCamera,
-      Main.Global.rootScene.width,
-      Main.Global.rootScene.height
-    );
+      Global.time += dt;
 
-    // update scenes to move relative to camera
-    var cam_center_x = -Main.Global.mainCamera.x + Math.fround(Main.Global.mainCamera.w / 2);
-    var cam_center_y = -Main.Global.mainCamera.y + Math.fround(Main.Global.mainCamera.h / 2);
-    for (scene in [
-      Main.Global.rootScene,
-      Main.Global.particleScene,
-      Main.Global.debugScene
-    ]) {
-      scene.x = cam_center_x;
-      scene.y = cam_center_y;
-    }
+      Camera.setSize(
+          Global.mainCamera,
+          Global.rootScene.width,
+          Global.rootScene.height);
 
-    handleGlobalHotkeys();
-
-    for (it in reactiveItems) {
-      it.update(dt);
-    }
-
-    acc += dt;
-
-    // set to 1/60 for a fixed 60fps
-    var frameTime = dt;
-    var fps = Math.round(1/dt);
-    var isNextFrame = acc >= frameTime;
-    // handle fixed dt here
-    if (isNextFrame) {
-      acc -= frameTime;
-
-      if (game != null) {
-        var levelCleared = game.isLevelComplete();
-        if (levelCleared) {
-          game.newLevel(s2d);
-        }
-
-        game.update(s2d, frameTime);
-
-        if (game.isGameOver()) {
-          switchMainScene(MainSceneType.PlayGame);
-        }
+      // update scenes to move relative to camera
+      var cam_center_x = -Global.mainCamera.x 
+        + Math.fround(Global.mainCamera.w / 2);
+      var cam_center_y = -Global.mainCamera.y 
+        + Math.fround(Global.mainCamera.h / 2);
+      for (scene in [
+          Global.rootScene,
+          Global.particleScene,
+          Global.debugScene
+      ]) {
+        scene.x = cam_center_x;
+        scene.y = cam_center_y;
       }
 
-      Camera.update(Main.Global.mainCamera, dt);
-      Global.sb.update(frameTime);
-      Global.uiSpriteBatch.update(frameTime);
+      handleGlobalHotkeys();
 
-      if (debugText != null) {
-        var text = [
-          'stats: ${Json.stringify({
-            time: Main.Global.time,
-            fpsTrue: fps,
-            fps: Math.round(1/frameTime),
-            drawCalls: engine.drawCalls,
-            numEntities: Entity.ALL.length,
-            numSprites: Main.Global.sb.pSystem.particles.length 
-              + Main.Global.uiSpriteBatch.pSystem.particles.length
-          }, null, '  ')}',
+      for (it in reactiveItems) {
+        it.update(dt);
+      }
+
+      acc += dt;
+
+      // set to 1/60 for a fixed 60fps
+      var frameTime = dt;
+      var fps = Math.round(1/dt);
+      var isNextFrame = acc >= frameTime;
+      // handle fixed dt here
+      if (isNextFrame) {
+        acc -= frameTime;
+
+        if (game != null) {
+          var levelCleared = game.isLevelComplete();
+          if (levelCleared) {
+            game.newLevel(s2d);
+          }
+
+          game.update(s2d, frameTime);
+
+          if (game.isGameOver()) {
+            switchMainScene(MainSceneType.PlayGame);
+          }
+        }
+
+        Camera.update(Global.mainCamera, dt);
+        Global.sb.update(frameTime);
+        Global.uiSpriteBatch.update(frameTime);
+
+        if (debugText != null) {
+          var text = [
+            'stats: ${Json.stringify({
+              time: Global.time,
+              fpsTrue: fps,
+              fps: Math.round(1/frameTime),
+              drawCalls: engine.drawCalls,
+              numEntities: Entity.ALL.length,
+              numSprites: Global.sb.pSystem.particles.length 
+                + Global.uiSpriteBatch.pSystem.particles.length
+            }, null, '  ')}',
           'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
-        ].join('\n');
-        var debugUiMargin = 10;
-        debugText.x = debugUiMargin;
-        debugText.y = debugUiMargin;
-        debugText.text = text;
+          ].join('\n');
+          var debugUiMargin = 10;
+          debugText.x = debugUiMargin;
+          debugText.y = debugUiMargin;
+          debugText.text = text;
+        }
       }
-    }
 
-    background.width = s2d.width;
-    background.height = s2d.height;
+      background.width = s2d.width;
+      background.height = s2d.height;
+
+    } catch (error: Dynamic) {
+
+      final stack = haxe.CallStack.exceptionStack();
+      trace(haxe.CallStack.toString(stack));
+      hxd.System.exit();
+
+    }
   }
 
   static function main() {
