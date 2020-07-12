@@ -39,9 +39,9 @@ class ParticleSystem {
     s.batch.add(config.batchElement, before);
   }
 
-  static public function update(
+  static public function render(
       s: PartSystem, 
-      dt: Float) {
+      time: Float) {
     final particles = s.particles;
 
     // sort by y-position or custom sort value
@@ -149,7 +149,7 @@ class SpriteBatchSystem {
     return spriteRef;
   }
 
-  public function update(dt) {
-    ParticleSystem.update(pSystem, dt);
+  public function render(time: Float) {
+    ParticleSystem.render(pSystem, time);
   }
 }

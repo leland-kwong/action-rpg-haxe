@@ -18,7 +18,7 @@ class Hud {
         hxd.Res.ui_hud_layout_json);
   }
 
-  public static function update(dt: Float) {
+  public static function render(time: Float) {
     var ps = Main.Global.playerStats;
 
     if (ps == null) {

@@ -26,6 +26,7 @@ class Global {
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
+  public static var dt = 0.0;
   public static var playerStats: PlayerStats.StatsRef = null; 
   public static var resolutionScale = 4;
 }
@@ -187,6 +188,15 @@ class Main extends hxd.App {
   }
 
   public override function render(e: h3d.Engine) {
+    // prepare all sprite batches 
+    if (game != null) {
+      game.render(Global.time);
+    }
+    Hud.render(Global.time);
+    // run sprite batches before engine rendering
+    Global.sb.render(Global.time);
+    Global.uiSpriteBatch.render(Global.time);
+
     Global.mainBackground.render(e);
     super.render(e);
     Global.particleScene.render(e);
@@ -309,8 +319,7 @@ class Main extends hxd.App {
   override function update(dt:Float) {
     try {
 
-      Hud.update(dt);
-
+      Global.dt = dt;
       Global.time += dt;
 
       Camera.setSize(
@@ -362,8 +371,6 @@ class Main extends hxd.App {
         }
 
         Camera.update(Global.mainCamera, dt);
-        Global.sb.update(frameTime);
-        Global.uiSpriteBatch.update(frameTime);
 
         if (debugText != null) {
           var text = [

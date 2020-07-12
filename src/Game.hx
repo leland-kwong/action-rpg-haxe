@@ -36,7 +36,7 @@ class SoundFx {
   }
 }
 
-typedef Point = {
+typedef EntityProps = {
   var x: Float;
   var y: Float;
   var radius: Int;
@@ -100,9 +100,8 @@ class Entity extends h2d.Object {
   public var status = 'TARGETABLE';
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
-  var time = 0.0;
 
-  public function new(props: Point, customId = null) {
+  public function new(props: EntityProps, customId = null) {
     super();
 
     x = props.x;
@@ -119,8 +118,6 @@ class Entity extends h2d.Object {
   }
 
   public function update(dt: Float) {
-    time += dt;
-
     final max = 1;
 
     if (dx != 0) {
@@ -161,6 +158,8 @@ class Entity extends h2d.Object {
       }
     }
   }
+
+  public function render(time: Float) {}
 }
 
 class Projectile extends Entity {
@@ -279,7 +278,9 @@ class Bullet extends Projectile {
       health = 0;
       collidedWith.damageTaken += damage;
     }
+  }
 
+  public override function render(time: Float) {
     final angle = Math.atan2(
         y + dy - y,
         x + dx - x);
@@ -433,7 +434,8 @@ class Enemy extends Entity {
     var origX = x;
     var origY = y;
 
-    var spawnProgress = Math.min(1, time / spawnDuration);
+    var spawnProgress = Math.min(
+        1, Main.Global.time / spawnDuration);
     var isFullySpawned = spawnProgress >= 1;
     if (!isFullySpawned) {
       setScale(spawnProgress);
@@ -535,26 +537,6 @@ class Enemy extends Entity {
         if (dx != 0) {
           facingDir = (dx > 0 ? -1 : 1);
         }
-        var currentFrameName = core.Anim.getFrame(
-            activeAnim, Main.Global.time);
-        Main.Global.sb.emitSprite(
-          x, y,
-          currentFrameName,
-          null,
-          (p) -> {
-            var b: h2d.SpriteBatch.BatchElement = 
-              p.batchElement;
-
-            if (cds.has('hitFlash')) {
-              b.r = 255;
-              b.g = 255;
-              b.b = 255;
-              b.a = 0.7;
-            }
-
-            b.scaleX = facingDir * 1;
-          }
-        );
       }
       
       if (debugCenter) {
@@ -566,6 +548,7 @@ class Enemy extends Entity {
           b.scaleX = scale;
           b.scaleY = scale;
         }
+        // TODO: should move this to a render method
         Main.Global.sb.emitSprite(
             x, y,
             'ui/square_white',
@@ -609,6 +592,29 @@ class Enemy extends Entity {
     }
 
     attackTarget = null;
+  }
+
+  public override function render(time: Float) {
+    final currentFrameName = core.Anim.getFrame(
+        activeAnim, time);
+
+    Main.Global.sb.emitSprite(
+        x, y,
+        currentFrameName,
+        null,
+        (p) -> {
+          final b: h2d.SpriteBatch.BatchElement = 
+            p.batchElement;
+
+          if (cds.has('hitFlash')) {
+            b.r = 255;
+            b.g = 255;
+            b.b = 255;
+            b.a = 0.7;
+          }
+
+          b.scaleX = facingDir * 1;
+        });
   }
 }
 
@@ -756,28 +762,7 @@ class Player extends Entity {
     movePlayer();
     // pulsate player for visual juice
     playerSprite.setScale(
-        1 - Math.abs(Math.sin(time * 2.5) / 10));
-
-    var activeAnim: core.Anim.AnimRef;
-    if (cds.has('recoveringFromAbility')) {
-      activeAnim = attackAnim;
-    }
-    else {
-      if (dx != 0 || dy != 0) {
-        activeAnim = runAnim;
-      } else {
-        activeAnim = idleAnim;
-      }
-    }
-
-    Main.Global.sb.emitSprite(
-      x, y,
-      core.Anim.getFrame(activeAnim, Main.Global.time),
-      null,
-      (p) ->  {
-        p.batchElement.scaleX = facingX;
-      }
-    );
+        1 - Math.abs(Math.sin(Main.Global.time * 2.5) / 10));
 
     var abilityId = Main.Global.mouse.buttonDown;
     useAbility(
@@ -887,6 +872,7 @@ class Player extends Entity {
           final angle = Math.atan2(
               endPt.y - startPt.y,
               endPt.x - startPt.x);
+          // TODO: should be moved to a render method
           Main.Global.sb.emitSprite(
             startPt.x, startPt.y,
             'ui/kamehameha_head',
@@ -911,6 +897,7 @@ class Player extends Entity {
             final angle = Math.atan2(
                 endPt.y - lcy,
                 endPt.x - lcx);
+            // TODO: should be moved to a render method
             Main.Global.sb.emitSprite(
               lcx, lcy,
               'ui/kamehameha_center_width_1',
@@ -924,6 +911,7 @@ class Player extends Entity {
             final angle = Math.atan2(
                 endPt.y - endPt.y + vy,
                 endPt.x - endPt.x + vx);
+            // TODO: should be moved to a render method
             Main.Global.sb.emitSprite(
                 endPt.x, endPt.y,
                 'ui/kamehameha_tail',
@@ -952,6 +940,7 @@ class Player extends Entity {
         };
 
         if (debug.startPos) {
+          // TODO: should be moved to a render method
           Main.Global.sb.emitSprite(
             laserTailX1, laserTailY1,
             'ui/square_white',
@@ -976,6 +965,7 @@ class Player extends Entity {
             var worldY = Math.round(y * cellSize);
 
             if (debug.queryRects) {
+              // TODO: should be moved to a render method
               Main.Global.sb.emitSprite(
                 worldX,
                 worldY,
@@ -1041,6 +1031,7 @@ class Player extends Entity {
                   adjustedEndPt = p;
 
                   if (debug.endPos) {
+                    // TODO: should be moved to a render method
                     Main.Global.sb.emitSprite(
                       x1,
                       y1,
@@ -1054,6 +1045,7 @@ class Player extends Entity {
                       }
                     );
 
+                    // TODO: should be moved to a render method
                     Main.Global.sb.emitSprite(
                       p.x,
                       p.y,
@@ -1083,6 +1075,35 @@ class Player extends Entity {
         renderBeam(startPt, adjustedEndPt);
       }
     }
+  }
+
+  public override function render(time: Float) {
+    var activeAnim: core.Anim.AnimRef;
+    if (cds.has('recoveringFromAbility')) {
+      activeAnim = attackAnim;
+    }
+    else {
+      if (dx != 0 || dy != 0) {
+        activeAnim = runAnim;
+      } else {
+        activeAnim = idleAnim;
+      }
+    }
+    Main.Global.sb.emitSprite(
+      x, y,
+      core.Anim.getFrame(activeAnim, time),
+      null,
+      (p) ->  {
+        p.batchElement.scaleX = facingX;
+      }
+    );
+  }
+}
+
+class MapObstacle extends Entity {
+  public function new(props: EntityProps) {
+    super(props);
+    type = 'OBSTACLE';
   }
 }
 
@@ -1346,9 +1367,15 @@ class Game extends h2d.Object {
       }
     }
 
+    // AGENDA: setup map pillars
     // setup environment obstacle colliders
     {
       mapRef = Grid.create(16);
+      final objectsRects: Array<Dynamic> = 
+        layersByName.get('objects').objects;
+      Lambda.foreach(objectsRects, (item) -> {
+        return true;
+      });
     }
 
     s2d.addChild(this);
@@ -1418,8 +1445,6 @@ class Game extends h2d.Object {
     Main.Global.obstacleGrid = mapRef;
     Main.Global.dynamicWorldGrid = dynamicWorldGrid;
 
-    var ALL = Entity.ALL;
-
     if (enemySpawner != null) {
       enemySpawner.update(dt);
     }
@@ -1428,7 +1453,7 @@ class Game extends h2d.Object {
 
     cleanupDisposedEntities();
 
-    for (a in ALL) {
+    for (a in Entity.ALL) {
       var shouldFindNeighbors = a.type == 'ENEMY'
         || a.type == 'PROJECTILE';
 
@@ -1485,24 +1510,18 @@ class Game extends h2d.Object {
     }
 
     core.Anim.AnimEffect
-      .update(dt, Main.Global.time);
+      .update(dt);
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
+  }
 
-    // display hovered object
-    {
-      var mouseNeighbors = Grid.getItemsInRect(
-        Main.Global.dynamicWorldGrid,
-        mousePointer.x,
-        mousePointer.y,
-        1,
-        1
-      );
-
-      for (item in mouseNeighbors) {
-        // trace(item);
-      }
+  public function render(time: Float) {
+    for (entity in Entity.ALL) {
+      entity.render(time);
     }
+
+    core.Anim.AnimEffect
+      .render(time);
   }
 }

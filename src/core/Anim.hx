@@ -42,27 +42,37 @@ class Anim {
 }
 
 class AnimEffect {
-  static var animations: 
+  static final animations: 
     Array<AnimRef> = [];
+  static final oldAnimations:
+    Map<Int, Bool> = new Map();
 
   public static function add(ref: AnimRef) {
     animations.push(ref);
   }
 
-  public static function update(
-      dt: Float, 
-      time: Float) {
-    var i = 0;
+  public static function update(dt: Float) {
+    // cleanup old animations
+    {
+      for (i => _ in oldAnimations) {
+        animations.splice(i, 1);
+      }
+      oldAnimations.clear();
+    }
+  }
 
-    while (i < animations.length) {
+  public static function render(
+      time: Float) {
+
+    for (i in 0...animations.length) {
       final ref = animations[i];
       final aliveTime = time - ref.startTime;
-      final isDone = aliveTime > ref.duration;
+      final isDone = aliveTime > ref.duration 
+        || oldAnimations.exists(i);
 
       if (isDone) {
-        animations.splice(i, 1);
+        oldAnimations.set(i, false);
       } else {
-        i += 1;
         Main.Global.sb.emitSprite(
             ref.x,
             ref.y,
