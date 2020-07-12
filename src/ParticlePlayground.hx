@@ -7,9 +7,8 @@ typedef SpriteRef = {
   var ?rScaleX: (p: SpriteRef) -> Float;
   var ?rScaleY: (p: SpriteRef) -> Float;
   var ?sortOrder: Int;
-  var isNew: Bool;
+  var isOld: Bool;
   var batchElement: BatchElement;
-  var spriteKey: String;
 };
 
 typedef PartSystem = {
@@ -52,7 +51,7 @@ class ParticleSystem {
       final p = particles[i];
 
       // clear old particles
-      if (!p.isNew) {
+      if (p.isOld) {
         particles.splice(i, 1);
         p.batchElement.remove();
 
@@ -60,7 +59,7 @@ class ParticleSystem {
       } else {
         i += 1;
 
-        p.isNew = false;
+        p.isOld = true;
         if (p.rScaleX != null) {
           p.batchElement.scaleX = 
             p.rScaleX(p);
@@ -102,11 +101,6 @@ class ParticleSystem {
 }
 
 // TODO: Rename this to *batch system*
-// TODO: Refactor to be simpler and only handle drawing.
-// All update logic should be handled separately in their
-// own systems. This way we can keep the render batching
-// system performant by only doing mutations on sprites
-// that actually need it.
 // TODO: Refactor to take in a sprite object
 // directly so we can do optimizations such as
 // reusing sprites each frame if needed.
@@ -163,8 +157,7 @@ class ParticlePlayground {
       rScaleX: rScaleX,
       rScaleY: rScaleY,
       // guarantees it lasts at least 1 frame
-      isNew: true,
-      spriteKey: spriteKey
+      isOld: false,
     }
 
     ParticleSystem.emit(pSystem, spriteRef);
