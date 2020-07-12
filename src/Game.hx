@@ -9,7 +9,7 @@ import Grid.GridRef;
 import Fonts;
 import Utils;
 import Camera;
-import ParticlePlayground;
+import SpriteBatchSystem;
 import Collision;
 
 using Lambda;
@@ -229,7 +229,7 @@ class Projectile extends Entity {
 
 class Bullet extends Projectile {
   var launchSoundPlayed = false;
-  // var spriteRef: ParticlePlayground.SpriteRef;
+  // var spriteRef: SpriteBatchSystem.SpriteRef;
   var spriteKey: String;
 
   public function new(

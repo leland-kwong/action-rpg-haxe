@@ -4,7 +4,7 @@ import h2d.Interactive;
 import Fonts;
 import Game;
 import Grid;
-import ParticlePlayground;
+import SpriteBatchSystem;
 import Camera;
 import Tests;
 import Collision;
@@ -23,8 +23,8 @@ class Global {
   public static var obstacleGrid: GridRef;
   public static var dynamicWorldGrid: GridRef;
   public static var traversableGrid: GridRef;
-  public static var sb: ParticlePlayground;
-  public static var uiSpriteBatch: ParticlePlayground;
+  public static var sb: SpriteBatchSystem;
+  public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
   public static var playerStats: PlayerStats.StatsRef = null; 
   public static var resolutionScale = 4;
@@ -84,7 +84,7 @@ class HomeScreen extends h2d.Object {
   public function new(
     onGameStart,
     onGameExit,
-    onParticlePlaygroundMode
+    onSpriteBatchSystemMode
   ) {
     super();
 
@@ -106,7 +106,7 @@ class HomeScreen extends h2d.Object {
         this.remove();
         onGameStart();
       }],
-      ['Particle Playground', btnFont, onParticlePlaygroundMode],
+      ['Particle Playground', btnFont, onSpriteBatchSystemMode],
       ['Exit Game', btnFont, onGameExit],
     ];
 
@@ -140,7 +140,7 @@ class HomeScreen extends h2d.Object {
 
 enum abstract MainSceneType(String) {
   var PlayGame;
-  var ParticlePlayground;
+  var SpriteBatchSystem;
 }
 
 class Main extends hxd.App {
@@ -181,7 +181,7 @@ class Main extends hxd.App {
     return new HomeScreen(
       onGameStart, onGameExit,
       () -> {
-        switchMainScene(MainSceneType.ParticlePlayground);
+        switchMainScene(MainSceneType.SpriteBatchSystem);
       }
     );
   }
@@ -207,9 +207,9 @@ class Main extends hxd.App {
         reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
       }
 
-      case MainSceneType.ParticlePlayground: {
-        var ref = new ParticlePlayground(Global.uiRoot);
-        reactiveItems['MainScene_ParticlePlayground'] = ref;
+      case MainSceneType.SpriteBatchSystem: {
+        var ref = new SpriteBatchSystem(Global.uiRoot);
+        reactiveItems['MainScene_SpriteBatchSystem'] = ref;
       }
     }
   }
@@ -280,9 +280,9 @@ class Main extends hxd.App {
     hxd.Res.initEmbed();
 
     Global.mainCamera = Camera.create();
-    Global.sb = new ParticlePlayground(Global.particleScene);
+    Global.sb = new SpriteBatchSystem(Global.particleScene);
 
-    Global.uiSpriteBatch = new ParticlePlayground(Global.uiRoot);
+    Global.uiSpriteBatch = new SpriteBatchSystem(Global.uiRoot);
 
     switchMainScene(MainSceneType.PlayGame);
 

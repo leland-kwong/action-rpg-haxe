@@ -104,7 +104,7 @@ class ParticleSystem {
 // TODO: Refactor to take in a sprite object
 // directly so we can do optimizations such as
 // reusing sprites each frame if needed.
-class ParticlePlayground {
+class SpriteBatchSystem {
   public var pSystem: PartSystem;
 
   public function new(scene: h2d.Scene) {
