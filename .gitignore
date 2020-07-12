@@ -1,7 +1,6 @@
 # compiled file for heaps' game executable
 **/hlboot.dat
 
-# example: game.dist.js
-*.dist*
-
+*.dist.*
+.logs
 node_modules

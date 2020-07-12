@@ -9,25 +9,61 @@ if (port === undefined) {
 }
 
 const compileLogger = require('debug')('watcher.compile');
+const fileClearedStates = new Map();
+const logToDisk = async (file, label, result, logFn) => {
+  try {
+
+    const formattedLabel = (
+      /err/.test(label) 
+      ? `=== ${label} ===` 
+      : label
+    ).toUpperCase();
+    const formattedResult = `\n${formattedLabel}\n${new Date()}\n${result}\n`;
+    const logFile = `./.logs/${file}`;
+
+    logFn(formattedResult);
+    await fs.ensureDir('./.logs');
+
+    if (!fileClearedStates.has(logFile)) {
+      fileClearedStates.set(logFile, true);
+      // truncate file for new sessions to 
+      // prevent log files from growing too large
+      await fs.writeFile(logFile, '');
+    }
+
+    await fs.appendFile(
+      logFile, 
+      formattedResult);
+
+  } catch (err) {
+
+    console.dir('=== log to disk error ===', err);
+
+  }
+}
+
 const compile = (buildFile) => {
   console.log(`compiling ${buildFile}`);
 
   const flags = '-D debugMode';
   const cmd = `haxe ${flags} ${buildFile} --connect ${port}`;
-  const logSeparator = (logType) => {
-    compileLogger(`\n\n  === ${logType.toUpperCase()} ===`);
-  }
 
   exec(cmd, (err, stdout, stderr) => {
     if (err) {
-      logSeparator('error');
-      compileLogger(err)
+
+      logToDisk(
+        'game_build.txt', 'compile error', err, compileLogger);
+
     } else if (stderr) {
-      logSeparator('stderror');
-      compileLogger(stderr)
+
+      logToDisk(
+        'game_build.txt', 'compile stderr', stderr, compileLogger);
+      
     } else {
-      logSeparator('success');
-      compileLogger(`build success ${buildFile}`)
+
+      logToDisk(
+        'game_build.txt', 'compile success', '', compileLogger);
+
     }
   });
 }
@@ -68,15 +104,29 @@ const asepriteExport = async (
     const cmd = `${asepriteExecutable} ${asepriteArgs}`;
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
-        asepriteLogger(err)
+
+        logToDisk(
+          'aseprite_build.txt', 'aseprite error', err, asepriteLogger);
+
       } else if (stderr) {
-        asepriteLogger(stderr)
+        
+        logToDisk(
+          'aseprite_build.txt', 'aseprite stderr', stderr, asepriteLogger);
+
       } else {
-        asepriteLogger(`[aseprite success] exported \`${filename}\` to \`${exportFullPath}\``)
+
+        const msg = `exported \`${filename}\` to \`${exportFullPath}\``;
+        logToDisk(
+          'aseprite_build.txt', 'aseprite success', msg, asepriteLogger);
+
       }
     });
+
   } catch (err) {
-    console.error('[aseprite export error]', err)
+
+    logToDisk(
+      'build.txt', 'aseprite error', err, asepriteLogger);
+
   }
 }
 
@@ -160,19 +210,24 @@ const startTiledWatcher = (options = {}) => {
     }
 
     const triggerExport = () => {
-      console.log(`[tiledExport][export start] \`${path}\``);
       const tiledExecutable = '\'/mnt/c/Program\ Files/Tiled/tiled.exe\''; 
       // outputs file type based on file extension
+      console.log(`[tiledExport][export start] \`${path}\``);
       const outputPath = path.replace(/\.tmx/, '.json');
+      const name = 'tiled';
 
       // [Tiled cli export instructions](https://github.com/bjorn/tiled/issues/903)
       exec(`${tiledExecutable} --export-map ${path} ${outputPath}`, (err, stdout, stderr) => {
         if (err) {
-          tiledLogger(err)
+          logToDisk(
+            `${name}_build.txt`, `${name} error`, err, tiledLogger);
         } else if (stderr) {
-          tiledLogger(stderr)
+          logToDisk(
+            `${name}_build.txt`, `${name} stderr`, stderr, tiledLogger);
         } else {
-          tiledLogger(`[tiledExport][export success] \`${path}\` to \`${outputPath}\``);
+          const msg = `\`${path}\` to \`${outputPath}\``;
+          logToDisk(
+            `${name}_build.txt`, `${name} success`, msg, tiledLogger);
         }
       });
     }
@@ -198,14 +253,25 @@ const startTexturePackerWatcher = (options = {}) => {
     pending = setTimeout(() => {
       const tpExecutable = '\'/mnt/c/Program Files/CodeAndWeb/TexturePacker/bin/TexturePacker.exe\''; 
       const cmd = `${tpExecutable} --sheet ${destination} ${sourceFile}`; 
+      const name = 'texturepacker'
       console.log('[tiledExport]', eventType, sourceFile);
       exec(cmd, (err, stdout, stderr) => {
         if (err) {
-          tpLogger(err)
+
+          logToDisk(
+            `${name}_build.txt`, `${name} error`, err, tpLogger);
+
         } else if (stderr) {
-          tpLogger(stderr)
+
+          logToDisk(
+            `${name}_build.txt`, `${name} stderr`, stderr, tpLogger);
+
         } else {
-          tpLogger(`[texturePackerExport][export success] \`${sourceFile}\` to \`${destination}\``);
+
+          const msg = `\`${sourceFile}\` to \`${destination}\``;
+          logToDisk(
+            `${name}_build.txt`, `${name} success`, msg, tpLogger);
+
         }
       });
     }, 500);
