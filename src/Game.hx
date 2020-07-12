@@ -229,15 +229,20 @@ class Projectile extends Entity {
 
 class Bullet extends Projectile {
   var launchSoundPlayed = false;
-  // var spriteRef: SpriteBatchSystem.SpriteRef;
   var spriteKey: String;
 
   public function new(
-    x1, y1, x2, y2, speed, _spriteKey, collisionFilter
+    x1, y1, x2, y2, speed, 
+    _spriteKey, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
     lifeTime = 2.0;
     spriteKey = _spriteKey;
+  }
+
+  function spriteEffect(spriteRef: SpriteBatchSystem.SpriteRef) {
+    // draw all bullets on top
+    spriteRef.sortOrder = 99999999;
   }
 
   public override function update(dt: Float) {
@@ -254,9 +259,11 @@ class Bullet extends Projectile {
       collidedWith.damageTaken += damage;
     }
 
+    final angle = Math.atan2(
+        y + dy - y,
+        x + dx - x);
     Main.Global.sb.emitSprite(
-        x, y, x + dx, y + dy, 
-        spriteKey);
+        x, y, spriteKey, angle, spriteEffect);
   }
 }
 
@@ -511,8 +518,8 @@ class Enemy extends Entity {
             activeAnim, Main.Global.time);
         Main.Global.sb.emitSprite(
           x, y,
-          x, y,
           currentFrameName,
+          null,
           (p) -> {
             var b: h2d.SpriteBatch.BatchElement = 
               p.batchElement;
@@ -539,9 +546,9 @@ class Enemy extends Entity {
           b.scaleY = scale;
         }
         Main.Global.sb.emitSprite(
-            x, y + 1,
-            x, y + 1,
+            x, y,
             'ui/square_white',
+            null,
             spriteEffect);
       }
     }
@@ -744,8 +751,8 @@ class Player extends Entity {
 
     Main.Global.sb.emitSprite(
       x, y,
-      x, y,
       core.Anim.getFrame(activeAnim, Main.Global.time),
+      null,
       (p) ->  {
         p.batchElement.scaleX = facingX;
       }
@@ -852,21 +859,25 @@ class Player extends Entity {
         final laserTailY1 = y1 + vy * maxLength;
         final yScaleRand = Utils.irnd(0, 1) * 0.125;
 
-        var renderBeam = (startPt, endPt) -> {
-          var spriteLifetime = 0;
+        var renderBeam = (
+            startPt: h2d.col.Point, 
+            endPt: h2d.col.Point) -> {
           // laser head
+          final angle = Math.atan2(
+              endPt.y - startPt.y,
+              endPt.x - startPt.x);
           Main.Global.sb.emitSprite(
             startPt.x, startPt.y,
-            endPt.x, endPt.y,
             'ui/kamehameha_head',
+            angle,
             (p) -> {
               p.batchElement.scaleY = 1 + yScaleRand;
             }
           );
 
-          var lcx = startPt.x + (vx * laserHeadWidth);
-          var lcy = startPt.y + (vy * laserHeadWidth);
           {
+            var lcx = startPt.x + (vx * laserHeadWidth);
+            var lcy = startPt.y + (vy * laserHeadWidth);
             var beamCallback = (p) -> {
               final b: h2d.SpriteBatch.BatchElement = p.batchElement;
 
@@ -876,24 +887,31 @@ class Player extends Entity {
             };
 
             // laser center
+            final angle = Math.atan2(
+                endPt.y - lcy,
+                endPt.x - lcx);
             Main.Global.sb.emitSprite(
               lcx, lcy,
-              endPt.x, endPt.y,
               'ui/kamehameha_center_width_1',
+              angle,
               beamCallback
             );
           }
 
           // laser tail
-          Main.Global.sb.emitSprite(
-            endPt.x, endPt.y,
-            endPt.x + vx, endPt.y + vy,
-            'ui/kamehameha_tail',
-            (p) -> {
-              p.batchElement.scaleX = 1 + Utils.irnd(0, 1) * 0.25;
-              p.batchElement.scaleY = 1 + yScaleRand; 
-            }
-          );
+          {
+            final angle = Math.atan2(
+                endPt.y - endPt.y + vy,
+                endPt.x - endPt.x + vx);
+            Main.Global.sb.emitSprite(
+                endPt.x, endPt.y,
+                'ui/kamehameha_tail',
+                angle,
+                (p) -> {
+                  p.batchElement.scaleX = 1 + Utils.irnd(0, 1) * 0.25;
+                  p.batchElement.scaleY = 1 + yScaleRand; 
+                });
+          }
         }
 
         var dynamicWorldGrid = Main.Global.dynamicWorldGrid;
@@ -915,8 +933,8 @@ class Player extends Entity {
         if (debug.startPos) {
           Main.Global.sb.emitSprite(
             laserTailX1, laserTailY1,
-            laserTailX1, laserTailY1,
             'ui/square_white',
+            null,
             (p) -> {
               final scale = 10;
               final b: h2d.SpriteBatch.BatchElement = p.batchElement;
@@ -940,9 +958,8 @@ class Player extends Entity {
               Main.Global.sb.emitSprite(
                 worldX,
                 worldY,
-                worldX,
-                worldY,
                 'ui/square_white',
+                null,
                 (p) -> {
                   final scale = cellSize;
                   final b: h2d.SpriteBatch.BatchElement = p.batchElement;
@@ -1006,9 +1023,8 @@ class Player extends Entity {
                     Main.Global.sb.emitSprite(
                       x1,
                       y1,
-                      x1,
-                      y1,
                       'ui/square_white',
+                      null,
                       (p) -> {
                         final scale = 10;
 
@@ -1020,9 +1036,8 @@ class Player extends Entity {
                     Main.Global.sb.emitSprite(
                       p.x,
                       p.y,
-                      p.x,
-                      p.y,
                       'ui/square_white',
+                      null,
                       (p) -> {
                         final scale = 10;
 

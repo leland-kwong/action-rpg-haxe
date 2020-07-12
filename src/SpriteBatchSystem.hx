@@ -1,9 +1,10 @@
 import h2d.SpriteBatch;
 import Game.Cooldown;
 
+private typedef EffectCallback = (p: SpriteRef) -> Void;
+
 typedef SpriteRef = {
-  var ?effectCallback: (p: SpriteRef) -> Void;
-  var ?sortOrder: Int;
+  var ?sortOrder: Float;
   var isOld: Bool;
   var batchElement: BatchElement;
 };
@@ -42,8 +43,26 @@ class ParticleSystem {
       s: PartSystem, 
       dt: Float) {
     final particles = s.particles;
-    var i = 0;
 
+    // sort by y-position or custom sort value
+    // draw order is lowest -> highest
+    particles.sort((a, b) -> {
+      var sortA = a.sortOrder;
+      var sortB = b.sortOrder;
+
+      if (sortA < sortB) {
+        return 1;
+      }
+
+      if (sortA > sortB) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    s.batch.clear();
+    var i = 0;
     while (i < particles.length) {
       final p = particles[i];
 
@@ -57,39 +76,11 @@ class ParticleSystem {
         i += 1;
 
         p.isOld = true;
-        if (p.effectCallback != null) {
-          p.effectCallback(p);
-        }
+        s.batch.add(p.batchElement, true);
       }
-    }
-
-    s.batch.clear();
-    // sort by y-position
-    particles.sort((a, b) -> {
-      var sortA = a.sortOrder == null
-        ? a.batchElement.y : a.sortOrder;
-      var sortB = b.sortOrder == null
-        ? b.batchElement.y : b.sortOrder;
-
-      if (sortA < sortB) {
-        return 1;
-      }
-
-      if (sortA > sortB) {
-        return -1;
-      }
-
-      return 0;
-    });
-
-    for (p in particles) {
-      s.batch.add(p.batchElement, true);
     }
   }
 
-  static public function dispose(s: PartSystem) {
-    s.batch.remove();
-  }
 }
 
 // TODO: Rename this to *batch system*
@@ -127,29 +118,30 @@ class SpriteBatchSystem {
   }
 
   public function emitSprite(
-    x1: Float,
-    y1: Float,
-    x2: Float,
-    y2: Float,
+    x: Float,
+    y: Float,
     spriteKey: String,
-    ?effectCallback
-  ) {
-    final angle = Math.atan2(
-        y2 - y1,
-        x2 - x1);
+    ?angle: Float,
+    ?effectCallback: EffectCallback) {
+
     // TODO makeSpriteRef a class
     // that extends from `BatchElement` 
     // so we don't have to create an extra
     // anonymous structure just for a few props
     final g = new BatchElement(makeTile(spriteKey));
-    g.rotation = angle;
-    g.x = x1;
-    g.y = y1;
+    if (angle != null) {
+      g.rotation = angle;
+    }
+    g.x = x;
+    g.y = y;
     final spriteRef: SpriteRef = {
       batchElement: g,
-      effectCallback: effectCallback,
+      sortOrder: y,
       // guarantees it lasts at least 1 frame
       isOld: false,
+    }
+    if (effectCallback != null) {
+      effectCallback(spriteRef);
     }
 
     ParticleSystem.emit(pSystem, spriteRef);

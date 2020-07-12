@@ -41,7 +41,7 @@ class Hud {
         return l.name == 'energy_bars';
       }).objects; 
     var barsCallback = (p) -> {
-      p.sortOrder = 1;
+      p.sortOrder = 1.0;
       p.batchElement.scaleX = rScale * 1.0;
       p.batchElement.scaleY = rScale * 1.0;
     }
@@ -50,11 +50,10 @@ class Hud {
       Main.Global.uiSpriteBatch.emitSprite(
           cockpitUnderlay.x * rScale,
           cockpitUnderlay.y * rScale,
-          cockpitUnderlay.x * rScale,
-          cockpitUnderlay.y * rScale,
           'ui/cockpit_underlay',
+          null,
           (p) -> {
-            p.sortOrder = 0;
+            p.sortOrder = 0.0;
             p.batchElement.scaleX = rScale * 1.0;
             p.batchElement.scaleY = rScale * 1.0;
           });
@@ -74,9 +73,8 @@ class Hud {
         Main.Global.uiSpriteBatch.emitSprite(
             item.x * rScale,
             item.y * rScale,
-            item.x * rScale,
-            item.y * rScale,
             'ui/cockpit_resource_bar_health',
+            null, 
             barsCallback);
       }
     }
@@ -93,9 +91,8 @@ class Hud {
         Main.Global.uiSpriteBatch.emitSprite(
             item.x * rScale,
             item.y * rScale,
-            item.x * rScale,
-            item.y * rScale,
             'ui/cockpit_resource_bar_energy',
+            null,
             barsCallback);
       }
     }
