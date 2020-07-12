@@ -318,9 +318,35 @@ class Main extends hxd.App {
   // on each frame
   override function update(dt:Float) {
     try {
+      // set to 1/60 for a fixed 60fps
+      var frameTime = dt;
+      var fps = Math.round(1/dt);
 
+      if (debugText != null) {
+        var text = [
+          'stats: ${Json.stringify({
+            time: Global.time,
+            fpsTrue: fps,
+            fps: Math.round(1/frameTime),
+            drawCalls: engine.drawCalls,
+            numEntities: Entity.ALL.length,
+            numSprites: Global.sb.pSystem.particles.length 
+              + Global.uiSpriteBatch.pSystem.particles.length
+          }, null, '  ')}',
+        'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
+        ].join('\n');
+        var debugUiMargin = 10;
+        debugText.x = debugUiMargin;
+        debugText.y = debugUiMargin;
+        debugText.text = text;
+      }
+        
       Global.dt = dt;
       Global.time += dt;
+
+      // update sprite batches 
+      Global.sb.update(dt);
+      Global.uiSpriteBatch.update(dt);
 
       Camera.setSize(
           Global.mainCamera,
@@ -349,9 +375,6 @@ class Main extends hxd.App {
 
       acc += dt;
 
-      // set to 1/60 for a fixed 60fps
-      var frameTime = dt;
-      var fps = Math.round(1/dt);
       var isNextFrame = acc >= frameTime;
       // handle fixed dt here
       if (isNextFrame) {
@@ -371,25 +394,6 @@ class Main extends hxd.App {
         }
 
         Camera.update(Global.mainCamera, dt);
-
-        if (debugText != null) {
-          var text = [
-            'stats: ${Json.stringify({
-              time: Global.time,
-              fpsTrue: fps,
-              fps: Math.round(1/frameTime),
-              drawCalls: engine.drawCalls,
-              numEntities: Entity.ALL.length,
-              numSprites: Global.sb.pSystem.particles.length 
-                + Global.uiSpriteBatch.pSystem.particles.length
-            }, null, '  ')}',
-          'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
-          ].join('\n');
-          var debugUiMargin = 10;
-          debugText.x = debugUiMargin;
-          debugText.y = debugUiMargin;
-          debugText.text = text;
-        }
       }
 
       background.width = s2d.width;

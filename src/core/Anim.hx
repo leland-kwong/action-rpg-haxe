@@ -54,8 +54,10 @@ class AnimEffect {
   public static function update(dt: Float) {
     // cleanup old animations
     {
+      var numRemoved = 0;
       for (i => _ in oldAnimations) {
-        animations.splice(i, 1);
+        animations.splice(i - numRemoved, 1);
+        numRemoved += 1;
       }
       oldAnimations.clear();
     }
@@ -71,6 +73,10 @@ class AnimEffect {
         || oldAnimations.exists(i);
 
       if (isDone) {
+        // TODO: cleanup using the same method
+        // as the SpriteBatchSystem because
+        // iterating over hash maps is way
+        // slower than an array
         oldAnimations.set(i, false);
       } else {
         Main.Global.sb.emitSprite(

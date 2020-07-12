@@ -5,7 +5,6 @@ private typedef EffectCallback = (p: SpriteRef) -> Void;
 
 typedef SpriteRef = {
   var ?sortOrder: Float;
-  var isOld: Bool;
   var batchElement: BatchElement;
 };
 
@@ -30,18 +29,26 @@ class ParticleSystem {
     return system;
   }
 
-  static public function emit
-    (s: PartSystem,
-     config: SpriteRef,
-     before = false) {
+  static public function emit(
+      s: PartSystem,
+      config: SpriteRef) {
 
     s.particles.push(config);
-    s.batch.add(config.batchElement, before);
+  }
+
+  static public function update(
+      s: PartSystem, 
+      dt: Float) {
+
+    // reset for next cycle
+    s.particles = [];
+    s.batch.clear();
   }
 
   static public function render(
       s: PartSystem, 
       time: Float) {
+
     final particles = s.particles;
 
     // sort by y-position or custom sort value
@@ -61,26 +68,10 @@ class ParticleSystem {
       return 0;
     });
 
-    s.batch.clear();
-    var i = 0;
-    while (i < particles.length) {
-      final p = particles[i];
-
-      // clear old particles
-      if (p.isOld) {
-        particles.splice(i, 1);
-        p.batchElement.remove();
-
-        // update particle
-      } else {
-        i += 1;
-
-        p.isOld = true;
-        s.batch.add(p.batchElement, true);
-      }
+    for (p in particles) {
+      s.batch.add(p.batchElement, true);
     }
   }
-
 }
 
 // TODO: Rename this to *batch system*
@@ -104,11 +95,10 @@ class SpriteBatchSystem {
     }
 
     var tile = pSystem.spriteSheet.sub(
-      spriteData.frame.x,
-      spriteData.frame.y,
-      spriteData.frame.w,
-      spriteData.frame.h
-    );
+        spriteData.frame.x,
+        spriteData.frame.y,
+        spriteData.frame.w,
+        spriteData.frame.h);
 
     tile.setCenterRatio(
         spriteData.pivot.x,
@@ -137,8 +127,6 @@ class SpriteBatchSystem {
     final spriteRef: SpriteRef = {
       batchElement: g,
       sortOrder: y,
-      // guarantees it lasts at least 1 frame
-      isOld: false,
     }
     if (effectCallback != null) {
       effectCallback(spriteRef);
@@ -149,6 +137,10 @@ class SpriteBatchSystem {
     return spriteRef;
   }
 
+  public function update(update: Float) {
+    ParticleSystem.update(pSystem, update);
+  }
+  
   public function render(time: Float) {
     ParticleSystem.render(pSystem, time);
   }
