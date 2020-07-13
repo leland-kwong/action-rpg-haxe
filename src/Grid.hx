@@ -186,6 +186,10 @@ class Grid {
           cellData.remove(key);
         }
 
+        // TODO: This is probably pretty slow
+        // for cells that have a large amount
+        // of items because `count` is an O(N)
+        // operation.
         if (
           pruneEmpty &&
           Lambda.count(cellData) == 0

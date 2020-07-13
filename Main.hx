@@ -31,6 +31,8 @@ class Global {
   public static var dt = 0.0;
   public static var playerStats: PlayerStats.StatsRef = null; 
   public static var resolutionScale = 4;
+  public static var updateHooks: 
+    Array<(dt: Float) -> Void> = [];
 }
 
 enum UiState {
@@ -296,6 +298,7 @@ class Main extends hxd.App {
     } catch (error: Dynamic) {
 
       final stack = haxe.CallStack.exceptionStack();
+      trace(error);
       trace(haxe.CallStack.toString(stack));
       hxd.System.exit();
 
@@ -345,27 +348,6 @@ class Main extends hxd.App {
       Global.dt = dt;
       Global.time += dt;
 
-      SpriteBatchSystem.updateAll(dt);
-
-      Camera.setSize(
-          Global.mainCamera,
-          Global.rootScene.width,
-          Global.rootScene.height);
-
-      // update scenes to move relative to camera
-      var cam_center_x = -Global.mainCamera.x 
-        + Math.fround(Global.rootScene.width / 2);
-      var cam_center_y = -Global.mainCamera.y 
-        + Math.fround(Global.rootScene.height / 2);
-      for (scene in [
-          Global.rootScene,
-          Global.particleScene,
-          Global.debugScene
-      ]) {
-        scene.x = cam_center_x;
-        scene.y = cam_center_y;
-      }
-
       handleGlobalHotkeys();
 
       for (it in reactiveItems) {
@@ -391,12 +373,14 @@ class Main extends hxd.App {
             switchMainScene(MainSceneType.PlayGame);
           }
         }
-
-        Camera.update(Global.mainCamera, dt);
       }
 
       background.width = s2d.width;
       background.height = s2d.height;
+
+      for (update in Main.Global.updateHooks) {
+        update(dt);
+      }
 
     } catch (error: Dynamic) {
 
