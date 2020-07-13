@@ -102,6 +102,7 @@ class Entity extends h2d.Object {
   public var status = 'TARGETABLE';
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
+  public var obstacleGrid: GridRef;
 
   public function new(props: EntityProps) {
     super();
@@ -584,7 +585,7 @@ class Enemy extends Entity {
       var c = activeAnim;
 
       if (damageTaken > 0) {
-        cds.set('hitFlash', 0.015);
+        cds.set('hitFlash', 0.0125);
         health -= damageTaken;
         damageTaken = 0;
       }
@@ -606,10 +607,9 @@ class Enemy extends Entity {
             p.batchElement;
 
           if (cds.has('hitFlash')) {
-            b.r = 255;
-            b.g = 255;
-            b.b = 255;
-            b.a = 0.7;
+            b.r = 2.75;
+            b.g = 2.75;
+            b.b = 2.5;
           }
 
           b.scaleX = facingDir * 1;
@@ -618,8 +618,6 @@ class Enemy extends Entity {
 }
 
 class Player extends Entity {
-  var hitFlashOverlay: h2d.Graphics;
-  var playerSprite: h2d.Graphics;
   var rootScene: h2d.Scene;
   var runAnim: core.Anim.AnimRef;
   var idleAnim: core.Anim.AnimRef;
@@ -642,6 +640,7 @@ class Player extends Entity {
     speed = 200.0;
     forceMultiplier = 3.0;
     traversableGrid = Main.Global.traversableGrid;
+    obstacleGrid = Main.Global.obstacleGrid;
 
     rootScene = s2d;
     Main.Global.playerStats = PlayerStats.create({
@@ -699,18 +698,6 @@ class Player extends Entity {
       duration: 0.3,
       startTime: Main.Global.time
     };
-
-    playerSprite = new h2d.Graphics(this);
-    // make halo
-    playerSprite.beginFill(0xffffff, 0.1);
-    playerSprite.drawCircle(0, 0, radius + 4);
-    playerSprite.endFill();
-
-    hitFlashOverlay = new h2d.Graphics(s2d);
-    hitFlashOverlay.beginFill(Colors.red);
-    hitFlashOverlay.drawRect(0, 0, s2d.width, s2d.height);
-    // make it hidden initially
-    hitFlashOverlay.color.set(1, 1, 1, 0);
   }
 
   function movePlayer() {
@@ -750,18 +737,11 @@ class Player extends Entity {
     dy = dyNormalized;
   }
 
-  override function onRemove() {
-    hitFlashOverlay.remove();
-  }
-
   public override function update(dt) {
     super.update(dt);
     cds.update(dt);
 
     movePlayer();
-    // pulsate player for visual juice
-    playerSprite.setScale(
-        1 - Math.abs(Math.sin(Main.Global.time * 2.5) / 10));
 
     var abilityId = Main.Global.mouse.buttonDown;
     useAbility(
@@ -771,13 +751,7 @@ class Player extends Entity {
     );
 
     {
-      if (!cds.has('hitFlash')) {
-        hitFlashOverlay.color.set(1, 1, 1, 0);
-      }
-
       if (damageTaken > 0) {
-        cds.set('hitFlash', 0.02);
-        hitFlashOverlay.color.set(1, 1, 1, 0.5);
         PlayerStats.addEvent(
             Main.Global.playerStats, 
             { type: 'DAMAGE_RECEIVED', 
@@ -1299,6 +1273,8 @@ class Game extends h2d.Object {
   ) {
     super();
 
+    Main.Global.obstacleGrid = Grid.create(16);
+    mapRef = Main.Global.obstacleGrid;
     Main.Global.traversableGrid = Grid.create(16);
 
     // load map background
@@ -1375,7 +1351,6 @@ class Game extends h2d.Object {
     // AGENDA: setup map pillars
     // setup environment obstacle colliders
     {
-      mapRef = Grid.create(16);
       final objectsRects: Array<core.Types.TiledObject> = 
         layersByName.get('objects').objects;
       final pillarObjects = Lambda
@@ -1396,6 +1371,8 @@ class Game extends h2d.Object {
         return true;
       });
     }
+
+    Main.Global.dynamicWorldGrid = dynamicWorldGrid;
 
     s2d.addChild(this);
     if (oldGame != null) {
@@ -1463,9 +1440,6 @@ class Game extends h2d.Object {
 
       return 0;
     });
-
-    Main.Global.obstacleGrid = mapRef;
-    Main.Global.dynamicWorldGrid = dynamicWorldGrid;
 
     if (enemySpawner != null) {
       enemySpawner.update(dt);
