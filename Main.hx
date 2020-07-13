@@ -401,6 +401,7 @@ class Main extends hxd.App {
     } catch (error: Dynamic) {
 
       final stack = haxe.CallStack.exceptionStack();
+      trace(error);
       trace(haxe.CallStack.toString(stack));
       hxd.System.exit();
 
