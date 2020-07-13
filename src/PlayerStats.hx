@@ -14,6 +14,7 @@ typedef StatsRef = {
   var currentEnergy: Float;
   var energyRegeneration: Int; // per second
   var recentEvents: RecentEvents;
+  var _damageFromHits: Float;
 }
 
 // TODO
@@ -30,6 +31,7 @@ class PlayerStats {
       currentEnergy: p.currentEnergy,
       // per second
       energyRegeneration: p.energyRegeneration, 
+      _damageFromHits: 0.0,
       recentEvents: []
     };
   }
@@ -46,6 +48,11 @@ class PlayerStats {
 
     final events = sr.recentEvents;
     var i = 0;
+
+    // reset any frame-specific information
+    {
+      sr._damageFromHits = 0.0;
+    }
 
     while (i < events.length) {
       final ev = events[i];
@@ -64,7 +71,7 @@ class PlayerStats {
           type: 'DAMAGE_RECEIVED',
           value: v }: {
 
-            sr.currentHealth += -1.0 * v;
+            sr._damageFromHits += v;
             true;
           }
 
@@ -86,6 +93,8 @@ class PlayerStats {
         case _:
           false;
       }
+
+      sr.currentHealth -= sr._damageFromHits;
 
       if (done) {
         events.splice(i, 1);
