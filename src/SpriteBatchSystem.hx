@@ -4,7 +4,7 @@ import Game.Cooldown;
 private typedef EffectCallback = (p: SpriteRef) -> Void;
 
 typedef SpriteRef = {
-  var ?sortOrder: Float;
+  var sortOrder: Float;
   var batchElement: BatchElement;
 };
 
@@ -58,24 +58,25 @@ class BatchManager {
       var sortB = b.sortOrder;
 
       if (sortA < sortB) {
-        return 1;
+        return -1;
       }
 
       if (sortA > sortB) {
-        return -1;
+        return 1;
       }
 
       return 0;
     });
 
     for (p in particles) {
-      s.batch.add(p.batchElement, true);
+      s.batch.add(p.batchElement);
     }
   }
 }
 
 class SpriteBatchSystem {
   public static final instances: Array<BatchManagerRef> = [];
+  public static final tileCache: Map<String, h2d.Tile> = new Map();
   public var batchManager: BatchManagerRef;
 
   public function new(scene: h2d.Scene) {
@@ -84,6 +85,12 @@ class SpriteBatchSystem {
   }
 
   function makeTile(spriteKey: String) {
+    final fromCache = tileCache.get(spriteKey);
+
+    if (fromCache != null) {
+      return fromCache;
+    }
+
     var spriteData = Reflect.field(
         batchManager.spriteSheetData,
         spriteKey);
@@ -102,6 +109,8 @@ class SpriteBatchSystem {
         spriteData.pivot.x,
         spriteData.pivot.y);
 
+    tileCache.set(spriteKey, tile);
+
     return tile;
   }
 
@@ -110,6 +119,8 @@ class SpriteBatchSystem {
     y: Float,
     spriteKey: String,
     ?angle: Float,
+    // a callback for running side effects
+    // to modify the sprite before rendering
     ?effectCallback: EffectCallback) {
 
     // TODO makeSpriteRef a class
