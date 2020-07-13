@@ -42,6 +42,7 @@ typedef EntityProps = {
   var x: Float;
   var y: Float;
   var radius: Int;
+  var ?avoidanceRadius: Int;
   var ?id: EntityId;
   var ?weight: Float;
   var ?color: Int;
@@ -87,9 +88,11 @@ class Entity extends h2d.Object {
 
   public static var ALL: Array<Entity> = [];
   public static var ALL_BY_ID: Map<String, Entity> = new Map();
+  public var neighbors: Array<EntityId>;
   public var id: EntityId;
   public var type = 'UNKNOWN_TYPE';
   public var radius: Int;
+  public var avoidanceRadius: Int;
   public var dx = 0.0;
   public var dy = 0.0;
   public var weight = 1.0;
@@ -113,6 +116,8 @@ class Entity extends h2d.Object {
       ? 'entity_${idGenerated++}'
       : props.id;
     radius = props.radius;
+    avoidanceRadius = props.avoidanceRadius != null
+      ? props.avoidanceRadius : radius;
     if (props.weight != null) {
       weight = props.weight;
     }
@@ -137,7 +142,7 @@ class Entity extends h2d.Object {
               Math.floor(y),
               1,
               1)) > 0
-        : true;
+        : true; 
 
       if (isTraversable) {
         x = nextPos;
@@ -172,7 +177,6 @@ class Projectile extends Entity {
   var lifeTime = 5.0;
   var collidedWith: Entity;
   var cFilter: Array<String>;
-  public var neighbors: Array<EntityId>;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
@@ -321,7 +325,6 @@ class Enemy extends Entity {
   var activeAnim: core.Anim.AnimRef;
   var facingDir = 1;
   public var sightRange = 200;
-  public var neighbors: Array<EntityId>;
   public var attackTarget: Entity;
 
   public function new(props, size, followTarget: Entity) {
@@ -465,35 +468,33 @@ class Enemy extends Entity {
         // make entities avoid each other by repulsion
         for (oid in neighbors) {
           var o = Entity.ALL_BY_ID.get(oid);
-          if (o != this) {
-            var pt = this;
-            var ept = o;
-            var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
+          var pt = this;
+          var ept = o;
+          var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
 
-            if (o.forceMultiplier > 0) {
-              var separation = 5 + Math.sqrt(speed / 2);
-              var min = pt.radius + ept.radius + separation;
-              var isColliding = d < min;
-              if (isColliding) {
-                var conflict = min - d;
-                var adjustedConflict = Math.min(
-                    conflict, conflict * 15 / speed);
-                var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-                var w = pt.weight / (pt.weight + ept.weight);
-                // immobile entities have a stronger influence (obstacles such as walls, etc...)
-                var multiplier = ept.forceMultiplier;
-                var avoidX = Math.cos(a) * adjustedConflict 
-                  * w * multiplier;
-                var avoidY = Math.sin(a) * adjustedConflict 
-                  * w * multiplier;
+          if (o.forceMultiplier > 0) {
+            var separation = 5 + Math.sqrt(speed / 2);
+            var min = pt.radius + ept.radius + separation;
+            var isColliding = d < min;
+            if (isColliding) {
+              var conflict = min - d;
+              var adjustedConflict = Math.min(
+                  conflict, conflict * 15 / speed);
+              var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
+              var w = pt.weight / (pt.weight + ept.weight);
+              // immobile entities have a stronger influence (obstacles such as walls, etc...)
+              var multiplier = ept.forceMultiplier;
+              var avoidX = Math.cos(a) * adjustedConflict 
+                * w * multiplier;
+              var avoidY = Math.sin(a) * adjustedConflict 
+                * w * multiplier;
 
-                dx -= avoidX;
-                dy -= avoidY;
+              dx -= avoidX;
+              dy -= avoidY;
 
-                if (repelFilter == o.type) {
-                  o.x += avoidX;
-                  o.y += avoidY;
-                }
+              if (repelFilter == o.type) {
+                o.x += avoidX;
+                o.y += avoidY;
               }
             }
           }
@@ -742,6 +743,25 @@ class Player extends Entity {
     cds.update(dt);
 
     movePlayer();
+
+    // collision avoidance
+    if (neighbors != null) {
+      for (entityId in neighbors) {
+        final entity = Entity.ALL_BY_ID[entityId];
+        final r2 = entity.avoidanceRadius;
+        final a = Math.atan2(y - entity.y, x - entity.x);
+        final d = Utils.distance(entity.x, entity.y, x, y);
+        final min = radius + r2;
+        final isColliding = d < min;
+
+        if (isColliding) {
+          final conflict = (min - d);
+
+          x += Math.cos(a) * conflict; 
+          y += Math.sin(a) * conflict; 
+        }
+      }
+    }
 
     var abilityId = Main.Global.mouse.buttonDown;
     useAbility(
@@ -1362,11 +1382,13 @@ class Game extends h2d.Object {
         final pivotYOffset = 50;
         final cy = item.y - item.height
           + pivotYOffset;
+        final radius = Std.int((item.width - 2) / 2);
         new MapObstacle({
           id: 'pillar_${item.id}',
           x: cx,
           y: cy,
-          radius: Std.int((item.width - 5) / 2)
+          radius: radius,
+          avoidanceRadius: radius + 3
         });
         return true;
       });
@@ -1451,7 +1473,8 @@ class Game extends h2d.Object {
 
     for (a in Entity.ALL) {
       var shouldFindNeighbors = a.type == 'ENEMY'
-        || a.type == 'PROJECTILE';
+        || a.type == 'PROJECTILE'
+        || a.type == 'PLAYER';
 
       if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];
@@ -1465,10 +1488,14 @@ class Game extends h2d.Object {
           Main.Global.obstacleGrid, a.x, a.y, width, height
         );
         for (n in dynamicNeighbors) {
-          neighbors.push(n);
+          if (n != a.id) {
+            neighbors.push(n);
+          }
         }
         for (n in obstacleNeighbors) {
-          neighbors.push(n);
+          if (n != a.id) {
+            neighbors.push(n);
+          }
         }
         var aWithNeighbors:Dynamic = a;
         aWithNeighbors.neighbors = neighbors;
@@ -1488,8 +1515,6 @@ class Game extends h2d.Object {
           startGridX, startGridY, targetGridX, 
           targetGridY, lineOfSight, enemy);
       }
-
-      a.update(dt);
 
       // TODO need a better way to determine what 
       // is a dynamic entity
@@ -1520,6 +1545,8 @@ class Game extends h2d.Object {
           a.radius * 2,
           a.radius * 2,
           a.id);
+
+      a.update(dt);
     }
 
     core.Anim.AnimEffect
