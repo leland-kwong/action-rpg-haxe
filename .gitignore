@@ -1,6 +1,8 @@
 # compiled file for heaps' game executable
 **/hlboot.dat
 
+**/aseprite_exports
+
 *.dist.*
 .logs
 node_modules
