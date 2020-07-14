@@ -39,6 +39,8 @@ class Global {
   public static var resolutionScale = 4;
   public static var updateHooks: 
     Array<(dt: Float) -> Void> = [];
+  public static var renderHooks: 
+    Array<(dt: Float) -> Void> = [];
   public static var mainPhase: MainPhase = null;
 }
 
@@ -197,6 +199,9 @@ class Main extends hxd.App {
     // prepare all sprite batches 
     if (game != null) {
       game.render(Global.time);
+    }
+    for (hook in Global.renderHooks) {
+      hook(Global.time);
     }
     Hud.render(Global.time);
     core.Anim.AnimEffect
