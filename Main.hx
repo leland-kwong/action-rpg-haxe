@@ -9,6 +9,12 @@ import Camera;
 import Tests;
 import Collision;
 
+enum MainPhase {
+  Init;
+  Update;
+  Render;
+}
+
 class Global {
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
@@ -33,6 +39,7 @@ class Global {
   public static var resolutionScale = 4;
   public static var updateHooks: 
     Array<(dt: Float) -> Void> = [];
+  public static var mainPhase: MainPhase = null;
 }
 
 enum UiState {
@@ -185,6 +192,8 @@ class Main extends hxd.App {
   }
 
   public override function render(e: h3d.Engine) {
+    Main.Global.mainPhase = MainPhase.Render;
+
     // prepare all sprite batches 
     if (game != null) {
       game.render(Global.time);
@@ -217,6 +226,8 @@ class Main extends hxd.App {
 
   override function init() {
     try {
+      Main.Global.mainPhase = MainPhase.Init;
+
       // setup scenes
       {
         Global.rootScene = s2d;
@@ -315,6 +326,8 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
+    Main.Global.mainPhase = MainPhase.Update;
+
     try {
       // set to 1/60 for a fixed 60fps
       var frameTime = dt;

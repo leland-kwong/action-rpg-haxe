@@ -1450,19 +1450,6 @@ class Game extends h2d.Object {
         Main.Global.playerStats, 
         dt);
 
-    // sort dynamic objects in main world by their y position
-    Main.Global.rootScene.children.sort((a, b) -> {
-      if (a.y > b.y) {
-        return 1;
-      }
-
-      if (a.y < b.y) {
-        return -1;
-      }
-
-      return 0;
-    });
-
     if (enemySpawner != null) {
       enemySpawner.update(dt);
     }
@@ -1551,11 +1538,10 @@ class Game extends h2d.Object {
 
     core.Anim.AnimEffect
       .update(dt);
+    SpriteBatchSystem.updateAll(dt);
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
-
-    SpriteBatchSystem.updateAll(dt);
 
     Camera.setSize(
         Main.Global.mainCamera,
@@ -1577,6 +1563,7 @@ class Game extends h2d.Object {
     }
 
     Camera.update(Main.Global.mainCamera, dt);
+
   }
 
   public function render(time: Float) {

@@ -33,6 +33,11 @@ class BatchManager {
       s: BatchManagerRef,
       config: SpriteRef) {
 
+    if (Main.Global.mainPhase 
+        != Main.MainPhase.Render) {
+      trace('rendering must be done inside the render phase');
+    }
+
     s.particles.push(config);
   }
 
@@ -41,8 +46,8 @@ class BatchManager {
       dt: Float) {
 
     // reset for next cycle
-    s.particles = [];
     s.batch.clear();
+    s.particles = [];
   }
 
   static public function render(
