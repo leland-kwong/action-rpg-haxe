@@ -625,6 +625,11 @@ class Player extends Entity {
   var attackAnim: core.Anim.AnimRef;
   var runAnimFrames: Array<h2d.Tile>;
   var idleAnimFrames: Array<h2d.Tile>;
+  var abilityEvents: Array<{
+    type: String,
+    startPoint: h2d.col.Point,
+    endPoint: h2d.col.Point
+  }>;
   var facingX = 1;
 
   public function new(x, y, s2d: h2d.Scene) {
@@ -741,6 +746,7 @@ class Player extends Entity {
   public override function update(dt) {
     super.update(dt);
     cds.update(dt);
+    abilityEvents = [];
 
     movePlayer();
 
@@ -830,22 +836,16 @@ class Player extends Entity {
         }
 
         final abilityCooldown = 0.02;
-        final laserHeadSpriteData = Reflect.field(
-          Main.Global.sb.batchManager.spriteSheetData,
-          'ui/kamehameha_head'
-        );
         final laserCenterSpriteData = Reflect.field(
-          Main.Global.sb.batchManager.spriteSheetData,
-          'ui/kamehameha_center_width_1'
-        );
+            Main.Global.sb.batchManager.spriteSheetData,
+            'ui/kamehameha_center_width_1'
+            );
         final beamThickness = 
           laserCenterSpriteData.frame.h;
         final laserTailSpriteData = Reflect.field(
           Main.Global.sb.batchManager.spriteSheetData,
           'ui/kamehameha_tail'
         );
-        final laserHeadWidth = laserHeadSpriteData.frame.w;
-        final laserTailWidth = laserTailSpriteData.frame.w;
         final maxLength = 175;
         cds.set('recoveringFromAbility', abilityCooldown);
         final angle = Math.atan2(y2 - startY, x2 - x);
@@ -856,65 +856,6 @@ class Player extends Entity {
         final y1 = startY + vy * launchOffset;
         final laserTailX1 = x1 + vx * maxLength;
         final laserTailY1 = y1 + vy * maxLength;
-        final yScaleRand = Utils.irnd(0, 1) * 0.125;
-
-        var renderBeam = (
-            startPt: h2d.col.Point, 
-            endPt: h2d.col.Point) -> {
-          // laser head
-          final angle = Math.atan2(
-              endPt.y - startPt.y,
-              endPt.x - startPt.x);
-          // TODO: should be moved to a render method
-          Main.Global.sb.emitSprite(
-            startPt.x, startPt.y,
-            'ui/kamehameha_head',
-            angle,
-            (p) -> {
-              p.batchElement.scaleY = 1 + yScaleRand;
-            }
-          );
-
-          {
-            var lcx = startPt.x + (vx * laserHeadWidth);
-            var lcy = startPt.y + (vy * laserHeadWidth);
-            var beamCallback = (p) -> {
-              final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
-              b.scaleX = Math.round(
-                Utils.distance(lcx, lcy, endPt.x, endPt.y));
-              b.scaleY = 1 + yScaleRand; 
-            };
-
-            // laser center
-            final angle = Math.atan2(
-                endPt.y - lcy,
-                endPt.x - lcx);
-            // TODO: should be moved to a render method
-            Main.Global.sb.emitSprite(
-              lcx, lcy,
-              'ui/kamehameha_center_width_1',
-              angle,
-              beamCallback
-            );
-          }
-
-          // laser tail
-          {
-            final angle = Math.atan2(
-                endPt.y - endPt.y + vy,
-                endPt.x - endPt.x + vx);
-            // TODO: should be moved to a render method
-            Main.Global.sb.emitSprite(
-                endPt.x, endPt.y,
-                'ui/kamehameha_tail',
-                angle,
-                (p) -> {
-                  p.batchElement.scaleX = 1 + Utils.irnd(0, 1) * 0.25;
-                  p.batchElement.scaleY = 1 + yScaleRand; 
-                });
-          }
-        }
 
         var dynamicWorldGrid = Main.Global.dynamicWorldGrid;
         var worldCellSize = dynamicWorldGrid.cellSize;
@@ -943,7 +884,6 @@ class Player extends Entity {
               final b: h2d.SpriteBatch.BatchElement = p.batchElement;
 
               b.scaleX = scale;
-              b.scaleY = 1 + yScaleRand; 
             }
           );
         }
@@ -1065,7 +1005,12 @@ class Player extends Entity {
           }
         );
 
-        renderBeam(startPt, adjustedEndPt);
+        //renderBeam(startPt, adjustedEndPt);
+        abilityEvents.push({
+          type: 'KAMEHAMEHA',
+          startPoint: startPt,
+          endPoint: adjustedEndPt,
+        });
       }
     }
   }
@@ -1090,6 +1035,84 @@ class Player extends Entity {
         p.batchElement.scaleX = facingX;
       }
     );
+
+    for (e in abilityEvents) {
+      switch(e) {
+        case { type: 'KAMEHAMEHA', 
+          startPoint: startPt, 
+          endPoint: endPt 
+        }: {
+
+          final laserHeadSpriteData = Reflect.field(
+              Main.Global.sb.batchManager.spriteSheetData,
+              'ui/kamehameha_head'
+              );
+          final laserHeadWidth = laserHeadSpriteData.frame.w;
+          final yScaleRand = Utils.irnd(0, 1) * 0.125;
+          
+          // laser head
+          final angle = Math.atan2(
+              endPt.y - startPt.y,
+              endPt.x - startPt.x);
+          final vx = Math.cos(angle);
+          final vy = Math.sin(angle);
+
+          {
+            Main.Global.sb.emitSprite(
+                startPt.x, startPt.y,
+                'ui/kamehameha_head',
+                angle,
+                (p) -> {
+                  p.batchElement.scaleY = 1 + yScaleRand;
+                });
+          }
+
+          {
+            var lcx = startPt.x + (vx * laserHeadWidth);
+            var lcy = startPt.y + (vy * laserHeadWidth);
+            var beamCallback = (p) -> {
+              final b: h2d.SpriteBatch.BatchElement = 
+                p.batchElement;
+
+              b.scaleX = Math.round(
+                  Utils.distance(lcx, lcy, endPt.x, endPt.y));
+              b.scaleY = 1 + yScaleRand; 
+            };
+
+            // laser center
+            final angle = Math.atan2(
+                endPt.y - lcy,
+                endPt.x - lcx);
+
+            Main.Global.sb.emitSprite(
+                lcx, lcy,
+                'ui/kamehameha_center_width_1',
+                angle,
+                beamCallback);
+          }
+
+          // laser tail
+          {
+            final angle = Math.atan2(
+                endPt.y - endPt.y + vy,
+                endPt.x - endPt.x + vx);
+
+            Main.Global.sb.emitSprite(
+                endPt.x, endPt.y,
+                'ui/kamehameha_tail',
+                angle,
+                (p) -> {
+                  p.batchElement.scaleX = 1 + 
+                    Utils.irnd(0, 1) * 0.25;
+                  p.batchElement.scaleY = 1 + 
+                    yScaleRand; 
+                });
+          }
+        }
+
+        default: {}
+      }
+    }
   }
 }
 
