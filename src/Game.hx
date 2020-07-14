@@ -1005,7 +1005,6 @@ class Player extends Entity {
           }
         );
 
-        //renderBeam(startPt, adjustedEndPt);
         abilityEvents.push({
           type: 'KAMEHAMEHA',
           startPoint: startPt,
