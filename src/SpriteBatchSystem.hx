@@ -128,10 +128,6 @@ class SpriteBatchSystem {
     // to modify the sprite before rendering
     ?effectCallback: EffectCallback) {
 
-    // TODO makeSpriteRef a class
-    // that extends from `BatchElement` 
-    // so we don't have to create an extra
-    // anonymous structure just for a few props
     final g = new BatchElement(makeTile(spriteKey));
     if (angle != null) {
       g.rotation = angle;
