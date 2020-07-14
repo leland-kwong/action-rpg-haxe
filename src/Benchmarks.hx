@@ -1,6 +1,6 @@
 class Benchmarks {
   public static function benchSprites() {
-    final onUpdate = (_) -> {
+    final onRender = (_) -> {
       final effectCallback = (p) -> {
         final scale = 1;
 
@@ -9,7 +9,7 @@ class Benchmarks {
         p.batchElement.scaleY = scale * 1.0;
       }
 
-      for (_ in 0...2800) {
+      for (_ in 0...5000) {
         Main.Global.uiSpriteBatch.emitSprite(
             0,
             0,
@@ -19,6 +19,6 @@ class Benchmarks {
       }
     };
 
-    Main.Global.updateHooks.push(onUpdate);
+    Main.Global.renderHooks.push(onRender);
   }
 }
