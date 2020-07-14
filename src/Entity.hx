@@ -59,6 +59,10 @@ class Entity extends h2d.Object {
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
 
+  public function isDone() {
+    return health <= 0;
+  }
+
   public function new(props: EntityProps) {
     super();
 

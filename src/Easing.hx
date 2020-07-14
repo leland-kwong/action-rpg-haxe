@@ -1,3 +1,4 @@
+// [easing algorithms](https://easings.net/) 
 import Game.Colors;
 
 class Easing {
@@ -35,6 +36,27 @@ class Easing {
     : x < 0.5
     ? -(pow(2, 20 * x - 10) * sin((20 * x - 11.125) * c5)) / 2
     : (pow(2, -20 * x + 10) * sin((20 * x - 11.125) * c5)) / 2 + 1;
+  }
+
+  public static function easeInOutQuart(x: Float): Float {
+    return x < 0.5 ? 8 * x * x * x * x : 1 - pow(-2 * x + 2, 4) / 2;
+  }
+
+
+  public static function easeInBack(x: Float): Float {
+    final c1 = 1.70158;
+    final c3 = c1 + 1;
+
+    return c3 * x * x * x - c1 * x * x;
+  }
+
+  public static function easeInOutBack(x: Float): Float {
+    final c1 = 1.70158;
+    final c2 = c1 * 1.525;
+
+    return x < 0.5
+      ? (pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
+      : (pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
   }
 
   public static function easeOutBounce(x: Float) {

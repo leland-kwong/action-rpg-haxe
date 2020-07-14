@@ -6,8 +6,17 @@ typedef AnimRef = {
   var frames: Array<Dynamic>;
   var duration: core.Types.Time;
   var startTime: core.Types.Time;
+  // NOTE: optional properties on anonymous
+  // structures are not performant. If this
+  // becomes a problem, switching to classes
+  // should probably speed things up
+  var ?dx: Float;
+  var ?dy: Float;
   var ?x: Float;
   var ?y: Float;
+  var ?z: Float;
+  var ?angle: Float;
+  var ?effectCallback: SpriteBatchSystem.EffectCallback;
 }
 
 class Anim {
@@ -62,12 +71,18 @@ class AnimEffect {
     for (ref in curAnimations) {
       final aliveTime = time - ref.startTime;
       final isAlive = aliveTime < ref.duration;
+      final progress = aliveTime / ref.duration;
+      final dx = ref.dx == null ? 0 : ref.dx;
+      final dy = ref.dy == null ? 0 : ref.dy;
 
       if (isAlive) {
         Main.Global.sb.emitSprite(
-            ref.x,
-            ref.y,
-            core.Anim.getFrame(ref, time));
+            ref.x + dx * progress,
+            ref.y + dy * progress,
+            core.Anim.getFrame(ref, time),
+            ref.angle,
+            ref.effectCallback,
+            ref.z);
         nextAnimations.push(ref);
       }
     }

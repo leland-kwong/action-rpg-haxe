@@ -199,6 +199,8 @@ class Main extends hxd.App {
       game.render(Global.time);
     }
     Hud.render(Global.time);
+    core.Anim.AnimEffect
+      .render(Global.time);
     // run sprite batches before engine rendering
     SpriteBatchSystem.renderAll(Global.time);
 
@@ -326,9 +328,9 @@ class Main extends hxd.App {
 
   // on each frame
   override function update(dt:Float) {
-    Main.Global.mainPhase = MainPhase.Update;
-
     try {
+      Main.Global.mainPhase = MainPhase.Update;
+
       // set to 1/60 for a fixed 60fps
       var frameTime = dt;
       var fps = Math.round(1/dt);
@@ -394,6 +396,10 @@ class Main extends hxd.App {
       for (update in Main.Global.updateHooks) {
         update(dt);
       }
+
+      core.Anim.AnimEffect
+        .update(dt);
+      SpriteBatchSystem.updateAll(dt);
 
     } catch (error: Dynamic) {
 

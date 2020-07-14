@@ -165,7 +165,7 @@ class Bullet extends Projectile {
         y + dy - y,
         x + dx - x);
     Main.Global.sb.emitSprite(
-        x, y, spriteKey, angle);
+        x, y, spriteKey, angle, null, 1);
   }
 }
 
@@ -174,7 +174,7 @@ class Enemy extends Entity {
   static var healthBySize = [
     1 => 5,
     2 => 10,
-    3 => 100,
+    3 => 30,
   ];
   static var speedBySize = [
     1 => 90.0,
@@ -470,6 +470,39 @@ class Enemy extends Entity {
     }
 
     attackTarget = null;
+
+    if (isDone()) {
+      // trigger death animation
+      final startTime = Main.Global.time;
+      final frames = [
+        'destroy_animation/default-0',
+        'destroy_animation/default-1',
+        'destroy_animation/default-2',
+        'destroy_animation/default-3',
+        'destroy_animation/default-4',
+        'destroy_animation/default-5',
+        'destroy_animation/default-6',
+        'destroy_animation/default-7',
+        'destroy_animation/default-8',
+        'destroy_animation/default-9',
+      ];
+
+      for (_ in 0...Utils.irnd(3, 4)) {
+        final duration = Utils.rnd(0.3, 0.7);
+        final z = Utils.irnd(0, 1);
+        final dx = Utils.irnd(-6, 6, true);
+        final dy = Utils.irnd(-6, 6, true);
+        core.Anim.AnimEffect.add({
+          x: x + dx,
+          y: y + dy,
+          z: z,
+          dx: Utils.rnd(1, 2) * dx,
+          dy: Utils.rnd(1, 2) * dy,
+          startTime: startTime,
+          duration: duration,
+          frames: frames });
+      }
+    }
   }
 
   public override function render(time: Float) {
@@ -834,7 +867,7 @@ class Player extends Entity {
                   var laserHitCdKey = 'kamehamehaHit';
                   if (item.type == 'ENEMY' 
                       && !item.cds.has(laserHitCdKey)) {
-                    item.cds.set(laserHitCdKey, 0.3);
+                    item.cds.set(laserHitCdKey, 0.2);
                     item.damageTaken += 1;
                   }
 
@@ -1322,8 +1355,7 @@ class Game extends h2d.Object {
     var i = 0;
     while (i < ALL.length) {
       var a = ALL[i];
-      var isDisposed = a.health <= 0;
-      if (isDisposed) {
+      if (a.isDone()) {
         ALL.splice(i, 1);
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(dynamicWorldGrid, a.id);
@@ -1435,10 +1467,6 @@ class Game extends h2d.Object {
       a.update(dt);
     }
 
-    core.Anim.AnimEffect
-      .update(dt);
-    SpriteBatchSystem.updateAll(dt);
-
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
 
@@ -1515,8 +1543,5 @@ class Game extends h2d.Object {
         mainCam.w,
         mainCam.h,
         renderEntities);
-
-    core.Anim.AnimEffect
-      .render(time);
   }
 }

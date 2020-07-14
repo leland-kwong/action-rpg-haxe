@@ -1,6 +1,6 @@
 import h2d.SpriteBatch;
 
-private typedef EffectCallback = (p: SpriteRef) -> Void;
+typedef EffectCallback = (p: SpriteRef) -> Void;
 
 typedef SpriteRef = {
   var sortOrder: Float;
@@ -125,17 +125,19 @@ class SpriteBatchSystem {
     ?angle: Float,
     // a callback for running side effects
     // to modify the sprite before rendering
-    ?effectCallback: EffectCallback) {
+    ?effectCallback: EffectCallback,
+    ?z: Float = 0) {
 
     final g = new BatchElement(makeTile(spriteKey));
     if (angle != null) {
       g.rotation = angle;
     }
     g.x = x;
-    g.y = y;
+    g.y = y - z;
+    final zRange = 100;
     final spriteRef: SpriteRef = {
       batchElement: g,
-      sortOrder: y,
+      sortOrder: y * zRange + z,
     }
     if (effectCallback != null) {
       effectCallback(spriteRef);

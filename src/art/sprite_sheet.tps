@@ -196,6 +196,33 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/destroy_animation/default-0.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-1.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-10.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-11.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-12.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-2.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-3.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-4.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-5.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-6.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-7.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-8.png</key>
+            <key type="filename">aseprite_exports/destroy_animation/default-9.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>4,4,8,8</rect>
+                <key>scale9Paddings</key>
+                <rect>4,4,8,8</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-0.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-1.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-2.png</key>
@@ -226,7 +253,7 @@
             <key type="filename">aseprite_exports/enemy-2_animation/move-1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
+                <point_f>0.525,0.5</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
@@ -277,7 +304,7 @@
             <key type="filename">aseprite_exports/player_animation/run-7.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.883871</point_f>
+                <point_f>0.5,0.68387</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
