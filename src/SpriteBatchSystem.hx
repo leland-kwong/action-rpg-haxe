@@ -1,5 +1,4 @@
 import h2d.SpriteBatch;
-import Game.Cooldown;
 
 private typedef EffectCallback = (p: SpriteRef) -> Void;
 
