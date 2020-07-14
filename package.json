@@ -7,8 +7,8 @@
     "arpg": "main.dist.js"
   },
   "scripts": {
-    "start": "DEBUG=watcher.* node compile-and-watch.js 6001",
-    "productionBuild": "haxe -D production build.hxml",
+    "start": "DEBUG=watcher.* node compile-and-watch.js --compileFile=build.hxml",
+    "productionBuild": "DEBUG=watcher.* node compile-and-watch.js --env=production --compileFile=build.hxml",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -29,6 +29,7 @@
     "body-parser": "^1.19.0",
     "chokidar": "^3.4.0",
     "cors": "^2.8.5",
-    "debug": "^4.1.1"
+    "debug": "^4.1.1",
+    "minimist": "^1.2.5"
   }
 }

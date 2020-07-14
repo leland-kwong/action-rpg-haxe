@@ -1,5 +1,14 @@
 # Notes
 
+## Dev server
+This will build all assets (art, maps, sprite sheets) and then compile the game.
+
+`npm start`
+
+## Production build
+
+`npm run productionBuild`
+
 ## Music ideas
 
 Electric guitar themed, capcom style

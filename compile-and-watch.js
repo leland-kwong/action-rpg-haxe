@@ -1,12 +1,14 @@
 const { exec } = require('child_process');
 const chokidar = require('chokidar');
 const fs = require('fs-extra');
-const [, , port] = process.argv;
-require('./dev-server/main');
+const argv = require('minimist')(process.argv.slice(2));
+const { 
+  port = 6001,
+  env = 'development',
+  compileFile = 'build.hxml'
+} = argv;
 
-if (port === undefined) {
-  throw new Error('port must be provided');
-}
+require('./dev-server/main');
 
 const compileLogger = require('debug')('watcher.compile');
 const fileClearedStates = new Map();
@@ -17,7 +19,7 @@ const logToDisk = async (file, label, result, logFn) => {
       /err/.test(label) 
       ? `=== ${label} ===` 
       : label
-    ).toUpperCase();
+    ).toUpperCase() + ` -- [${env}]`;
     const formattedResult = `\n${formattedLabel}\n${new Date()}\n${result}\n`;
     const logFile = `./.logs/${file}`;
 
@@ -45,7 +47,9 @@ const logToDisk = async (file, label, result, logFn) => {
 const compile = (buildFile) => {
   console.log(`compiling ${buildFile}`);
 
-  const flags = '-D debugMode';
+  const flags = env === 'development' 
+    ? '-D debugMode'
+    : '-D production';
   const cmd = `haxe ${flags} ${buildFile} --connect ${port}`;
 
   exec(cmd, (err, stdout, stderr) => {
@@ -139,9 +143,6 @@ exec(`haxe --wait ${port}`, (err, stdout, stderr) => {
     console.log('server ready')
   }
 });
-
-compileFile = 'build.hxml'
-compile(compileFile)
 
 let pending = null;
 
@@ -286,7 +287,7 @@ const startTexturePackerWatcher = (options = {}) => {
 }
 
 startCompileWatcher({
-  delay: 1500
+  delay: 1000
 });
 startAsepriteWatcher({
   // verbose: true,
