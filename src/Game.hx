@@ -1251,14 +1251,7 @@ class Game extends h2d.Object {
     var layersByName = parsedTiledMap.layersByName;
     var mapObjects: Array<Dynamic> = 
       layersByName.get('objects').objects;
-    // var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
-
-    var miniBossPos: Dynamic = Lambda.find(
-        mapObjects, 
-        (item) -> item.name == 'mini_boss_position');
-    var playerStartPos = { 
-      x: miniBossPos.x - 100, 
-      y: miniBossPos.y };
+    var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
 
     Main.Global.rootScene = s2d;
 
