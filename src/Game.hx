@@ -329,7 +329,7 @@ class Ai extends Entity {
           'spider_bot_animation/walk_run-3',
           'spider_bot_animation/walk_run-4',
         ],
-        duration: 0.3,
+        duration: 0.2,
         startTime: Main.Global.time
       };
     }
@@ -537,7 +537,7 @@ class Ai extends Entity {
       var c = activeAnim;
 
       if (damageTaken > 0) {
-        cds.set('hitFlash', 0.0125);
+        cds.set('hitFlash', 0.02);
         health -= damageTaken;
         damageTaken = 0;
       }
@@ -921,7 +921,8 @@ class Player extends Entity {
               for (entityId in items) {
                 var item = Entity.ALL_BY_ID[entityId];
 
-                if (item.type != 'ENEMY') {
+                if (item.type == 'PLAYER' 
+                    || item.type == 'FRIENDLY_AI') {
                   return false;
                 }
 
@@ -949,7 +950,7 @@ class Player extends Entity {
                   var p = intersectionPoint;
 
                   var laserHitCdKey = 'kamehamehaHit';
-                  if (item.type == 'ENEMY' 
+                  if (item.cds != null 
                       && !item.cds.has(laserHitCdKey)) {
                     item.cds.set(laserHitCdKey, 0.2);
                     item.damageTaken += 1;
