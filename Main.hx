@@ -182,9 +182,6 @@ class Main extends hxd.App {
   }
 
   function showHomeScreen() {
-    game.remove();
-    game = null;
-
     function onGameStart() {
       game = new Game(s2d, game);
     }
