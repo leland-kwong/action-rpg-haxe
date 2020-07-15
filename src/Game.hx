@@ -1523,11 +1523,10 @@ class Game extends h2d.Object {
     cleanupDisposedEntities();
 
     for (a in Entity.ALL) {
-      final isDynamicType = a.type == 'ENEMY'
+      final shouldFindNeighbors = a.type == 'ENEMY'
         || a.type == 'FRIENDLY_AI'
         || a.type == 'PROJECTILE'
         || a.type == 'PLAYER';
-      final shouldFindNeighbors = isDynamicType;
 
       if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];
