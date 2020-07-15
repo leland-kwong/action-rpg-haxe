@@ -1345,17 +1345,20 @@ class Game extends h2d.Object {
     }
   }
 
+  // triggers a side-effect to change `canSeeTarget`
   public function lineOfSight(entity, x, y, i) {
-    var cellSize = mapRef.cellSize;
-    var mapRef = Main.Global.obstacleGrid;
-    var isClearPath = Grid.isEmptyCell(mapRef, x, y);
-    var isInSightRange = i * cellSize <= entity.sightRange;
+    final cellSize = mapRef.cellSize;
+    final isClearPath = Grid.isEmptyCell(
+        Main.Global.obstacleGrid, x, y);
+    final isInSightRange = i * cellSize <= 
+      entity.sightRange;
 
     if (!isClearPath || !isInSightRange) {
       entity.canSeeTarget = false;
       return false;
     }
 
+    entity.canSeeTarget = true;
     return isClearPath;
   }
 
@@ -1553,16 +1556,24 @@ class Game extends h2d.Object {
       // line of sight check
       if (a.type == 'ENEMY') {
         var enemy:Dynamic = a;
-        var cellSize = mapRef.cellSize;
-        var startGridX = Math.floor(a.x / cellSize);
-        var startGridY = Math.floor(a.y / cellSize);
-        var targetGridX = Math.floor(enemy.follow.x / cellSize);
-        var targetGridY = Math.floor(enemy.follow.y / cellSize);
+        final follow = enemy.follow;
+        final dFromTarget = Utils.distance(a.x, a.y, follow.x, follow.y);
+        final shouldCheckLineOfSight = dFromTarget <= 
+          enemy.sightRange;
 
-        enemy.canSeeTarget = true;
-        Utils.bresenhamLine(
-          startGridX, startGridY, targetGridX, 
-          targetGridY, lineOfSight, enemy);
+        if (shouldCheckLineOfSight) {
+          final cellSize = mapRef.cellSize;
+          final startGridX = Math.floor(a.x / cellSize);
+          final startGridY = Math.floor(a.y / cellSize);
+          final targetGridX = Math.floor(follow.x / cellSize);
+          final targetGridY = Math.floor(follow.y / cellSize);
+
+          Utils.bresenhamLine(
+              startGridX, startGridY, targetGridX, 
+              targetGridY, lineOfSight, enemy);
+        } else {
+          enemy.canSeeTarget = false;
+        }
       }
 
       // TODO need a better way to determine what 
