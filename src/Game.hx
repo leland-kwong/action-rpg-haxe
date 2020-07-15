@@ -1,7 +1,3 @@
-/**
-  TODO: Add enemy destroyed animation (fade out or explode into pieces?)
-**/
-
 using core.Types;
 
 import h2d.Bitmap;
