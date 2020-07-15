@@ -23,7 +23,7 @@ class Global {
   public static var debugScene: h2d.Scene;
 
   public static var mainCamera: CameraRef;
-  public static var mouse = {
+  public static var worldMouse = {
     buttonDown: -1
   }
   public static final obstacleGrid: GridRef = 
@@ -266,10 +266,10 @@ class Main extends hxd.App {
       {
         function onEvent(event : hxd.Event) {
           if (event.kind == hxd.Event.EventKind.EPush) {
-            Global.mouse.buttonDown = event.button;
+            Global.worldMouse.buttonDown = event.button;
           }
           if (event.kind == hxd.Event.EventKind.ERelease) {
-            Global.mouse.buttonDown = -1;
+            Global.worldMouse.buttonDown = -1;
           }
         }
         s2d.addEventListener(onEvent);
@@ -356,7 +356,7 @@ class Main extends hxd.App {
         }, null, '  ');
         var text = [
           'stats: ${formattedStats}',
-          'mouse: ${Json.stringify(Global.mouse, null, '  ')}',
+          'mouse: ${Json.stringify(Global.worldMouse, null, '  ')}',
         ].join('\n');
         var debugUiMargin = 10;
         debugText.x = debugUiMargin;

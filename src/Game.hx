@@ -759,7 +759,7 @@ class Player extends Entity {
       4 => 3
     ];
     var abilityId = abilityIdByMouseBtn[
-      Main.Global.mouse.buttonDown];
+      Main.Global.worldMouse.buttonDown];
 
     useAbility(
       Main.Global.rootScene.mouseX,
