@@ -26,11 +26,14 @@ class Global {
   public static var mouse = {
     buttonDown: -1
   }
-  public static var obstacleGrid: GridRef;
-  public static var dynamicWorldGrid: GridRef;
-  public static var entitiesToRenderGrid = 
+  public static final obstacleGrid: GridRef = 
+    Grid.create(16);
+  public static final dynamicWorldGrid: GridRef = 
+    Grid.create(16);
+  public static final entitiesToRenderGrid: GridRef = 
     Grid.create(135);
-  public static var traversableGrid: GridRef;
+  public static final traversableGrid: GridRef = 
+    Grid.create(16);
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;

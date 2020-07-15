@@ -1258,7 +1258,6 @@ class Game extends h2d.Object {
   var mousePointer: h2d.Object;
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
-  var dynamicWorldGrid: GridRef = Grid.create(16);
   var MOUSE_POINTER_RADIUS = 5.0;
   var enemySpawnerRefs: Array<EnemySpawner> = [];
 
@@ -1366,9 +1365,7 @@ class Game extends h2d.Object {
   ) {
     super();
 
-    Main.Global.obstacleGrid = Grid.create(16);
     mapRef = Main.Global.obstacleGrid;
-    Main.Global.traversableGrid = Grid.create(16);
 
     // load map background
     {
@@ -1392,7 +1389,9 @@ class Game extends h2d.Object {
     var layersByName = parsedTiledMap.layersByName;
     var mapObjects: Array<Dynamic> = 
       layersByName.get('objects').objects;
-    var playerStartPos: Dynamic = Lambda.find(mapObjects, (item) -> item.name == 'player_start');
+    var playerStartPos: Dynamic = Lambda.find(
+        mapObjects, 
+        (item) -> item.name == 'player_start');
 
     Main.Global.rootScene = s2d;
 
@@ -1460,8 +1459,6 @@ class Game extends h2d.Object {
       });
     }
 
-    Main.Global.dynamicWorldGrid = dynamicWorldGrid;
-
     s2d.addChild(this);
     if (oldGame != null) {
       oldGame.cleanupLevel();
@@ -1492,7 +1489,7 @@ class Game extends h2d.Object {
       if (a.isDone()) {
         ALL.splice(i, 1);
         Entity.ALL_BY_ID.remove(a.id);
-        Grid.removeItem(dynamicWorldGrid, a.id);
+        Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(mapRef, a.id);
         Grid.removeItem(
             Main.Global.entitiesToRenderGrid,
@@ -1535,7 +1532,7 @@ class Game extends h2d.Object {
         var height = a.radius * 2 + nRange;
         var width = height;
         var dynamicNeighbors = Grid.getItemsInRect(
-          dynamicWorldGrid, a.x, a.y, width, height
+          Main.Global.dynamicWorldGrid, a.x, a.y, width, height
         );
         var obstacleNeighbors = Grid.getItemsInRect(
           Main.Global.obstacleGrid, a.x, a.y, width, height
