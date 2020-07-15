@@ -439,8 +439,8 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":1232,
-                 "y":928
+                 "x":1263,
+                 "y":854
                 }, 
                 {
                  "gid":2,
@@ -621,6 +621,66 @@
                  "width":38,
                  "x":813,
                  "y":823
+                }, 
+                {
+                 "height":0,
+                 "id":71,
+                 "name":"enemySpawnPoint",
+                 "point":true,
+                 "rotation":0,
+                 "type":"enemySpawnPoint",
+                 "visible":true,
+                 "width":0,
+                 "x":759,
+                 "y":282
+                }, 
+                {
+                 "height":0,
+                 "id":72,
+                 "name":"enemySpawnPoint",
+                 "point":true,
+                 "rotation":0,
+                 "type":"enemySpawnPoint",
+                 "visible":true,
+                 "width":0,
+                 "x":716,
+                 "y":721
+                }, 
+                {
+                 "height":0,
+                 "id":73,
+                 "name":"enemySpawnPoint",
+                 "point":true,
+                 "rotation":0,
+                 "type":"enemySpawnPoint",
+                 "visible":true,
+                 "width":0,
+                 "x":759,
+                 "y":897
+                }, 
+                {
+                 "height":0,
+                 "id":74,
+                 "name":"enemySpawnPoint",
+                 "point":true,
+                 "rotation":0,
+                 "type":"enemySpawnPoint",
+                 "visible":true,
+                 "width":0,
+                 "x":716,
+                 "y":511
+                }, 
+                {
+                 "height":0,
+                 "id":75,
+                 "name":"enemySpawnPoint",
+                 "point":true,
+                 "rotation":0,
+                 "type":"enemySpawnPoint",
+                 "visible":true,
+                 "width":0,
+                 "x":1055,
+                 "y":926
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -629,7 +689,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":71,
+ "nextobjectid":76,
  "orientation":"orthogonal",
  "renderorder":"left-down",
  "tiledversion":"1.4.1",

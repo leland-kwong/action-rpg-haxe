@@ -1127,14 +1127,14 @@ class MapData {
 }
 
 class Game extends h2d.Object {
-  public var level = 4;
+  public var level = 2;
   var player: Player;
   var mousePointer: h2d.Object;
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
   var dynamicWorldGrid: GridRef = Grid.create(16);
   var MOUSE_POINTER_RADIUS = 5.0;
-  var enemySpawner: EnemySpawner;
+  var enemySpawnerRefs: Array<EnemySpawner> = [];
 
   function calcNumEnemies(level: Int) {
     return level * Math.round(level /2);
@@ -1171,14 +1171,29 @@ class Game extends h2d.Object {
   public function newLevel(s2d: h2d.Scene) {
     level += 1;
 
-    // TODO re-enable when spawn positions are setup
-    enemySpawner = new EnemySpawner(
-      800,
-      900,
-      calcNumEnemies(level),
-      s2d,
-      player
-    );
+    {
+      final parsedTiledMap = MapData.create(
+          hxd.Res.level_intro_json);
+      final layersByName = parsedTiledMap.layersByName;
+      final objectsRects: Array<core.Types.TiledObject> = 
+        layersByName.get('objects').objects;
+      final enemySpawnPoints = Lambda
+        .filter(objectsRects, (item) -> {
+          return item.type == 'enemySpawnPoint';
+        });
+
+      enemySpawnerRefs = Lambda.map(enemySpawnPoints, (point) -> {
+        // TODO spawners should only start spawning when
+        // the player has reached a nearby zone that 
+        // the spawner is in.
+        return new EnemySpawner(
+            point.x,
+            point.y,
+            calcNumEnemies(level),
+            s2d,
+            player);
+      });  
+    }
 
 
     // intro_boss
@@ -1374,8 +1389,8 @@ class Game extends h2d.Object {
         Main.Global.playerStats, 
         dt);
 
-    if (enemySpawner != null) {
-      enemySpawner.update(dt);
+    for (ref in enemySpawnerRefs) {
+      ref.update(dt);
     }
 
     SoundFx.globalCds.update(dt);
@@ -1383,9 +1398,10 @@ class Game extends h2d.Object {
     cleanupDisposedEntities();
 
     for (a in Entity.ALL) {
-      var shouldFindNeighbors = a.type == 'ENEMY'
+      final isDynamicType = a.type == 'ENEMY'
         || a.type == 'PROJECTILE'
         || a.type == 'PLAYER';
+      final shouldFindNeighbors = isDynamicType;
 
       if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="100" height="100" tilewidth="16" tileheight="16" infinite="1" nextlayerid="5" nextobjectid="71">
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="100" height="100" tilewidth="16" tileheight="16" infinite="1" nextlayerid="5" nextobjectid="76">
  <editorsettings>
   <export target="level_intro.json" format="json"/>
  </editorsettings>
@@ -52,7 +52,7 @@
   <object id="45" name="0, 0" x="0" y="0">
    <point/>
   </object>
-  <object id="46" name="mini_boss_position" x="1232" y="928">
+  <object id="46" name="mini_boss_position" x="1263" y="854">
    <point/>
   </object>
   <object id="47" type="pillar" gid="2" x="413" y="199" width="38" height="71"/>
@@ -70,5 +70,20 @@
   <object id="68" type="pillar" gid="2" x="573" y="1015" width="38" height="71"/>
   <object id="69" type="pillar" gid="2" x="797" y="1031" width="38" height="71"/>
   <object id="70" type="pillar" gid="2" x="813" y="823" width="38" height="71"/>
+  <object id="71" name="enemySpawnPoint" type="enemySpawnPoint" x="759" y="282">
+   <point/>
+  </object>
+  <object id="72" name="enemySpawnPoint" type="enemySpawnPoint" x="716" y="721">
+   <point/>
+  </object>
+  <object id="73" name="enemySpawnPoint" type="enemySpawnPoint" x="759" y="897">
+   <point/>
+  </object>
+  <object id="74" name="enemySpawnPoint" type="enemySpawnPoint" x="716" y="511">
+   <point/>
+  </object>
+  <object id="75" name="enemySpawnPoint" type="enemySpawnPoint" x="1055" y="926">
+   <point/>
+  </object>
  </objectgroup>
 </map>
