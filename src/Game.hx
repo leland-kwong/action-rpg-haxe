@@ -170,7 +170,7 @@ class Bullet extends Projectile {
 }
 
 
-class Enemy extends Entity {
+class Ai extends Entity {
   static var healthBySize = [
     1 => 5,
     2 => 10,
@@ -1089,7 +1089,7 @@ class EnemySpawner {
     var size = Utils.irnd(1, 2);
     var radius = 3 + size * 6;
     var posRange = 100;
-    var e = new Enemy({
+    var e = new Ai({
       x: x + Utils.irnd(-posRange, posRange),
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
@@ -1208,7 +1208,7 @@ class Game extends h2d.Object {
           (item) -> item.name == 'mini_boss_position');
       var size = 3;
 
-      var e = new Enemy({
+      var e = new Ai({
         x: miniBossPos.x,
         y: miniBossPos.y,
         radius: 30,
@@ -1399,6 +1399,7 @@ class Game extends h2d.Object {
 
     for (a in Entity.ALL) {
       final isDynamicType = a.type == 'ENEMY'
+        || a.type == 'FRIENDLY_AI'
         || a.type == 'PROJECTILE'
         || a.type == 'PLAYER';
       final shouldFindNeighbors = isDynamicType;
