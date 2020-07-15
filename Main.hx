@@ -106,7 +106,7 @@ class HomeScreen extends h2d.Object {
     var titleFont = Fonts.primary.get().clone();
     titleFont.resizeTo(12 * 6);
     var titleText = new h2d.Text(titleFont, this);
-    titleText.text = 'Autonomous';
+    titleText.text = 'Astral Cowboy';
     titleText.textColor = Game.Colors.pureWhite;
     titleText.x = leftMargin;
     titleText.y = 300;
