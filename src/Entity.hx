@@ -40,7 +40,7 @@ class Entity extends h2d.Object {
 
   public static var ALL: Array<Entity> = [];
   public static var ALL_BY_ID: Map<String, Entity> = new Map();
-  public var neighbors: Array<EntityId>;
+  public var neighbors: Array<EntityId> = [];
   public var id: EntityId;
   public var type = 'UNKNOWN_TYPE';
   public var radius: Int;
