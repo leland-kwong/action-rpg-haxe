@@ -209,6 +209,12 @@
             <key type="filename">aseprite_exports/destroy_animation/default-7.png</key>
             <key type="filename">aseprite_exports/destroy_animation/default-8.png</key>
             <key type="filename">aseprite_exports/destroy_animation/default-9.png</key>
+            <key type="filename">aseprite_exports/spider_bot_animation/idle-0.png</key>
+            <key type="filename">aseprite_exports/spider_bot_animation/walk_run-0.png</key>
+            <key type="filename">aseprite_exports/spider_bot_animation/walk_run-1.png</key>
+            <key type="filename">aseprite_exports/spider_bot_animation/walk_run-2.png</key>
+            <key type="filename">aseprite_exports/spider_bot_animation/walk_run-3.png</key>
+            <key type="filename">aseprite_exports/spider_bot_animation/walk_run-4.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>

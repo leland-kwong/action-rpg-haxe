@@ -4,10 +4,15 @@ import Game.Colors;
 class Easing {
   static var pow = Math.pow;
   static var sin = Math.sin;
+  static var sqrt = Math.sqrt;
   static var PI = Math.PI;
 
   public static function easeIn(x: Float): Float {
     return x;
+  }
+
+  public static function easeInCirc(x: Float): Float {
+    return 1 - sqrt(1 - pow(x, 2));
   }
 
   public static function easeInOut(x: Float): Float {

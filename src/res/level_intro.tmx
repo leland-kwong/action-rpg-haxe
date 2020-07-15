@@ -70,7 +70,7 @@
   <object id="68" type="pillar" gid="2" x="573" y="1015" width="38" height="71"/>
   <object id="69" type="pillar" gid="2" x="797" y="1031" width="38" height="71"/>
   <object id="70" type="pillar" gid="2" x="813" y="823" width="38" height="71"/>
-  <object id="71" name="enemySpawnPoint" type="enemySpawnPoint" x="759" y="282">
+  <object id="71" name="enemySpawnPoint" type="enemySpawnPoint" x="639" y="242">
    <point/>
   </object>
   <object id="72" name="enemySpawnPoint" type="enemySpawnPoint" x="716" y="721">

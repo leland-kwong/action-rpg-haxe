@@ -175,16 +175,25 @@ class Ai extends Entity {
     1 => 5,
     2 => 10,
     3 => 30,
+    4 => 50,
   ];
   static var speedBySize = [
     1 => 90.0,
     2 => 60.0,
     3 => 40.0,
+    4 => 100.0,
   ];
   static var attackRangeByType = [
     1 => 30,
     2 => 120,
     3 => 80,
+    4 => 30,
+  ];
+  final attackTypeBySpecies = [
+    1 => 'attack_bullet',
+    2 => 'attack_bullet',
+    3 => 'attack_bullet',
+    4 => 'attack_self_detonate',
   ];
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
@@ -302,6 +311,28 @@ class Ai extends Entity {
         startTime: Main.Global.time
       };
     }
+
+    if (size == 4) {
+      idleAnim = {
+        frames: [
+        'spider_bot_animation/idle-0',
+      ],
+        duration: 1,
+        startTime: Main.Global.time
+      };
+
+      runAnim = {
+        frames: [
+          'spider_bot_animation/walk_run-0',
+          'spider_bot_animation/walk_run-1',
+          'spider_bot_animation/walk_run-2',
+          'spider_bot_animation/walk_run-3',
+          'spider_bot_animation/walk_run-4',
+        ],
+        duration: 0.3,
+        startTime: Main.Global.time
+      };
+    }
   }
 
   public override function update(dt) {
@@ -350,7 +381,7 @@ class Ai extends Entity {
           var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
 
           if (o.forceMultiplier > 0) {
-            var separation = 5 + Math.sqrt(speed / 2);
+            var separation = Math.sqrt(speed / 2);
             var min = pt.radius + ept.radius + separation;
             var isColliding = d < min;
             if (isColliding) {
@@ -379,7 +410,8 @@ class Ai extends Entity {
       }
 
       if (canSeeTarget && attackTarget == null) {
-        var isInAttackRange = dFromTarget <= attackRange;
+        var isInAttackRange = dFromTarget <= 
+          attackRange + follow.radius;
         if (isInAttackRange) {
           attackTarget = follow;
         }
@@ -438,23 +470,65 @@ class Ai extends Entity {
     // trigger attack
     if (!cds.has('summoningSickness') && attackTarget != null) {
       if (!cds.has('attack')) {
-        var attackCooldown = 1.0;
-        cds.set('attack', attackCooldown);
+        final attackType = attackTypeBySpecies[size];
 
-        var x2 = follow.x;
-        var y2 = follow.y;
-        var launchOffset = radius;
-        var angle = Math.atan2(y2 - y, x2 - x);
-        var b = new Bullet(
-          x + Math.cos(angle) * launchOffset,
-          y + Math.sin(angle) * launchOffset,
-					x2,
-					y2,
-          100.0,
-          'ui/bullet_enemy_large',
-          ['PLAYER', 'OBSTACLE']
-        );
-        Main.Global.rootScene.addChild(b);
+        switch (attackType) {
+          case 'attack_bullet': {
+            var attackCooldown = 1.0;
+            cds.set('attack', attackCooldown);
+
+            var x2 = follow.x;
+            var y2 = follow.y;
+            var launchOffset = radius;
+            var angle = Math.atan2(y2 - y, x2 - x);
+            var b = new Bullet(
+                x + Math.cos(angle) * launchOffset,
+                y + Math.sin(angle) * launchOffset,
+                x2,
+                y2,
+                100.0,
+                'ui/bullet_enemy_large',
+                ['PLAYER', 'OBSTACLE']);
+            Main.Global.rootScene.addChild(b);
+          }
+
+          case 'attack_self_detonate': {
+            final startTime = Main.Global.time;
+            final duration = 0.4;
+            core.Anim.AnimEffect.add({
+              x: x, 
+              y: y,
+              z: 2,
+              frames: [
+                'explosion_animation/default-0'
+              ],
+              startTime: startTime,
+              duration: duration,
+              effectCallback: (p) -> {
+                final b: h2d.SpriteBatch.BatchElement 
+                  = p.batchElement;
+                final aliveTime = Main.Global.time 
+                  - startTime;
+                final progress = Easing
+                  .easeInCirc(aliveTime / duration);
+                
+                final scale = 2;
+                b.scale = scale - (scale * progress); 
+                b.alpha = 0.5;
+                b.g = 1 - progress * 0.2;
+                b.b = 1 - progress * 0.7;
+              }
+            });
+            health = 0;
+            attackTarget.damageTaken += 2;
+          }
+
+          default: {
+#if !production
+            throw 'invalid attack type `${attackType}`';
+#end
+          }
+        }
       }
     }
 
@@ -679,7 +753,17 @@ class Player extends Entity {
       }
     }
 
-    var abilityId = Main.Global.mouse.buttonDown;
+    final abilityIdByMouseBtn = [
+      -1 => -1,
+      0 => 0,
+      1 => 1,
+      2 => -1,
+      3 => 2,
+      4 => 3
+    ];
+    var abilityId = abilityIdByMouseBtn[
+      Main.Global.mouse.buttonDown];
+
     useAbility(
       Main.Global.rootScene.mouseX,
       Main.Global.rootScene.mouseY,
@@ -837,7 +921,7 @@ class Player extends Entity {
               for (entityId in items) {
                 var item = Entity.ALL_BY_ID[entityId];
 
-                if (item.type == 'PLAYER') {
+                if (item.type != 'ENEMY') {
                   return false;
                 }
 
@@ -920,6 +1004,50 @@ class Player extends Entity {
           startPoint: startPt,
           endPoint: adjustedEndPt,
         });
+      }
+
+      case 2: {
+        final cdKey = 'ability_spider_bot';
+
+        if (cds.has(cdKey)) {
+          return;
+        }
+
+        final cooldown = 0.2;
+        cds.set('recoveringFromAbility', 0.15);
+        cds.set(cdKey, 0.2);
+
+        final nearestEnemy = Lambda.fold(
+            Entity.ALL,
+            (ent, result) -> {
+              if (ent.type != 'ENEMY') {
+                return result;
+              }
+
+              final d = Utils.distance(
+                  x, y, ent.x, ent.y);
+
+              if (d < result.distance) {
+                result.ent = ent;
+                result.distance = d;
+              }
+
+              return result;
+            }, {
+              ent: null,
+              distance: Math.POSITIVE_INFINITY
+            }).ent;
+
+        for (_ in 0...3) {
+          // launch offset
+          final lo = 8;
+          final botRef = new Ai({
+            x: x + Math.max(lo, Utils.irnd(-lo, lo)),
+            y: y + Math.max(lo, Utils.irnd(-lo, lo)),
+            radius: 2,
+          }, 4, nearestEnemy);
+          botRef.type = 'FRIENDLY_AI';
+        }
       }
     }
   }
