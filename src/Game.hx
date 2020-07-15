@@ -422,16 +422,17 @@ class Ai extends Entity {
 
     // update animation
     {
-      var hasMovedX = Math.abs(origX - x) >= 0.25;
-      var hasMovedY = Math.abs(origY - y) >= 0.25;
       var currentAnim = activeAnim;
 
-      if (runAnim != null && (hasMovedX || hasMovedY)) {
-        activeAnim = runAnim;
-      }
-      // set idle animation
-      else {
-        activeAnim = idleAnim;
+      activeAnim = {
+        var hasMovedX = Math.abs(origX - x) >= 0.05;
+        var hasMovedY = Math.abs(origY - y) >= 0.05;
+
+        if ((hasMovedX || hasMovedY)) {
+          runAnim;
+        } else {
+          idleAnim;
+        }
       }
 
       if (activeAnim != null) {
@@ -1494,7 +1495,7 @@ class Game extends h2d.Object {
         Grid.removeItem(dynamicWorldGrid, a.id);
         Grid.removeItem(mapRef, a.id);
         Grid.removeItem(
-            Main.Global.entitiesInViewGrid,
+            Main.Global.entitiesToRenderGrid,
             a.id);
         a.remove();
       } else {
@@ -1549,8 +1550,7 @@ class Game extends h2d.Object {
             neighbors.push(n);
           }
         }
-        var aWithNeighbors:Dynamic = a;
-        aWithNeighbors.neighbors = neighbors;
+        a.neighbors = neighbors;
       }
 
       // line of sight check
@@ -1591,7 +1591,7 @@ class Game extends h2d.Object {
       }
 
       Grid.setItemRect(
-          Main.Global.entitiesInViewGrid,
+          Main.Global.entitiesToRenderGrid,
           a.x,
           a.y,
           a.radius * 2,
@@ -1630,7 +1630,7 @@ class Game extends h2d.Object {
   public function render(time: Float) {
     final debugActiveRenderCell = false;
     final cellSize = Main.Global
-      .entitiesInViewGrid.cellSize;
+      .entitiesToRenderGrid.cellSize;
     // prevent duplicate renders which can
     // happen due to an entity overlapping
     // in the spatial grid
@@ -1657,7 +1657,7 @@ class Game extends h2d.Object {
         return;
       }
 
-      for (entityId => _ in cellData) {
+      for (entityId in cellData) {
         final alreadyRendered = renderedEntities
           .exists(entityId);
 
@@ -1671,7 +1671,7 @@ class Game extends h2d.Object {
 
     final mainCam = Main.Global.mainCamera;
     Grid.eachCellInRect(
-        Main.Global.entitiesInViewGrid,
+        Main.Global.entitiesToRenderGrid,
         mainCam.x,
         mainCam.y,
         mainCam.w,

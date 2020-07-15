@@ -28,7 +28,7 @@ class Global {
   }
   public static var obstacleGrid: GridRef;
   public static var dynamicWorldGrid: GridRef;
-  public static var entitiesInViewGrid = 
+  public static var entitiesToRenderGrid = 
     Grid.create(135);
   public static var traversableGrid: GridRef;
   public static var sb: SpriteBatchSystem;
