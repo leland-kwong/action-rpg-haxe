@@ -272,8 +272,7 @@ class Main extends hxd.App {
             Global.mouse.buttonDown = -1;
           }
         }
-        hxd.Window.getInstance()
-          .addEventTarget(onEvent);
+        s2d.addEventListener(onEvent);
       }
 
       // setup viewport
