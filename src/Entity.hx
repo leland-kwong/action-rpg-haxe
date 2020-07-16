@@ -36,6 +36,15 @@ class Cooldown {
 }
 
 class Entity extends h2d.Object {
+  static var NULL_ENTITY: Entity = {
+    final defaultEntity = new Entity({
+      x: -99999, 
+      y: -99999, 
+      radius: 0
+    }, true);
+    defaultEntity.type = 'NULL_ENTITY';
+    defaultEntity;
+  };
   static var idGenerated = 0;
 
   public static var ALL: Array<Entity> = [];
@@ -60,11 +69,14 @@ class Entity extends h2d.Object {
   public var obstacleGrid: GridRef;
   public var stats: PlayerStats.StatsRef;
 
-  public function isDone() {
-    return health <= 0;
-  }
+  public function new(
+      props: EntityProps, 
+      fromInitialization = false) {
 
-  public function new(props: EntityProps) {
+    if (fromInitialization) {
+      return;
+    }
+    
     super();
 
     x = props.x;
@@ -127,4 +139,23 @@ class Entity extends h2d.Object {
   }
 
   public function render(time: Float) {}
+
+  public function isDone() {
+    return health <= 0;
+  }
+
+  public static function getById(
+      id: EntityId, 
+      ?defaultEntity) {
+    final ref = ALL_BY_ID.get(id);
+
+    if (ref == null) {
+      return defaultEntity == null 
+        ? NULL_ENTITY 
+        : defaultEntity;
+    }
+
+    return ref;
+  }
+
 }
