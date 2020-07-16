@@ -766,7 +766,7 @@ class Player extends Entity {
     // collision avoidance
     if (neighbors != null) {
       for (entityId in neighbors) {
-        final entity = Entity.ALL_BY_ID[entityId];
+        final entity = Entity.getById(entityId);
 
         if (entity.type == 'FRIENDLY_AI') {
           continue;
