@@ -1058,9 +1058,10 @@ class Player extends Entity {
               distance: Math.POSITIVE_INFINITY
             }).ent;
 
+          final player = this;
           return nearestEnemy != null 
             ? nearestEnemy 
-            : this;
+            : player;
         }
 
         final attackTargetFilterFn = (ent) -> {
