@@ -24,7 +24,7 @@ class Anim {
     anim: AnimRef, atTime: core.Types.Time
   ) {
     var timeElapsed = atTime - anim.startTime;
-    var loopProgress = (timeElapsed % anim.duration) / anim.duration;
+    var loopProgress = ((timeElapsed % anim.duration) / anim.duration) % 1;
     var frameIndex = Math.floor(loopProgress * anim.frames.length);
 
     return anim.frames[frameIndex];
@@ -40,12 +40,13 @@ class Anim {
       };
 
       passed(
-        getFrame(anim, 0.25) == anim.frames[0]
-      );
+        getFrame(anim, 0.25) == anim.frames[0]);
 
       passed(
-        getFrame(anim, 0.5) == anim.frames[1]
-      );
+        getFrame(anim, 0.5) == anim.frames[1]);
+
+      passed(
+         getFrame(anim, 1.5) == anim.frames[1]);
     });
   }
 }
