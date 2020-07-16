@@ -12,13 +12,76 @@ private typedef TiledLayer = Array<TiledObject>;
 
 class Hud {
   static var mapData: TiledMapData;
+  static var tf: h2d.Text;
+  static var aiHealthBar: h2d.Graphics;
+  static final aiHealthBarWidth = 200;
+  static var hoveredEntityId: Entity.EntityId;
 
-  public static function start() {
+  public static function init() {
+    aiHealthBar = new h2d.Graphics(
+        Main.Global.uiRoot);
+    final font = Fonts.primary.get().clone();
+    font.resizeTo(24);
+    tf = new h2d.Text(
+        font, 
+        Main.Global.uiRoot);
+    tf.textAlign = Center;
+    tf.textColor = Game.Colors.pureWhite;
+
     mapData = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
   }
 
   public static function render(time: Float) {
+    // show hovered ai info
+    {
+      final healthBarHeight = 40;
+      tf.x = Main.Global.uiRoot.width / 2;
+      tf.y = 10;
+      aiHealthBar.x = tf.x - aiHealthBarWidth / 2;
+      aiHealthBar.y = 10;
+
+      final x = Main.Global.rootScene.mouseX;
+      final y = Main.Global.rootScene.mouseY;
+      final hoveredEntityId = Lambda.find(
+          Grid.getItemsInRect(
+            Main.Global.dynamicWorldGrid,
+            x, y, 5, 5),
+          (entityId) -> {
+            final entRef = Entity.ALL_BY_ID[entityId];
+            final p = new h2d.col.Point(x, y);
+            final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
+            final distFromMouse = Utils.distance(
+                x, y, entRef.x, entRef.y);
+            final isMatch = c.contains(p) &&
+              entRef.type == 'ENEMY';
+
+            return isMatch;
+          });
+      if (hoveredEntityId != null) {
+        final entRef = Entity.ALL_BY_ID[
+          hoveredEntityId];
+        tf.text = entRef.type;
+        final healthPctRemain = entRef.health / 
+          entRef.stats.maxHealth;
+        aiHealthBar.clear();
+        aiHealthBar.lineStyle(4, Game.Colors.black);
+        aiHealthBar.beginFill(Game.Colors.black);
+        aiHealthBar.drawRect(
+            0, 0, 
+            aiHealthBarWidth, 
+            healthBarHeight);
+        aiHealthBar.beginFill(Game.Colors.red);
+        aiHealthBar.drawRect(
+            0, 0, 
+            healthPctRemain * aiHealthBarWidth, 
+            healthBarHeight);
+      } else {
+        tf.text = '';
+        aiHealthBar.clear();
+      }
+    }
+
     var ps = Main.Global.playerStats;
 
     if (ps == null) {

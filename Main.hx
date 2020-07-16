@@ -311,7 +311,7 @@ class Main extends hxd.App {
       setupDebugInfo(font);
 #end
 
-      Hud.start();
+      Hud.init();
 
     } catch (error: Dynamic) {
 

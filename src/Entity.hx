@@ -58,6 +58,7 @@ class Entity extends h2d.Object {
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
+  public var stats: PlayerStats.StatsRef;
 
   public function isDone() {
     return health <= 0;

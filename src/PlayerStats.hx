@@ -25,12 +25,12 @@ class PlayerStats {
     final p = props;
 
     return {
-      maxHealth: p.maxHealth,
-      maxEnergy: p.maxEnergy,
+      maxHealth:     p.maxHealth,
+      maxEnergy:     p.maxEnergy,
       currentHealth: p.currentHealth,
       currentEnergy: p.currentEnergy,
       // per second
-      energyRegeneration: p.energyRegeneration, 
+      energyRegeneration: p.energyRegeneration,
       _damageFromHits: 0.0,
       recentEvents: []
     };

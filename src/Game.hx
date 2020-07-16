@@ -236,6 +236,13 @@ class Ai extends Entity {
     status = 'UNTARGETABLE';
     speed = 0.0;
     health = healthBySize[size];
+    stats = PlayerStats.create({
+      maxHealth: health,
+      currentHealth: health,
+      maxEnergy: 0,
+      currentEnergy: 0,
+      energyRegeneration: 0
+    });
     avoidOthers = true;
     this.findTargetFn = findTargetFn;
     if (attackTargetFilterFn != null) {
