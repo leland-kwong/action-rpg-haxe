@@ -389,7 +389,7 @@ class Ai extends Entity {
       if (avoidOthers) {
         // make entities avoid each other by repulsion
         for (oid in neighbors) {
-          var o = Entity.ALL_BY_ID.get(oid);
+          var o = Entity.getById(oid);
           var pt = this;
           var ept = o;
           var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
