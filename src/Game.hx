@@ -93,7 +93,7 @@ class Projectile extends Entity {
     }
 
     for (id in neighbors) {
-      var a = Entity.ALL_BY_ID[id];
+      final a = Entity.getById(id);
       if (cFilter(a)) {
         var d = Utils.distance(x, y, a.x, a.y);
         var min = radius + a.radius * 1.0;
