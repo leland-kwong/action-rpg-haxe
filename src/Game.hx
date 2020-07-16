@@ -198,7 +198,7 @@ class Ai extends Entity {
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
-  var spawnDuration: Float;
+  var spawnDuration: Float = 0.25;
   var size: Int;
   var repelFilter= 'REPEL_NONE';
   var debugCenter = false;
@@ -223,7 +223,6 @@ class Ai extends Entity {
     type = 'ENEMY';
     status = 'UNTARGETABLE';
     speed = 0.0;
-    spawnDuration = size * 0.2;
     health = healthBySize[size];
     avoidOthers = true;
 
@@ -235,8 +234,7 @@ class Ai extends Entity {
     follow = followTarget;
     this.size = size;
 
-    cds.set('summoningSickness', 1.0);
-    setScale(0);
+    cds.set('summoningSickness', spawnDuration);
 
     if (size == 1) {
       var idleFrames = [
@@ -344,9 +342,6 @@ class Ai extends Entity {
     var spawnProgress = Math.min(
         1, Main.Global.time / spawnDuration);
     var isFullySpawned = spawnProgress >= 1;
-    if (!isFullySpawned) {
-      setScale(spawnProgress);
-    }
     if (isFullySpawned) {
       status = 'TARGETABLE';
       speed = speedBySize[size];
@@ -1165,44 +1160,52 @@ class MapObstacle extends Entity {
 }
 
 // Spawns enemies over time
-class EnemySpawner {
+class EnemySpawner extends Entity {
   static var colors = [
     1 => Colors.red,
     2 => Colors.orange,
     3 => Colors.yellow,
   ];
 
-  var cds = new Cooldown();
   var enemiesLeftToSpawn: Int;
-  var parent: h2d.Object;
-  var x: Float;
-  var y: Float;
   var target: Entity;
-  var spawnInterval = 0.05;
-  /**
-    FIXME
-    Currently `Main.hx` checks for the number of enemies
-    remaining before going to the next level. So we need to
-    spawn an enemy immediately so there is at least 1 enemy
-    exists.
-  **/
-  var accumulator = 0.1;
+  var spawnInterval = 0.001;
+  var isDormant = true;
 
   public function new(
     x, y, numEnemies, parent: h2d.Object,
     target: Entity
   ) {
+    super({
+      x: x,
+      y: y,
+      radius: 0
+    });
     enemiesLeftToSpawn = numEnemies;
+    cds = new Cooldown();
     this.parent = parent;
     this.x = x;
     this.y = y;
     this.target = target;
   }
 
-  public function update(dt: Float) {
-    if (enemiesLeftToSpawn <= 0) {
+  public override function update(dt: Float) {
+    final distFromTarget = Utils.distance(x, y, target.x, target.y);
+
+    if (distFromTarget < 450) {
+      isDormant = false;
+    }
+
+    if (isDormant) {
       return;
     }
+
+    final isDone = enemiesLeftToSpawn <= 0;
+    if (isDone) {
+      health = 0;
+      return;
+    } 
+
     cds.update(dt);
 
     if (cds.has('recentlySpawned')) {
@@ -1314,7 +1317,7 @@ class Game extends h2d.Object {
         return new EnemySpawner(
             point.x,
             point.y,
-            calcNumEnemies(level),
+            30,
             s2d,
             player);
       });  
@@ -1524,14 +1527,20 @@ class Game extends h2d.Object {
     cleanupDisposedEntities();
 
     for (a in Entity.ALL) {
-      final shouldFindNeighbors = a.type == 'ENEMY'
+      final isDynamic = a.type == 'ENEMY'
         || a.type == 'FRIENDLY_AI'
         || a.type == 'PROJECTILE'
         || a.type == 'PLAYER';
+      final isMoving = a.dx != 0 || a.dy != 0;
+      final hasTakenDamage = a.damageTaken > 0;
+      final shouldFindNeighbors = isDynamic 
+        && ((a.cds != null && a.cds.has('summoningSickness'))
+            || isMoving 
+            || hasTakenDamage);
 
+      var neighbors: Array<String> = [];
       if (shouldFindNeighbors) {
-        var neighbors: Array<String> = [];
-        var nRange = 100;
+        var nRange = 15;
         var height = a.radius * 2 + nRange;
         var width = height;
         var dynamicNeighbors = Grid.getItemsInRect(
@@ -1550,12 +1559,12 @@ class Game extends h2d.Object {
             neighbors.push(n);
           }
         }
-        a.neighbors = neighbors;
       }
+      a.neighbors = neighbors;
 
       // line of sight check
-      if (a.type == 'ENEMY') {
-        var enemy:Dynamic = a;
+      var enemy:Dynamic = a;
+      if (a.type == 'ENEMY' && enemy.follow != null) {
         final follow = enemy.follow;
         final dFromTarget = Utils.distance(a.x, a.y, follow.x, follow.y);
         final shouldCheckLineOfSight = dFromTarget <= 
@@ -1576,8 +1585,6 @@ class Game extends h2d.Object {
         }
       }
 
-      // TODO need a better way to determine what 
-      // is a dynamic entity
       final isDynamic = a.type != 'OBSTACLE' 
         && a.type != 'PROJECTILE';
       if (isDynamic) {

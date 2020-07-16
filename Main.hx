@@ -303,7 +303,8 @@ class Main extends hxd.App {
       Global.uiSpriteBatch = new SpriteBatchSystem(
           Global.uiRoot);
 
-      switchMainScene(MainSceneType.PlayGame);
+      // switchMainScene(MainSceneType.PlayGame);
+      game = new Game(s2d, game);
 
 #if debugMode
       var font = Fonts.primary.get().clone();
