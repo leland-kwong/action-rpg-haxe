@@ -183,7 +183,7 @@ class Ai extends Entity {
     1 => 30,
     2 => 120,
     3 => 80,
-    4 => 30,
+    4 => 15,
   ];
   final attackTypeBySpecies = [
     1 => 'attack_bullet',
