@@ -185,7 +185,7 @@ class Ai extends Entity {
     1 => 30,
     2 => 120,
     3 => 80,
-    4 => 15,
+    4 => 13,
   ];
   static final defaultAttackTargetFilterFn: EntityFilter = 
     (ent) -> {
@@ -395,7 +395,7 @@ class Ai extends Entity {
           var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
 
           if (o.forceMultiplier > 0) {
-            var separation = Math.sqrt(speed / 2);
+            var separation = Math.sqrt(speed / 4);
             var min = pt.radius + ept.radius + separation;
             var isColliding = d < min;
             if (isColliding) {
@@ -654,7 +654,7 @@ class Player extends Entity {
     type = 'PLAYER';
     health = 1000;
     speed = 200.0;
-    forceMultiplier = 3.0;
+    forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
     obstacleGrid = Main.Global.obstacleGrid;
 
@@ -764,6 +764,11 @@ class Player extends Entity {
     if (neighbors != null) {
       for (entityId in neighbors) {
         final entity = Entity.ALL_BY_ID[entityId];
+
+        if (entity.type == 'FRIENDLY_AI') {
+          continue;
+        }
+
         final r2 = entity.avoidanceRadius;
         final a = Math.atan2(y - entity.y, x - entity.x);
         final d = Utils.distance(entity.x, entity.y, x, y);
@@ -1048,6 +1053,7 @@ class Player extends Entity {
 
         final findNearestTarget = (botRef) -> {
           final nearestEnemy: Entity = Lambda.fold(
+            // TODO: this is currently very expensive
             Grid.getItemsInRect(
               Main.Global.dynamicWorldGrid,
               botRef.x,
@@ -1091,7 +1097,7 @@ class Player extends Entity {
           final botRef = new Ai({
             x: x + Utils.irnd(-lo, lo),
             y: y + Utils.irnd(-lo, lo),
-            radius: 2,
+            radius: 8,
           }, 4, findNearestTarget, attackTargetFilterFn);
           botRef.type = 'FRIENDLY_AI';
         }
@@ -1380,7 +1386,7 @@ class Game extends h2d.Object {
         return new EnemySpawner(
             point.x,
             point.y,
-            30,
+            5,
             s2d,
             spawnerFindTargetFn);
       });  
@@ -1603,7 +1609,7 @@ class Game extends h2d.Object {
 
       var neighbors: Array<String> = [];
       if (shouldFindNeighbors) {
-        var nRange = 15;
+        var nRange = 10;
         var height = a.radius * 2 + nRange;
         var width = height;
         var dynamicNeighbors = Grid.getItemsInRect(
@@ -1707,8 +1713,9 @@ class Game extends h2d.Object {
 
   public function render(time: Float) {
     final debugActiveRenderCell = false;
-    final cellSize = Main.Global
-      .entitiesToRenderGrid.cellSize;
+    final renderGrid = Main.Global
+      .entitiesToRenderGrid;
+    final cellSize = renderGrid.cellSize;
     // prevent duplicate renders which can
     // happen due to an entity overlapping
     // in the spatial grid
@@ -1749,7 +1756,7 @@ class Game extends h2d.Object {
 
     final mainCam = Main.Global.mainCamera;
     Grid.eachCellInRect(
-        Main.Global.entitiesToRenderGrid,
+        renderGrid,
         mainCam.x,
         mainCam.y,
         mainCam.w,

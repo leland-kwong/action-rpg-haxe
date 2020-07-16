@@ -45,6 +45,7 @@ class Global {
   public static var renderHooks: 
     Array<(dt: Float) -> Void> = [];
   public static var mainPhase: MainPhase = null;
+  public static var logData: Dynamic;
 }
 
 enum UiState {
@@ -358,6 +359,7 @@ class Main extends hxd.App {
         var text = [
           'stats: ${formattedStats}',
           'mouse: ${Json.stringify(Global.worldMouse, null, '  ')}',
+          'log: ${Json.stringify(Global.logData, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;
         debugText.x = debugUiMargin;
