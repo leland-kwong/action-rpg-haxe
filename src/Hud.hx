@@ -48,7 +48,7 @@ class Hud {
             Main.Global.dynamicWorldGrid,
             x, y, 5, 5),
           (entityId) -> {
-            final entRef = Entity.ALL_BY_ID[entityId];
+            final entRef = Entity.getById(entityId);
             final p = new h2d.col.Point(x, y);
             final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
             final distFromMouse = Utils.distance(
@@ -59,8 +59,8 @@ class Hud {
             return isMatch;
           });
       if (hoveredEntityId != null) {
-        final entRef = Entity.ALL_BY_ID[
-          hoveredEntityId];
+        final entRef = Entity.getById(
+          hoveredEntityId);
         tf.text = entRef.type;
         final healthPctRemain = entRef.health / 
           entRef.stats.maxHealth;
