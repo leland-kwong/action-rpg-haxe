@@ -529,7 +529,17 @@ class Ai extends Entity {
               }
             });
             health = 0;
-            attackTarget.damageTaken += 2;
+            final aoeSize = 30; // diameter
+            final nearbyEntities = Grid.getItemsInRect(
+                Main.Global.dynamicWorldGrid,
+                x, y, aoeSize, aoeSize);
+            for (entityId in nearbyEntities) {
+              final entityRef = Entity.ALL_BY_ID[entityId];
+
+              if (attackTargetFilterFn(entityRef)) {
+                entityRef.damageTaken += 2;
+              }
+            }
           }
 
           default: {
