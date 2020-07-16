@@ -1770,7 +1770,7 @@ class Game extends h2d.Object {
           .exists(entityId);
 
         if (!alreadyRendered) {
-          final entity = Entity.ALL_BY_ID[entityId];
+          final entity = Entity.getById(entityId);
           entity.render(time);
           renderedEntities.set(entityId, true);
         }
