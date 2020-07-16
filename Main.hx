@@ -27,7 +27,7 @@ class Global {
     buttonDown: -1
   }
   public static final obstacleGrid: GridRef = 
-    Grid.create(16);
+    Grid.create(16 * 4);
   public static final dynamicWorldGrid: GridRef = 
     Grid.create(16);
   public static final entitiesToRenderGrid: GridRef = 

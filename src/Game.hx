@@ -536,14 +536,17 @@ class Ai extends Entity {
               }
             });
             health = 0;
+            attackTarget.damageTaken += 2;
             final aoeSize = 30; // diameter
+            // deal damage to other nearby enemies
             final nearbyEntities = Grid.getItemsInRect(
                 Main.Global.dynamicWorldGrid,
                 x, y, aoeSize, aoeSize);
             for (entityId in nearbyEntities) {
-              final entityRef = Entity.ALL_BY_ID[entityId];
+              final entityRef = Entity.getById(entityId);
 
-              if (attackTargetFilterFn(entityRef)) {
+              if (entityRef != attackTarget 
+                  && attackTargetFilterFn(entityRef)) {
                 entityRef.damageTaken += 2;
               }
             }
@@ -1052,47 +1055,66 @@ class Player extends Entity {
         cds.set('recoveringFromAbility', 0.15);
         cds.set(cdKey, 0.2);
 
-        final findNearestTarget = (botRef) -> {
-          final nearestEnemy: Entity = Lambda.fold(
-            // TODO: this is currently very expensive
-            Grid.getItemsInRect(
-              Main.Global.dynamicWorldGrid,
-              botRef.x,
-              botRef.y,
-              seekRange,
-              seekRange),
-            (entityId, result) -> {
-              final ent = Entity.ALL_BY_ID[entityId];
-
-              if (ent.type != 'ENEMY') {
-                return result;
-              }
-
-              final d = Utils.distance(
-                  botRef.x, botRef.y, ent.x, ent.y);
-
-              if (d < result.distance) {
-                result.ent = ent;
-                result.distance = d;
-              }
-
-              return result;
-            }, {
-              ent: null,
-              distance: Math.POSITIVE_INFINITY
-            }).ent;
-
-          final player = this;
-          return nearestEnemy != null 
-            ? nearestEnemy 
-            : player;
-        }
-
         final attackTargetFilterFn = (ent) -> {
           return ent.type == 'ENEMY';
         }
 
         for (_ in 0...3) {
+
+          final player = this;
+          final queryInterval = 30;
+          final tickOffset = Utils.irnd(0, queryInterval);
+          var cachedQuery: Map<Grid.GridKey, Grid.GridKey> 
+            = null;
+          final compareEntityByDistance = (
+              entityId, 
+              data: {
+                ent: Entity,
+                distance: Float,
+                botRef: Entity
+              }) -> {
+            final ent = Entity.getById(entityId);
+
+            if (ent.type != 'ENEMY') {
+              return data;
+            }
+
+            final d = Utils.distance(
+                data.botRef.x, data.botRef.y, ent.x, ent.y);
+
+            if (d < data.distance) {
+              data.ent = ent;
+              data.distance = d;
+            }
+
+            return data;
+          }
+
+          final findNearestTarget = (botRef: Entity) -> {
+            final shouldRefreshQuery = cachedQuery == null || (
+                Main.Global.tickCount + tickOffset) % queryInterval == 0;
+            cachedQuery = shouldRefreshQuery
+              ? Grid.getItemsInRect(
+                  Main.Global.dynamicWorldGrid,
+                  botRef.x,
+                  botRef.y,
+                  seekRange,
+                  seekRange)
+              : cachedQuery;
+
+            final nearestEnemy: Entity = Lambda.fold(
+                cachedQuery,
+                compareEntityByDistance, {
+                  ent: null,
+                  distance: Math.POSITIVE_INFINITY,
+                  botRef: botRef
+                }).ent;
+
+            return nearestEnemy != null 
+              ? nearestEnemy 
+              : player;
+          }
+
           // launch offset
           final lo = 8;
           final botRef = new Ai({
