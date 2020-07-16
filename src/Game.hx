@@ -48,7 +48,7 @@ class Projectile extends Entity {
   var damage = 1;
   var lifeTime = 5.0;
   var collidedWith: Entity;
-  var cFilter: Array<String>;
+  var cFilter: EntityFilter;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
@@ -94,7 +94,7 @@ class Projectile extends Entity {
 
     for (id in neighbors) {
       var a = Entity.ALL_BY_ID[id];
-      if (Lambda.exists(cFilter, (t) -> t == a.type)) {
+      if (cFilter(a)) {
         var d = Utils.distance(x, y, a.x, a.y);
         var min = radius + a.radius * 1.0;
         var conflict = d < min;
@@ -166,6 +166,8 @@ class Bullet extends Projectile {
 }
 
 
+typedef EntityFilter = (ent: Entity) -> Bool;
+
 class Ai extends Entity {
   static var healthBySize = [
     1 => 5,
@@ -185,6 +187,11 @@ class Ai extends Entity {
     3 => 80,
     4 => 15,
   ];
+  static final defaultAttackTargetFilterFn: EntityFilter = 
+    (ent) -> {
+      return ent.type == 'PLAYER' 
+        || ent.type == 'OBSTACLE';
+    };
   final attackTypeBySpecies = [
     1 => 'attack_bullet',
     2 => 'attack_bullet',
@@ -208,8 +215,13 @@ class Ai extends Entity {
   var facingDir = 1;
   public var sightRange = 200;
   public var attackTarget: Entity;
+  var findTargetFn: (self: Entity) -> Entity;
+  var attackTargetFilterFn: EntityFilter = 
+    defaultAttackTargetFilterFn;
 
-  public function new(props, size, followTarget: Entity) {
+  public function new(
+      props, size, 
+      findTargetFn, ?attackTargetFilterFn) {
     super(props);
 
     cds = new Cooldown();
@@ -225,13 +237,16 @@ class Ai extends Entity {
     speed = 0.0;
     health = healthBySize[size];
     avoidOthers = true;
+    this.findTargetFn = findTargetFn;
+    if (attackTargetFilterFn != null) {
+      this.attackTargetFilterFn = attackTargetFilterFn;
+    }
 
     if (props.sightRange != null) {
       sightRange = props.sightRange;
     }
 
     cds = new Cooldown();
-    follow = followTarget;
     this.size = size;
 
     cds.set('summoningSickness', spawnDuration);
@@ -336,6 +351,7 @@ class Ai extends Entity {
     super.update(dt);
     cds.update(dt);
 
+    follow = findTargetFn(this);
     var origX = x;
     var origY = y;
 
@@ -347,7 +363,7 @@ class Ai extends Entity {
       speed = speedBySize[size];
     }
 
-    if (!cds.has('attack')) {
+    if (follow != null && !cds.has('attack')) {
       // distance to keep from destination
       var threshold = follow.radius + 5;
       var attackRange = attackRangeByType[size];
@@ -461,7 +477,8 @@ class Ai extends Entity {
 
     // trigger attack
     if (!cds.has('summoningSickness') && attackTarget != null) {
-      if (!cds.has('attack')) {
+      final isValidTarget = attackTargetFilterFn(attackTarget);
+      if (!cds.has('attack') && isValidTarget) {
         final attackType = attackTypeBySpecies[size];
 
         switch (attackType) {
@@ -480,7 +497,7 @@ class Ai extends Entity {
                 y2,
                 100.0,
                 'ui/bullet_enemy_large',
-                ['PLAYER', 'OBSTACLE']);
+                attackTargetFilterFn);
             Main.Global.rootScene.addChild(b);
           }
 
@@ -805,7 +822,9 @@ class Player extends Entity {
 					y2,
           250.0,
           'ui/bullet_player_basic',
-          ['ENEMY', 'OBSTACLE']
+          (ent) -> (
+            ent.type == 'ENEMY' || 
+            ent.type == 'OBSTACLE')
         );
         Main.Global.rootScene.addChild(b);
         cds.set('primaryAbility', abilityCooldown);
@@ -1010,15 +1029,23 @@ class Player extends Entity {
         cds.set('recoveringFromAbility', 0.15);
         cds.set(cdKey, 0.2);
 
-        final nearestEnemy = Lambda.fold(
-            Entity.ALL,
-            (ent, result) -> {
+        final findNearestTarget = (botRef) -> {
+          final nearestEnemy: Entity = Lambda.fold(
+            Grid.getItemsInRect(
+              Main.Global.dynamicWorldGrid,
+              botRef.x,
+              botRef.y,
+              300,
+              300),
+            (entityId, result) -> {
+              final ent = Entity.ALL_BY_ID[entityId];
+
               if (ent.type != 'ENEMY') {
                 return result;
               }
 
               final d = Utils.distance(
-                  x, y, ent.x, ent.y);
+                  botRef.x, botRef.y, ent.x, ent.y);
 
               if (d < result.distance) {
                 result.ent = ent;
@@ -1031,14 +1058,23 @@ class Player extends Entity {
               distance: Math.POSITIVE_INFINITY
             }).ent;
 
+          return nearestEnemy != null 
+            ? nearestEnemy 
+            : this;
+        }
+
+        final attackTargetFilterFn = (ent) -> {
+          return ent.type == 'ENEMY';
+        }
+
         for (_ in 0...3) {
           // launch offset
           final lo = 8;
           final botRef = new Ai({
-            x: x + Math.max(lo, Utils.irnd(-lo, lo)),
-            y: y + Math.max(lo, Utils.irnd(-lo, lo)),
+            x: x + Utils.irnd(-lo, lo),
+            y: y + Utils.irnd(-lo, lo),
             radius: 2,
-          }, 4, nearestEnemy);
+          }, 4, findNearestTarget, attackTargetFilterFn);
           botRef.type = 'FRIENDLY_AI';
         }
       }
@@ -1168,13 +1204,13 @@ class EnemySpawner extends Entity {
   ];
 
   var enemiesLeftToSpawn: Int;
-  var target: Entity;
   var spawnInterval = 0.001;
   var isDormant = true;
+  var findTarget: (self: Entity) -> Entity;
 
   public function new(
     x, y, numEnemies, parent: h2d.Object,
-    target: Entity
+    findTarget
   ) {
     super({
       x: x,
@@ -1186,10 +1222,16 @@ class EnemySpawner extends Entity {
     this.parent = parent;
     this.x = x;
     this.y = y;
-    this.target = target;
+    this.findTarget = findTarget;
   }
 
   public override function update(dt: Float) {
+    final target = findTarget(this);
+
+    if (target == null) {
+      return;
+    }
+
     final distFromTarget = Utils.distance(x, y, target.x, target.y);
 
     if (distFromTarget < 450) {
@@ -1224,7 +1266,7 @@ class EnemySpawner extends Entity {
       radius: radius,
       weight: 1.0,
       color: colors[size],
-    }, size, target);
+    }, size, findTarget);
     parent.addChildAt(e, 0);
   }
 }
@@ -1309,6 +1351,9 @@ class Game extends h2d.Object {
         .filter(objectsRects, (item) -> {
           return item.type == 'enemySpawnPoint';
         });
+      final spawnerFindTargetFn = (_) -> {
+        return player;
+      }
 
       enemySpawnerRefs = Lambda.map(enemySpawnPoints, (point) -> {
         // TODO spawners should only start spawning when
@@ -1319,7 +1364,7 @@ class Game extends h2d.Object {
             point.y,
             30,
             s2d,
-            player);
+            spawnerFindTargetFn);
       });  
     }
 
@@ -1343,7 +1388,7 @@ class Game extends h2d.Object {
         sightRange: 150,
         weight: 1.0,
         color: Game.Colors.yellow,
-      }, size, player);
+      }, size, (_) -> player);
       Main.Global.rootScene.addChildAt(e, 0);
     }
   }

@@ -408,18 +408,6 @@
          "objects":[
                 {
                  "height":0,
-                 "id":44,
-                 "name":"player_start",
-                 "point":true,
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":0,
-                 "x":270,
-                 "y":239
-                }, 
-                {
-                 "height":0,
                  "id":45,
                  "name":"0, 0",
                  "point":true,
@@ -631,56 +619,80 @@
                  "type":"enemySpawnPoint",
                  "visible":true,
                  "width":0,
-                 "x":639,
-                 "y":242
+                 "x":665,
+                 "y":246
                 }, 
                 {
                  "height":0,
-                 "id":72,
+                 "id":76,
+                 "name":"player_start",
+                 "point":true,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":0,
+                 "x":271,
+                 "y":240
+                }, 
+                {
+                 "height":0,
+                 "id":81,
                  "name":"enemySpawnPoint",
                  "point":true,
                  "rotation":0,
                  "type":"enemySpawnPoint",
                  "visible":true,
                  "width":0,
-                 "x":716,
-                 "y":721
+                 "x":696,
+                 "y":583
                 }, 
                 {
                  "height":0,
-                 "id":73,
+                 "id":84,
                  "name":"enemySpawnPoint",
                  "point":true,
                  "rotation":0,
                  "type":"enemySpawnPoint",
                  "visible":true,
                  "width":0,
-                 "x":759,
-                 "y":897
+                 "x":678,
+                 "y":801
                 }, 
                 {
                  "height":0,
-                 "id":74,
+                 "id":87,
                  "name":"enemySpawnPoint",
                  "point":true,
                  "rotation":0,
                  "type":"enemySpawnPoint",
                  "visible":true,
                  "width":0,
-                 "x":716,
-                 "y":511
+                 "x":724,
+                 "y":417
                 }, 
                 {
                  "height":0,
-                 "id":75,
+                 "id":92,
                  "name":"enemySpawnPoint",
                  "point":true,
                  "rotation":0,
                  "type":"enemySpawnPoint",
                  "visible":true,
                  "width":0,
-                 "x":1055,
-                 "y":926
+                 "x":1064,
+                 "y":919
+                }, 
+                {
+                 "height":0,
+                 "id":104,
+                 "name":"enemySpawnPoint",
+                 "point":true,
+                 "rotation":0,
+                 "type":"enemySpawnPoint",
+                 "visible":true,
+                 "width":0,
+                 "x":831,
+                 "y":928
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -689,7 +701,7 @@
          "y":0
         }],
  "nextlayerid":5,
- "nextobjectid":76,
+ "nextobjectid":118,
  "orientation":"orthogonal",
  "renderorder":"left-down",
  "tiledversion":"1.4.1",

@@ -209,6 +209,7 @@
             <key type="filename">aseprite_exports/destroy_animation/default-7.png</key>
             <key type="filename">aseprite_exports/destroy_animation/default-8.png</key>
             <key type="filename">aseprite_exports/destroy_animation/default-9.png</key>
+            <key type="filename">aseprite_exports/explosion_animation/default-0.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/idle-0.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-0.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-1.png</key>
