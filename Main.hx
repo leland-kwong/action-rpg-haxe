@@ -38,6 +38,7 @@ class Global {
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
   public static var dt = 0.0;
+  public static var tickCount = 0;
   public static var playerStats: PlayerStats.StatsRef = null; 
   public static var resolutionScale = 4;
   public static var updateHooks: 
@@ -407,6 +408,7 @@ class Main extends hxd.App {
       core.Anim.AnimEffect
         .update(dt);
       SpriteBatchSystem.updateAll(dt);
+      Main.Global.tickCount += 1;
 
     } catch (error: Dynamic) {
 
