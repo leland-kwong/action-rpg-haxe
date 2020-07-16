@@ -1048,6 +1048,7 @@ class Player extends Entity {
         }
 
         final cooldown = 0.2;
+        final seekRange = 200;
         cds.set('recoveringFromAbility', 0.15);
         cds.set(cdKey, 0.2);
 
@@ -1058,8 +1059,8 @@ class Player extends Entity {
               Main.Global.dynamicWorldGrid,
               botRef.x,
               botRef.y,
-              300,
-              300),
+              seekRange,
+              seekRange),
             (entityId, result) -> {
               final ent = Entity.ALL_BY_ID[entityId];
 
