@@ -955,7 +955,7 @@ class Player extends Entity {
 
             var checkCollisions = (items: Map<String, String>) -> {
               for (entityId in items) {
-                var item = Entity.ALL_BY_ID[entityId];
+                var item = Entity.getById(entityId);
 
                 if (item.type == 'PLAYER' 
                     || item.type == 'FRIENDLY_AI') {
