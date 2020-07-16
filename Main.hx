@@ -348,7 +348,7 @@ class Main extends hxd.App {
           fpsTrue: fps,
           fps: Math.round(1/frameTime),
           drawCalls: engine.drawCalls,
-          numEntities: Entity.ALL.length,
+          numEntities: Lambda.count(Entity.ALL_BY_ID),
           numSprites: Lambda.fold(
               SpriteBatchSystem.instances, 
               (ref, count) -> {

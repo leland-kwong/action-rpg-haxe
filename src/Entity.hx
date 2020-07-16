@@ -47,7 +47,6 @@ class Entity extends h2d.Object {
   };
   static var idGenerated = 0;
 
-  public static var ALL: Array<Entity> = [];
   public static var ALL_BY_ID: Map<String, Entity> = new Map();
   public var neighbors: Array<EntityId> = [];
   public var id: EntityId;
@@ -92,7 +91,6 @@ class Entity extends h2d.Object {
     }
     color = props.color;
 
-    ALL.push(this);
     ALL_BY_ID.set(id, this);
   }
 

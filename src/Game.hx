@@ -1362,7 +1362,7 @@ class Game extends h2d.Object {
   }
 
   public function isLevelComplete() {
-    for (e in Entity.ALL) {
+    for (e in Entity.ALL_BY_ID) {
       // enemies still remain, so level not complete
       if (e.type == 'ENEMY') {
         return false;
@@ -1373,8 +1373,8 @@ class Game extends h2d.Object {
 
   public function cleanupLevel() {
     // reset game state
-    for (e in Entity.ALL) {
-      e.health = 0;
+    for (entityRef in Entity.ALL_BY_ID) {
+      entityRef.health = 0;
     }
 
     mousePointer.remove();
@@ -1580,9 +1580,7 @@ class Game extends h2d.Object {
   }
 
   function cleanupDisposedEntities() {
-    final current = Entity.ALL;
-    Entity.ALL = [];
-    for (a in current) {
+    for (a in Entity.ALL_BY_ID) {
       if (a.isDone()) {
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
@@ -1591,8 +1589,6 @@ class Game extends h2d.Object {
             Main.Global.entitiesToRenderGrid,
             a.id);
         a.remove();
-      } else {
-        Entity.ALL.push(a);
       }
     }
   }
@@ -1616,7 +1612,7 @@ class Game extends h2d.Object {
 
     cleanupDisposedEntities();
 
-    for (a in Entity.ALL) {
+    for (a in Entity.ALL_BY_ID) {
       final isDynamic = a.type == 'ENEMY'
         || a.type == 'FRIENDLY_AI'
         || a.type == 'PROJECTILE'
