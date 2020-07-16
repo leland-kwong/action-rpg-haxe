@@ -1580,21 +1580,19 @@ class Game extends h2d.Object {
   }
 
   function cleanupDisposedEntities() {
-    var ALL = Entity.ALL;
-    var i = 0;
-    while (i < ALL.length) {
-      var a = ALL[i];
+    final current = Entity.ALL;
+    Entity.ALL = [];
+    for (a in current) {
       if (a.isDone()) {
-        ALL.splice(i, 1);
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
-        Grid.removeItem(mapRef, a.id);
+        Grid.removeItem(Main.Global.obstacleGrid, a.id);
         Grid.removeItem(
             Main.Global.entitiesToRenderGrid,
             a.id);
         a.remove();
       } else {
-        i += 1;
+        Entity.ALL.push(a);
       }
     }
   }
