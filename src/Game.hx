@@ -15,10 +15,10 @@ class SoundFx {
   public static var globalCds = new Cooldown();
 
   public static function bulletBasic(cooldown = 0.1) {
-    if (globalCds.has('bulletBasic')) {
+    if (Cooldown.has(globalCds, 'bulletBasic')) {
       return;
     }
-    globalCds.set('bulletBasic', cooldown);
+    Cooldown.set(globalCds, 'bulletBasic', cooldown);
 
     var soundResource: hxd.res.Sound = null;
 
@@ -256,7 +256,7 @@ class Ai extends Entity {
     cds = new Cooldown();
     this.size = size;
 
-    cds.set('recentlySummoned', spawnDuration);
+    Cooldown.set(cds, 'recentlySummoned', spawnDuration);
 
     if (size == 1) {
       var idleFrames = [
@@ -356,18 +356,18 @@ class Ai extends Entity {
     dy = 0.0;
 
     super.update(dt);
-    cds.update(dt);
+    Cooldown.update(cds, dt);
 
     follow = findTargetFn(this);
     var origX = x;
     var origY = y;
 
-    if (!cds.has('recentlySummoned')) {
+    if (!Cooldown.has(cds, 'recentlySummoned')) {
       status = 'TARGETABLE';
       speed = speedBySize[size];
     }
 
-    if (follow != null && !cds.has('attack')) {
+    if (follow != null && !Cooldown.has(cds, 'attack')) {
       // distance to keep from destination
       var threshold = follow.radius + 5;
       var attackRange = attackRangeByType[size];
@@ -480,15 +480,15 @@ class Ai extends Entity {
     }
 
     // trigger attack
-    if (!cds.has('recentlySummoned') && attackTarget != null) {
+    if (!Cooldown.has(cds, 'recentlySummoned') && attackTarget != null) {
       final isValidTarget = attackTargetFilterFn(attackTarget);
-      if (!cds.has('attack') && isValidTarget) {
+      if (!Cooldown.has(cds, 'attack') && isValidTarget) {
         final attackType = attackTypeBySpecies[size];
 
         switch (attackType) {
           case 'attack_bullet': {
             var attackCooldown = 1.0;
-            cds.set('attack', attackCooldown);
+            Cooldown.set(cds, 'attack', attackCooldown);
 
             var x2 = follow.x;
             var y2 = follow.y;
@@ -563,7 +563,7 @@ class Ai extends Entity {
       var c = activeAnim;
 
       if (damageTaken > 0) {
-        cds.set('hitFlash', 0.02);
+        Cooldown.set(cds, 'hitFlash', 0.02);
         health -= damageTaken;
         damageTaken = 0;
       }
@@ -617,7 +617,7 @@ class Ai extends Entity {
           final b: h2d.SpriteBatch.BatchElement = 
             p.batchElement;
 
-          if (cds.has('hitFlash')) {
+          if (Cooldown.has(cds, 'hitFlash')) {
             b.r = 2.75;
             b.g = 2.75;
             b.b = 2.5;
@@ -754,7 +754,7 @@ class Player extends Entity {
 
   public override function update(dt) {
     super.update(dt);
-    cds.update(dt);
+    Cooldown.update(cds, dt);
     abilityEvents = [];
 
     movePlayer();
@@ -822,7 +822,7 @@ class Player extends Entity {
         var energyCost = 2;
         var hasEnoughEnergy = energyCost 
           <= Main.Global.playerStats.currentEnergy;
-        var isUnavailable = cds.has('primaryAbility') 
+        var isUnavailable = Cooldown.has(cds, 'primaryAbility') 
           || !hasEnoughEnergy;
 
         if (isUnavailable) {
@@ -830,7 +830,7 @@ class Player extends Entity {
         }
 
         var abilityCooldown = 1/10;
-        cds.set('recoveringFromAbility', abilityCooldown);
+        Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
         attackAnim.startTime = Main.Global.time;
 
         var angle = Math.atan2(y2 - startY, x2 - x);
@@ -848,7 +848,7 @@ class Player extends Entity {
             ent.type == 'OBSTACLE')
         );
         Main.Global.rootScene.addChild(b);
-        cds.set('primaryAbility', abilityCooldown);
+        Cooldown.set(cds, 'primaryAbility', abilityCooldown);
 
         PlayerStats.addEvent(
             Main.Global.playerStats, 
@@ -857,7 +857,7 @@ class Player extends Entity {
       }
 
       case 1: {
-        if (cds.has('ability_2')) {
+        if (Cooldown.has(cds, 'ability_2')) {
           return;
         }
 
@@ -873,7 +873,7 @@ class Player extends Entity {
           'ui/kamehameha_tail'
         );
         final maxLength = 175;
-        cds.set('recoveringFromAbility', abilityCooldown);
+        Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
         final angle = Math.atan2(y2 - startY, x2 - x);
         final vx = Math.cos(angle);
         final vy = Math.sin(angle);
@@ -982,9 +982,8 @@ class Player extends Entity {
                   var p = intersectionPoint;
 
                   var laserHitCdKey = 'kamehamehaHit';
-                  if (item.cds != null 
-                      && !item.cds.has(laserHitCdKey)) {
-                    item.cds.set(laserHitCdKey, 0.2);
+                  if (!Cooldown.has(item.cds, laserHitCdKey)) {
+                    Cooldown.set(item.cds, laserHitCdKey, 0.2);
                     item.damageTaken += 1;
                   }
 
@@ -1042,14 +1041,14 @@ class Player extends Entity {
       case 2: {
         final cdKey = 'ability_spider_bot';
 
-        if (cds.has(cdKey)) {
+        if (Cooldown.has(cds, cdKey)) {
           return;
         }
 
         final cooldown = 0.2;
         final seekRange = 200;
-        cds.set('recoveringFromAbility', 0.15);
-        cds.set(cdKey, 0.2);
+        Cooldown.set(cds, 'recoveringFromAbility', 0.15);
+        Cooldown.set(cds, cdKey, 0.2);
 
         final attackTargetFilterFn = (ent) -> {
           return ent.type == 'ENEMY';
@@ -1126,7 +1125,7 @@ class Player extends Entity {
 
   public override function render(time: Float) {
     var activeAnim: core.Anim.AnimRef;
-    if (cds.has('recoveringFromAbility')) {
+    if (Cooldown.has(cds, 'recoveringFromAbility')) {
       activeAnim = attackAnim;
     }
     else {
@@ -1285,13 +1284,13 @@ class EnemySpawner extends Entity {
       return;
     } 
 
-    cds.update(dt);
+    Cooldown.update(cds, dt);
 
-    if (cds.has('recentlySpawned')) {
+    if (Cooldown.has(cds, 'recentlySpawned')) {
       return;
     }
 
-    cds.set('recentlySpawned', spawnInterval);
+    Cooldown.set(cds, 'recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
     var size = Utils.irnd(1, 2);
@@ -1596,7 +1595,7 @@ class Game extends h2d.Object {
       ref.update(dt);
     }
 
-    SoundFx.globalCds.update(dt);
+    Cooldown.update(SoundFx.globalCds, dt);
 
     cleanupDisposedEntities();
 
@@ -1617,8 +1616,8 @@ class Game extends h2d.Object {
       final isCheckTick = (Main.Global.tickCount + groupIndex) % 
         a.neighborCheckInterval == 0;
       final shouldFindNeighbors = {
-        final isRecentlySummoned = a.cds != null 
-          && a.cds.has('recentlySummoned');
+        final isRecentlySummoned =  Cooldown.has(
+            a.cds, 'recentlySummoned');
         final isActive = isMoving || hasTakenDamage;
 
         isDynamic && (

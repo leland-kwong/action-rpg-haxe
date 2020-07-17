@@ -19,15 +19,26 @@ class Cooldown {
     cds = new Map();
   }
 
-  public function set(key, value) {
-    cds[key] = value;
+  // this automatically handles the null case
+  public static function has(ref: Cooldown, key) {
+    if (ref == null) {
+      return false;
+    }
+
+    return ref.cds.exists(key) && ref.cds[key] > 0.0;
   }
 
-  public function has(key) {
-    return cds.exists(key) && cds[key] > 0.0;
+  public static function set(ref: Cooldown, key, value) {
+    if (ref == null) {
+      return;
+    }
+
+    ref.cds[key] = value;
   }
 
-  public function update(dt: Float) {
+  public static function update(ref: Cooldown, dt: Float) {
+    final cds = ref.cds;
+
     for (key => value in cds) {
       cds[key] = value - dt;
     }
@@ -37,8 +48,8 @@ class Cooldown {
 class Entity extends h2d.Object {
   static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
-      x: -99999, 
-      y: -99999, 
+      x: 0, 
+      y: 0, 
       radius: 0
     }, true);
     defaultEntity.type = 'NULL_ENTITY';
