@@ -1702,11 +1702,16 @@ class Game extends h2d.Object {
 
       a.update(dt);
 
-      final dxFromCam = Math.abs(a.x - Main.Global.mainCamera.x) - a.radius;
-      final dyFromCam = Math.abs(a.y - Main.Global.mainCamera.y) - a.radius;
-      final threshold = 50;
-      final shouldRender = dxFromCam <= Main.Global.mainCamera.w / 2 + threshold
-        && dyFromCam <= Main.Global.mainCamera.h / 2 + threshold;
+      final shouldRender = {
+        final mc = Main.Global.mainCamera;
+        final r = a.radius;
+        final dxFromCam = Math.abs(a.x - mc.x) - r;
+        final dyFromCam = Math.abs(a.y - mc.y) - r;
+        final threshold = 50;
+
+        dxFromCam <= mc.w / 2 + threshold
+          && dyFromCam <= mc.h / 2 + threshold;
+      }
 
       if (shouldRender) {
         Main.Global.entitiesToRender.push(a);
