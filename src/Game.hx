@@ -1580,9 +1580,6 @@ class Game extends h2d.Object {
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(Main.Global.obstacleGrid, a.id);
-        Grid.removeItem(
-            Main.Global.entitiesToRenderGrid,
-            a.id);
         a.remove();
       }
     }
@@ -1594,6 +1591,9 @@ class Game extends h2d.Object {
     if (!isReady) {
       return;
     }
+
+    // reset list before next loop
+    Main.Global.entitiesToRender = [];
 
     PlayerStats.update(
         Main.Global.playerStats, 
@@ -1700,93 +1700,50 @@ class Game extends h2d.Object {
             a.id);
       }
 
-      Grid.setItemRect(
-          Main.Global.entitiesToRenderGrid,
-          a.x,
-          a.y,
-          a.radius * 2,
-          a.radius * 2,
-          a.id);
-
       a.update(dt);
+
+      final dxFromCam = Math.abs(a.x - Main.Global.mainCamera.x) - a.radius;
+      final dyFromCam = Math.abs(a.y - Main.Global.mainCamera.y) - a.radius;
+      final threshold = 50;
+      final shouldRender = dxFromCam <= Main.Global.mainCamera.w / 2 + threshold
+        && dyFromCam <= Main.Global.mainCamera.h / 2 + threshold;
+
+      if (shouldRender) {
+        Main.Global.entitiesToRender.push(a);
+      }
     }
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
 
-    Camera.setSize(
-        Main.Global.mainCamera,
-        Main.Global.rootScene.width,
-        Main.Global.rootScene.height);
+    // sync up scenes with the camera
+    {
+      Camera.setSize(
+          Main.Global.mainCamera,
+          Main.Global.rootScene.width,
+          Main.Global.rootScene.height);
 
-    // update scenes to move relative to camera
-    var cam_center_x = -Main.Global.mainCamera.x 
-      + Math.fround(Main.Global.rootScene.width / 2);
-    var cam_center_y = -Main.Global.mainCamera.y 
-      + Math.fround(Main.Global.rootScene.height / 2);
-    for (scene in [
-        Main.Global.rootScene,
-        Main.Global.particleScene,
-        Main.Global.debugScene
-    ]) {
-      scene.x = cam_center_x;
-      scene.y = cam_center_y;
+      // update scenes to move relative to camera
+      var cam_center_x = -Main.Global.mainCamera.x 
+        + Math.fround(Main.Global.rootScene.width / 2);
+      var cam_center_y = -Main.Global.mainCamera.y 
+        + Math.fround(Main.Global.rootScene.height / 2);
+      for (scene in [
+          Main.Global.rootScene,
+          Main.Global.particleScene,
+          Main.Global.debugScene
+      ]) {
+        scene.x = cam_center_x;
+        scene.y = cam_center_y;
+      }
+
+      Camera.update(Main.Global.mainCamera, dt);
     }
-
-    Camera.update(Main.Global.mainCamera, dt);
-
   }
 
   public function render(time: Float) {
-    final debugActiveRenderCell = false;
-    final renderGrid = Main.Global
-      .entitiesToRenderGrid;
-    final cellSize = renderGrid.cellSize;
-    // prevent duplicate renders which can
-    // happen due to an entity overlapping
-    // in the spatial grid
-    final renderedEntities = new Map();
-    final renderEntities = (x, y, 
-        cellData: Grid.GridItems) -> {
-
-      if (debugActiveRenderCell) {
-        final gap = 2;
-        Main.Global.sb.emitSprite(
-            x * cellSize + gap + cellSize / 2, 
-            y * cellSize + gap + cellSize / 2,
-            'ui/square_white',
-            null,
-            (p) -> {
-              final b = p.batchElement;
-              b.scaleX = cellSize - gap;
-              b.scaleY = cellSize - gap;
-              b.alpha = 0.3;
-            });
-      }
-
-      if (cellData == null) {
-        return;
-      }
-
-      for (entityId in cellData) {
-        final alreadyRendered = renderedEntities
-          .exists(entityId);
-
-        if (!alreadyRendered) {
-          final entity = Entity.getById(entityId);
-          entity.render(time);
-          renderedEntities.set(entityId, true);
-        }
-      }
-    };
-
-    final mainCam = Main.Global.mainCamera;
-    Grid.eachCellInRect(
-        renderGrid,
-        mainCam.x,
-        mainCam.y,
-        mainCam.w,
-        mainCam.h + 20,
-        renderEntities);
+    for (entityRef in Main.Global.entitiesToRender) {
+      entityRef.render(time);
+    }
   }
 }

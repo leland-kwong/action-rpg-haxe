@@ -30,8 +30,6 @@ class Global {
     Grid.create(16);
   public static final dynamicWorldGrid: GridRef = 
     Grid.create(16);
-  public static final entitiesToRenderGrid: GridRef = 
-    Grid.create(135);
   public static final traversableGrid: GridRef = 
     Grid.create(16);
   public static var sb: SpriteBatchSystem;
@@ -47,6 +45,7 @@ class Global {
     Array<(dt: Float) -> Void> = [];
   public static var mainPhase: MainPhase = null;
   public static var logData: Dynamic;
+  public static var entitiesToRender: Array<Entity> = [];
 }
 
 enum UiState {
@@ -354,6 +353,8 @@ class Main extends hxd.App {
               (ref, count) -> {
                 return count + ref.particles.length;
               }, 0),
+          numActiveEntitiesToRender: 
+            Main.Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
             .nextAnimations.length
         }, null, '  ');
