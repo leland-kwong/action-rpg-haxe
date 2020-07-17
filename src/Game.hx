@@ -204,7 +204,7 @@ class Ai extends Entity {
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
-  var spawnDuration: Float = 0.25;
+  var spawnDuration: Float = 0.1;
   var size: Int;
   var repelFilter= 'REPEL_NONE';
   var debugCenter = false;
@@ -222,6 +222,7 @@ class Ai extends Entity {
       props, size, 
       findTargetFn, ?attackTargetFilterFn) {
     super(props);
+    neighborCheckInterval = 20;
 
     cds = new Cooldown();
 
@@ -255,7 +256,7 @@ class Ai extends Entity {
     cds = new Cooldown();
     this.size = size;
 
-    cds.set('summoningSickness', spawnDuration);
+    cds.set('recentlySummoned', spawnDuration);
 
     if (size == 1) {
       var idleFrames = [
@@ -361,10 +362,7 @@ class Ai extends Entity {
     var origX = x;
     var origY = y;
 
-    var spawnProgress = Math.min(
-        1, Main.Global.time / spawnDuration);
-    var isFullySpawned = spawnProgress >= 1;
-    if (isFullySpawned) {
+    if (!cds.has('recentlySummoned')) {
       status = 'TARGETABLE';
       speed = speedBySize[size];
     }
@@ -482,7 +480,7 @@ class Ai extends Entity {
     }
 
     // trigger attack
-    if (!cds.has('summoningSickness') && attackTarget != null) {
+    if (!cds.has('recentlySummoned') && attackTarget != null) {
       final isValidTarget = attackTargetFilterFn(attackTarget);
       if (!cds.has('attack') && isValidTarget) {
         final attackType = attackTypeBySpecies[size];
@@ -1602,29 +1600,43 @@ class Game extends h2d.Object {
 
     cleanupDisposedEntities();
 
+    var groupIndex = 0;
     for (a in Entity.ALL_BY_ID) {
+      groupIndex += 1;
+      // reset groupIndex
+      if (groupIndex == 60) {
+        groupIndex = 0;
+      }
+
       final isDynamic = a.type == 'ENEMY'
         || a.type == 'FRIENDLY_AI'
         || a.type == 'PROJECTILE'
         || a.type == 'PLAYER';
       final isMoving = a.dx != 0 || a.dy != 0;
       final hasTakenDamage = a.damageTaken > 0;
-      final shouldFindNeighbors = isDynamic 
-        && ((a.cds != null && a.cds.has('summoningSickness'))
-            || isMoving 
-            || hasTakenDamage);
+      final isCheckTick = (Main.Global.tickCount + groupIndex) % 
+        a.neighborCheckInterval == 0;
+      final shouldFindNeighbors = {
+        final isRecentlySummoned = a.cds != null 
+          && a.cds.has('recentlySummoned');
+        final isActive = isMoving || hasTakenDamage;
 
-      var neighbors: Array<String> = [];
+        isDynamic && (
+            isRecentlySummoned
+            || (isCheckTick && isActive));
+      }
+
       if (shouldFindNeighbors) {
+        var neighbors: Array<String> = [];
         var nRange = 10;
         var height = a.radius * 2 + nRange;
         var width = height;
         var dynamicNeighbors = Grid.getItemsInRect(
-          Main.Global.dynamicWorldGrid, a.x, a.y, width, height
-        );
+            Main.Global.dynamicWorldGrid, a.x, a.y, width, height
+            );
         var obstacleNeighbors = Grid.getItemsInRect(
-          Main.Global.obstacleGrid, a.x, a.y, width, height
-        );
+            Main.Global.obstacleGrid, a.x, a.y, width, height
+            );
         for (n in dynamicNeighbors) {
           if (n != a.id) {
             neighbors.push(n);
@@ -1635,8 +1647,8 @@ class Game extends h2d.Object {
             neighbors.push(n);
           }
         }
+        a.neighbors = neighbors;
       }
-      a.neighbors = neighbors;
 
       // line of sight check
       var enemy:Dynamic = a;

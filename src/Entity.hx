@@ -65,7 +65,8 @@ class Entity extends h2d.Object {
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
   public var stats: PlayerStats.StatsRef;
-
+  public final neighborCheckInterval: Int = 2; // 60hz
+ 
   public function new(
       props: EntityProps, 
       fromInitialization = false) {
