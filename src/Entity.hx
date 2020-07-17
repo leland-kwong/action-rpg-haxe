@@ -39,8 +39,15 @@ class Cooldown {
   public static function update(ref: Cooldown, dt: Float) {
     final cds = ref.cds;
 
-    for (key => value in cds) {
-      cds[key] = value - dt;
+    for (key => timeRemaining in cds) {
+      final newTime = timeRemaining - dt;
+
+      if (newTime <= 0) {
+        cds.remove(key);
+        continue;
+      }
+
+      cds[key] = newTime;
     }
   }
 }
