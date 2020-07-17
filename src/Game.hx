@@ -1390,17 +1390,16 @@ class Game extends h2d.Object {
         return player;
       }
 
-      enemySpawnerRefs = Lambda.map(enemySpawnPoints, (point) -> {
-        // TODO spawners should only start spawning when
-        // the player has reached a nearby zone that 
-        // the spawner is in.
-        return new EnemySpawner(
-            point.x,
-            point.y,
-            5,
-            s2d,
-            spawnerFindTargetFn);
-      });  
+      enemySpawnerRefs = Lambda.map(
+          enemySpawnPoints, 
+          (point) -> {
+            return new EnemySpawner(
+                point.x,
+                point.y,
+                5,
+                s2d,
+                spawnerFindTargetFn);
+          });  
     }
 
 
