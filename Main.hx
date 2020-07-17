@@ -162,7 +162,6 @@ enum abstract MainSceneType(String) {
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
-  var tickCount = 0;
   var acc = 0.0;
   var game: Game;
   var background: h2d.Bitmap;
@@ -345,6 +344,7 @@ class Main extends hxd.App {
       if (debugText != null) {
         final formattedStats = Json.stringify({
           time: Global.time,
+          tickCount: Global.tickCount,
           fpsTrue: fps,
           fps: Math.round(1/frameTime),
           drawCalls: engine.drawCalls,
@@ -408,7 +408,10 @@ class Main extends hxd.App {
       core.Anim.AnimEffect
         .update(dt);
       SpriteBatchSystem.updateAll(dt);
-      Main.Global.tickCount += 1;
+
+      final tickFrequency = 144;
+      Main.Global.tickCount = Std.int(
+          Main.Global.time / (1 / tickFrequency));
 
     } catch (error: Dynamic) {
 

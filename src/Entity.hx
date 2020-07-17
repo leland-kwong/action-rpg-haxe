@@ -9,7 +9,6 @@ typedef EntityProps = {
   var ?avoidanceRadius: Int;
   var ?id: EntityId;
   var ?weight: Float;
-  var ?color: Int;
   var ?sightRange: Int;
 }
 
@@ -57,7 +56,6 @@ class Entity extends h2d.Object {
   public var dy = 0.0;
   public var weight = 1.0;
   public var speed = 0.0;
-  public var color: Int;
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var health = 1;
@@ -89,7 +87,6 @@ class Entity extends h2d.Object {
     if (props.weight != null) {
       weight = props.weight;
     }
-    color = props.color;
 
     ALL_BY_ID.set(id, this);
   }

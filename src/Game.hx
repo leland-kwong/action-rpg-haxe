@@ -61,7 +61,6 @@ class Projectile extends Entity {
       x: x1,
       y: y1,
       radius: radius,
-      color: color,
       weight: 0.0,
     });
     type = 'PROJECTILE';
@@ -651,7 +650,6 @@ class Player extends Entity {
       y: y,
       radius: 6,
       weight: 1.0,
-      color: Colors.green,
     });
     cds = new Cooldown();
     type = 'PLAYER';
@@ -1244,12 +1242,6 @@ class MapObstacle extends Entity {
 
 // Spawns enemies over time
 class EnemySpawner extends Entity {
-  static var colors = [
-    1 => Colors.red,
-    2 => Colors.orange,
-    3 => Colors.yellow,
-  ];
-
   var enemiesLeftToSpawn: Int;
   var spawnInterval = 0.001;
   var isDormant = true;
@@ -1312,7 +1304,6 @@ class EnemySpawner extends Entity {
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
       weight: 1.0,
-      color: colors[size],
     }, size, findTarget);
     parent.addChildAt(e, 0);
   }
@@ -1434,7 +1425,6 @@ class Game extends h2d.Object {
         radius: 30,
         sightRange: 150,
         weight: 1.0,
-        color: Game.Colors.yellow,
       }, size, (_) -> player);
       Main.Global.rootScene.addChildAt(e, 0);
     }
