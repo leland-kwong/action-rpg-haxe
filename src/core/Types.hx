@@ -8,7 +8,7 @@ typedef TiledMapData = {
   tilewidth:Int, 
   tileheight:Int, 
   width:Int, 
-  height:Int 
+  height:Int,
 };
 
 typedef MapDataRef = {
@@ -23,5 +23,6 @@ typedef TiledObject = {
   final width: Int;
   final height: Int;
   final type: String;
+  final name: String;
 }
 
