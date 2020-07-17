@@ -222,7 +222,7 @@ class Ai extends Entity {
       props, size, 
       findTargetFn, ?attackTargetFilterFn) {
     super(props);
-    neighborCheckInterval = 20;
+    neighborCheckInterval = 10;
 
     cds = new Cooldown();
 
@@ -1786,7 +1786,7 @@ class Game extends h2d.Object {
         mainCam.x,
         mainCam.y,
         mainCam.w,
-        mainCam.h,
+        mainCam.h + 20,
         renderEntities);
   }
 }
