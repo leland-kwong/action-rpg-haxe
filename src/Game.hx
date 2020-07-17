@@ -222,6 +222,7 @@ class Ai extends Entity {
       findTargetFn, ?attackTargetFilterFn) {
     super(props);
     neighborCheckInterval = 10;
+    traversableGrid = Main.Global.traversableGrid;
 
     cds = new Cooldown();
 
@@ -354,7 +355,6 @@ class Ai extends Entity {
     dx = 0.0;
     dy = 0.0;
 
-    super.update(dt);
     Cooldown.update(cds, dt);
 
     follow = findTargetFn(this);
@@ -421,12 +421,6 @@ class Ai extends Entity {
           attackTarget = follow;
         }
       }
-
-      var maxDelta = 1;
-      x += Utils.clamp(dx, -maxDelta, maxDelta) *
-        speed * dt;
-      y += Utils.clamp(dy, -maxDelta, maxDelta) *
-        speed * dt;
     }
 
     // update animation
@@ -434,10 +428,10 @@ class Ai extends Entity {
       var currentAnim = activeAnim;
 
       activeAnim = {
-        var hasMovedX = Math.abs(origX - x) >= 0.05;
-        var hasMovedY = Math.abs(origY - y) >= 0.05;
+        var isMovingX = Math.abs(dx) >= 0.05;
+        var isMovingY = Math.abs(dy) >= 0.05;
 
-        if ((hasMovedX || hasMovedY)) {
+        if ((isMovingX || isMovingY)) {
           runAnim;
         } else {
           idleAnim;
@@ -597,6 +591,8 @@ class Ai extends Entity {
           frames: frames });
       }
     }
+
+    super.update(dt);
   }
 
   public override function render(time: Float) {
