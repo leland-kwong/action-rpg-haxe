@@ -2,6 +2,15 @@ import h2d.SpriteBatch;
 
 typedef EffectCallback = (p: SpriteRef) -> Void;
 
+typedef SpriteData = {
+	frame: {x:Int,y:Int,w:Int,h:Int},
+	rotated: Bool,
+	trimmed: Bool,
+	spriteSourceSize: {x:Int,y:Int,w:Int,h:Int},
+	sourceSize: {w:Int,h:Int},
+	pivot: {x:Float,y:Float}
+};
+
 typedef SpriteRef = {
   var sortOrder: Float;
   var batchElement: BatchElement;

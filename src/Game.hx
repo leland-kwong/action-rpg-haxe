@@ -1225,15 +1225,18 @@ class Player extends Entity {
 }
 
 class MapObstacle extends Entity {
-  public function new(props: EntityProps) {
+  var meta: core.Types.TiledObject;
+
+  public function new(props: EntityProps, meta) {
     super(props);
     type = 'OBSTACLE';
     forceMultiplier = 3.0;
+    this.meta = meta;
   }
 
   public override function render(_) {
     Main.Global.sb.emitSprite(
-      x, y, 'ui/pillar');
+      x, y, meta.name);
   }
 }
 
@@ -1450,12 +1453,12 @@ class Game extends h2d.Object {
     super();
 
     mapRef = Main.Global.obstacleGrid;
+    var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+    var spriteSheetData = Main.Global.sb
+      .batchManager.spriteSheetData;
 
     // load map background
     {
-      var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-      var spriteSheetData = Utils.loadJsonFile(
-          hxd.Res.sprite_sheet_json).frames;
       var bgData = Reflect.field(
           spriteSheetData, 
           'ui/level_intro');
@@ -1524,21 +1527,27 @@ class Game extends h2d.Object {
         layersByName.get('objects').objects;
       final pillarObjects = Lambda
         .filter(objectsRects, (item) -> {
-          return item.type == 'pillar';
+          return item.type == 'mapObject';
         });
       Lambda.foreach(pillarObjects, (item) -> {
+        final spriteKey = item.name;
+        final spriteData: SpriteBatchSystem.SpriteData = 
+          Reflect.field(
+              spriteSheetData, 
+              spriteKey);
         final cx = item.x + item.width / 2;
-        final pivotYOffset = 50;
+        final pivotYOffset = Math.round(
+            spriteData.pivot.y * spriteData.sourceSize.h);
         final cy = item.y - item.height
           + pivotYOffset;
         final radius = Std.int((item.width - 2) / 2);
         new MapObstacle({
-          id: 'pillar_${item.id}',
+          id: 'mapObstacle_${item.id}',
           x: cx,
           y: cy,
           radius: radius,
           avoidanceRadius: radius + 3
-        });
+        }, item);
         return true;
       });
     }
