@@ -55,7 +55,7 @@
   <object id="71" name="enemySpawnPoint" type="enemySpawnPoint" x="716" y="295">
    <point/>
   </object>
-  <object id="76" name="player_start" x="271" y="240">
+  <object id="76" name="player_start" x="271" y="241">
    <point/>
   </object>
   <object id="81" name="enemySpawnPoint" type="enemySpawnPoint" x="726" y="615">
@@ -87,12 +87,12 @@
   <object id="68" name="ui/pillar" type="mapObject" gid="2" x="571" y="1020" width="42" height="88"/>
   <object id="69" name="ui/pillar" type="mapObject" gid="2" x="795" y="1036" width="42" height="88"/>
   <object id="70" name="ui/pillar" type="mapObject" gid="2" x="811" y="828" width="42" height="88"/>
-  <object id="140" name="ui/teleporter_pillar_left" type="mapObject" gid="3" x="234" y="275" width="17" height="48">
+  <object id="140" name="ui/teleporter_pillar_left" type="mapObject" gid="3" x="234" y="273" width="17" height="48">
    <properties>
     <property name="spriteKey" value=""/>
    </properties>
   </object>
-  <object id="141" name="ui/teleporter_pillar_right" type="mapObject" gid="4" x="290" y="275" width="17" height="48"/>
+  <object id="141" name="ui/teleporter_pillar_right" type="mapObject" gid="4" x="290" y="273" width="17" height="48"/>
   <object id="142" name="ui/pillar" type="mapObject" gid="2" x="395" y="204" width="42" height="88"/>
   <object id="143" name="ui/pillar" type="mapObject" gid="2" x="651" y="221" width="42" height="88"/>
  </objectgroup>
