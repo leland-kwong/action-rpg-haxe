@@ -206,7 +206,6 @@ class Ai extends Entity {
   public var canSeeTarget = true;
   var spawnDuration: Float = 0.1;
   var size: Int;
-  var repelFilter= 'REPEL_NONE';
   var debugCenter = false;
   var idleAnim: core.Anim.AnimRef;
   var runAnim: core.Anim.AnimRef;
@@ -410,11 +409,6 @@ class Ai extends Entity {
 
               dx -= avoidX;
               dy -= avoidY;
-
-              if (repelFilter == o.type) {
-                o.x += avoidX;
-                o.y += avoidY;
-              }
             }
           }
         }
