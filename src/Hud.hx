@@ -33,6 +33,9 @@ class Hud {
   }
 
   public static function render(time: Float) {
+    Main.Global.worldMouse.hoverState = 
+      Main.HoverState.None;
+
     // show hovered ai info
     {
       final healthBarHeight = 40;
@@ -43,22 +46,28 @@ class Hud {
 
       final x = Main.Global.rootScene.mouseX;
       final y = Main.Global.rootScene.mouseY;
-      final hoveredEntityId = Lambda.find(
-          Grid.getItemsInRect(
-            Main.Global.dynamicWorldGrid,
-            x, y, 5, 5),
-          (entityId) -> {
-            final entRef = Entity.getById(entityId);
-            final p = new h2d.col.Point(x, y);
-            final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
-            final distFromMouse = Utils.distance(
-                x, y, entRef.x, entRef.y);
-            final isMatch = c.contains(p) &&
-              entRef.type == 'ENEMY';
+      final hoveredEntityId = Utils.withDefault(
+          Lambda.find(
+            Grid.getItemsInRect(
+              Main.Global.dynamicWorldGrid,
+              x, y, 5, 5),
+            (entityId) -> {
+              final entRef = Entity.getById(entityId);
+              final p = new h2d.col.Point(x, y);
+              final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
+              final distFromMouse = Utils.distance(
+                  x, y, entRef.x, entRef.y);
+              final isMatch = c.contains(p) &&
+                entRef.type == 'ENEMY';
 
-            return isMatch;
-          });
-      if (hoveredEntityId != null) {
+              return isMatch;
+            }),
+          Entity.NULL_ENTITY.id);
+      Main.Global.hoveredEntity.id = 
+        hoveredEntityId;
+      if (hoveredEntityId != Entity.NULL_ENTITY.id) {
+        Main.Global.worldMouse.hoverState = 
+          Main.HoverState.Enemy;
         final entRef = Entity.getById(
           hoveredEntityId);
         tf.text = entRef.type;
@@ -79,6 +88,39 @@ class Hud {
       } else {
         tf.text = '';
         aiHealthBar.clear();
+      }
+    }
+
+    // set hovered loot id
+    if (Main.Global.hoveredEntity.id == Entity.NULL_ENTITY.id) {
+      final NO_LOOT_ID = 'NO_LOOT_HOVERED';
+      Main.Global.hoveredEntity.id = NO_LOOT_ID;
+
+      final mWorldX = Main.Global.rootScene.mouseX;
+      final mWorldY = Main.Global.rootScene.mouseY;
+      final hoveredLootIds = Grid.getItemsInRect(
+          Main.Global.lootColGrid,
+          mWorldX,
+          mWorldY,
+          1,
+          1);
+      Main.Global.hoveredEntity.id = Utils.withDefault(
+          Lambda.find(
+            hoveredLootIds,
+            (_) -> true),
+          Entity.NULL_ENTITY.id);
+
+      if (Main.Global.hoveredEntity.id == 
+          Entity.NULL_ENTITY.id) {
+        Main.Global.hoveredEntity.hoverStart = -1.0;
+      } else if (Main.Global.hoveredEntity.hoverStart == -1.0) {
+        Main.Global.hoveredEntity.hoverStart = Main.Global.time;
+      }
+
+      if (Main.Global.hoveredEntity.id != 
+          Entity.NULL_ENTITY.id) {
+        Main.Global.worldMouse.hoverState = 
+          Main.HoverState.LootHovered;
       }
     }
 

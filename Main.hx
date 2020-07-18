@@ -15,6 +15,15 @@ enum MainPhase {
   Render;
 }
 
+enum HoverState {
+  None;
+  LootHovered;
+  // yet to be used
+  LootHoveredCanPickup;
+  Enemy;
+  Ui;
+}
+
 class Global {
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
@@ -24,7 +33,8 @@ class Global {
 
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
-    buttonDown: -1
+    buttonDown: -1,
+    hoverState: HoverState.None
   }
   public static final obstacleGrid: GridRef = 
     Grid.create(16);
@@ -32,6 +42,8 @@ class Global {
     Grid.create(16);
   public static final traversableGrid: GridRef = 
     Grid.create(16);
+  public static final lootColGrid: GridRef = 
+    Grid.create(2);
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
@@ -47,6 +59,10 @@ class Global {
   public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
 
+  public static var hoveredEntity = {
+    id: Entity.NULL_ENTITY.id,
+    hoverStart: -1.0
+  };
   public static var tempState: Map<String, Float> = [
     'kamehamehaTick' => 0.0
   ];

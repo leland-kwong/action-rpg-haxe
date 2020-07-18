@@ -53,7 +53,7 @@ class Cooldown {
 }
 
 class Entity extends h2d.Object {
-  static var NULL_ENTITY: Entity = {
+  public static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
       x: 0, 
       y: 0, 
@@ -84,6 +84,7 @@ class Entity extends h2d.Object {
   public var obstacleGrid: GridRef;
   public var stats: PlayerStats.StatsRef;
   public final neighborCheckInterval: Int = 2; // after X ticks
+  var renderFn: (ref: Entity, time: Float) -> Void;
  
   public function new(
       props: EntityProps, 
@@ -152,7 +153,11 @@ class Entity extends h2d.Object {
     }
   }
 
-  public function render(time: Float) {}
+  public function render(time: Float) {
+    if (renderFn != null) {
+      renderFn(this, time);
+    }
+  }
 
   public function isDone() {
     return health <= 0;

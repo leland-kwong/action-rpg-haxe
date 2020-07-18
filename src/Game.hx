@@ -590,6 +590,45 @@ class Ai extends Entity {
           duration: duration,
           frames: frames });
       }
+
+      final shouldDropLoot = type == 'ENEMY';
+      if (shouldDropLoot) {
+        final lootRef = new Entity({
+          x: x, 
+          y: y,
+          radius: 10,
+        }); 
+        lootRef.type = 'LOOT';
+        lootRef.renderFn = (ref, time: Float) -> {
+          final lootRenderFn = (p: SpriteRef) -> {
+            p.sortOrder = 0;
+            p.batchElement.scale = ref.radius * 2;
+            p.batchElement.alpha = 0.7;
+
+            p.batchElement.g = 1;
+            p.batchElement.r = 1;
+            p.batchElement.b = 1;
+
+            if (Main.Global.hoveredEntity.id == 
+                ref.id) {
+              final hoverStart = Main.Global
+                .hoveredEntity.hoverStart;
+              p.batchElement.y = ref.y - 
+                Math.abs(
+                    Math.sin(time - hoverStart)) * 2;
+              p.batchElement.b = 0;
+              p.batchElement.r = 0;
+              p.batchElement.g = 1;
+            }
+          };
+          Main.Global.sb.emitSprite(
+              ref.x,
+              ref.y,
+              'ui/square_white',
+              null,
+              lootRenderFn);
+        };
+      }
     }
 
     super.update(dt);
@@ -1712,9 +1751,18 @@ class Game extends h2d.Object {
               a.radius * 2,
               a.id);
         }
-        case ({ type: 'OBSTACLE' }): {
+        case { type: 'OBSTACLE' }: {
           Grid.setItemRect(
               Main.Global.obstacleGrid,
+              a.x,
+              a.y,
+              a.radius * 2,
+              a.radius * 2,
+              a.id);
+        }
+        case { type: 'LOOT' }: {
+          Grid.setItemRect(
+              Main.Global.lootColGrid,
               a.x,
               a.y,
               a.radius * 2,
