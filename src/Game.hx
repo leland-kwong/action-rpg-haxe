@@ -1356,7 +1356,7 @@ class EnemySpawner extends Entity {
 
     var size = Utils.irnd(1, 2);
     var radius = 3 + size * 6;
-    var posRange = 100;
+    var posRange = 20;
     var e = new Ai({
       x: x + Utils.irnd(-posRange, posRange),
       y: y + Utils.irnd(-posRange, posRange),
