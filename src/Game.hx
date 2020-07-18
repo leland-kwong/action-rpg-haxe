@@ -771,26 +771,7 @@ class Player extends Entity {
       }
     }
 
-    final abilityIdByMouseBtn = [
-      -1 => -1,
-      0 => 0,
-      1 => 1,
-      2 => -1,
-      3 => 2,
-      4 => 3
-    ];
-    var abilityId = abilityIdByMouseBtn[
-      Main.Global.worldMouse.buttonDown];
-
-    if (!Cooldown.has(cds, 'recoveringFromAbility')) {
-      final mx = Main.Global.rootScene.mouseX;
-      final my = Main.Global.rootScene.mouseY;
-      useAbility(mx, my, abilityId);
-      final actionDx = Math.cos(Math.atan2(my - y, mx - x));
-      if (actionDx != 0) {
-        facingX = actionDx > 0 ? 1 : -1;
-      }
-    }
+    useAbility();
 
     if (!Cooldown.has(cds, 'recoveringFromAbility')) {
       movePlayer();
@@ -807,13 +788,35 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(
-      x2: Float, y2: Float, ability: Int) {
+  public function useAbility() {
+
+    if (Cooldown.has(cds, 'recoveringFromAbility')) {
+      return;
+    }
+    
+    final abilityIdByMouseBtn = [
+      -1 => -1,
+      0 => 0,
+      1 => 1,
+      2 => -1,
+      3 => 2,
+      4 => 3
+    ];
+    final abilityId = abilityIdByMouseBtn[
+      Main.Global.worldMouse.buttonDown];
+    final x2 = Main.Global.rootScene.mouseX;
+    final y2 = Main.Global.rootScene.mouseY;
+    final actionDx = Math.cos(Math.atan2(y2 - y, x2 - x));
+
+    if (actionDx != 0) {
+      facingX = actionDx > 0 ? 1 : -1;
+    }
+
     var yCenterOffset = -8;
     var startY = y + yCenterOffset;
     var launchOffset = 12;
 
-    switch ability {
+    switch abilityId {
       case 0: {
         var energyCost = 2;
         var hasEnoughEnergy = energyCost 
@@ -853,10 +856,27 @@ class Player extends Entity {
       }
 
       case 1: {
-        if (Cooldown.has(cds, 'ability_2')) {
-          return;
+        final tempState = Main.Global.tempState;
+        final tickKey = 'kamehamehaChanneling';
+        // handle beam channel ticks
+        {
+          final baseTickAmount = 0.3;
+          final tickRate = .01;
+          if (Cooldown.has(cds, tickKey)) {
+            final curTick = Utils.withDefault(
+                tempState.get(tickKey), 0);
+            tempState.set(tickKey, Math.min(1, curTick + tickRate));
+          } else {
+            tempState.set(tickKey, baseTickAmount);
+          }
+          Main.Global.logData.kamehamehaChannelTick = 
+            tempState.get(tickKey);
+          Cooldown.set(cds, tickKey, 0.05);
         }
 
+        final additionalLength = 40 * Math.max(1, tempState.get(tickKey) * 2);
+        final maxLength = 60 + additionalLength; 
+        Main.Global.logData.laserMaxLength = maxLength;
         final abilityCooldown = 0.0001;
         final laserCenterSpriteData = Reflect.field(
             Main.Global.sb.batchManager.spriteSheetData,
@@ -866,9 +886,7 @@ class Player extends Entity {
           laserCenterSpriteData.frame.h;
         final laserTailSpriteData = Reflect.field(
           Main.Global.sb.batchManager.spriteSheetData,
-          'ui/kamehameha_tail'
-        );
-        final maxLength = 175;
+          'ui/kamehameha_tail');
         Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
         final angle = Math.atan2(y2 - startY, x2 - x);
         final vx = Math.cos(angle);
@@ -979,7 +997,11 @@ class Player extends Entity {
 
                   var laserHitCdKey = 'kamehamehaHit';
                   if (!Cooldown.has(item.cds, laserHitCdKey)) {
-                    Cooldown.set(item.cds, laserHitCdKey, 0.2);
+                    final cooldownReduction = -tempState.get(tickKey) * 0.1;
+                    Cooldown.set(
+                        item.cds, 
+                        laserHitCdKey, 
+                        0.2 + cooldownReduction);
                     item.damageTaken += 1;
                   }
 
@@ -1152,7 +1174,9 @@ class Player extends Entity {
               'ui/kamehameha_head'
               );
           final laserHeadWidth = laserHeadSpriteData.frame.w;
-          final yScaleRand = Utils.irnd(0, 1) * 0.125;
+          final tickPercent = Main.Global.tempState.get(
+                'kamehamehaChanneling');
+          final yScale = tickPercent + Utils.irnd(0, 1) * 0.125;
           
           // laser head
           final angle = Math.atan2(
@@ -1167,7 +1191,7 @@ class Player extends Entity {
                 'ui/kamehameha_head',
                 angle,
                 (p) -> {
-                  p.batchElement.scaleY = 1 + yScaleRand;
+                  p.batchElement.scaleY = yScale;
                 });
           }
 
@@ -1180,7 +1204,7 @@ class Player extends Entity {
 
               b.scaleX = Math.round(
                   Utils.distance(lcx, lcy, endPt.x, endPt.y));
-              b.scaleY = 1 + yScaleRand; 
+              b.scaleY = yScale; 
             };
 
             // laser center
@@ -1208,8 +1232,7 @@ class Player extends Entity {
                 (p) -> {
                   p.batchElement.scaleX = 1 + 
                     Utils.irnd(0, 1) * 0.25;
-                  p.batchElement.scaleY = 1 + 
-                    yScaleRand; 
+                  p.batchElement.scaleY = yScale; 
                 });
           }
         }

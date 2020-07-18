@@ -120,4 +120,12 @@ class Utils {
       hxd.Res.loader.load(path).toText()
     );
   }
+
+  public static function withDefault(value, defaultValue) {
+    if (value == null) {
+      return defaultValue;
+    }
+
+    return value;
+  }
 }

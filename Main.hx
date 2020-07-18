@@ -44,8 +44,12 @@ class Global {
   public static var renderHooks: 
     Array<(dt: Float) -> Void> = [];
   public static var mainPhase: MainPhase = null;
-  public static var logData: Dynamic;
+  public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
+
+  public static var tempState: Map<String, Float> = [
+    'kamehamehaTick' => 0.0
+  ];
 }
 
 enum UiState {
