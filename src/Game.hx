@@ -708,9 +708,6 @@ class Player extends Entity {
   function movePlayer() {
     var Key = hxd.Key;
 
-    dx = 0;
-    dy = 0;
-
     // left
     if (Key.isDown(Key.A)) {
       dx = -1;
@@ -747,7 +744,8 @@ class Player extends Entity {
     Cooldown.update(cds, dt);
     abilityEvents = [];
 
-    movePlayer();
+    dx = 0;
+    dy = 0;
 
     // collision avoidance
     if (neighbors != null) {
@@ -784,11 +782,16 @@ class Player extends Entity {
     var abilityId = abilityIdByMouseBtn[
       Main.Global.worldMouse.buttonDown];
 
-    useAbility(
-      Main.Global.rootScene.mouseX,
-      Main.Global.rootScene.mouseY,
-      abilityId
-    );
+    if (!Cooldown.has(cds, 'recoveringFromAbility')) {
+      useAbility(
+          Main.Global.rootScene.mouseX,
+          Main.Global.rootScene.mouseY,
+          abilityId);
+    }
+
+    if (!Cooldown.has(cds, 'recoveringFromAbility')) {
+      movePlayer();
+    }
 
     {
       if (damageTaken > 0) {
@@ -851,7 +854,7 @@ class Player extends Entity {
           return;
         }
 
-        final abilityCooldown = 0.02;
+        final abilityCooldown = 0.0001;
         final laserCenterSpriteData = Reflect.field(
             Main.Global.sb.batchManager.spriteSheetData,
             'ui/kamehameha_center_width_1'
