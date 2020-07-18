@@ -20,7 +20,7 @@ typedef TiledLayer = {
 };
 
 typedef TiledMapData = { 
-  layers:Array<TiledLayer>, 
+  > TiledLayer,
   tilewidth:Int, 
   tileheight:Int, 
   width:Int, 

@@ -19,9 +19,16 @@ class TiledParser {
 
     return data;
   }
-}
 
-private typedef TiledLayer = Array<TiledObject>;
+  public static function findLayer(
+      layerRef: TiledLayer, 
+      name): TiledLayer {
+
+    return Lambda.find(
+        layerRef.layers, 
+        (layer: TiledLayer) -> layer.name == name);
+  }
+}
 
 typedef InventoryRef = {
   inventorySlots: Grid.GridRef,
@@ -57,21 +64,14 @@ typedef UiElementRef = {
 class UiGrid {
   static var colGrid = Grid.create(8);
 
-  static function getInteractLayer() {
+  public static function update(dt: Float) {
     final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
-    final inventoryLayer = Lambda.find(
-        hudLayoutRef.layers,
-        (layer) -> layer.name == 'hud');
-    final interactLayer = Lambda.find(
-        inventoryLayer.layers,
-        (layer) -> layer.name == 'interactable');
-
-    return interactLayer;
-  }
-
-  public static function update(dt: Float) {
-    final objects = getInteractLayer().objects;
+    final inventoryLayerRef = TiledParser
+      .findLayer(hudLayoutRef, 'hud');
+    final interactLayer = TiledParser
+      .findLayer(inventoryLayerRef, 'interactable');
+    final objects = interactLayer.objects;
 
     for (ref in objects) {
       final cx = ref.x + ref.width / 2;
@@ -88,7 +88,13 @@ class UiGrid {
   }
 
   public static function render(time: Float) {
-    final objects = getInteractLayer().objects;
+    final hudLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json);
+    final inventoryLayerRef = TiledParser
+      .findLayer(hudLayoutRef, 'hud');
+    final interactLayer = TiledParser
+      .findLayer(inventoryLayerRef, 'interactable');
+    final objects = interactLayer.objects;
     final hoveredId = Lambda.find(
         Grid.getItemsInRect(
           colGrid,
@@ -247,26 +253,20 @@ class Hud {
       return;
     }
 
-    // resolution scale
-    var mapLayers: Array<Dynamic> = mapData.layers;
-    var hudLayer = Lambda.find(
-        mapLayers,
-        (l: Dynamic) -> {
-          return l.name == 'hud';
-        });
-    var cockpitUnderlay = Lambda
-      .find(hudLayer.layers, (l: Dynamic) -> {
-        return l.name == 'cockpit_underlay';
-      }).objects[0]; 
-    var healthBars: TiledLayer = Lambda
-      .find(hudLayer.layers, (l: Dynamic) -> {
-        return l.name == 'health_bars';
-      }).objects; 
-    var energyBars: TiledLayer = Lambda
-      .find(hudLayer.layers, (l: Dynamic) -> {
-        return l.name == 'energy_bars';
-      }).objects; 
-    var barsCallback = (p) -> {
+    final uiLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json);
+    final hudLayer = TiledParser
+      .findLayer(uiLayoutRef, 'hud');
+    final cockpitUnderlay = TiledParser
+      .findLayer(hudLayer, 'cockpit_underlay')
+      .objects[0];
+    final healthBars = TiledParser
+      .findLayer(hudLayer, 'health_bars')
+      .objects;
+    final energyBars = TiledParser
+      .findLayer(hudLayer, 'energy_bars')
+      .objects;
+    final barsCallback = (p) -> {
       p.sortOrder = 1.0;
       p.batchElement.scaleX = rScale * 1.0;
       p.batchElement.scaleY = rScale * 1.0;
