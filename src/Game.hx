@@ -1699,24 +1699,29 @@ class Game extends h2d.Object {
         }
       }
 
-      final isDynamic = a.type != 'OBSTACLE' 
-        && a.type != 'PROJECTILE';
-      if (isDynamic) {
-        Grid.setItemRect(
-            Main.Global.dynamicWorldGrid,
-            a.x,
-            a.y,
-            a.radius * 2,
-            a.radius * 2,
-            a.id);
-      } else if (a.type == 'OBSTACLE') {
-        Grid.setItemRect(
-            Main.Global.obstacleGrid,
-            a.x,
-            a.y,
-            a.radius * 2,
-            a.radius * 2,
-            a.id);
+      switch (a) {
+        case 
+          { type: 'PLAYER' } 
+        | { type: 'ENEMY' } 
+        | { type: 'FRIENDLY_AI' }: {
+          Grid.setItemRect(
+              Main.Global.dynamicWorldGrid,
+              a.x,
+              a.y,
+              a.radius * 2,
+              a.radius * 2,
+              a.id);
+        }
+        case ({ type: 'OBSTACLE' }): {
+          Grid.setItemRect(
+              Main.Global.obstacleGrid,
+              a.x,
+              a.y,
+              a.radius * 2,
+              a.radius * 2,
+              a.id);
+        }
+        default: {}
       }
 
       a.update(dt);
