@@ -783,10 +783,13 @@ class Player extends Entity {
       Main.Global.worldMouse.buttonDown];
 
     if (!Cooldown.has(cds, 'recoveringFromAbility')) {
-      useAbility(
-          Main.Global.rootScene.mouseX,
-          Main.Global.rootScene.mouseY,
-          abilityId);
+      final mx = Main.Global.rootScene.mouseX;
+      final my = Main.Global.rootScene.mouseY;
+      useAbility(mx, my, abilityId);
+      final actionDx = Math.cos(Math.atan2(my - y, mx - x));
+      if (actionDx != 0) {
+        facingX = actionDx > 0 ? 1 : -1;
+      }
     }
 
     if (!Cooldown.has(cds, 'recoveringFromAbility')) {
