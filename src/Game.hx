@@ -1157,7 +1157,7 @@ class Player extends Entity {
       x, y,
       core.Anim.getFrame(activeAnim, time),
       null,
-      (p) ->  {
+      (p) -> {
         p.batchElement.scaleX = facingX;
       }
     );
