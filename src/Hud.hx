@@ -1,16 +1,130 @@
 using core.Types;
 
 class TiledParser {
+  static var cache: Map<
+    hxd.res.Resource, TiledMapData> = 
+    new Map();
+
   public static function loadFile(
       res: hxd.res.Resource): TiledMapData {
 
-    return haxe.Json.parse(res.entry.getText());
+    final fromCache = cache.get(res);
+
+    if (fromCache != null) {
+      return fromCache;
+    }
+
+    final data = haxe.Json.parse(res.entry.getText());
+    cache.set(res, data);
+
+    return data;
   }
 }
 
 private typedef TiledLayer = Array<TiledObject>;
 
+typedef InventoryRef = {
+  inventorySlots: Grid.GridRef,
+  abilitySlots: Grid.GridRef
+};
+
+class Inventory {
+  public static function create(): InventoryRef {
+    return {
+      inventorySlots: Grid.create(16),
+      abilitySlots: Grid.create(16),
+    };
+  }
+
+  public static function inventoryInteract(
+      ref: InventoryRef) {
+  }
+
+  public static function inventoryInsert() {}
+
+  public static function abilityInteract(
+      ref: InventoryRef) {
+  }
+}
+
+typedef UiAction = String;
+
+typedef UiElementRef = {
+  > TiledObject,
+  ?onClick: UiAction,
+};
+
+class UiGrid {
+  static var colGrid = Grid.create(8);
+
+  static function getInteractLayer() {
+    final hudLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json);
+    final inventoryLayer = Lambda.find(
+        hudLayoutRef.layers,
+        (layer) -> layer.name == 'hud');
+    final interactLayer = Lambda.find(
+        inventoryLayer.layers,
+        (layer) -> layer.name == 'interactable');
+
+    return interactLayer;
+  }
+
+  public static function update(dt: Float) {
+    final objects = getInteractLayer().objects;
+
+    for (ref in objects) {
+      final cx = ref.x + ref.width / 2;
+      final cy = ref.y - ref.height / 2;
+
+      Grid.setItemRect(
+          colGrid,
+          cx * Hud.rScale, 
+          cy * Hud.rScale, 
+          ref.width * Hud.rScale,
+          ref.height * Hud.rScale,
+          Std.string(ref.id));
+    }
+  }
+
+  public static function render(time: Float) {
+    final objects = getInteractLayer().objects;
+    final hoveredId = Lambda.find(
+        Grid.getItemsInRect(
+          colGrid,
+          Main.Global.uiRoot.mouseX,
+          Main.Global.uiRoot.mouseY,
+          1, 1),
+        (_) -> true);
+
+    for (ref in objects) {
+      final cx = ref.x + ref.width / 2;
+      final cy = ref.y - ref.height / 2;
+      Main.Global.uiSpriteBatch.emitSprite(
+          cx * Hud.rScale,
+          cy * Hud.rScale,
+          ref.name, 
+          null,
+          (p) -> {
+            p.batchElement.scale = Hud.rScale;
+
+            switch(ref.name) {
+              case 'ui/hud_inventory_button': {
+                if (hoveredId == Std.string(ref.id)) {
+                  p.batchElement.r = 0.0;
+                  p.batchElement.g = 0.9;
+                  p.batchElement.b = 1;
+                }
+              }
+              default: {}
+            }
+          });
+    }
+  }
+}
+
 class Hud {
+  public static var rScale = 4;
   static var mapData: TiledMapData;
   static var tf: h2d.Text;
   static var aiHealthBar: h2d.Graphics;
@@ -134,18 +248,22 @@ class Hud {
     }
 
     // resolution scale
-    var rScale = 4;
     var mapLayers: Array<Dynamic> = mapData.layers;
+    var hudLayer = Lambda.find(
+        mapLayers,
+        (l: Dynamic) -> {
+          return l.name == 'hud';
+        });
     var cockpitUnderlay = Lambda
-      .find(mapLayers, (l: Dynamic) -> {
+      .find(hudLayer.layers, (l: Dynamic) -> {
         return l.name == 'cockpit_underlay';
       }).objects[0]; 
     var healthBars: TiledLayer = Lambda
-      .find(mapLayers, (l: Dynamic) -> {
+      .find(hudLayer.layers, (l: Dynamic) -> {
         return l.name == 'health_bars';
       }).objects; 
     var energyBars: TiledLayer = Lambda
-      .find(mapLayers, (l: Dynamic) -> {
+      .find(hudLayer.layers, (l: Dynamic) -> {
         return l.name == 'energy_bars';
       }).objects; 
     var barsCallback = (p) -> {
@@ -156,8 +274,10 @@ class Hud {
 
     {
       Main.Global.uiSpriteBatch.emitSprite(
-          cockpitUnderlay.x * rScale,
-          cockpitUnderlay.y * rScale,
+          (cockpitUnderlay.x + 
+           cockpitUnderlay.width / 2) * rScale,
+          (cockpitUnderlay.y - 
+           cockpitUnderlay.height / 2) * rScale,
           'ui/cockpit_underlay',
           null,
           (p) -> {
@@ -179,8 +299,8 @@ class Hud {
         var item = healthBars[i + indexAdjust];
 
         Main.Global.uiSpriteBatch.emitSprite(
-            item.x * rScale,
-            item.y * rScale,
+            (item.x + item.width / 2) * rScale,
+            (item.y - item.height / 2) * rScale,
             'ui/cockpit_resource_bar_health',
             null, 
             barsCallback);
@@ -197,8 +317,8 @@ class Hud {
         var item = energyBars[i];
 
         Main.Global.uiSpriteBatch.emitSprite(
-            item.x * rScale,
-            item.y * rScale,
+            (item.x + item.width / 2) * rScale,
+            (item.y - item.height / 2) * rScale,
             'ui/cockpit_resource_bar_energy',
             null,
             barsCallback);

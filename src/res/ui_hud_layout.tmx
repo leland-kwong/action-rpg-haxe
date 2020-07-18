@@ -1,65 +1,179 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="left-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="56">
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="right-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="12" nextobjectid="226">
  <tileset firstgid="1" source="ui.tsx"/>
- <objectgroup id="3" name="cockpit_underlay">
-  <object id="29" type="hud_main" gid="1" x="166" y="266" width="148" height="38"/>
- </objectgroup>
- <objectgroup id="5" name="skill_tree" tintcolor="#18afd1">
-  <object id="49" x="210" y="27">
-   <properties>
-    <property name="connection" type="object" value="55"/>
-   </properties>
-   <ellipse/>
-  </object>
-  <object id="53" x="184" y="112">
-   <properties>
-    <property name="connection" type="object" value="54"/>
-   </properties>
-   <ellipse/>
-  </object>
-  <object id="54" x="111" y="101">
-   <properties>
-    <property name="connection" type="object" value="50"/>
-   </properties>
-   <ellipse/>
-  </object>
-  <object id="55" x="166" y="44">
-   <properties>
-    <property name="connection" type="object" value="53"/>
-   </properties>
-   <ellipse/>
-  </object>
- </objectgroup>
- <objectgroup id="2" name="health_bars">
-  <object id="15" gid="2" x="170" y="238" width="6" height="4"/>
-  <object id="16" gid="2" x="174" y="238" width="6" height="4"/>
-  <object id="17" gid="2" x="178" y="238" width="6" height="4"/>
-  <object id="18" gid="2" x="182" y="238" width="6" height="4"/>
-  <object id="19" gid="2" x="186" y="238" width="6" height="4"/>
-  <object id="20" gid="2" x="190" y="238" width="6" height="4"/>
-  <object id="21" gid="2" x="194" y="238" width="6" height="4"/>
-  <object id="22" gid="2" x="198" y="238" width="6" height="4"/>
-  <object id="23" gid="2" x="202" y="238" width="6" height="4"/>
-  <object id="24" gid="2" x="206" y="238" width="6" height="4"/>
-  <object id="25" gid="2" x="210" y="238" width="6" height="4"/>
-  <object id="26" gid="2" x="214" y="238" width="6" height="4"/>
-  <object id="27" gid="2" x="218" y="238" width="6" height="4"/>
-  <object id="28" gid="2" x="222" y="238" width="6" height="4"/>
- </objectgroup>
- <objectgroup id="4" name="energy_bars">
-  <object id="30" gid="3" x="252" y="238" width="6" height="4"/>
-  <object id="31" gid="3" x="256" y="238" width="6" height="4"/>
-  <object id="32" gid="3" x="260" y="238" width="6" height="4"/>
-  <object id="33" gid="3" x="264" y="238" width="6" height="4"/>
-  <object id="34" gid="3" x="268" y="238" width="6" height="4"/>
-  <object id="35" gid="3" x="272" y="238" width="6" height="4"/>
-  <object id="36" gid="3" x="276" y="238" width="6" height="4"/>
-  <object id="37" gid="3" x="280" y="238" width="6" height="4"/>
-  <object id="38" gid="3" x="284" y="238" width="6" height="4"/>
-  <object id="39" gid="3" x="288" y="238" width="6" height="4"/>
-  <object id="40" gid="3" x="292" y="238" width="6" height="4"/>
-  <object id="41" gid="3" x="296" y="238" width="6" height="4"/>
-  <object id="42" gid="3" x="300" y="238" width="6" height="4"/>
-  <object id="43" gid="3" x="304" y="238" width="6" height="4"/>
- </objectgroup>
+ <group id="7" name="inventory">
+  <objectgroup color="#ffaa00" id="10" name="ability_slots">
+   <object id="223" name="ability" type="slot" x="174" y="48" width="32" height="32"/>
+   <object id="224" name="ability" type="slot" x="207" y="48" width="32" height="32"/>
+   <object id="225" name="ability" type="slot" x="240" y="48" width="32" height="32"/>
+  </objectgroup>
+  <objectgroup color="#ffffff" id="9" name="inventory_slots">
+   <object id="102" name="inv" type="slot" x="288" y="48" width="16" height="16"/>
+   <object id="103" name="inv" type="slot" x="304" y="48" width="16" height="16"/>
+   <object id="104" name="inv" type="slot" x="320" y="48" width="16" height="16"/>
+   <object id="105" name="inv" type="slot" x="336" y="48" width="16" height="16"/>
+   <object id="106" name="inv" type="slot" x="352" y="48" width="16" height="16"/>
+   <object id="107" name="inv" type="slot" x="368" y="48" width="16" height="16"/>
+   <object id="108" name="inv" type="slot" x="384" y="48" width="16" height="16"/>
+   <object id="109" name="inv" type="slot" x="400" y="48" width="16" height="16"/>
+   <object id="110" name="inv" type="slot" x="416" y="48" width="16" height="16"/>
+   <object id="111" name="inv" type="slot" x="432" y="48" width="16" height="16"/>
+   <object id="112" name="inv" type="slot" x="448" y="48" width="16" height="16"/>
+   <object id="113" name="inv" type="slot" x="288" y="64" width="16" height="16"/>
+   <object id="114" name="inv" type="slot" x="304" y="64" width="16" height="16"/>
+   <object id="115" name="inv" type="slot" x="320" y="64" width="16" height="16"/>
+   <object id="116" name="inv" type="slot" x="336" y="64" width="16" height="16"/>
+   <object id="117" name="inv" type="slot" x="352" y="64" width="16" height="16"/>
+   <object id="118" name="inv" type="slot" x="368" y="64" width="16" height="16"/>
+   <object id="119" name="inv" type="slot" x="384" y="64" width="16" height="16"/>
+   <object id="120" name="inv" type="slot" x="400" y="64" width="16" height="16"/>
+   <object id="121" name="inv" type="slot" x="416" y="64" width="16" height="16"/>
+   <object id="122" name="inv" type="slot" x="432" y="64" width="16" height="16"/>
+   <object id="123" name="inv" type="slot" x="448" y="64" width="16" height="16"/>
+   <object id="124" name="inv" type="slot" x="288" y="80" width="16" height="16"/>
+   <object id="125" name="inv" type="slot" x="304" y="80" width="16" height="16"/>
+   <object id="126" name="inv" type="slot" x="320" y="80" width="16" height="16"/>
+   <object id="127" name="inv" type="slot" x="336" y="80" width="16" height="16"/>
+   <object id="128" name="inv" type="slot" x="352" y="80" width="16" height="16"/>
+   <object id="129" name="inv" type="slot" x="368" y="80" width="16" height="16"/>
+   <object id="130" name="inv" type="slot" x="384" y="80" width="16" height="16"/>
+   <object id="131" name="inv" type="slot" x="400" y="80" width="16" height="16"/>
+   <object id="132" name="inv" type="slot" x="416" y="80" width="16" height="16"/>
+   <object id="133" name="inv" type="slot" x="432" y="80" width="16" height="16"/>
+   <object id="134" name="inv" type="slot" x="448" y="80" width="16" height="16"/>
+   <object id="135" name="inv" type="slot" x="288" y="96" width="16" height="16"/>
+   <object id="136" name="inv" type="slot" x="304" y="96" width="16" height="16"/>
+   <object id="137" name="inv" type="slot" x="320" y="96" width="16" height="16"/>
+   <object id="138" name="inv" type="slot" x="336" y="96" width="16" height="16"/>
+   <object id="139" name="inv" type="slot" x="352" y="96" width="16" height="16"/>
+   <object id="140" name="inv" type="slot" x="368" y="96" width="16" height="16"/>
+   <object id="141" name="inv" type="slot" x="384" y="96" width="16" height="16"/>
+   <object id="142" name="inv" type="slot" x="400" y="96" width="16" height="16"/>
+   <object id="143" name="inv" type="slot" x="416" y="96" width="16" height="16"/>
+   <object id="144" name="inv" type="slot" x="432" y="96" width="16" height="16"/>
+   <object id="145" name="inv" type="slot" x="448" y="96" width="16" height="16"/>
+   <object id="146" name="inv" type="slot" x="288" y="112" width="16" height="16"/>
+   <object id="147" name="inv" type="slot" x="304" y="112" width="16" height="16"/>
+   <object id="148" name="inv" type="slot" x="320" y="112" width="16" height="16"/>
+   <object id="149" name="inv" type="slot" x="336" y="112" width="16" height="16"/>
+   <object id="150" name="inv" type="slot" x="352" y="112" width="16" height="16"/>
+   <object id="151" name="inv" type="slot" x="368" y="112" width="16" height="16"/>
+   <object id="152" name="inv" type="slot" x="384" y="112" width="16" height="16"/>
+   <object id="153" name="inv" type="slot" x="400" y="112" width="16" height="16"/>
+   <object id="154" name="inv" type="slot" x="416" y="112" width="16" height="16"/>
+   <object id="155" name="inv" type="slot" x="432" y="112" width="16" height="16"/>
+   <object id="156" name="inv" type="slot" x="448" y="112" width="16" height="16"/>
+   <object id="157" name="inv" type="slot" x="288" y="128" width="16" height="16"/>
+   <object id="158" name="inv" type="slot" x="304" y="128" width="16" height="16"/>
+   <object id="159" name="inv" type="slot" x="320" y="128" width="16" height="16"/>
+   <object id="160" name="inv" type="slot" x="336" y="128" width="16" height="16"/>
+   <object id="161" name="inv" type="slot" x="352" y="128" width="16" height="16"/>
+   <object id="162" name="inv" type="slot" x="368" y="128" width="16" height="16"/>
+   <object id="163" name="inv" type="slot" x="384" y="128" width="16" height="16"/>
+   <object id="164" name="inv" type="slot" x="400" y="128" width="16" height="16"/>
+   <object id="165" name="inv" type="slot" x="416" y="128" width="16" height="16"/>
+   <object id="166" name="inv" type="slot" x="432" y="128" width="16" height="16"/>
+   <object id="167" name="inv" type="slot" x="448" y="128" width="16" height="16"/>
+   <object id="168" name="inv" type="slot" x="288" y="144" width="16" height="16"/>
+   <object id="169" name="inv" type="slot" x="304" y="144" width="16" height="16"/>
+   <object id="170" name="inv" type="slot" x="320" y="144" width="16" height="16"/>
+   <object id="171" name="inv" type="slot" x="336" y="144" width="16" height="16"/>
+   <object id="172" name="inv" type="slot" x="352" y="144" width="16" height="16"/>
+   <object id="173" name="inv" type="slot" x="368" y="144" width="16" height="16"/>
+   <object id="174" name="inv" type="slot" x="384" y="144" width="16" height="16"/>
+   <object id="175" name="inv" type="slot" x="400" y="144" width="16" height="16"/>
+   <object id="176" name="inv" type="slot" x="416" y="144" width="16" height="16"/>
+   <object id="177" name="inv" type="slot" x="432" y="144" width="16" height="16"/>
+   <object id="178" name="inv" type="slot" x="448" y="144" width="16" height="16"/>
+   <object id="179" name="inv" type="slot" x="288" y="160" width="16" height="16"/>
+   <object id="180" name="inv" type="slot" x="304" y="160" width="16" height="16"/>
+   <object id="181" name="inv" type="slot" x="320" y="160" width="16" height="16"/>
+   <object id="182" name="inv" type="slot" x="336" y="160" width="16" height="16"/>
+   <object id="183" name="inv" type="slot" x="352" y="160" width="16" height="16"/>
+   <object id="184" name="inv" type="slot" x="368" y="160" width="16" height="16"/>
+   <object id="185" name="inv" type="slot" x="384" y="160" width="16" height="16"/>
+   <object id="186" name="inv" type="slot" x="400" y="160" width="16" height="16"/>
+   <object id="187" name="inv" type="slot" x="416" y="160" width="16" height="16"/>
+   <object id="188" name="inv" type="slot" x="432" y="160" width="16" height="16"/>
+   <object id="189" name="inv" type="slot" x="448" y="160" width="16" height="16"/>
+   <object id="190" name="inv" type="slot" x="288" y="176" width="16" height="16"/>
+   <object id="191" name="inv" type="slot" x="304" y="176" width="16" height="16"/>
+   <object id="192" name="inv" type="slot" x="320" y="176" width="16" height="16"/>
+   <object id="193" name="inv" type="slot" x="336" y="176" width="16" height="16"/>
+   <object id="194" name="inv" type="slot" x="352" y="176" width="16" height="16"/>
+   <object id="195" name="inv" type="slot" x="368" y="176" width="16" height="16"/>
+   <object id="196" name="inv" type="slot" x="384" y="176" width="16" height="16"/>
+   <object id="197" name="inv" type="slot" x="400" y="176" width="16" height="16"/>
+   <object id="198" name="inv" type="slot" x="416" y="176" width="16" height="16"/>
+   <object id="199" name="inv" type="slot" x="432" y="176" width="16" height="16"/>
+   <object id="200" name="inv" type="slot" x="448" y="176" width="16" height="16"/>
+   <object id="201" name="inv" type="slot" x="288" y="192" width="16" height="16"/>
+   <object id="202" name="inv" type="slot" x="304" y="192" width="16" height="16"/>
+   <object id="203" name="inv" type="slot" x="320" y="192" width="16" height="16"/>
+   <object id="204" name="inv" type="slot" x="336" y="192" width="16" height="16"/>
+   <object id="205" name="inv" type="slot" x="352" y="192" width="16" height="16"/>
+   <object id="206" name="inv" type="slot" x="368" y="192" width="16" height="16"/>
+   <object id="207" name="inv" type="slot" x="384" y="192" width="16" height="16"/>
+   <object id="208" name="inv" type="slot" x="400" y="192" width="16" height="16"/>
+   <object id="209" name="inv" type="slot" x="416" y="192" width="16" height="16"/>
+   <object id="210" name="inv" type="slot" x="432" y="192" width="16" height="16"/>
+   <object id="211" name="inv" type="slot" x="448" y="192" width="16" height="16"/>
+   <object id="212" name="inv" type="slot" x="288" y="208" width="16" height="16"/>
+   <object id="213" name="inv" type="slot" x="304" y="208" width="16" height="16"/>
+   <object id="214" name="inv" type="slot" x="320" y="208" width="16" height="16"/>
+   <object id="215" name="inv" type="slot" x="336" y="208" width="16" height="16"/>
+   <object id="216" name="inv" type="slot" x="352" y="208" width="16" height="16"/>
+   <object id="217" name="inv" type="slot" x="368" y="208" width="16" height="16"/>
+   <object id="218" name="inv" type="slot" x="384" y="208" width="16" height="16"/>
+   <object id="219" name="inv" type="slot" x="400" y="208" width="16" height="16"/>
+   <object id="220" name="inv" type="slot" x="416" y="208" width="16" height="16"/>
+   <object id="221" name="inv" type="slot" x="432" y="208" width="16" height="16"/>
+   <object id="222" name="inv" type="slot" x="448" y="208" width="16" height="16"/>
+  </objectgroup>
+ </group>
+ <group id="8" name="hud">
+  <objectgroup id="3" name="cockpit_underlay">
+   <object id="29" type="hud_main" gid="1" x="166" y="242" width="148" height="14"/>
+  </objectgroup>
+  <objectgroup id="6" name="interactable">
+   <object id="56" name="ui/hud_inventory_button" type="ui_button" gid="5" x="305" y="253" width="9" height="9">
+    <properties>
+     <property name="onClick" value="INVENTORY_TOGGLE"/>
+    </properties>
+   </object>
+   <object id="57" name="ui/hud_ability_slot" type="ui_button" gid="4" x="206" y="266" width="68" height="22"/>
+  </objectgroup>
+  <objectgroup id="2" name="health_bars">
+   <object id="15" gid="2" x="170" y="238" width="6" height="4"/>
+   <object id="16" gid="2" x="174" y="238" width="6" height="4"/>
+   <object id="17" gid="2" x="178" y="238" width="6" height="4"/>
+   <object id="18" gid="2" x="182" y="238" width="6" height="4"/>
+   <object id="19" gid="2" x="186" y="238" width="6" height="4"/>
+   <object id="20" gid="2" x="190" y="238" width="6" height="4"/>
+   <object id="21" gid="2" x="194" y="238" width="6" height="4"/>
+   <object id="22" gid="2" x="198" y="238" width="6" height="4"/>
+   <object id="23" gid="2" x="202" y="238" width="6" height="4"/>
+   <object id="24" gid="2" x="206" y="238" width="6" height="4"/>
+   <object id="25" gid="2" x="210" y="238" width="6" height="4"/>
+   <object id="26" gid="2" x="214" y="238" width="6" height="4"/>
+   <object id="27" gid="2" x="218" y="238" width="6" height="4"/>
+   <object id="28" gid="2" x="222" y="238" width="6" height="4"/>
+  </objectgroup>
+  <objectgroup id="4" name="energy_bars">
+   <object id="30" gid="3" x="252" y="238" width="6" height="4"/>
+   <object id="31" gid="3" x="256" y="238" width="6" height="4"/>
+   <object id="32" gid="3" x="260" y="238" width="6" height="4"/>
+   <object id="33" gid="3" x="264" y="238" width="6" height="4"/>
+   <object id="34" gid="3" x="268" y="238" width="6" height="4"/>
+   <object id="35" gid="3" x="272" y="238" width="6" height="4"/>
+   <object id="36" gid="3" x="276" y="238" width="6" height="4"/>
+   <object id="37" gid="3" x="280" y="238" width="6" height="4"/>
+   <object id="38" gid="3" x="284" y="238" width="6" height="4"/>
+   <object id="39" gid="3" x="288" y="238" width="6" height="4"/>
+   <object id="40" gid="3" x="292" y="238" width="6" height="4"/>
+   <object id="41" gid="3" x="296" y="238" width="6" height="4"/>
+   <object id="42" gid="3" x="300" y="238" width="6" height="4"/>
+   <object id="43" gid="3" x="304" y="238" width="6" height="4"/>
+  </objectgroup>
+ </group>
 </map>

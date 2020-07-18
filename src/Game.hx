@@ -1816,11 +1816,15 @@ class Game extends h2d.Object {
 
       Camera.update(Main.Global.mainCamera, dt);
     }
+
+    Hud.UiGrid.update(dt);
   }
 
   public function render(time: Float) {
     for (entityRef in Main.Global.entitiesToRender) {
       entityRef.render(time);
     }
+
+    Hud.UiGrid.render(time);
   }
 }
