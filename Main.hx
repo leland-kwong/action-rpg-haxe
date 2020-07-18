@@ -58,6 +58,14 @@ class Global {
   public static var mainPhase: MainPhase = null;
   public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
+  public static var uiState = {
+    hud: {
+      enabled: true
+    },
+    inventory: {
+      opened: false
+    }
+  }
 
   public static var hoveredEntity = {
     id: Entity.NULL_ENTITY.id,
@@ -224,6 +232,7 @@ class Main extends hxd.App {
       hook(Global.time);
     }
     Hud.render(Global.time);
+    Hud.Inventory.render(Global.time);
     core.Anim.AnimEffect
       .render(Global.time);
     // run sprite batches before engine rendering

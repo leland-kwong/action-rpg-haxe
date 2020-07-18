@@ -35,7 +35,7 @@
             "scale": 2,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 225.5,
+                "x": 252,
                 "y": 227
             }
         },
@@ -56,8 +56,8 @@
             "scale": 3,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 312.66666666666663,
-                "y": 144
+                "x": 330.3333333333333,
+                "y": 149
             }
         },
         "res/ui_inventory_layout.tmx": {
@@ -95,8 +95,8 @@
     "project": "main.tiled-project",
     "property.type": "string",
     "recentFiles": [
-        "res/ui_inventory_layout.tmx",
         "res/ui_hud_layout.tmx",
+        "res/ui_inventory_layout.tmx",
         "res/level_intro.tmx",
         "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/level_intro.tmx",
         "res/background.tsx",

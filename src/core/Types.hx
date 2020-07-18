@@ -11,6 +11,7 @@ typedef TiledObject = {
   final height: Int;
   final type: String;
   final name: String;
+  final properties: Array<Dynamic>;
 }
 
 typedef TiledLayer = {

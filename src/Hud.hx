@@ -1,5 +1,20 @@
 using core.Types;
 
+typedef UiAction = String;
+typedef InventoryRef = {
+  inventorySlots: Grid.GridRef,
+  abilitySlots: Grid.GridRef
+};
+typedef UiElementRef = {
+  > TiledObject,
+  ?onClick: UiAction,
+};
+typedef TiledUiProp = {
+  name: String,
+  type: String,
+  value: String,
+};
+
 class TiledParser {
   static var cache: Map<
     hxd.res.Resource, TiledMapData> = 
@@ -30,10 +45,24 @@ class TiledParser {
   }
 }
 
-typedef InventoryRef = {
-  inventorySlots: Grid.GridRef,
-  abilitySlots: Grid.GridRef
-};
+class UiStateManager {
+  public static function send(action: {
+    type: String
+  }) {
+    final uiState = Main.Global.uiState;
+
+    switch(action) {
+      case { type: 'INVENTORY_TOGGLE' }: {
+        final s = uiState.inventory;
+
+        s.opened = !s.opened;
+      }
+      default: {
+        throw 'invalid ui action ${action.type}';
+      }
+    } 
+  } 
+}
 
 class Inventory {
   public static function create(): InventoryRef {
@@ -52,17 +81,39 @@ class Inventory {
   public static function abilityInteract(
       ref: InventoryRef) {
   }
+
+  public static function render(time: Float) {
+    final state = Main.Global.uiState.inventory;
+    if (!state.opened) {
+      return;
+    }
+
+    final hudLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json);
+    final inventoryLayerRef = TiledParser
+      .findLayer(hudLayoutRef, 'inventory');
+    final backgroundLayer = TiledParser
+      .findLayer(inventoryLayerRef, 'background');
+    final bgObjects = backgroundLayer.objects;
+
+    for (ref in bgObjects) {
+      final cx = ref.x + ref.width / 2;
+      final cy = ref.y - ref.height / 2;
+      Main.Global.uiSpriteBatch.emitSprite(
+          cx * Hud.rScale,
+          cy * Hud.rScale,
+          ref.name, 
+          null,
+          (p) -> {
+            p.batchElement.scale = Hud.rScale;
+          });
+    }
+  }
 }
 
-typedef UiAction = String;
-
-typedef UiElementRef = {
-  > TiledObject,
-  ?onClick: UiAction,
-};
-
 class UiGrid {
-  static var colGrid = Grid.create(8);
+  static var colGrid = Grid.create(1);
+  static final iList: Array<h2d.Interactive> = [];
 
   public static function update(dt: Float) {
     final hudLayoutRef = TiledParser.loadFile(
@@ -72,17 +123,47 @@ class UiGrid {
     final interactLayer = TiledParser
       .findLayer(inventoryLayerRef, 'interactable');
     final objects = interactLayer.objects;
+    final isInteractInitialized = iList.length != 0;
 
     for (ref in objects) {
-      final cx = ref.x + ref.width / 2;
-      final cy = ref.y - ref.height / 2;
+      final cx = (ref.x + ref.width / 2) * Hud.rScale;
+      final cy = (ref.y - ref.height / 2) * Hud.rScale;
+      final width = ref.width * Hud.rScale;
+      final height = ref.height * Hud.rScale;
+
+      if (Main.Global.uiState.hud.enabled 
+          && !isInteractInitialized) {
+        final iRef = new h2d.Interactive(
+            width,
+            height,
+            Main.Global.uiRoot);
+        iRef.x = ref.x * Hud.rScale;
+        iRef.y = (ref.y - ref.height) * Hud.rScale;
+
+        final props = Utils.withDefault(ref.properties, []);
+        for (p in props) {
+          switch(p: TiledUiProp) {
+            case { name: 'onClick' }: {
+              iRef.onClick = (e: hxd.Event) -> {
+                trace('click');
+                UiStateManager.send({
+                  type: p.value
+                });
+              }
+            }
+            default: {}
+          }
+        }
+        
+        iList.push(iRef); 
+      }
 
       Grid.setItemRect(
           colGrid,
-          cx * Hud.rScale, 
-          cy * Hud.rScale, 
-          ref.width * Hud.rScale,
-          ref.height * Hud.rScale,
+          cx, 
+          cy, 
+          width,
+          height,
           Std.string(ref.id));
     }
   }
