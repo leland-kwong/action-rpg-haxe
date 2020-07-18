@@ -32,7 +32,7 @@ class Hud {
         hxd.Res.ui_hud_layout_json);
   }
 
-  public static function render(time: Float) {
+  public static function update(dt: Float) {
     Main.Global.worldMouse.hoverState = 
       Main.HoverState.None;
 
@@ -65,7 +65,7 @@ class Hud {
           Entity.NULL_ENTITY.id);
       Main.Global.hoveredEntity.id = 
         hoveredEntityId;
-      if (hoveredEntityId != Entity.NULL_ENTITY.id) {
+      if (!Entity.isNullId(hoveredEntityId)) {
         Main.Global.worldMouse.hoverState = 
           Main.HoverState.Enemy;
         final entRef = Entity.getById(
@@ -92,7 +92,8 @@ class Hud {
     }
 
     // set hovered loot id
-    if (Main.Global.hoveredEntity.id == Entity.NULL_ENTITY.id) {
+    if (Entity.isNullId(
+          Main.Global.hoveredEntity.id)) {
       final NO_LOOT_ID = 'NO_LOOT_HOVERED';
       Main.Global.hoveredEntity.id = NO_LOOT_ID;
 
@@ -110,20 +111,22 @@ class Hud {
             (_) -> true),
           Entity.NULL_ENTITY.id);
 
-      if (Main.Global.hoveredEntity.id == 
-          Entity.NULL_ENTITY.id) {
+      if (Entity.isNullId(
+            Main.Global.hoveredEntity.id)) {
         Main.Global.hoveredEntity.hoverStart = -1.0;
       } else if (Main.Global.hoveredEntity.hoverStart == -1.0) {
         Main.Global.hoveredEntity.hoverStart = Main.Global.time;
       }
 
-      if (Main.Global.hoveredEntity.id != 
-          Entity.NULL_ENTITY.id) {
+      if (Entity.isNullId(
+            Main.Global.hoveredEntity.id)) {
         Main.Global.worldMouse.hoverState = 
           Main.HoverState.LootHovered;
       }
     }
+  }
 
+  public static function render(time: Float) {
     var ps = Main.Global.playerStats;
 
     if (ps == null) {

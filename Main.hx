@@ -428,6 +428,7 @@ class Main extends hxd.App {
 
       core.Anim.AnimEffect
         .update(dt);
+      Hud.update(dt);
       SpriteBatchSystem.updateAll(dt);
 
       final tickFrequency = 144;

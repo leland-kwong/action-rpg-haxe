@@ -177,4 +177,7 @@ class Entity extends h2d.Object {
     return ref;
   }
 
+  public static function isNullId(id: EntityId) {
+    return id == NULL_ENTITY.id;
+  }
 }
