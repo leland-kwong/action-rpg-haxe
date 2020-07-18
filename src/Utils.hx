@@ -121,7 +121,8 @@ class Utils {
     );
   }
 
-  public static function withDefault(value, defaultValue) {
+  public static function withDefault<T>(
+      value: T, defaultValue: T) {
     if (value == null) {
       return defaultValue;
     }
