@@ -593,11 +593,28 @@ class Ai extends Entity {
 
       final shouldDropLoot = type == 'ENEMY';
       if (shouldDropLoot) {
+        final startX = x;
+        final startY = y;
         final lootRef = new Entity({
-          x: x, 
-          y: y,
+          x: startX, 
+          y: startY,
           radius: 11,
         }); 
+        final endYOffset = Utils.irnd(-5, 5, true);
+        final endXOffset = Utils.irnd(-10, 10, true);
+        Main.Global.updateHooks.push((dt: Float) -> {
+          final duration = 0.3;
+          final progress = Math.min(
+              1, 
+              (Main.Global.time - 
+               lootRef.createdAt) / duration);   
+          final z = Math.sin(progress * Math.PI) * 10;
+          lootRef.x = startX + endXOffset * progress;
+          lootRef.y = startY + endYOffset * progress - z;
+
+          return progress < 1;
+        });
+
         lootRef.type = 'LOOT';
         lootRef.renderFn = (ref, time: Float) -> {
           Main.Global.sb.emitSprite(
@@ -624,7 +641,7 @@ class Ai extends Entity {
                 .hoveredEntity.hoverStart;
               p.batchElement.y = ref.y - 
                 Math.abs(
-                    Math.sin(time - hoverStart)) * 2;
+                    Math.sin(time * 2 - hoverStart)) * 2;
               p.batchElement.b = 0;
               p.batchElement.r = 0;
               p.batchElement.g = 1;
@@ -839,7 +856,10 @@ class Player extends Entity {
 
   public function useAbility() {
 
-    if (Cooldown.has(cds, 'recoveringFromAbility')) {
+    final isPickingUpItem = Main.Global.worldMouse.hoverState == 
+      Main.HoverState.LootHoveredCanPickup;
+    if (Cooldown.has(cds, 'recoveringFromAbility') 
+        || isPickingUpItem) {
       return;
     }
     

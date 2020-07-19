@@ -454,9 +454,10 @@ class Hud {
       }
     }
 
+    final entityRef = Entity.getById(Main.Global.hoveredEntity.id);
     // handle loot interaction
-    if (Entity.isNullId(
-          Main.Global.hoveredEntity.id)) {
+    if (entityRef == Entity.NULL_ENTITY || 
+        entityRef.type == 'LOOT') {
       final NO_LOOT_ID = 'NO_LOOT_HOVERED';
       Main.Global.hoveredEntity.id = NO_LOOT_ID;
 
@@ -488,24 +489,76 @@ class Hud {
       }
 
       final hoveredId = Main.Global.hoveredEntity.id;
-      final entityRef = Entity.getById(hoveredId);
+      final lootRef = Entity.getById(hoveredId);
       final playerRef = Entity.getById('PLAYER');
       final pickupRadius = 40;
-      final shouldPickupLoot = entityRef.type == 'LOOT' 
-        && Main.Global.worldMouse.buttonDown == 0 
-        && (Main.Global.worldMouse.buttonDownStartedAt
-            > Main.Global.hoveredEntity.hoverStart);
+      final isPickupMode = lootRef.type == 'LOOT' &&
+        (Main.Global.worldMouse.buttonDownStartedAt >
+         Main.Global.hoveredEntity.hoverStart);
       final distFromPlayer = Utils.distance(
-          playerRef.x, playerRef.y, entityRef.x, entityRef.y);
-      if (shouldPickupLoot && distFromPlayer <= pickupRadius) {
-        trace(distFromPlayer, playerRef.x, playerRef.y, entityRef.x, entityRef.y);
+          playerRef.x, playerRef.y, lootRef.x, lootRef.y);
+      if (isPickupMode && distFromPlayer <= pickupRadius) {
+        if (Main.Global.worldMouse.buttonDown == 0) {
+          Main.Global.worldMouse.hoverState = Main.HoverState.LootHoveredCanPickup;
+        }
 
-        final size = entityRef.radius * 2;
-        final addSuccess = Inventory.inventorySlotAddItem(
-            entityRef.id, size, size);
+        if (Main.Global.worldMouse.clicked) {
+          // fill with fake items
+          // for (_ in 0...60) {
+          //   Inventory.inventorySlotAddItem(
+          //       '${Math.random()}',
+          //       2 * 16, 2 * 16);
+          // }
 
-        if (addSuccess) {
-          Entity.destroy(entityRef.id);
+          final size = lootRef.radius * 2;
+          final addSuccess = Inventory.inventorySlotAddItem(
+              lootRef.id, size, size);
+
+          if (addSuccess) {
+            final animDuration = 0.2;
+            final startTime = Main.Global.time;
+            final flyToPlayerThenDestroy = (dt: Float) -> {
+              final angleToPlayer = Math.atan2(
+                  playerRef.y - lootRef.y,
+                  playerRef.x - lootRef.x);
+              final dx = Math.cos(angleToPlayer);
+              final dy = Math.sin(angleToPlayer);
+              final progress = (Main.Global.time - startTime) 
+                / animDuration;
+              final speed = 350;
+              lootRef.x += dx * speed * dt;
+              lootRef.y += dy * speed * dt;
+
+              final d = Utils.distance(
+                  lootRef.x, lootRef.y, playerRef.x, playerRef.y);
+              final done = d <= 5;
+              if (done) {
+                Entity.destroy(lootRef.id);
+                return false;
+              }
+
+              return true;
+            };
+            Main.Global.updateHooks.push(
+                flyToPlayerThenDestroy);
+          }
+
+          // visual feedback to show item pickup failure
+          if (!addSuccess) {
+            final lootRefOriginalX = lootRef.x;
+            final lootRefOriginalY = lootRef.y;
+            final dx = Utils.irnd(-5, 5, true);
+            final startTime = Main.Global.time;
+            final duration = 0.4;
+            Main.Global.updateHooks.push((dt: Float) -> {
+              final progress = (Main.Global.time - startTime) / duration;
+              final z = Math.sin(Math.PI * progress) * 15;
+              lootRef.x = lootRefOriginalX + progress * dx;
+              lootRef.y = lootRefOriginalY - z;
+
+              return progress < 1;
+            });
+          }
         }
       }
     }

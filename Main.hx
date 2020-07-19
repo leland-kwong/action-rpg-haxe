@@ -53,10 +53,14 @@ class Global {
   public static var tickCount = 0;
   public static var playerStats: PlayerStats.StatsRef = null; 
   public static var resolutionScale = 4;
+
+  // for convenience, not sure if this is performant enough
+  // for us to use for everything
   public static var updateHooks: 
-    Array<(dt: Float) -> Void> = [];
+    Array<(dt: Float) -> Bool> = [];
   public static var renderHooks: 
-    Array<(dt: Float) -> Void> = [];
+    Array<(dt: Float) -> Bool> = [];
+
   public static var mainPhase: MainPhase = null;
   public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
@@ -318,7 +322,7 @@ class Main extends hxd.App {
           // Click events trigger regardless of how long
           // since the pointer was down. This fixes that.
           final timeBetweenPointerDown = Global.time - pointerDownAt;
-          final clickTimeTolerance = 0.1; // seconds
+          final clickTimeTolerance = 0.3; // seconds
 
           if (timeBetweenPointerDown > clickTimeTolerance) {
             return;
@@ -413,11 +417,12 @@ class Main extends hxd.App {
           numActiveEntitiesToRender: 
             Main.Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
-            .nextAnimations.length
+            .nextAnimations.length,
+          numUpdateHooks: Main.Global.updateHooks.length,
+          numRenderHooks: Main.Global.renderHooks.length,
         }, null, '  ');
         var text = [
           'stats: ${formattedStats}',
-          'mouse: ${Json.stringify(Global.worldMouse, null, '  ')}',
           'log: ${Json.stringify(Global.logData, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;
@@ -436,6 +441,10 @@ class Main extends hxd.App {
       }
 
       acc += dt;
+
+
+      Hud.update(dt);
+      Hud.Inventory.update(dt);
 
       var isNextFrame = acc >= frameTime;
       // handle fixed dt here
@@ -459,14 +468,18 @@ class Main extends hxd.App {
       background.width = s2d.width;
       background.height = s2d.height;
 
+      final nextHooks = [];
       for (update in Main.Global.updateHooks) {
-        update(dt);
+        final shouldKeepAlive = update(dt);
+
+        if (shouldKeepAlive) {
+          nextHooks.push(update); 
+        }
       }
+      Main.Global.updateHooks = nextHooks;
 
       core.Anim.AnimEffect
         .update(dt);
-      Hud.update(dt);
-      Hud.Inventory.update(dt);
       SpriteBatchSystem.updateAll(dt);
 
       final tickFrequency = 144;

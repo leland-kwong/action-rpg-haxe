@@ -84,7 +84,8 @@ class Entity extends h2d.Object {
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
   public var stats: PlayerStats.StatsRef;
-  public final neighborCheckInterval: Int = 2; // after X ticks
+  public var neighborCheckInterval: Int = 2; // after X ticks
+  public final createdAt = Main.Global.time;
   var renderFn: (ref: Entity, time: Float) -> Void;
  
   public function new(
