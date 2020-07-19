@@ -82,7 +82,8 @@ class Global {
   ];
 
   public static var fonts: {
-    primary: h2d.Font
+    primary: h2d.Font,
+    title: h2d.Font
   };
 }
 
@@ -146,8 +147,7 @@ class HomeScreen extends h2d.Object {
     var leftMargin = 100;
 
     final baseFontSize = 24;
-    var titleFont = Main.Global.fonts.primary.clone();
-    titleFont.resizeTo(3 * baseFontSize);
+    var titleFont = Main.Global.fonts.title;
     var titleText = new h2d.Text(titleFont, this);
     titleText.text = 'Astral Cowboy';
     titleText.textColor = Game.Colors.pureWhite;
@@ -155,7 +155,7 @@ class HomeScreen extends h2d.Object {
     titleText.y = 300;
 
     var btnFont = Main.Global.fonts.primary.clone();
-    btnFont.resizeTo(2 * baseFontSize);
+    btnFont.resizeTo(1 * baseFontSize);
 
     var buttons: Array<Dynamic> = [
       ['Start Game', btnFont, () -> {
@@ -177,7 +177,7 @@ class HomeScreen extends h2d.Object {
       uiButtonsList.push(btn);
 
       if (prevBtn != null) {
-        btnGroup.y += prevBtn.button.height;
+        btnGroup.y += prevBtn.button.height + 10;
       }
 
       btn.x = btnGroup.x;
@@ -278,7 +278,8 @@ class Main extends hxd.App {
       Main.Global.mainPhase = MainPhase.Init;
 
       Main.Global.fonts = {
-        primary: Fonts.primary()
+        primary: Fonts.primary(),
+        title: Fonts.title()
       };
 
       // setup scenes

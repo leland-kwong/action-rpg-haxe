@@ -2,6 +2,7 @@
 **/hlboot.dat
 
 **/aseprite_exports
+*.tmp
 
 *.dist.*
 .logs
