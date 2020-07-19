@@ -34,6 +34,7 @@ class Global {
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
     buttonDown: -1,
+    clicked: false,
     hoverState: HoverState.None
   }
   public static final obstacleGrid: GridRef = 
@@ -292,29 +293,54 @@ class Main extends hxd.App {
 
 #end
 
+      final win = hxd.Window.getInstance();
+      // make fullscreen
+      var nativePixelResolution = {
+        // TODO this should be based on
+        // the actual screen's resolution
+        x: 1920,
+        y: 1080
+      }
+
       {
-        function onEvent(event : hxd.Event) {
-          if (event.kind == hxd.Event.EventKind.EPush) {
-            Global.worldMouse.buttonDown = event.button;
+        final rootInteract = new h2d.Interactive(
+            nativePixelResolution.x,
+            nativePixelResolution.y,
+            Global.uiRoot);
+
+        rootInteract.propagateEvents = true;
+        rootInteract.enableRightButton = true;
+
+        var pointerDownAt = 0.0;
+
+        rootInteract.onClick = (_) -> {
+          // Click events trigger regardless of how long
+          // since the pointer was down. This fixes that.
+          final timeBetweenPointerDown = Main.Global.time - pointerDownAt;
+          final clickTimeTolerance = 0.1; // seconds
+
+          if (timeBetweenPointerDown > clickTimeTolerance) {
+            return;
           }
-          if (event.kind == hxd.Event.EventKind.ERelease) {
-            Global.worldMouse.buttonDown = -1;
-          }
-        }
-        s2d.addEventListener(onEvent);
+
+          Global.worldMouse.clicked = true;
+
+          return;
+        };
+
+        rootInteract.onPush = (event : hxd.Event) -> {
+          pointerDownAt = Main.Global.time;
+          Global.worldMouse.buttonDown = event.button;
+        };
+
+        rootInteract.onRelease = (event : hxd.Event) -> {
+          Global.worldMouse.buttonDown = -1;
+        };
       }
 
       // setup viewport
 #if !jsMode
       {
-        var win = hxd.Window.getInstance();
-        // make fullscreen
-        var nativePixelResolution = {
-          // TODO this should be based on
-          // the actual screen's resolution
-          x: 1920,
-          y: 1080
-        }
         win.resize(
             nativePixelResolution.x, 
             nativePixelResolution.y);
@@ -445,6 +471,7 @@ class Main extends hxd.App {
       Main.Global.tickCount = Std.int(
           Main.Global.time / (1 / tickFrequency));
 
+      Global.worldMouse.clicked = false;
     } catch (error: Dynamic) {
 
       final stack = haxe.CallStack.exceptionStack();
