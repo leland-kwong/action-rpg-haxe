@@ -503,13 +503,6 @@ class Hud {
         }
 
         if (Main.Global.worldMouse.clicked) {
-          // fill with fake items
-          // for (_ in 0...60) {
-          //   Inventory.inventorySlotAddItem(
-          //       '${Math.random()}',
-          //       2 * 16, 2 * 16);
-          // }
-
           final size = lootRef.radius * 2;
           final addSuccess = Inventory.inventorySlotAddItem(
               lootRef.id, size, size);
