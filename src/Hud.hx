@@ -82,14 +82,9 @@ class Inventory {
   // pixel art's resolution (480 x 270)
   public static function inventorySlotAddItem(
       itemId, w, h): Bool {
-    var cellX = 0;
-    var cellY = 0;
 
-    final insertSuccess = true;
-    
     final invGrid = state.inventorySlotsGrid;
     final cellSize = invGrid.cellSize;
-
     final slotDefinition = {
       final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json); 
@@ -102,7 +97,6 @@ class Inventory {
           interactRef.objects,
           (o) -> o.name == 'inventory_slots');
     }
-
     final slotSize: Int = Lambda.find(
         slotDefinition.properties, 
         (p: TiledUiProp) -> p.name == 'slotSize').value;
@@ -110,10 +104,9 @@ class Inventory {
     final maxRow = Std.int(slotDefinition.height / slotSize);
     final maxY = maxRow - 1;
     final maxX = maxCol - 1;
-    var y = 0;
-    while (y <= maxY) {
-      var x = 0;
-      while (x <= maxX) {
+
+    for (y in 0...maxRow) {
+      for (x in 0...maxCol) {
         final cx = x + Math.floor(w / 2);
         final cy = y + Math.floor(h / 2);
         final filledSlots = Grid.getItemsInRect(
@@ -124,14 +117,13 @@ class Inventory {
           && cx + Math.floor(w / 2) <= maxX
           && cy + Math.floor(h / 2) <= maxY
           && cy - Math.floor(h / 2) >= 0;
+
         if (canFit) {
           Grid.setItemRect(
               invGrid, cx, cy, w, h, itemId);
           return true;
         }
-        x += 1;
       }
-      y += 1;
     }
  
     return false;
