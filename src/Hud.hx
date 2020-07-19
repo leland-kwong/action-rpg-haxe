@@ -474,6 +474,68 @@ class UiGrid {
   }
 }
 
+class LootTooltip {
+  static var tooltipTextRef: h2d.Text;
+
+  public static function update(dt: Float) {
+    if (tooltipTextRef == null) {
+      final font = Main.Global.fonts.primary.clone();
+      tooltipTextRef = new h2d.Text(
+          font);
+    }
+
+    final entityRef = Entity.getById(
+        Main.Global.hoveredEntity.id);
+
+    if (entityRef.type != 'LOOT') {
+      tooltipTextRef.remove();
+
+      return;
+    }
+
+    Main.Global.uiRoot.addChild(tooltipTextRef);
+    tooltipTextRef.textAlign = Center;
+    tooltipTextRef.text = 'Spider Bots';
+    tooltipTextRef.textColor = 0xffffff;
+  }
+
+  public static function render(time: Float) {
+    final entityRef = Entity.getById(
+        Main.Global.hoveredEntity.id);
+
+    if (entityRef.type != 'LOOT') {
+      return;
+    }
+
+    final lootRef = entityRef;
+    final ttWorldPos = Camera.toScreenPos(
+        Main.Global.mainCamera, 
+        lootRef.x, lootRef.y);
+    tooltipTextRef.x = ttWorldPos[0] * Hud.rScale;
+    tooltipTextRef.y = (ttWorldPos[1] - 25) * Hud.rScale;
+
+    // tooltip background
+    final ttPaddingH = 5;
+    final ttPaddingV = 2;
+    Main.Global.sb.emitSprite(
+        lootRef.x - (ttPaddingH / 2) - 
+        tooltipTextRef.textWidth / 2 / Hud.rScale,
+        lootRef.y - (ttPaddingV / 2) - 25,
+        'ui/square_white',
+        null,
+        (p) -> {
+          p.batchElement.scaleX = ttPaddingH + 
+            tooltipTextRef.textWidth / Hud.rScale;
+          p.batchElement.scaleY = ttPaddingV + 
+            tooltipTextRef.textHeight / Hud.rScale;
+          p.batchElement.r = 0;
+          p.batchElement.g = 0;
+          p.batchElement.b = 0;
+          p.batchElement.a = 0.9;
+        });
+  }
+}
+
 class Hud {
   public static var rScale = 4;
   static var mapData: TiledMapData;
@@ -481,6 +543,7 @@ class Hud {
   static var aiHealthBar: h2d.Graphics;
   static final aiHealthBarWidth = 200;
   static var hoveredEntityId: Entity.EntityId;
+  static var tooltipTf: h2d.Text;
 
   public static function init() {
     aiHealthBar = new h2d.Graphics(
@@ -497,6 +560,8 @@ class Hud {
   }
 
   public static function update(dt: Float) {
+    LootTooltip.update(dt);
+
     Main.Global.worldMouse.hoverState = 
       Main.HoverState.None;
 
@@ -558,6 +623,8 @@ class Hud {
   }
 
   public static function render(time: Float) {
+    LootTooltip.render(time);
+
     var ps = Main.Global.playerStats;
 
     if (ps == null) {
