@@ -485,7 +485,7 @@ class Hud {
   public static function init() {
     aiHealthBar = new h2d.Graphics(
         Main.Global.uiRoot);
-    final font = Fonts.primary().toFont().clone();
+    final font = Main.Global.fonts.primary;
     tf = new h2d.Text(
         font, 
         Main.Global.uiRoot);

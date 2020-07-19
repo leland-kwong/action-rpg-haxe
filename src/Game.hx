@@ -200,7 +200,7 @@ class Ai extends Entity {
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
 
-  var font: h2d.Font = Fonts.primary().toFont().clone();
+  var font: h2d.Font = Main.Global.fonts.primary;
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
@@ -602,7 +602,14 @@ class Ai extends Entity {
         }); 
         final endYOffset = Utils.irnd(-5, 5, true);
         final endXOffset = Utils.irnd(-10, 10, true);
-        Main.Global.updateHooks.push((dt: Float) -> {
+        final font = Main.Global.fonts.primary.clone();
+        // font.resizeTo(Std.int(24 / 4));
+        final tooltipText = new h2d.Text(
+            font, Main.Global.uiRoot);
+        tooltipText.textAlign = Center;
+        tooltipText.text = 'Spider Bots';
+        tooltipText.textColor = 0xffffff;
+        final lootDropAnimation = (dt: Float) -> {
           final duration = 0.3;
           final progress = Math.min(
               1, 
@@ -613,10 +620,37 @@ class Ai extends Entity {
           lootRef.y = startY + endYOffset * progress - z;
 
           return progress < 1;
-        });
+        };
+        Main.Global.updateHooks.push(lootDropAnimation);
 
         lootRef.type = 'LOOT';
         lootRef.renderFn = (ref, time: Float) -> {
+
+          final ttWorldPos = Camera.toScreenPos(
+              Main.Global.mainCamera, 
+              lootRef.x, lootRef.y);
+          tooltipText.x = ttWorldPos[0] * Hud.rScale;
+          tooltipText.y = (ttWorldPos[1] - 25) * Hud.rScale;
+
+          // tooltip background
+          final ttPadding = 2;
+          Main.Global.sb.emitSprite(
+              lootRef.x - (ttPadding / 2) - 
+              tooltipText.textWidth / 2 / Hud.rScale,
+              lootRef.y - (ttPadding / 2) - 25,
+              'ui/square_white',
+              null,
+              (p) -> {
+                p.batchElement.scaleX = ttPadding + 
+                  tooltipText.textWidth / Hud.rScale;
+                p.batchElement.scaleY = ttPadding + 
+                  tooltipText.textHeight / Hud.rScale;
+                p.batchElement.r = 0;
+                p.batchElement.g = 0;
+                p.batchElement.b = 0;
+                p.batchElement.a = 0.9;
+              });
+
           // drop shadow
           Main.Global.sb.emitSprite(
               ref.x - ref.radius,

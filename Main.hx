@@ -80,6 +80,10 @@ class Global {
   public static var tempState: Map<String, Float> = [
     'kamehamehaTick' => 0.0
   ];
+
+  public static var fonts: {
+    primary: h2d.Font
+  };
 }
 
 enum UiState {
@@ -142,7 +146,7 @@ class HomeScreen extends h2d.Object {
     var leftMargin = 100;
 
     final baseFontSize = 24;
-    var titleFont = Fonts.primary().toFont().clone();
+    var titleFont = Main.Global.fonts.primary.clone();
     titleFont.resizeTo(3 * baseFontSize);
     var titleText = new h2d.Text(titleFont, this);
     titleText.text = 'Astral Cowboy';
@@ -150,7 +154,7 @@ class HomeScreen extends h2d.Object {
     titleText.x = leftMargin;
     titleText.y = 300;
 
-    var btnFont = Fonts.primary().toFont().clone();
+    var btnFont = Main.Global.fonts.primary.clone();
     btnFont.resizeTo(2 * baseFontSize);
 
     var buttons: Array<Dynamic> = [
@@ -272,6 +276,10 @@ class Main extends hxd.App {
 
       hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
+
+      Main.Global.fonts = {
+        primary: Fonts.primary()
+      };
 
       // setup scenes
       {
