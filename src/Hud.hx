@@ -181,6 +181,108 @@ class Inventory {
        //  });
       }
     }
+
+    // handle loot interaction
+    final entityRef = Entity.getById(Main.Global.hoveredEntity.id);
+    if (entityRef == Entity.NULL_ENTITY || 
+        entityRef.type == 'LOOT') {
+      final NO_LOOT_ID = 'NO_LOOT_HOVERED';
+      Main.Global.hoveredEntity.id = NO_LOOT_ID;
+
+      final mWorldX = Main.Global.rootScene.mouseX;
+      final mWorldY = Main.Global.rootScene.mouseY;
+      final hoveredLootIds = Grid.getItemsInRect(
+          Main.Global.lootColGrid,
+          mWorldX,
+          mWorldY,
+          1,
+          1);
+      Main.Global.hoveredEntity.id = Utils.withDefault(
+          Lambda.find(
+            hoveredLootIds,
+            (_) -> true),
+          Entity.NULL_ENTITY.id);
+
+      if (Entity.isNullId(
+            Main.Global.hoveredEntity.id)) {
+        Main.Global.hoveredEntity.hoverStart = -1.0;
+      } else if (Main.Global.hoveredEntity.hoverStart == -1.0) {
+        Main.Global.hoveredEntity.hoverStart = Main.Global.time;
+      }
+
+      if (Entity.isNullId(
+            Main.Global.hoveredEntity.id)) {
+        Main.Global.worldMouse.hoverState = 
+          Main.HoverState.LootHovered;
+      }
+
+      final hoveredId = Main.Global.hoveredEntity.id;
+      final lootRef = Entity.getById(hoveredId);
+      final playerRef = Entity.getById('PLAYER');
+      final pickupRadius = 40;
+      final isPickupMode = lootRef.type == 'LOOT' &&
+        (Main.Global.worldMouse.buttonDownStartedAt >
+         Main.Global.hoveredEntity.hoverStart);
+      final distFromPlayer = Utils.distance(
+          playerRef.x, playerRef.y, lootRef.x, lootRef.y);
+      if (isPickupMode && distFromPlayer <= pickupRadius) {
+        if (Main.Global.worldMouse.buttonDown == 0) {
+          Main.Global.worldMouse.hoverState = Main.HoverState.LootHoveredCanPickup;
+        }
+
+        if (Main.Global.worldMouse.clicked) {
+          final size = lootRef.radius * 2;
+          final addSuccess = Inventory.inventorySlotAddItem(
+              lootRef.id, size, size);
+
+          if (addSuccess) {
+            final animDuration = 0.2;
+            final startTime = Main.Global.time;
+            final flyToPlayerThenDestroy = (dt: Float) -> {
+              final angleToPlayer = Math.atan2(
+                  playerRef.y - lootRef.y,
+                  playerRef.x - lootRef.x);
+              final dx = Math.cos(angleToPlayer);
+              final dy = Math.sin(angleToPlayer);
+              final progress = (Main.Global.time - startTime) 
+                / animDuration;
+              final speed = 350;
+              lootRef.x += dx * speed * dt;
+              lootRef.y += dy * speed * dt;
+
+              final d = Utils.distance(
+                  lootRef.x, lootRef.y, playerRef.x, playerRef.y);
+              final done = d <= 5;
+              if (done) {
+                Entity.destroy(lootRef.id);
+                return false;
+              }
+
+              return true;
+            };
+            Main.Global.updateHooks.push(
+                flyToPlayerThenDestroy);
+          }
+
+          // visual feedback to show item pickup failure
+          if (!addSuccess) {
+            final lootRefOriginalX = lootRef.x;
+            final lootRefOriginalY = lootRef.y;
+            final dx = Utils.irnd(-5, 5, true);
+            final startTime = Main.Global.time;
+            final duration = 0.4;
+            Main.Global.updateHooks.push((dt: Float) -> {
+              final progress = (Main.Global.time - startTime) / duration;
+              final z = Math.sin(Math.PI * progress) * 15;
+              lootRef.x = lootRefOriginalX + progress * dx;
+              lootRef.y = lootRefOriginalY - z;
+
+              return progress < 1;
+            });
+          }
+        }
+      }
+    }
   }
 
   public static function render(time: Float) {
@@ -454,107 +556,6 @@ class Hud {
       }
     }
 
-    final entityRef = Entity.getById(Main.Global.hoveredEntity.id);
-    // handle loot interaction
-    if (entityRef == Entity.NULL_ENTITY || 
-        entityRef.type == 'LOOT') {
-      final NO_LOOT_ID = 'NO_LOOT_HOVERED';
-      Main.Global.hoveredEntity.id = NO_LOOT_ID;
-
-      final mWorldX = Main.Global.rootScene.mouseX;
-      final mWorldY = Main.Global.rootScene.mouseY;
-      final hoveredLootIds = Grid.getItemsInRect(
-          Main.Global.lootColGrid,
-          mWorldX,
-          mWorldY,
-          1,
-          1);
-      Main.Global.hoveredEntity.id = Utils.withDefault(
-          Lambda.find(
-            hoveredLootIds,
-            (_) -> true),
-          Entity.NULL_ENTITY.id);
-
-      if (Entity.isNullId(
-            Main.Global.hoveredEntity.id)) {
-        Main.Global.hoveredEntity.hoverStart = -1.0;
-      } else if (Main.Global.hoveredEntity.hoverStart == -1.0) {
-        Main.Global.hoveredEntity.hoverStart = Main.Global.time;
-      }
-
-      if (Entity.isNullId(
-            Main.Global.hoveredEntity.id)) {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.LootHovered;
-      }
-
-      final hoveredId = Main.Global.hoveredEntity.id;
-      final lootRef = Entity.getById(hoveredId);
-      final playerRef = Entity.getById('PLAYER');
-      final pickupRadius = 40;
-      final isPickupMode = lootRef.type == 'LOOT' &&
-        (Main.Global.worldMouse.buttonDownStartedAt >
-         Main.Global.hoveredEntity.hoverStart);
-      final distFromPlayer = Utils.distance(
-          playerRef.x, playerRef.y, lootRef.x, lootRef.y);
-      if (isPickupMode && distFromPlayer <= pickupRadius) {
-        if (Main.Global.worldMouse.buttonDown == 0) {
-          Main.Global.worldMouse.hoverState = Main.HoverState.LootHoveredCanPickup;
-        }
-
-        if (Main.Global.worldMouse.clicked) {
-          final size = lootRef.radius * 2;
-          final addSuccess = Inventory.inventorySlotAddItem(
-              lootRef.id, size, size);
-
-          if (addSuccess) {
-            final animDuration = 0.2;
-            final startTime = Main.Global.time;
-            final flyToPlayerThenDestroy = (dt: Float) -> {
-              final angleToPlayer = Math.atan2(
-                  playerRef.y - lootRef.y,
-                  playerRef.x - lootRef.x);
-              final dx = Math.cos(angleToPlayer);
-              final dy = Math.sin(angleToPlayer);
-              final progress = (Main.Global.time - startTime) 
-                / animDuration;
-              final speed = 350;
-              lootRef.x += dx * speed * dt;
-              lootRef.y += dy * speed * dt;
-
-              final d = Utils.distance(
-                  lootRef.x, lootRef.y, playerRef.x, playerRef.y);
-              final done = d <= 5;
-              if (done) {
-                Entity.destroy(lootRef.id);
-                return false;
-              }
-
-              return true;
-            };
-            Main.Global.updateHooks.push(
-                flyToPlayerThenDestroy);
-          }
-
-          // visual feedback to show item pickup failure
-          if (!addSuccess) {
-            final lootRefOriginalX = lootRef.x;
-            final lootRefOriginalY = lootRef.y;
-            final dx = Utils.irnd(-5, 5, true);
-            final startTime = Main.Global.time;
-            final duration = 0.4;
-            Main.Global.updateHooks.push((dt: Float) -> {
-              final progress = (Main.Global.time - startTime) / duration;
-              final z = Math.sin(Math.PI * progress) * 15;
-              lootRef.x = lootRefOriginalX + progress * dx;
-              lootRef.y = lootRefOriginalY - z;
-
-              return progress < 1;
-            });
-          }
-        }
-      }
-    }
   }
 
   public static function render(time: Float) {

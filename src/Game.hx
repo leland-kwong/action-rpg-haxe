@@ -617,13 +617,14 @@ class Ai extends Entity {
 
         lootRef.type = 'LOOT';
         lootRef.renderFn = (ref, time: Float) -> {
+          // drop shadow
           Main.Global.sb.emitSprite(
               ref.x - ref.radius,
               ref.y + ref.radius - 2,
               'ui/square_white',
               null,
               (p) -> {
-                p.sortOrder = y - 1;
+                p.sortOrder = ref.y - 1;
                 p.batchElement.scaleX = ref.radius * 2;
                 p.batchElement.r = 0;
                 p.batchElement.g = 0;
@@ -633,7 +634,7 @@ class Ai extends Entity {
               });
 
           final lootRenderFn = (p: SpriteRef) -> {
-            p.sortOrder = y - 1;
+            p.sortOrder = ref.y - 1;
 
             if (Main.Global.hoveredEntity.id == 
                 ref.id) {
