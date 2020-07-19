@@ -140,8 +140,6 @@ class Inventory {
   public static function update(dt: Float) {
     if (!ready) {
 
-      Benchmarks.benchSprites();
-
       ready = true;
 
       trace('setup inventory interact grid');
@@ -488,7 +486,6 @@ class Hud {
     aiHealthBar = new h2d.Graphics(
         Main.Global.uiRoot);
     final font = Fonts.primary().toFont().clone();
-    font.resizeTo(24);
     tf = new h2d.Text(
         font, 
         Main.Global.uiRoot);
@@ -505,11 +502,11 @@ class Hud {
 
     // show hovered ai info
     {
-      final healthBarHeight = 40;
+      final healthBarHeight = 30;
       tf.x = Main.Global.uiRoot.width / 2;
       tf.y = 10;
       aiHealthBar.x = tf.x - aiHealthBarWidth / 2;
-      aiHealthBar.y = 10;
+      aiHealthBar.y = 35;
 
       final x = Main.Global.rootScene.mouseX;
       final y = Main.Global.rootScene.mouseY;
