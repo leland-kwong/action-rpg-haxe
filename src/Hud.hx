@@ -474,11 +474,13 @@ class UiGrid {
   }
 }
 
-class LootTooltip {
+class Tooltip {
   static var tooltipTextRef: h2d.Text;
 
   public static function update(dt: Float) {
-    if (tooltipTextRef == null) {
+    final initialized = tooltipTextRef != null;
+
+    if (!initialized) {
       final font = Main.Global.fonts.primary.clone();
       tooltipTextRef = new h2d.Text(
           font);
@@ -560,7 +562,7 @@ class Hud {
   }
 
   public static function update(dt: Float) {
-    LootTooltip.update(dt);
+    Tooltip.update(dt);
 
     Main.Global.worldMouse.hoverState = 
       Main.HoverState.None;
@@ -623,7 +625,7 @@ class Hud {
   }
 
   public static function render(time: Float) {
-    LootTooltip.render(time);
+    Tooltip.render(time);
 
     var ps = Main.Global.playerStats;
 
