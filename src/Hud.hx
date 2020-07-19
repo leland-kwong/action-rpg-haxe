@@ -1,7 +1,8 @@
 using core.Types;
 
 typedef UiAction = {
-  type: String
+  type: String,
+  ?data: Dynamic
 };
 typedef InventoryRef = {
   inventorySlots: Grid.GridRef,
@@ -81,7 +82,7 @@ class Inventory {
   // dimensions are based on the native 
   // pixel art's resolution (480 x 270)
   public static function inventorySlotAddItem(
-      itemId, w, h): Bool {
+      itemId, pixelWidth, pixelHeight): Bool {
 
     final invGrid = state.inventorySlotsGrid;
     final cellSize = invGrid.cellSize;
@@ -100,6 +101,9 @@ class Inventory {
     final slotSize: Int = Lambda.find(
         slotDefinition.properties, 
         (p: TiledUiProp) -> p.name == 'slotSize').value;
+    // convert item dimensions to slot units 
+    final sw = Math.ceil(pixelWidth / slotSize);
+    final sh = Math.ceil(pixelHeight / slotSize);
     final maxCol = Std.int(slotDefinition.width / slotSize);
     final maxRow = Std.int(slotDefinition.height / slotSize);
     final maxY = maxRow - 1;
@@ -107,20 +111,20 @@ class Inventory {
 
     for (y in 0...maxRow) {
       for (x in 0...maxCol) {
-        final cx = x + Math.floor(w / 2);
-        final cy = y + Math.floor(h / 2);
+        final cx = x + Math.floor(sw / 2);
+        final cy = y + Math.floor(sh / 2);
         final filledSlots = Grid.getItemsInRect(
-            invGrid, cx, cy, w, h);
+            invGrid, cx, cy, sw, sh);
         final canFit = Lambda.count(
             filledSlots) == 0
-          && cx - Math.floor(w / 2) >= 0
-          && cx + Math.floor(w / 2) <= maxX
-          && cy + Math.floor(h / 2) <= maxY
-          && cy - Math.floor(h / 2) >= 0;
+          && cx - Math.floor(sw / 2) >= 0
+          && cx + Math.floor(sw / 2) <= maxX + 1
+          && cy + Math.floor(sh / 2) <= maxY + 1
+          && cy - Math.floor(sh / 2) >= 0;
 
         if (canFit) {
           Grid.setItemRect(
-              invGrid, cx, cy, w, h, itemId);
+              invGrid, cx, cy, sw, sh, itemId);
           return true;
         }
       }
@@ -158,33 +162,40 @@ class Inventory {
             'iInteract_${o.id}');
       }
 
-      final addRandomSizedBlock = () -> {
-        inventorySlotAddItem(
-            'mock_item_${Math.random()}', Utils.irnd(1, 3), Utils.irnd(1, 3));
-      };
+      // debug code
+      {
+       //  final addRandomSizedBlock = () -> {
+       //    inventorySlotAddItem(
+       //        'mock_item_${Math.random()}', Utils.irnd(1, 3), Utils.irnd(1, 3));
+       //  };
 
-      Main.Global.uiRoot.addEventListener((e: hxd.Event) -> {
-        if (e.kind == hxd.Event.EventKind.EPush) {
-          state.inventorySlotsGrid = Grid.create(1);
-          for (_ in 0...60) {
-            addRandomSizedBlock();
-          }
-        }
-      });
-
-      for (_ in 0...60) {
-        addRandomSizedBlock();
+       //  Main.Global.uiRoot.addEventListener((e: hxd.Event) -> {
+       //    if (e.kind == hxd.Event.EventKind.EPush) {
+       //      state.inventorySlotsGrid = Grid.create(1);
+       //      for (_ in 0...60) {
+       //        // addRandomSizedBlock();
+       //        inventorySlotAddItem(
+       //            'mock_item_${Math.random()}', 2 * 16, 2 * 16);
+       //      }
+       //    }
+       //  });
       }
     }
   }
 
   public static function render(time: Float) {
     final globalState = Main.Global.uiState.inventory;
+
+    debugGraphic = debugGraphic == null 
+      ? new h2d.Graphics(Main.Global.uiRoot)
+      : debugGraphic;
+    debugGraphic.clear();
+
     if (!globalState.opened) {
       return;
     }
 
-    // render filled slots
+    // debug render filled slots
     {
       final slotSize = 16 * Hud.rScale;
       final cellRenderEffect = (p) -> {
@@ -195,11 +206,7 @@ class Inventory {
         b.alpha = 0.3;
         b.r = 0.5;
       };
-      debugGraphic = debugGraphic == null 
-        ? new h2d.Graphics(Main.Global.uiRoot)
-        : debugGraphic;
 
-      debugGraphic.clear();
       for (_ => bounds in state.inventorySlotsGrid.itemCache) {
         final x = bounds[0];
         final y = bounds[2];
@@ -213,42 +220,33 @@ class Inventory {
             width * slotSize - 4,
             height * slotSize - 4);
       }
-
-      // for (y => row in state.inventorySlotsGrid.data) {
-      //   for (x => cell in row) {
-      //     Main.Global.uiSpriteBatch.emitSprite(
-      //         (x * slotSize) + 272 * Hud.rScale,
-      //         (y * slotSize) + 32 * Hud.rScale,
-      //         'ui/square_white',
-      //         null,
-      //         cellRenderEffect);   
-      //   }
-      // }
     }
-
     
-    final cellSize = interactGrid.cellSize;
-    for (y => col in interactGrid.data) {
-      for (x => cell in col) {
-        Main.Global.logData.interactPosition = {
-          x: x * cellSize,
-          y: y * cellSize
-        };
-        final cellRenderEffect = (p) -> {
-          final b: h2d.SpriteBatch.BatchElement 
-            = p.batchElement;
-          p.sortOrder = 1.0;
-          b.scale = cellSize - 4;
-          b.alpha = 0.2;
-        };
-        Main.Global.uiSpriteBatch.emitSprite(
-            (x * cellSize),
-            (y * cellSize),
-            'ui/square_white',
-            null,
-            cellRenderEffect);   
-      }
-    }
+    // debug render interactable slots
+    // {
+    //   final cellSize = interactGrid.cellSize;
+    //   for (y => col in interactGrid.data) {
+    //     for (x => cell in col) {
+    //       Main.Global.logData.interactPosition = {
+    //         x: x * cellSize,
+    //         y: y * cellSize
+    //       };
+    //       final cellRenderEffect = (p) -> {
+    //         final b: h2d.SpriteBatch.BatchElement 
+    //           = p.batchElement;
+    //         p.sortOrder = 1.0;
+    //         b.scale = cellSize - 4;
+    //         b.alpha = 0.2;
+    //       };
+    //       Main.Global.uiSpriteBatch.emitSprite(
+    //           (x * cellSize),
+    //           (y * cellSize),
+    //           'ui/square_white',
+    //           null,
+    //           cellRenderEffect);   
+    //     }
+    //   }
+    // }
 
     final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
@@ -308,7 +306,6 @@ class UiGrid {
           switch(p: TiledUiProp) {
             case { name: 'onClick' }: {
               iRef.onClick = (e: hxd.Event) -> {
-                trace('click');
                 UiStateManager.send({
                   type: p.value
                 });
@@ -360,7 +357,9 @@ class UiGrid {
 
             switch(ref.name) {
               case 'ui/hud_inventory_button': {
-                if (hoveredId == Std.string(ref.id)) {
+                final isHovered = hoveredId == 
+                  Std.string(ref.id);
+                if (isHovered) {
                   p.batchElement.r = 0.0;
                   p.batchElement.g = 0.9;
                   p.batchElement.b = 1;
@@ -455,7 +454,7 @@ class Hud {
       }
     }
 
-    // set hovered loot id
+    // handle loot interaction
     if (Entity.isNullId(
           Main.Global.hoveredEntity.id)) {
       final NO_LOOT_ID = 'NO_LOOT_HOVERED';
@@ -486,6 +485,28 @@ class Hud {
             Main.Global.hoveredEntity.id)) {
         Main.Global.worldMouse.hoverState = 
           Main.HoverState.LootHovered;
+      }
+
+      final hoveredId = Main.Global.hoveredEntity.id;
+      final entityRef = Entity.getById(hoveredId);
+      final playerRef = Entity.getById('PLAYER');
+      final pickupRadius = 40;
+      final shouldPickupLoot = entityRef.type == 'LOOT' 
+        && Main.Global.worldMouse.buttonDown == 0 
+        && (Main.Global.worldMouse.buttonDownStartedAt
+            > Main.Global.hoveredEntity.hoverStart);
+      final distFromPlayer = Utils.distance(
+          playerRef.x, playerRef.y, entityRef.x, entityRef.y);
+      if (shouldPickupLoot && distFromPlayer <= pickupRadius) {
+        trace(distFromPlayer, playerRef.x, playerRef.y, entityRef.x, entityRef.y);
+
+        final size = entityRef.radius * 2;
+        final addSuccess = Inventory.inventorySlotAddItem(
+            entityRef.id, size, size);
+
+        if (addSuccess) {
+          Entity.destroy(entityRef.id);
+        }
       }
     }
   }

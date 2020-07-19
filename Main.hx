@@ -34,8 +34,9 @@ class Global {
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
     buttonDown: -1,
+    buttonDownStartedAt: -1.0,
     clicked: false,
-    hoverState: HoverState.None
+    hoverState: HoverState.None,
   }
   public static final obstacleGrid: GridRef = 
     Grid.create(16);
@@ -64,7 +65,7 @@ class Global {
       enabled: true
     },
     inventory: {
-      opened: true
+      opened: false
     }
   }
 
@@ -316,7 +317,7 @@ class Main extends hxd.App {
         rootInteract.onClick = (_) -> {
           // Click events trigger regardless of how long
           // since the pointer was down. This fixes that.
-          final timeBetweenPointerDown = Main.Global.time - pointerDownAt;
+          final timeBetweenPointerDown = Global.time - pointerDownAt;
           final clickTimeTolerance = 0.1; // seconds
 
           if (timeBetweenPointerDown > clickTimeTolerance) {
@@ -329,7 +330,8 @@ class Main extends hxd.App {
         };
 
         rootInteract.onPush = (event : hxd.Event) -> {
-          pointerDownAt = Main.Global.time;
+          pointerDownAt = Global.time;
+          Global.worldMouse.buttonDownStartedAt = Global.time;
           Global.worldMouse.buttonDown = event.button;
         };
 

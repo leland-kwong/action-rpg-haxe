@@ -57,7 +57,8 @@ class Entity extends h2d.Object {
     final defaultEntity = new Entity({
       x: 0, 
       y: 0, 
-      radius: 0
+      radius: 0,
+      id: 'NULL_ENTITY'
     }, true);
     defaultEntity.type = 'NULL_ENTITY';
     defaultEntity;
@@ -68,7 +69,7 @@ class Entity extends h2d.Object {
   public var neighbors: Array<EntityId> = [];
   public var id: EntityId;
   public var type = 'UNKNOWN_TYPE';
-  public var radius: Int;
+  public var radius = 0;
   public var avoidanceRadius: Int;
   public var dx = 0.0;
   public var dy = 0.0;
@@ -89,19 +90,20 @@ class Entity extends h2d.Object {
   public function new(
       props: EntityProps, 
       fromInitialization = false) {
+ 
+    id = props.id == null
+      ? 'entity_${idGenerated++}'
+      : props.id;
 
     if (fromInitialization) {
       return;
     }
-    
+
     super();
 
+    radius = props.radius;
     x = props.x;
     y = props.y;
-    id = props.id == null
-      ? 'entity_${idGenerated++}'
-      : props.id;
-    radius = props.radius;
     avoidanceRadius = props.avoidanceRadius != null
       ? props.avoidanceRadius : radius;
     if (props.weight != null) {
@@ -161,6 +163,10 @@ class Entity extends h2d.Object {
 
   public function isDone() {
     return health <= 0;
+  }
+
+  public static function destroy(id: EntityId) {
+    Entity.getById(id).health = 0;
   }
 
   public static function getById(

@@ -596,18 +596,27 @@ class Ai extends Entity {
         final lootRef = new Entity({
           x: x, 
           y: y,
-          radius: 10,
+          radius: 11,
         }); 
         lootRef.type = 'LOOT';
         lootRef.renderFn = (ref, time: Float) -> {
-          final lootRenderFn = (p: SpriteRef) -> {
-            p.sortOrder = 0;
-            p.batchElement.scale = ref.radius * 2;
-            p.batchElement.alpha = 0.7;
+          Main.Global.sb.emitSprite(
+              ref.x - ref.radius,
+              ref.y + ref.radius - 2,
+              'ui/square_white',
+              null,
+              (p) -> {
+                p.sortOrder = y - 1;
+                p.batchElement.scaleX = ref.radius * 2;
+                p.batchElement.r = 0;
+                p.batchElement.g = 0;
+                p.batchElement.b = 0.2;
+                p.batchElement.a = 0.2;
+                p.batchElement.scaleY = ref.radius * 0.5;
+              });
 
-            p.batchElement.g = 1;
-            p.batchElement.r = 1;
-            p.batchElement.b = 1;
+          final lootRenderFn = (p: SpriteRef) -> {
+            p.sortOrder = y - 1;
 
             if (Main.Global.hoveredEntity.id == 
                 ref.id) {
@@ -624,7 +633,7 @@ class Ai extends Entity {
           Main.Global.sb.emitSprite(
               ref.x,
               ref.y,
-              'ui/square_white',
+              'ui/loot__ability_spider_bot',
               null,
               lootRenderFn);
         };
@@ -677,6 +686,7 @@ class Player extends Entity {
       y: y,
       radius: 6,
       weight: 1.0,
+      id: 'PLAYER'
     });
     cds = new Cooldown();
     type = 'PLAYER';
@@ -1638,6 +1648,7 @@ class Game extends h2d.Object {
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(Main.Global.obstacleGrid, a.id);
+        Grid.removeItem(Main.Global.lootColGrid, a.id);
         a.remove();
       }
     }

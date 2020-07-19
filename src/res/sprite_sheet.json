@@ -711,6 +711,15 @@
 	"sourceSize": {"w":1520,"h":1184},
 	"pivot": {"x":0.5,"y":0.5}
 },
+"ui/loot__ability_spider_bot":
+{
+	"frame": {"x":748,"y":1212,"w":22,"h":22},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":22,"h":22},
+	"sourceSize": {"w":22,"h":22},
+	"pivot": {"x":0.5,"y":0.5}
+},
 "ui/pillar":
 {
 	"frame": {"x":281,"y":1187,"w":42,"h":88},
@@ -718,7 +727,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":42,"h":88},
 	"sourceSize": {"w":42,"h":88},
-	"pivot": {"x":0.5,"y":0.5}
+	"pivot": {"x":0.5,"y":0.625}
 },
 "ui/square_white":
 {
@@ -736,7 +745,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":17,"h":48},
 	"sourceSize": {"w":17,"h":48},
-	"pivot": {"x":0.5,"y":0.5}
+	"pivot": {"x":0.5,"y":0.833333}
 },
 "ui/teleporter_pillar_right":
 {
@@ -745,7 +754,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":17,"h":48},
 	"sourceSize": {"w":17,"h":48},
-	"pivot": {"x":0.5,"y":0.5}
+	"pivot": {"x":0.5,"y":0.833333}
 },
 "ui/ui_inventory_underlay":
 {
@@ -763,6 +772,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1522,"h":1384},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:9580bffa642e8baf03f1de8cabfe9c4d:eba15967d2994457df7d8cfbe4b533fc:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:bd077156cd4394e39cb44775b3173d74:15a74765f00b51a18b64fa5bb79b8d37:6cc8953523e0367402f95f3c9a630665$"
 }
 }
