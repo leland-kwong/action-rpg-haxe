@@ -20,7 +20,7 @@ typedef StatsRef = {
 // TODO
 // We should rename this since we'll be able to 
 // use this this for npcs and enemies as well
-class PlayerStats {
+class EntityStats {
   public static function create(props): StatsRef {
     final p = props;
 

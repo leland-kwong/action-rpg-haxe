@@ -236,7 +236,7 @@ class Ai extends Entity {
     status = 'UNTARGETABLE';
     speed = 0.0;
     health = healthBySize[size];
-    stats = PlayerStats.create({
+    stats = EntityStats.create({
       maxHealth: health,
       currentHealth: health,
       maxEnergy: 0,
@@ -716,7 +716,7 @@ class Player extends Entity {
     obstacleGrid = Main.Global.obstacleGrid;
 
     rootScene = s2d;
-    Main.Global.playerStats = PlayerStats.create({
+    Main.Global.playerStats = EntityStats.create({
       maxHealth: 100,
       maxEnergy: 100,
       currentHealth: 100.0,
@@ -847,7 +847,7 @@ class Player extends Entity {
 
     {
       if (damageTaken > 0) {
-        PlayerStats.addEvent(
+        EntityStats.addEvent(
             Main.Global.playerStats, 
             { type: 'DAMAGE_RECEIVED', 
               value: damageTaken });
@@ -920,7 +920,7 @@ class Player extends Entity {
         Main.Global.rootScene.addChild(b);
         Cooldown.set(cds, 'primaryAbility', abilityCooldown);
 
-        PlayerStats.addEvent(
+        EntityStats.addEvent(
             Main.Global.playerStats, 
             { type: 'ENERGY_SPEND',
               value: energyCost });
@@ -1686,7 +1686,7 @@ class Game extends h2d.Object {
     // reset list before next loop
     Main.Global.entitiesToRender = [];
 
-    PlayerStats.update(
+    EntityStats.update(
         Main.Global.playerStats, 
         dt);
 
