@@ -482,6 +482,31 @@ class Main extends hxd.App {
       core.Anim.AnimEffect
         .update(dt);
       SpriteBatchSystem.updateAll(dt);
+      // sync up scenes with the camera
+      {
+        // IMPORTANT: update the camera position first
+        // before updating the scenes otherwise they
+        // will be lagging behind
+        Camera.update(Main.Global.mainCamera, dt);
+        Camera.setSize(
+            Main.Global.mainCamera,
+            Main.Global.rootScene.width,
+            Main.Global.rootScene.height);
+
+        // update scenes to move relative to camera
+        var cam_center_x = -Main.Global.mainCamera.x 
+          + Math.fround(Main.Global.rootScene.width / 2);
+        var cam_center_y = -Main.Global.mainCamera.y 
+          + Math.fround(Main.Global.rootScene.height / 2);
+        for (scene in [
+            Main.Global.rootScene,
+            Main.Global.particleScene,
+            Main.Global.debugScene
+        ]) {
+          scene.x = cam_center_x;
+          scene.y = cam_center_y;
+        }
+      }
 
       final tickFrequency = 144;
       Main.Global.tickCount = Std.int(
