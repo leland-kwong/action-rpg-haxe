@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.4" tiledversion="1.4.1" name="ui" tilewidth="277" tileheight="195" tilecount="6" columns="0">
+<tileset version="1.4" tiledversion="1.4.1" name="ui" tilewidth="278" tileheight="196" tilecount="6" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="0">
   <image width="148" height="14" source="../art/aseprite_exports/ui/cockpit_underlay.png"/>
@@ -17,6 +17,6 @@
   <image width="9" height="9" source="../art/aseprite_exports/ui/hud_inventory_button.png"/>
  </tile>
  <tile id="5">
-  <image width="277" height="195" source="../art/aseprite_exports/ui/ui_inventory_underlay.png"/>
+  <image width="278" height="196" source="../art/aseprite_exports/ui/ui_inventory_underlay.png"/>
  </tile>
 </tileset>

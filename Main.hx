@@ -63,7 +63,7 @@ class Global {
       enabled: true
     },
     inventory: {
-      opened: false
+      opened: true
     }
   }
 
@@ -438,6 +438,7 @@ class Main extends hxd.App {
       core.Anim.AnimEffect
         .update(dt);
       Hud.update(dt);
+      Hud.Inventory.update(dt);
       SpriteBatchSystem.updateAll(dt);
 
       final tickFrequency = 144;

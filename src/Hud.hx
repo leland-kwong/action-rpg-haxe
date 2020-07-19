@@ -1,18 +1,16 @@
 using core.Types;
 
-typedef UiAction = String;
+typedef UiAction = {
+  type: String
+};
 typedef InventoryRef = {
   inventorySlots: Grid.GridRef,
   abilitySlots: Grid.GridRef
 };
-typedef UiElementRef = {
-  > TiledObject,
-  ?onClick: UiAction,
-};
 typedef TiledUiProp = {
   name: String,
   type: String,
-  value: String,
+  value: Dynamic,
 };
 
 class TiledParser {
@@ -46,9 +44,9 @@ class TiledParser {
 }
 
 class UiStateManager {
-  public static function send(action: {
-    type: String
-  }) {
+  static var listeners = [];
+
+  public static function send(action: UiAction) {
     final uiState = Main.Global.uiState;
 
     switch(action) {
@@ -65,27 +63,199 @@ class UiStateManager {
 }
 
 class Inventory {
-  public static function create(): InventoryRef {
-    return {
-      inventorySlots: Grid.create(16),
-      abilitySlots: Grid.create(16),
-    };
-  }
+  static var ready = false;
+  static var interactGrid = Grid.create(16 * Hud.rScale);
+  static var debugGraphic: h2d.Graphics;
 
-  public static function inventoryInteract(
+  public static var state = {
+    // inventory grid resolution is a single slot
+    inventorySlotsGrid: Grid.create(1), 
+    abilitySlotsGrid: Grid.create(16 * Hud.rScale),
+  };
+
+  public static function inventorySlotInteract(
       ref: InventoryRef) {
   }
 
-  public static function inventoryInsert() {}
+  // puts an item into the first available slot
+  // dimensions are based on the native 
+  // pixel art's resolution (480 x 270)
+  public static function inventorySlotAddItem(
+      itemId, w, h): Bool {
+    var cellX = 0;
+    var cellY = 0;
+
+    final insertSuccess = true;
+    
+    final invGrid = state.inventorySlotsGrid;
+    final cellSize = invGrid.cellSize;
+
+    final slotDefinition = {
+      final hudLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json); 
+      final inventoryLayerRef = TiledParser
+        .findLayer(hudLayoutRef, 'inventory');
+      final interactRef = TiledParser
+        .findLayer(
+            inventoryLayerRef, 'interactable');
+      Lambda.find(
+          interactRef.objects,
+          (o) -> o.name == 'inventory_slots');
+    }
+
+    final slotSize: Int = Lambda.find(
+        slotDefinition.properties, 
+        (p: TiledUiProp) -> p.name == 'slotSize').value;
+    final maxCol = Std.int(slotDefinition.width / slotSize);
+    final maxRow = Std.int(slotDefinition.height / slotSize);
+    final maxY = maxRow - 1;
+    final maxX = maxCol - 1;
+    var y = 0;
+    while (y <= maxY) {
+      var x = 0;
+      while (x <= maxX) {
+        final cx = x + Math.floor(w / 2);
+        final cy = y + Math.floor(h / 2);
+        final filledSlots = Grid.getItemsInRect(
+            invGrid, cx, cy, w, h);
+        final canFit = Lambda.count(
+            filledSlots) == 0
+          && cx - Math.floor(w / 2) >= 0
+          && cx + Math.floor(w / 2) <= maxX
+          && cy + Math.floor(h / 2) <= maxY
+          && cy - Math.floor(h / 2) >= 0;
+        if (canFit) {
+          Grid.setItemRect(
+              invGrid, cx, cy, w, h, itemId);
+          return true;
+        }
+        x += 1;
+      }
+      y += 1;
+    }
+ 
+    return false;
+  }
 
   public static function abilityInteract(
       ref: InventoryRef) {
   }
 
+  public static function update(dt: Float) {
+    if (!ready) {
+
+      ready = true;
+
+      trace('setup inventory interact grid');
+
+      final hudLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json); 
+      final inventoryLayerRef = TiledParser
+        .findLayer(hudLayoutRef, 'inventory');
+      final interactLayer = TiledParser
+        .findLayer(inventoryLayerRef, 'interactable');
+      final interactObjects = interactLayer.objects;
+
+      for (o in interactObjects) {
+        Grid.setItemRect(
+            interactGrid,
+            (o.x + (o.width / 2)) * Hud.rScale,
+            (o.y + (o.height / 2)) * Hud.rScale,
+            o.width * Hud.rScale,
+            o.height * Hud.rScale,
+            'iInteract_${o.id}');
+      }
+
+      final addRandomSizedBlock = () -> {
+        inventorySlotAddItem(
+            'mock_item_${Math.random()}', Utils.irnd(1, 3), Utils.irnd(1, 3));
+      };
+
+      Main.Global.uiRoot.addEventListener((e: hxd.Event) -> {
+        if (e.kind == hxd.Event.EventKind.EPush) {
+          state.inventorySlotsGrid = Grid.create(1);
+          for (_ in 0...60) {
+            addRandomSizedBlock();
+          }
+        }
+      });
+
+      for (_ in 0...60) {
+        addRandomSizedBlock();
+      }
+    }
+  }
+
   public static function render(time: Float) {
-    final state = Main.Global.uiState.inventory;
-    if (!state.opened) {
+    final globalState = Main.Global.uiState.inventory;
+    if (!globalState.opened) {
       return;
+    }
+
+    // render filled slots
+    {
+      final slotSize = 16 * Hud.rScale;
+      final cellRenderEffect = (p) -> {
+        final b: h2d.SpriteBatch.BatchElement 
+          = p.batchElement;
+        p.sortOrder = 2.0;
+        b.scale = slotSize - 4;
+        b.alpha = 0.3;
+        b.r = 0.5;
+      };
+      debugGraphic = debugGraphic == null 
+        ? new h2d.Graphics(Main.Global.uiRoot)
+        : debugGraphic;
+
+      debugGraphic.clear();
+      for (_ => bounds in state.inventorySlotsGrid.itemCache) {
+        final x = bounds[0];
+        final y = bounds[2];
+        final width = bounds[1] - x;
+        final height = bounds[3] - y;
+        debugGraphic.lineStyle(2, Game.Colors.pureWhite);
+        debugGraphic.beginFill(Game.Colors.blue, 0.4);
+        debugGraphic.drawRect(
+            (x * slotSize) + 272 * Hud.rScale,
+            (y * slotSize) + 32 * Hud.rScale,
+            width * slotSize - 4,
+            height * slotSize - 4);
+      }
+
+      // for (y => row in state.inventorySlotsGrid.data) {
+      //   for (x => cell in row) {
+      //     Main.Global.uiSpriteBatch.emitSprite(
+      //         (x * slotSize) + 272 * Hud.rScale,
+      //         (y * slotSize) + 32 * Hud.rScale,
+      //         'ui/square_white',
+      //         null,
+      //         cellRenderEffect);   
+      //   }
+      // }
+    }
+
+    
+    final cellSize = interactGrid.cellSize;
+    for (y => col in interactGrid.data) {
+      for (x => cell in col) {
+        Main.Global.logData.interactPosition = {
+          x: x * cellSize,
+          y: y * cellSize
+        };
+        final cellRenderEffect = (p) -> {
+          final b: h2d.SpriteBatch.BatchElement 
+            = p.batchElement;
+          p.sortOrder = 1.0;
+          b.scale = cellSize - 4;
+          b.alpha = 0.2;
+        };
+        Main.Global.uiSpriteBatch.emitSprite(
+            (x * cellSize),
+            (y * cellSize),
+            'ui/square_white',
+            null,
+            cellRenderEffect);   
+      }
     }
 
     final hudLayoutRef = TiledParser.loadFile(
@@ -97,14 +267,15 @@ class Inventory {
     final bgObjects = backgroundLayer.objects;
 
     for (ref in bgObjects) {
-      final cx = ref.x + ref.width / 2;
-      final cy = ref.y - ref.height / 2;
+      final cx = ref.x;
+      final cy = ref.y;
       Main.Global.uiSpriteBatch.emitSprite(
           cx * Hud.rScale,
           cy * Hud.rScale,
           ref.name, 
           null,
           (p) -> {
+            p.sortOrder = 0;
             p.batchElement.scale = Hud.rScale;
           });
     }

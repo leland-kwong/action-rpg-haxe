@@ -27,7 +27,7 @@
             "scaleInEditor": 0.5
         },
         "res/background.tsx": {
-            "dynamicWrapping": false,
+            "dynamicWrapping": true,
             "scaleInDock": 0.125,
             "scaleInEditor": 0.75
         },
@@ -35,8 +35,8 @@
             "scale": 2,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 252,
-                "y": 227
+                "x": 880,
+                "y": 511.75
             }
         },
         "res/ui.tmx": {
@@ -53,11 +53,11 @@
             "scaleInEditor": 1
         },
         "res/ui_hud_layout.tmx": {
-            "scale": 3,
+            "scale": 23,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 330.3333333333333,
-                "y": 149
+                "x": 283.78260869565213,
+                "y": 43.47826086956522
             }
         },
         "res/ui_inventory_layout.tmx": {
@@ -93,7 +93,7 @@
         "res/ui.tsx"
     ],
     "project": "main.tiled-project",
-    "property.type": "string",
+    "property.type": "int",
     "recentFiles": [
         "res/ui_hud_layout.tmx",
         "res/ui_inventory_layout.tmx",
