@@ -141,16 +141,17 @@ class HomeScreen extends h2d.Object {
 
     var leftMargin = 100;
 
-    var titleFont = Fonts.primary.get().clone();
-    titleFont.resizeTo(12 * 6);
+    final baseFontSize = 24;
+    var titleFont = Fonts.primary().toFont().clone();
+    titleFont.resizeTo(3 * baseFontSize);
     var titleText = new h2d.Text(titleFont, this);
     titleText.text = 'Astral Cowboy';
     titleText.textColor = Game.Colors.pureWhite;
     titleText.x = leftMargin;
     titleText.y = 300;
 
-    var btnFont = Fonts.primary.get().clone();
-    btnFont.resizeTo(36);
+    var btnFont = Fonts.primary().toFont().clone();
+    btnFont.resizeTo(2 * baseFontSize);
 
     var buttons: Array<Dynamic> = [
       ['Start Game', btnFont, () -> {
@@ -268,6 +269,8 @@ class Main extends hxd.App {
 
   override function init() {
     try {
+
+      hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
 
       // setup scenes
@@ -355,8 +358,6 @@ class Main extends hxd.App {
       }
 #end
 
-      hxd.Res.initEmbed();
-
       Global.mainCamera = Camera.create();
       
       Global.sb = new SpriteBatchSystem(
@@ -368,7 +369,7 @@ class Main extends hxd.App {
       game = new Game(s2d, game);
 
 #if debugMode
-      var font = Fonts.primary.get().clone();
+      var font = hxd.res.DefaultFont.get();
       setupDebugInfo(font);
 #end
 

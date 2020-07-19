@@ -18,47 +18,47 @@
  </group>
  <group id="8" name="hud">
   <objectgroup id="3" name="cockpit_underlay">
-   <object id="29" type="hud_main" gid="1" x="166" y="245" width="148" height="14"/>
+   <object id="29" type="hud_main" gid="1" x="166" y="246" width="148" height="14"/>
   </objectgroup>
   <objectgroup id="6" name="interactable">
-   <object id="56" name="ui/hud_inventory_button" type="ui_interactable" gid="5" x="305" y="255" width="9" height="9">
+   <object id="56" name="ui/hud_inventory_button" type="ui_interactable" gid="5" x="305" y="256" width="9" height="9">
     <properties>
      <property name="onClick" value="INVENTORY_TOGGLE"/>
     </properties>
    </object>
-   <object id="57" name="ui/hud_ability_slot" type="ui_interactable" gid="4" x="206" y="268" width="68" height="22"/>
+   <object id="57" name="ui/hud_ability_slot" type="ui_interactable" gid="4" x="206" y="269" width="68" height="22"/>
   </objectgroup>
   <objectgroup id="2" name="health_bars">
-   <object id="15" gid="2" x="170" y="241" width="6" height="4"/>
-   <object id="16" gid="2" x="174" y="241" width="6" height="4"/>
-   <object id="17" gid="2" x="178" y="241" width="6" height="4"/>
-   <object id="18" gid="2" x="182" y="241" width="6" height="4"/>
-   <object id="19" gid="2" x="186" y="241" width="6" height="4"/>
-   <object id="20" gid="2" x="190" y="241" width="6" height="4"/>
-   <object id="21" gid="2" x="194" y="241" width="6" height="4"/>
-   <object id="22" gid="2" x="198" y="241" width="6" height="4"/>
-   <object id="23" gid="2" x="202" y="241" width="6" height="4"/>
-   <object id="24" gid="2" x="206" y="241" width="6" height="4"/>
-   <object id="25" gid="2" x="210" y="241" width="6" height="4"/>
-   <object id="26" gid="2" x="214" y="241" width="6" height="4"/>
-   <object id="27" gid="2" x="218" y="241" width="6" height="4"/>
-   <object id="28" gid="2" x="222" y="241" width="6" height="4"/>
+   <object id="15" gid="2" x="170" y="242" width="6" height="4"/>
+   <object id="16" gid="2" x="174" y="242" width="6" height="4"/>
+   <object id="17" gid="2" x="178" y="242" width="6" height="4"/>
+   <object id="18" gid="2" x="182" y="242" width="6" height="4"/>
+   <object id="19" gid="2" x="186" y="242" width="6" height="4"/>
+   <object id="20" gid="2" x="190" y="242" width="6" height="4"/>
+   <object id="21" gid="2" x="194" y="242" width="6" height="4"/>
+   <object id="22" gid="2" x="198" y="242" width="6" height="4"/>
+   <object id="23" gid="2" x="202" y="242" width="6" height="4"/>
+   <object id="24" gid="2" x="206" y="242" width="6" height="4"/>
+   <object id="25" gid="2" x="210" y="242" width="6" height="4"/>
+   <object id="26" gid="2" x="214" y="242" width="6" height="4"/>
+   <object id="27" gid="2" x="218" y="242" width="6" height="4"/>
+   <object id="28" gid="2" x="222" y="242" width="6" height="4"/>
   </objectgroup>
   <objectgroup id="4" name="energy_bars">
-   <object id="30" gid="3" x="252" y="241" width="6" height="4"/>
-   <object id="31" gid="3" x="256" y="241" width="6" height="4"/>
-   <object id="32" gid="3" x="260" y="241" width="6" height="4"/>
-   <object id="33" gid="3" x="264" y="241" width="6" height="4"/>
-   <object id="34" gid="3" x="268" y="241" width="6" height="4"/>
-   <object id="35" gid="3" x="272" y="241" width="6" height="4"/>
-   <object id="36" gid="3" x="276" y="241" width="6" height="4"/>
-   <object id="37" gid="3" x="280" y="241" width="6" height="4"/>
-   <object id="38" gid="3" x="284" y="241" width="6" height="4"/>
-   <object id="39" gid="3" x="288" y="241" width="6" height="4"/>
-   <object id="40" gid="3" x="292" y="241" width="6" height="4"/>
-   <object id="41" gid="3" x="296" y="241" width="6" height="4"/>
-   <object id="42" gid="3" x="300" y="241" width="6" height="4"/>
-   <object id="43" gid="3" x="304" y="241" width="6" height="4"/>
+   <object id="30" gid="3" x="252" y="242" width="6" height="4"/>
+   <object id="31" gid="3" x="256" y="242" width="6" height="4"/>
+   <object id="32" gid="3" x="260" y="242" width="6" height="4"/>
+   <object id="33" gid="3" x="264" y="242" width="6" height="4"/>
+   <object id="34" gid="3" x="268" y="242" width="6" height="4"/>
+   <object id="35" gid="3" x="272" y="242" width="6" height="4"/>
+   <object id="36" gid="3" x="276" y="242" width="6" height="4"/>
+   <object id="37" gid="3" x="280" y="242" width="6" height="4"/>
+   <object id="38" gid="3" x="284" y="242" width="6" height="4"/>
+   <object id="39" gid="3" x="288" y="242" width="6" height="4"/>
+   <object id="40" gid="3" x="292" y="242" width="6" height="4"/>
+   <object id="41" gid="3" x="296" y="242" width="6" height="4"/>
+   <object id="42" gid="3" x="300" y="242" width="6" height="4"/>
+   <object id="43" gid="3" x="304" y="242" width="6" height="4"/>
   </objectgroup>
  </group>
 </map>

@@ -200,7 +200,7 @@ class Ai extends Entity {
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
 
-  var font: h2d.Font = Fonts.primary.get().clone();
+  var font: h2d.Font = Fonts.primary().toFont().clone();
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;

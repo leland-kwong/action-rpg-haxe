@@ -140,6 +140,8 @@ class Inventory {
   public static function update(dt: Float) {
     if (!ready) {
 
+      Benchmarks.benchSprites();
+
       ready = true;
 
       trace('setup inventory interact grid');
@@ -485,7 +487,7 @@ class Hud {
   public static function init() {
     aiHealthBar = new h2d.Graphics(
         Main.Global.uiRoot);
-    final font = Fonts.primary.get().clone();
+    final font = Fonts.primary().toFont().clone();
     font.resizeTo(24);
     tf = new h2d.Text(
         font, 

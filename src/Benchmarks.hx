@@ -9,7 +9,7 @@ class Benchmarks {
         p.batchElement.scaleY = scale * 1.0;
       }
 
-      for (_ in 0...5000) {
+      for (_ in 0...3000) {
         Main.Global.uiSpriteBatch.emitSprite(
             0,
             0,
@@ -17,6 +17,8 @@ class Benchmarks {
             null,
             effectCallback);
       }
+
+      return true;
     };
 
     Main.Global.renderHooks.push(onRender);
