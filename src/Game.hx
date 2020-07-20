@@ -617,6 +617,12 @@ class Ai extends Entity {
         Main.Global.updateHooks.push(lootDropAnimation);
 
         lootRef.type = 'LOOT';
+        // instance-specific data such as the rolled rng values
+        // as well as the loot type so we can look it up in the
+        // loot definition table
+        Entity.setComponent(lootRef, 'lootInstance', {
+          type: 'spiderBots'
+        });
         lootRef.renderFn = (ref, time: Float) -> {
           // drop shadow
           Main.Global.sb.emitSprite(
@@ -652,7 +658,8 @@ class Ai extends Entity {
           Main.Global.sb.emitSprite(
               ref.x,
               ref.y,
-              'ui/loot__ability_spider_bot',
+              Loot.getDef(
+                Entity.getComponent(ref, 'lootInstance').type).spriteKey,
               null,
               lootRenderFn);
         };

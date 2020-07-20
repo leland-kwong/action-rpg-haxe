@@ -84,6 +84,7 @@ class Entity extends h2d.Object {
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
   public var stats: EntityStats.StatsRef;
+  public var components: Map<String, Dynamic> = new Map();
   public var neighborCheckInterval: Int = 2; // after X ticks
   public final createdAt = Main.Global.time;
   var renderFn: (ref: Entity, time: Float) -> Void;
@@ -112,6 +113,23 @@ class Entity extends h2d.Object {
     }
 
     ALL_BY_ID.set(id, this);
+  }
+
+  public static function setComponent(
+      ref: Entity, type: String, value: Dynamic) {
+
+    if (value == null) {
+      ref.components.remove(type);
+      return;
+    }
+
+    ref.components.set(type, value);
+  }
+
+  public static function getComponent<T>(
+      ref: Entity, type: String): T {
+
+    return ref.components.get(type);
   }
 
   public function update(dt: Float) {

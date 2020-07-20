@@ -497,7 +497,11 @@ class Tooltip {
 
     Main.Global.uiRoot.addChild(tooltipTextRef);
     tooltipTextRef.textAlign = Center;
-    tooltipTextRef.text = 'Spider Bots';
+    final lootType = Entity.getComponent(
+        entityRef, 
+        'lootInstance').type;
+    final displayName = Loot.getDef(lootType).name;
+    tooltipTextRef.text = displayName;
     tooltipTextRef.textColor = 0xffffff;
   }
 
