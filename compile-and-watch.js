@@ -56,12 +56,12 @@ const compile = (buildFile) => {
     if (err) {
 
       logToDisk(
-        'game_build.txt', 'compile error', err, compileLogger);
+        'build.txt', 'compile error', err, compileLogger);
 
     } else if (stderr) {
 
       logToDisk(
-        'game_build.txt', 'compile stderr', stderr, compileLogger);
+        'build.txt', 'compile stderr', stderr, compileLogger);
       
     } else {
 
@@ -110,18 +110,18 @@ const asepriteExport = async (
       if (err) {
 
         logToDisk(
-          'aseprite_build.txt', 'aseprite error', err, asepriteLogger);
+          'build.txt', 'aseprite error', err, asepriteLogger);
 
       } else if (stderr) {
         
         logToDisk(
-          'aseprite_build.txt', 'aseprite stderr', stderr, asepriteLogger);
+          'build.txt', 'aseprite stderr', stderr, asepriteLogger);
 
       } else {
 
         const msg = `exported \`${filename}\` to \`${exportFullPath}\``;
         logToDisk(
-          'aseprite_build.txt', 'aseprite success', msg, asepriteLogger);
+          'build.txt', 'aseprite success', msg, asepriteLogger);
 
       }
     });
@@ -161,8 +161,9 @@ const rebuild = (eventType, filename, options) => {
 
 const startCompileWatcher = (options = {}) => {
   chokidar.watch([
-    './**/*.hx',
-    './src/res',
+    './Main.hx',
+    './src/**/*.hx',
+    './src/res/**/*.*',
   ], {
     // this prevents locking up the file system for other windows applications
     usePolling: true,
@@ -221,14 +222,14 @@ const startTiledWatcher = (options = {}) => {
       exec(`${tiledExecutable} --export-map ${path} ${outputPath}`, (err, stdout, stderr) => {
         if (err) {
           logToDisk(
-            `${name}_build.txt`, `${name} error`, err, tiledLogger);
+            `build.txt`, `${name} error`, err, tiledLogger);
         } else if (stderr) {
           logToDisk(
-            `${name}_build.txt`, `${name} stderr`, stderr, tiledLogger);
+            `build.txt`, `${name} stderr`, stderr, tiledLogger);
         } else {
           const msg = `\`${path}\` to \`${outputPath}\``;
           logToDisk(
-            `${name}_build.txt`, `${name} success`, msg, tiledLogger);
+            `build.txt`, `${name} success`, msg, tiledLogger);
         }
       });
     }
@@ -260,18 +261,18 @@ const startTexturePackerWatcher = (options = {}) => {
         if (err) {
 
           logToDisk(
-            `${name}_build.txt`, `${name} error`, err, tpLogger);
+            `build.txt`, `${name} error`, err, tpLogger);
 
         } else if (stderr) {
 
           logToDisk(
-            `${name}_build.txt`, `${name} stderr`, stderr, tpLogger);
+            `build.txt`, `${name} stderr`, stderr, tpLogger);
 
         } else {
 
           const msg = `\`${sourceFile}\` to \`${destination}\``;
           logToDisk(
-            `${name}_build.txt`, `${name} success`, msg, tpLogger);
+            `build.txt`, `${name} success`, msg, tpLogger);
 
         }
       });
@@ -286,6 +287,29 @@ const startTexturePackerWatcher = (options = {}) => {
   }).on('all', handleTexturePackerExport);
 }
 
+function startReplWatcher() {
+  chokidar.watch('./Repl.hx').on('all', () => {
+    console.log('repl rerun');
+    exec(`haxe repl-build.hxml --connect ${port}`, (err, stdout, stderr) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+
+      if (stderr) {
+        console.error(stderr);
+        return;
+      }
+
+      console.log('== repl build success =='.toUpperCase());
+      console.log(stdout);
+      delete require.cache[require.resolve('./temp/repl-haxe.js')];
+      require('./temp/repl-haxe.js');
+    });
+  });
+}
+
+startReplWatcher({});
 startCompileWatcher({
   delay: 1000
 });
