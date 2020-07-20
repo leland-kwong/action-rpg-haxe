@@ -1,4 +1,7 @@
 using core.Types;
+import Entity;
+import Grid;
+import Loot;
 
 typedef UiAction = {
   type: String,
@@ -68,10 +71,15 @@ class Inventory {
   static var interactGrid = Grid.create(16 * Hud.rScale);
   static var debugGraphic: h2d.Graphics;
 
-  public static var state = {
+  public static var state: {
+    inventorySlotsGrid: GridRef,
+    abilitySlotsGrid: GridRef,
+    lootInstancesById: Map<EntityId, LootInstance>
+  } = {
     // inventory grid resolution is a single slot
     inventorySlotsGrid: Grid.create(1), 
     abilitySlotsGrid: Grid.create(16 * Hud.rScale),
+    lootInstancesById: new Map()
   };
 
   public static function inventorySlotInteract(
@@ -82,7 +90,10 @@ class Inventory {
   // dimensions are based on the native 
   // pixel art's resolution (480 x 270)
   public static function inventorySlotAddItem(
-      itemId, pixelWidth, pixelHeight): Bool {
+      itemId, 
+      pixelWidth, 
+      pixelHeight, 
+      itemInstance: Loot.LootInstance): Bool {
 
     final invGrid = state.inventorySlotsGrid;
     final cellSize = invGrid.cellSize;
@@ -122,9 +133,12 @@ class Inventory {
           && cy + Math.floor(sh / 2) <= maxY + 1
           && cy - Math.floor(sh / 2) >= 0;
 
+        // add success
         if (canFit) {
           Grid.setItemRect(
               invGrid, cx, cy, sw, sh, itemId);
+          state.lootInstancesById
+            .set(itemId, itemInstance);
           return true;
         }
       }
@@ -160,25 +174,6 @@ class Inventory {
             o.width * Hud.rScale,
             o.height * Hud.rScale,
             'iInteract_${o.id}');
-      }
-
-      // debug code
-      {
-       //  final addRandomSizedBlock = () -> {
-       //    inventorySlotAddItem(
-       //        'mock_item_${Math.random()}', Utils.irnd(1, 3), Utils.irnd(1, 3));
-       //  };
-
-       //  Main.Global.uiRoot.addEventListener((e: hxd.Event) -> {
-       //    if (e.kind == hxd.Event.EventKind.EPush) {
-       //      state.inventorySlotsGrid = Grid.create(1);
-       //      for (_ in 0...60) {
-       //        // addRandomSizedBlock();
-       //        inventorySlotAddItem(
-       //            'mock_item_${Math.random()}', 2 * 16, 2 * 16);
-       //      }
-       //    }
-       //  });
       }
     }
 
@@ -233,7 +228,10 @@ class Inventory {
         if (Main.Global.worldMouse.clicked) {
           final size = lootRef.radius * 2;
           final addSuccess = Inventory.inventorySlotAddItem(
-              lootRef.id, size, size);
+              lootRef.id, 
+              size, 
+              size, 
+              Entity.getComponent(lootRef, 'lootInstance'));
 
           if (addSuccess) {
             final animDuration = 0.2;
@@ -297,7 +295,7 @@ class Inventory {
       return;
     }
 
-    // debug render filled slots
+    // render inventory items
     {
       final slotSize = 16 * Hud.rScale;
       final cellRenderEffect = (p) -> {
@@ -309,18 +307,23 @@ class Inventory {
         b.r = 0.5;
       };
 
-      for (_ => bounds in state.inventorySlotsGrid.itemCache) {
+      for (lootId => bounds in 
+          state.inventorySlotsGrid.itemCache) {
         final x = bounds[0];
         final y = bounds[2];
         final width = bounds[1] - x;
         final height = bounds[3] - y;
-        debugGraphic.lineStyle(2, Game.Colors.pureWhite);
-        debugGraphic.beginFill(Game.Colors.blue, 0.4);
-        debugGraphic.drawRect(
-            (x * slotSize) + 272 * Hud.rScale,
-            (y * slotSize) + 32 * Hud.rScale,
-            width * slotSize - 4,
-            height * slotSize - 4);
+        final lootInstance = state.lootInstancesById.get(lootId);
+        final lootDef = Loot.getDef(
+            lootInstance.type);
+
+        Main.Global.uiSpriteBatch.emitSprite(
+            (x * slotSize) + (width / 2 * slotSize) + 272 * Hud.rScale,
+            (y * slotSize) + (height / 2 * slotSize) + 32 * Hud.rScale,
+            lootDef.spriteKey,
+            (p) -> {
+              p.batchElement.scale = Hud.rScale;
+            });
       }
     }
     
