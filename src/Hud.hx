@@ -182,7 +182,7 @@ class Inventory {
       }
     }
 
-    // handle loot interaction
+    // handle loot hover/pickup interaction
     final entityRef = Entity.getById(Main.Global.hoveredEntity.id);
     if (entityRef == Entity.NULL_ENTITY || 
         entityRef.type == 'LOOT') {
