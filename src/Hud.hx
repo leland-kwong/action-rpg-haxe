@@ -704,32 +704,6 @@ class InventoryDragAndDropPrototype {
       final cx = mouseSlotX + halfWidth;
       final cy = mouseSlotY + halfHeight;
 
-      if (Main.Global.worldMouse.clicked) {
-        final hasPickedUp = state.pickedUpItemId != 
-          NULL_PICKUP_ID;
-
-        if (hasPickedUp) {
-          trace('drop item');
-
-          // state.pickedUpItemId   
-        }
-
-        trace('pickup item', state.pickedUpItemId);
-
-        final getFirstKey = (keys: Iterator<GridKey>) -> {
-          for (k in keys) {
-            return k;
-          }
-          return NULL_PICKUP_ID;
-        }
-        state.pickedUpItemId = getFirstKey(
-            Grid.getItemsInRect(
-              state.invGrid,
-              cx,
-              cy,
-              w, h).keys());
-      }
-
       Grid.removeItem(
           state.debugGrid, 
           'item_can_place');
@@ -745,6 +719,49 @@ class InventoryDragAndDropPrototype {
             cy,
             w,
             h)) <= 1;
+
+      if (Main.Global.worldMouse.clicked) {
+        final hasPickedUp = state.pickedUpItemId != 
+          NULL_PICKUP_ID;
+
+        final currentlyPickedUpItem = state.pickedUpItemId;
+
+        if (canPlace) {
+          trace('pickup item', state.pickedUpItemId);
+
+          final getFirstKey = (keys: Iterator<GridKey>) -> {
+            for (k in keys) {
+              return k;
+            }
+            return NULL_PICKUP_ID;
+          }
+
+          final itemIdAtPosition = getFirstKey(
+              Grid.getItemsInRect(
+                state.invGrid,
+                cx,
+                cy,
+                w, h).keys());
+
+          Grid.removeItem(
+              state.invGrid,
+              itemIdAtPosition);
+
+          state.pickedUpItemId = itemIdAtPosition;
+        }
+
+        if (hasPickedUp && canPlace) {
+          trace('drop item');
+
+          // state.pickedUpItemId   
+          Grid.setItemRect(
+              state.invGrid,
+              cx,
+              cy,
+              w, h,
+              currentlyPickedUpItem);
+        }
+      }
 
       Grid.setItemRect(
           state.debugGrid,
@@ -781,29 +798,21 @@ class InventoryDragAndDropPrototype {
     for (itemId => bounds in state.debugGrid.itemCache) {
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
-      Main.Global.uiSpriteBatch.emitSprite(
+
+      if (itemId == 'item_can_place') {
+        debugGraphic.beginFill(0x00c3ff, 0.4);
+      }
+
+      if (itemId == 'item_cannot_place') {
+        debugGraphic.beginFill(0xd60000, 0.4);
+      }
+
+      debugGraphic.lineStyle(0);
+      debugGraphic.drawRect(
           bounds[0] * cellSize,
           bounds[2] * cellSize,
-          'ui/square_white',
-          null,
-          (p) -> {
-            final b = p.batchElement;
-            p.sortOrder = 1;
-            b.scaleX = width * cellSize;
-            b.scaleY = height * cellSize;
-            b.alpha = 0.4;
-
-            if (itemId == 'item_can_place') {
-              b.r = 0;
-              b.g = 0.7;
-            }
-
-            if (itemId == 'item_cannot_place') {
-              b.r = 0.8;
-              b.g = 0;
-              b.b = 0;
-            }
-          });
+          width * cellSize,
+          height * cellSize);
     } 
 
     // render picked up item
@@ -812,18 +821,12 @@ class InventoryDragAndDropPrototype {
         .get(state.pickedUpItemId);
       final w = itemData.slotWidth;
       final h = itemData.slotHeight;
-      Main.Global.uiSpriteBatch.emitSprite(
+
+      debugGraphic.beginFill(0xffffff, 0.8);
+      debugGraphic.drawRect(
           Main.Global.uiRoot.mouseX - w / 2,
           Main.Global.uiRoot.mouseY - h / 2,
-          'ui/square_white',
-          null,
-          (p) -> {
-            final b = p.batchElement;
-            p.sortOrder = 2;
-            b.scaleX = w;
-            b.scaleY = h;
-            b.alpha = 0.8;
-          });
+          w, h);
     }
   }
 }
