@@ -395,7 +395,16 @@ class Main extends hxd.App {
   }
 
   function handleGlobalHotkeys() {
-    var Key = hxd.Key;
+    final Key = hxd.Key;
+
+#if debugMode
+    final isForceExit = Key.isDown(Key.CTRL) &&
+      Key.isPressed(Key.Q);
+
+    if (isForceExit) {
+      hxd.System.exit();
+    }
+#end
 
     if (Key.isPressed(Key.ESCAPE)) {
       switchMainScene(MainSceneType.PlayGame);
