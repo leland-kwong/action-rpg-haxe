@@ -801,7 +801,7 @@ class InventoryDragAndDropPrototype {
       final height = bounds[3] - bounds[2];
 
       if (itemId == 'item_can_place') {
-        debugGraphic.beginFill(0x00c3ff, 0.4);
+        debugGraphic.beginFill(0x63c74d, 0.4);
       }
 
       if (itemId == 'item_cannot_place') {

@@ -12,7 +12,7 @@
                  "objects":[
                         {
                          "gid":6,
-                         "height":199,
+                         "height":167,
                          "id":226,
                          "name":"ui\/ui_inventory_underlay",
                          "rotation":0,
@@ -20,7 +20,7 @@
                          "visible":true,
                          "width":281,
                          "x":187,
-                         "y":228
+                         "y":195
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -35,7 +35,7 @@
                  "name":"interactable",
                  "objects":[
                         {
-                         "height":192,
+                         "height":160,
                          "id":249,
                          "name":"inventory_slots",
                          "properties":[
