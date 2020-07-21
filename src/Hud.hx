@@ -220,12 +220,17 @@ class Inventory {
          Main.Global.hoveredEntity.hoverStart);
       final distFromPlayer = Utils.distance(
           playerRef.x, playerRef.y, lootRef.x, lootRef.y);
-      if (isPickupMode && distFromPlayer <= pickupRadius) {
+      final canPickupItem = isPickupMode && 
+        distFromPlayer <= pickupRadius;
+      if (canPickupItem) {
         if (Main.Global.worldMouse.buttonDown == 0) {
-          Main.Global.worldMouse.hoverState = Main.HoverState.LootHoveredCanPickup;
+          Main.Global.worldMouse.hoverState = 
+            Main.HoverState.LootHoveredCanPickup;
         }
 
-        if (Main.Global.worldMouse.clicked) {
+        final pickupItemButtonClicked = 
+          Main.Global.worldMouse.clicked;
+        if (pickupItemButtonClicked) {
           final size = lootRef.radius * 2;
           final addSuccess = Inventory.inventorySlotAddItem(
               lootRef.id, 
@@ -546,17 +551,49 @@ class Tooltip {
 }
 
 class InventoryDragAndDropPrototype {
+  static var debugGraphic: h2d.Graphics;
+
+  static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
   static final state = {
     initialized: false,
-    invGrid: Grid.create(16 * Hud.rScale)
+    invGrid: Grid.create(16 * Hud.rScale),
+    debugGrid: Grid.create(16 * Hud.rScale),
+    pickedUpItemId: NULL_PICKUP_ID,
+    itemsById: [
+      NULL_PICKUP_ID => {
+        slotWidth: 16 * Hud.rScale,
+        slotHeight: 16 * Hud.rScale
+      }
+    ]
   };
 
-  // TODO: add api for calculating center grid positions of a rectangle?
   public static function update(dt) {
+    Main.Global.worldMouse.hoverState = 
+      Main.HoverState.Ui;
+
     final slotSize = 16 * Hud.rScale;
 
     if (!state.initialized) {
       state.initialized = true;
+
+      debugGraphic = new h2d.Graphics(Main.Global.uiRoot);
+
+      final addItemToInv = (
+          slotX, slotY, slotWidth, slotHeight, itemId) -> {
+        Grid.setItemRect(
+            state.invGrid,
+            slotX + (slotWidth / 2),
+            slotY + (slotHeight / 2),
+            slotWidth,
+            slotHeight,
+            itemId);
+        state.itemsById.set(
+            itemId, 
+            { 
+              slotWidth: slotWidth, 
+              slotHeight: slotHeight
+            });
+      }
 
       {
         final slotX = 20 * slotSize;
@@ -564,85 +601,153 @@ class InventoryDragAndDropPrototype {
         final w = 2 * slotSize;
         final h = 2 * slotSize;
         // add mock items
-        Grid.setItemRect(
-            state.invGrid,
-            slotX + Math.floor(w / 2),
-            slotY + Math.floor(h / 2),
+        addItemToInv(
+            slotX,
+            slotY,
             w,
             h,
-            'mock_item_2x2_a');
+            Utils.uid());
       }
 
       {
         final slotX = 23 * slotSize;
         final slotY = 5 * slotSize;
         final w = 2 * slotSize;
-        final h = 2 * slotSize;
+        final h = 3 * slotSize;
         // add mock items
-        Grid.setItemRect(
-            state.invGrid,
-            slotX + Math.floor(w / 2),
-            slotY + Math.floor(h / 2),
+        addItemToInv(
+            slotX,
+            slotY,
             w,
             h,
-            'mock_item_2x2_b');
+            Utils.uid());
       }
 
       {
-        final slotX = 20 * slotSize;
+        final slotX = 21 * slotSize;
         final slotY = 8 * slotSize;
-        final w = slotSize;
-        final h = slotSize;
+        final w = 1 * slotSize;
+        final h = 1 * slotSize;
         // add mock items
-        Grid.setItemRect(
-            state.invGrid,
-            slotX + Math.floor(w / 2),
-            slotY + Math.floor(h / 2),
+        addItemToInv(
+            slotX,
+            slotY,
             w,
             h,
-            'mock_item_1x1');
+            Utils.uid());
+      }
+
+      {
+        final slotX = 22 * slotSize;
+        final slotY = 8 * slotSize;
+        final w = 1 * slotSize;
+        final h = 1 * slotSize;
+        // add mock items
+        addItemToInv(
+            slotX,
+            slotY,
+            w,
+            h,
+            Utils.uid());
+      }
+
+      {
+        final slotX = 22 * slotSize;
+        final slotY = 10 * slotSize;
+        final w = 1 * slotSize;
+        final h = 1 * slotSize;
+        // add mock items
+        addItemToInv(
+            slotX,
+            slotY,
+            w,
+            h,
+            Utils.uid());
       }
 
       {
         final slotX = 26 * slotSize;
         final slotY = 7 * slotSize;
-        final w = slotSize;
+        final w = 1 * slotSize;
         final h = 3 * slotSize;
         // add mock items
-        Grid.setItemRect(
-            state.invGrid,
-            slotX + Math.floor(w / 2),
-            slotY + Math.floor(h / 2),
+        addItemToInv(
+            slotX,
+            slotY,
             w, h,
-            'mock_item_1x3');
+            Utils.uid());
       }
     }
 
+    // handle mouse interaction
     {
+      final mx = Main.Global.uiRoot.mouseX;
+      final my = Main.Global.uiRoot.mouseY;
+      final pickedUpItem = state.itemsById.get(
+          state.pickedUpItemId);
+      final w = pickedUpItem.slotWidth;
+      final h = pickedUpItem.slotHeight;
+      /*
+         The goal is to translate the mouse position such that it represents
+         the center of the rectangle that fits the slots the best. The algorithm
+         to do this is:
+
+         1. Translate the mouse so that its origin is at the upper-left
+         corner of the rectangle. 
+         2. Round new origin to the nearest slot unit.
+         3. Translate coordinates to center of rectangle based on new origin.
+       */
+      final halfWidth = (w / 2);
+      final halfHeight = (h / 2);
+      final mouseSlotX = Math.round((mx - halfWidth) / slotSize) * slotSize;
+      final mouseSlotY = Math.round((my - halfHeight) / slotSize) * slotSize;
+      final cx = mouseSlotX + halfWidth;
+      final cy = mouseSlotY + halfHeight;
+
+      if (Main.Global.worldMouse.clicked) {
+        final hasPickedUp = state.pickedUpItemId != 
+          NULL_PICKUP_ID;
+
+        if (hasPickedUp) {
+          trace('drop item');
+
+          // state.pickedUpItemId   
+        }
+
+        trace('pickup item', state.pickedUpItemId);
+
+        final getFirstKey = (keys: Iterator<GridKey>) -> {
+          for (k in keys) {
+            return k;
+          }
+          return NULL_PICKUP_ID;
+        }
+        state.pickedUpItemId = getFirstKey(
+            Grid.getItemsInRect(
+              state.invGrid,
+              cx,
+              cy,
+              w, h).keys());
+      }
+
       Grid.removeItem(
-          state.invGrid, 
+          state.debugGrid, 
           'item_can_place');
 
       Grid.removeItem(
-          state.invGrid, 
+          state.debugGrid, 
           'item_cannot_place');
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
-      final w = 2 * slotSize;
-      final h = 2 * slotSize;
-      final cx = Math.floor((mx - (slotSize / 2)) / slotSize) * slotSize + Math.floor(w / 2);
-      final cy = Math.floor((my - (slotSize / 2)) / slotSize) * slotSize + Math.floor(h / 2);
       final canPlace = Lambda.count(
           Grid.getItemsInRect(
             state.invGrid,
             cx,
             cy,
             w,
-            h)) == 0;
+            h)) <= 1;
 
       Grid.setItemRect(
-          state.invGrid,
+          state.debugGrid,
           cx,
           cy,
           w,
@@ -654,11 +759,28 @@ class InventoryDragAndDropPrototype {
   }
   public static function render(time) {
     final cellSize = state.invGrid.cellSize;
+
+    // render inventory items
+    debugGraphic.clear();
+    debugGraphic.beginFill(0xffffff, 0.4);
+    debugGraphic.lineStyle(2, 0xffffff);
     for (itemId => bounds in state.invGrid.itemCache) {
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
       final cx = Math.ceil(bounds[0] + width / 2);
       final cy = Math.ceil(bounds[2] + height / 2);
+      
+      debugGraphic.drawRect(
+          bounds[0] * cellSize,
+          bounds[2] * cellSize,
+          width * cellSize,
+          height * cellSize);
+    } 
+
+    // render pickup status
+    for (itemId => bounds in state.debugGrid.itemCache) {
+      final width = bounds[1] - bounds[0];
+      final height = bounds[3] - bounds[2];
       Main.Global.uiSpriteBatch.emitSprite(
           bounds[0] * cellSize,
           bounds[2] * cellSize,
@@ -684,9 +806,12 @@ class InventoryDragAndDropPrototype {
           });
     } 
 
-    {
-      final w = 2 * cellSize;
-      final h = 2 * cellSize;
+    // render picked up item
+    if (state.pickedUpItemId != NULL_PICKUP_ID) {
+      final itemData = state.itemsById
+        .get(state.pickedUpItemId);
+      final w = itemData.slotWidth;
+      final h = itemData.slotHeight;
       Main.Global.uiSpriteBatch.emitSprite(
           Main.Global.uiRoot.mouseX - w / 2,
           Main.Global.uiRoot.mouseY - h / 2,
