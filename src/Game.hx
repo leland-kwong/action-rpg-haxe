@@ -864,12 +864,12 @@ class Player extends Entity {
   }
 
   public function useAbility() {
-
     final hoverState = Main.Global.worldMouse.hoverState;
-    final canUseAbility = !Cooldown.has(cds, 'recoveringFromAbility') 
-        && hoverState != Main.HoverState.LootHoveredCanPickup
-        && hoverState != Main.HoverState.Ui;
-    if (canUseAbility ) {
+    final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
+        || hoverState == Main.HoverState.LootHoveredCanPickup
+        || hoverState == Main.HoverState.Ui;
+
+    if (preventAbilityUse) {
       return;
     }
     

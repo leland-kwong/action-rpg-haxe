@@ -161,11 +161,11 @@ class Grid {
   }
 
   public static function removeItem(
-      ref: GridRef, key: GridKey): GridKey {
+      ref: GridRef, key: GridKey) {
     var cache = ref.itemCache[key];
 
     if (cache == null) {
-      return null;
+      return;
     }
 
     var xMin = cache[0];
@@ -203,8 +203,6 @@ class Grid {
     }
 
     ref.itemCache.remove(key);
-
-    return key;
   }
 
   public static function tests() {

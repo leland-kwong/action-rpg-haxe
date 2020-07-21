@@ -568,6 +568,10 @@ class InventoryDragAndDropPrototype {
   };
 
   public static function update(dt) {
+    if (!Main.Global.uiState.inventory.opened) {
+      return;
+    }
+
     Main.Global.worldMouse.hoverState = 
       Main.HoverState.Ui;
 
