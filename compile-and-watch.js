@@ -289,19 +289,20 @@ const startTexturePackerWatcher = (options = {}) => {
 
 function startReplWatcher() {
   chokidar.watch('./Repl.hx').on('all', () => {
-    console.log('repl rerun');
     exec(`haxe repl-build.hxml --connect ${port}`, (err, stdout, stderr) => {
       if (err) {
+        console.log('\n==== repl build error ===='.toUpperCase());
         console.error(err);
         return;
       }
 
       if (stderr) {
+        console.log('\n==== repl build stderror ===='.toUpperCase());
         console.error(stderr);
         return;
       }
 
-      console.log('== repl build success =='.toUpperCase());
+      console.log('\n==== repl build success ===='.toUpperCase());
       console.log(stdout);
       delete require.cache[require.resolve('./temp/repl-haxe.js')];
       require('./temp/repl-haxe.js');
