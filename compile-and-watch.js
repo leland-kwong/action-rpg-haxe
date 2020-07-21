@@ -45,7 +45,7 @@ const logToDisk = async (file, label, result, logFn) => {
 }
 
 const compile = (buildFile) => {
-  console.log(`compiling ${buildFile}`);
+  logToDisk('build.txt', `compiling... ${buildFile}`, '', compileLogger);
 
   const flags = env === 'development' 
     ? '-D debugMode'
@@ -66,7 +66,7 @@ const compile = (buildFile) => {
     } else {
 
       logToDisk(
-        'game_build.txt', 'compile success', '', compileLogger);
+        'build.txt', 'compile success', '', compileLogger);
 
     }
   });
