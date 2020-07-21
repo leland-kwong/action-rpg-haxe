@@ -545,6 +545,164 @@ class Tooltip {
   }
 }
 
+class InventoryDragAndDropPrototype {
+  static final state = {
+    initialized: false,
+    invGrid: Grid.create(16 * Hud.rScale)
+  };
+
+  // TODO: add api for calculating center grid positions of a rectangle?
+  public static function update(dt) {
+    final slotSize = 16 * Hud.rScale;
+
+    if (!state.initialized) {
+      state.initialized = true;
+
+      {
+        final slotX = 20 * slotSize;
+        final slotY = 4 * slotSize;
+        final w = 2 * slotSize;
+        final h = 2 * slotSize;
+        // add mock items
+        Grid.setItemRect(
+            state.invGrid,
+            slotX + Math.floor(w / 2),
+            slotY + Math.floor(h / 2),
+            w,
+            h,
+            'mock_item_2x2_a');
+      }
+
+      {
+        final slotX = 23 * slotSize;
+        final slotY = 5 * slotSize;
+        final w = 2 * slotSize;
+        final h = 2 * slotSize;
+        // add mock items
+        Grid.setItemRect(
+            state.invGrid,
+            slotX + Math.floor(w / 2),
+            slotY + Math.floor(h / 2),
+            w,
+            h,
+            'mock_item_2x2_b');
+      }
+
+      {
+        final slotX = 20 * slotSize;
+        final slotY = 8 * slotSize;
+        final w = slotSize;
+        final h = slotSize;
+        // add mock items
+        Grid.setItemRect(
+            state.invGrid,
+            slotX + Math.floor(w / 2),
+            slotY + Math.floor(h / 2),
+            w,
+            h,
+            'mock_item_1x1');
+      }
+
+      {
+        final slotX = 26 * slotSize;
+        final slotY = 7 * slotSize;
+        final w = slotSize;
+        final h = 3 * slotSize;
+        // add mock items
+        Grid.setItemRect(
+            state.invGrid,
+            slotX + Math.floor(w / 2),
+            slotY + Math.floor(h / 2),
+            w, h,
+            'mock_item_1x3');
+      }
+    }
+
+    {
+      Grid.removeItem(
+          state.invGrid, 
+          'item_can_place');
+
+      Grid.removeItem(
+          state.invGrid, 
+          'item_cannot_place');
+
+      final mx = Main.Global.uiRoot.mouseX;
+      final my = Main.Global.uiRoot.mouseY;
+      final w = 2 * slotSize;
+      final h = 2 * slotSize;
+      final cx = Math.floor((mx - (slotSize / 2)) / slotSize) * slotSize + Math.floor(w / 2);
+      final cy = Math.floor((my - (slotSize / 2)) / slotSize) * slotSize + Math.floor(h / 2);
+      final canPlace = Lambda.count(
+          Grid.getItemsInRect(
+            state.invGrid,
+            cx,
+            cy,
+            w,
+            h)) == 0;
+
+      Grid.setItemRect(
+          state.invGrid,
+          cx,
+          cy,
+          w,
+          h,
+          canPlace ? 
+          'item_can_place' : 
+          'item_cannot_place');
+    }
+  }
+  public static function render(time) {
+    final cellSize = state.invGrid.cellSize;
+    for (itemId => bounds in state.invGrid.itemCache) {
+      final width = bounds[1] - bounds[0];
+      final height = bounds[3] - bounds[2];
+      final cx = Math.ceil(bounds[0] + width / 2);
+      final cy = Math.ceil(bounds[2] + height / 2);
+      Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * cellSize,
+          bounds[2] * cellSize,
+          'ui/square_white',
+          null,
+          (p) -> {
+            final b = p.batchElement;
+            p.sortOrder = 1;
+            b.scaleX = width * cellSize;
+            b.scaleY = height * cellSize;
+            b.alpha = 0.4;
+
+            if (itemId == 'item_can_place') {
+              b.r = 0;
+              b.g = 0.7;
+            }
+
+            if (itemId == 'item_cannot_place') {
+              b.r = 0.8;
+              b.g = 0;
+              b.b = 0;
+            }
+          });
+    } 
+
+    {
+      final w = 2 * cellSize;
+      final h = 2 * cellSize;
+      Main.Global.uiSpriteBatch.emitSprite(
+          Main.Global.uiRoot.mouseX - w / 2,
+          Main.Global.uiRoot.mouseY - h / 2,
+          'ui/square_white',
+          null,
+          (p) -> {
+            final b = p.batchElement;
+            p.sortOrder = 2;
+            b.scaleX = w;
+            b.scaleY = h;
+            b.alpha = 0.8;
+          });
+    }
+  }
+}
+
 class Hud {
   public static var rScale = 4;
   static var mapData: TiledMapData;
@@ -570,6 +728,7 @@ class Hud {
 
   public static function update(dt: Float) {
     Tooltip.update(dt);
+    InventoryDragAndDropPrototype.update(dt);
 
     Main.Global.worldMouse.hoverState = 
       Main.HoverState.None;
@@ -633,6 +792,7 @@ class Hud {
 
   public static function render(time: Float) {
     Tooltip.render(time);
+    InventoryDragAndDropPrototype.render(time);
 
     var ps = Main.Global.playerStats;
 

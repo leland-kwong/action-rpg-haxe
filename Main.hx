@@ -69,7 +69,7 @@ class Global {
       enabled: true
     },
     inventory: {
-      opened: false
+      opened: true
     }
   }
 
