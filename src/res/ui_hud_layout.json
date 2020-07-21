@@ -12,15 +12,15 @@
                  "objects":[
                         {
                          "gid":6,
-                         "height":196,
+                         "height":199,
                          "id":226,
                          "name":"ui\/ui_inventory_underlay",
                          "rotation":0,
                          "type":"",
                          "visible":true,
-                         "width":278,
+                         "width":281,
                          "x":187,
-                         "y":226
+                         "y":228
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -59,8 +59,8 @@
                          "type":"ui_interactable",
                          "visible":true,
                          "width":22,
-                         "x":190,
-                         "y":32
+                         "x":191,
+                         "y":33
                         }, 
                         {
                          "height":22,
@@ -70,8 +70,8 @@
                          "type":"ui_interactable",
                          "visible":true,
                          "width":22,
-                         "x":213,
-                         "y":32
+                         "x":214,
+                         "y":33
                         }, 
                         {
                          "height":22,
@@ -81,8 +81,8 @@
                          "type":"ui_interactable",
                          "visible":true,
                          "width":22,
-                         "x":236,
-                         "y":32
+                         "x":237,
+                         "y":33
                         }],
                  "opacity":1,
                  "type":"objectgroup",

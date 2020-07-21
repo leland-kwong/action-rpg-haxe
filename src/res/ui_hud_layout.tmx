@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="right-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="14" nextobjectid="255">
  <tileset firstgid="1" source="ui.tsx"/>
- <group id="7" name="inventory" locked="1">
-  <objectgroup id="13" name="background" locked="1">
-   <object id="226" name="ui/ui_inventory_underlay" gid="6" x="187" y="226" width="278" height="196"/>
+ <group id="7" name="inventory">
+  <objectgroup id="13" name="background">
+   <object id="226" name="ui/ui_inventory_underlay" gid="6" x="187" y="228" width="281" height="199"/>
   </objectgroup>
   <objectgroup color="#ffffff" id="9" name="interactable">
    <object id="249" name="inventory_slots" type="ui_interactable" x="272" y="32" width="192" height="192">
@@ -11,9 +11,9 @@
      <property name="slotSize" type="int" value="16"/>
     </properties>
    </object>
-   <object id="252" name="ability" type="ui_interactable" x="190" y="32" width="22" height="22"/>
-   <object id="253" name="ability" type="ui_interactable" x="213" y="32" width="22" height="22"/>
-   <object id="254" name="ability" type="ui_interactable" x="236" y="32" width="22" height="22"/>
+   <object id="252" name="ability" type="ui_interactable" x="191" y="33" width="22" height="22"/>
+   <object id="253" name="ability" type="ui_interactable" x="214" y="33" width="22" height="22"/>
+   <object id="254" name="ability" type="ui_interactable" x="237" y="33" width="22" height="22"/>
   </objectgroup>
  </group>
  <group id="8" name="hud">

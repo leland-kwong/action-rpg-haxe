@@ -780,7 +780,8 @@ class InventoryDragAndDropPrototype {
     // render inventory items
     debugGraphic.clear();
     debugGraphic.beginFill(0xffffff, 0.4);
-    debugGraphic.lineStyle(2, 0xffffff);
+    debugGraphic.lineStyle(2, 0xffffff, 0.7);
+
     for (itemId => bounds in state.invGrid.itemCache) {
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
@@ -822,7 +823,7 @@ class InventoryDragAndDropPrototype {
       final w = itemData.slotWidth;
       final h = itemData.slotHeight;
 
-      debugGraphic.beginFill(0xffffff, 0.8);
+      debugGraphic.beginFill(0xffffff, 0.6);
       debugGraphic.drawRect(
           Main.Global.uiRoot.mouseX - w / 2,
           Main.Global.uiRoot.mouseY - h / 2,
