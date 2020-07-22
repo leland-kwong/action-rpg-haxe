@@ -531,6 +531,10 @@ class Tooltip {
   }
 }
 
+/*
+   TODO: Update loot pickup to use `InventoryDragAndDropPrototype`'s grid
+   TODO: Add support for dropping an item on the floor
+ */
 class InventoryDragAndDropPrototype {
   static var debugGraphic: h2d.Graphics;
 
@@ -732,9 +736,11 @@ class InventoryDragAndDropPrototype {
             }).matchedSlot;
 
         if (slotToEquip != null) {
+          final canEquip = lootDef.category == 
+            slotToEquip.allowedCategory;
+
           // final canEquip = pickedUpItem;
-          trace(slotToEquip.x, slotToEquip.y);
-          Main.Global.renderHooks.push((time) -> {
+          final highlightSlotToEquip = (time) -> {
             Main.Global.uiSpriteBatch.emitSprite(
                 slotToEquip.x, 
                 slotToEquip.y,
@@ -744,13 +750,29 @@ class InventoryDragAndDropPrototype {
                   final b = p.batchElement;
                   b.scaleX = slotToEquip.width;
                   b.scaleY = slotToEquip.height;
-                  b.b = 0;
                   b.a = 0.6;
+
+                  if (canEquip) {
+                    b.b = 0;
+                    // show red to indicate not-allowed
+                  } else {
+                    b.r = 214 / 255;
+                    b.g = 0;
+                    b.b = 0;
+                  }
                 });
 
             return false;
-          });
-          // trace(haxe.Json.stringify(slotToEquip, null, '  '));
+          };
+          Main.Global.renderHooks.push(
+              highlightSlotToEquip);
+
+          if (canEquip && 
+              Main.Global.worldMouse.clicked) {
+            slotToEquip.equippedItemId = lootInst.id;
+            state.pickedUpItemId = NULL_PICKUP_ID;
+            return;
+          }
         }
       };
 
@@ -838,6 +860,28 @@ class InventoryDragAndDropPrototype {
     // render inventory items
     debugGraphic.beginFill(0xffffff, 0.4);
     debugGraphic.lineStyle(2, 0xffffff, 0.7);
+
+    final renderEquippedItem = (slotToEquip) -> {
+      final equippedLootInst = state.itemsById.get(
+          slotToEquip.equippedItemId);
+
+      if (equippedLootInst != null) {
+        final lootDef = Loot.getDef(equippedLootInst.type);
+        Main.Global.uiSpriteBatch.emitSprite(
+            slotToEquip.x + slotToEquip.width / 2,  
+            slotToEquip.y + slotToEquip.height / 2,
+            lootDef.spriteKey,
+            null,
+            (p) -> {
+              final b = p.batchElement;
+              b.scale = Hud.rScale;
+            });
+      }
+    };
+
+    for (slot in state.equipmentSlots) {
+      renderEquippedItem(slot);
+    }
 
     for (itemId => bounds in state.invGrid.itemCache) {
       final lootInst = state.itemsById.get(itemId);
