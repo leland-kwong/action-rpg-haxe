@@ -93,7 +93,7 @@
         "ui.tsx"
     ],
     "project": "main.tiled-project",
-    "property.type": "int",
+    "property.type": "string",
     "recentFiles": [
         "ui_hud_layout.tmx",
         "ui_inventory_layout.tmx",

@@ -11,9 +11,21 @@
      <property name="slotSize" type="int" value="16"/>
     </properties>
    </object>
-   <object id="252" name="ability" type="ui_interactable" x="191" y="33" width="22" height="22"/>
-   <object id="253" name="ability" type="ui_interactable" x="214" y="33" width="22" height="22"/>
-   <object id="254" name="ability" type="ui_interactable" x="237" y="33" width="22" height="22"/>
+   <object id="252" name="ability" type="equipment_slot" x="191" y="32" width="22" height="22">
+    <properties>
+     <property name="allowedCategory" value="ability"/>
+    </properties>
+   </object>
+   <object id="253" name="ability" type="equipment_slot" x="214" y="32" width="22" height="22">
+    <properties>
+     <property name="allowedCategory" value="ability"/>
+    </properties>
+   </object>
+   <object id="254" name="ability" type="equipment_slot" x="237" y="32" width="22" height="22">
+    <properties>
+     <property name="allowedCategory" value="ability"/>
+    </properties>
+   </object>
   </objectgroup>
  </group>
  <group id="8" name="hud">

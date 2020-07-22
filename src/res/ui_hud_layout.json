@@ -55,34 +55,52 @@
                          "height":22,
                          "id":252,
                          "name":"ability",
+                         "properties":[
+                                {
+                                 "name":"allowedCategory",
+                                 "type":"string",
+                                 "value":"ability"
+                                }],
                          "rotation":0,
-                         "type":"ui_interactable",
+                         "type":"equipment_slot",
                          "visible":true,
                          "width":22,
                          "x":191,
-                         "y":33
+                         "y":32
                         }, 
                         {
                          "height":22,
                          "id":253,
                          "name":"ability",
+                         "properties":[
+                                {
+                                 "name":"allowedCategory",
+                                 "type":"string",
+                                 "value":"ability"
+                                }],
                          "rotation":0,
-                         "type":"ui_interactable",
+                         "type":"equipment_slot",
                          "visible":true,
                          "width":22,
                          "x":214,
-                         "y":33
+                         "y":32
                         }, 
                         {
                          "height":22,
                          "id":254,
                          "name":"ability",
+                         "properties":[
+                                {
+                                 "name":"allowedCategory",
+                                 "type":"string",
+                                 "value":"ability"
+                                }],
                          "rotation":0,
-                         "type":"ui_interactable",
+                         "type":"equipment_slot",
                          "visible":true,
                          "width":22,
                          "x":237,
-                         "y":33
+                         "y":32
                         }],
                  "opacity":1,
                  "type":"objectgroup",
