@@ -20,6 +20,14 @@ typedef LootInstance = {
 class Loot {
   static final lootDefinitions: Array<LootDef> = [
   {
+    name: 'Basic Blaster',
+    type: 'basicBlaster',
+    category: 'ability',
+    minDamage: 0,
+    maxDamage: 0,
+    spriteKey: 'ui/loot__ability_basic_blaster'
+  },
+  {
     name: 'Spider Bots',
     type: 'spiderBots',
     category: 'ability',

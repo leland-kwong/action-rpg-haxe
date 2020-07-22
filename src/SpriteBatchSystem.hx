@@ -97,14 +97,15 @@ class SpriteBatchSystem {
     instances.push(batchManager);
   }
 
-  function makeTile(spriteKey: String) {
+  public static function makeTile(
+      sbs: SpriteBatchSystem, spriteKey: String) {
     final fromCache = tileCache.get(spriteKey);
 
     if (fromCache != null) {
       return fromCache;
     }
 
-    final spriteData = getSpriteData(this, spriteKey);
+    final spriteData = getSpriteData(sbs, spriteKey);
 
     // TODO: Consider using a placeholder sprite (pink box?) instead
     // of crashing so the game can gracefully continue even though
@@ -113,7 +114,7 @@ class SpriteBatchSystem {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    final tile = batchManager.spriteSheet.sub(
+    final tile = sbs.batchManager.spriteSheet.sub(
         spriteData.frame.x,
         spriteData.frame.y,
         spriteData.frame.w,
@@ -138,7 +139,8 @@ class SpriteBatchSystem {
     ?effectCallback: EffectCallback,
     ?z: Float = 0) {
 
-    final g = new BatchElement(makeTile(spriteKey));
+    final g = new BatchElement(
+        makeTile(this, spriteKey));
     if (angle != null) {
       g.rotation = angle;
     }

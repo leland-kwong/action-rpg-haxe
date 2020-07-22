@@ -274,7 +274,7 @@ class Inventory {
                 flyToPlayerThenDestroy);
           }
 
-          // visual feedback to show item pickup failure
+          // visual feedback to show item pickup failure (bounce item up then down)
           if (!addSuccess) {
             final lootRefOriginalX = lootRef.x;
             final lootRefOriginalY = lootRef.y;
@@ -338,32 +338,6 @@ class Inventory {
             });
       }
     }
-    
-    // debug render interactable slots
-    // {
-    //   final cellSize = interactGrid.cellSize;
-    //   for (y => col in interactGrid.data) {
-    //     for (x => cell in col) {
-    //       Main.Global.logData.interactPosition = {
-    //         x: x * cellSize,
-    //         y: y * cellSize
-    //       };
-    //       final cellRenderEffect = (p) -> {
-    //         final b: h2d.SpriteBatch.BatchElement 
-    //           = p.batchElement;
-    //         p.sortOrder = 1.0;
-    //         b.scale = cellSize - 4;
-    //         b.alpha = 0.2;
-    //       };
-    //       Main.Global.uiSpriteBatch.emitSprite(
-    //           (x * cellSize),
-    //           (y * cellSize),
-    //           'ui/square_white',
-    //           null,
-    //           cellRenderEffect);   
-    //     }
-    //   }
-    // }
 
     final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
@@ -611,7 +585,7 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance('spiderBots'));
+          Loot.createInstance('basicBlaster'));
     }
 
     {
@@ -866,37 +840,53 @@ class InventoryDragAndDropPrototype {
     debugGraphic.lineStyle(2, 0xffffff, 0.7);
 
     for (itemId => bounds in state.invGrid.itemCache) {
+      final lootInst = state.itemsById.get(itemId);
+      final lootDef = Loot.getDef(lootInst.type);
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
-      final cx = Math.ceil(bounds[0] + width / 2);
-      final cy = Math.ceil(bounds[2] + height / 2);
-      
-      debugGraphic.drawRect(
-          bounds[0] * cellSize,
-          bounds[2] * cellSize,
-          width * cellSize,
-          height * cellSize);
+      final cx = bounds[0] + width / 2;
+      final cy = bounds[2] + height / 2;
+
+      Main.Global.uiSpriteBatch.emitSprite(
+          cx * cellSize, cy * cellSize,
+          lootDef.spriteKey,
+          (p) -> {
+            p.sortOrder = 1;
+            final b = p.batchElement;
+            b.scale = Hud.rScale;
+          });
     } 
 
     // render pickup status
     for (itemId => bounds in state.debugGrid.itemCache) {
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
+      final cx = bounds[0] + width / 2;
+      final cy = bounds[2] + height / 2;
 
-      if (itemId == 'item_can_place') {
-        debugGraphic.beginFill(0x63c74d, 0.4);
-      }
+      Main.Global.uiSpriteBatch.emitSprite(
+          (cx - width / 2) * cellSize, (cy - height / 2) * cellSize,
+          'ui/square_white',
+          (p) -> {
+            p.sortOrder = 2;
 
-      if (itemId == 'item_cannot_place') {
-        debugGraphic.beginFill(0xd60000, 0.4);
-      }
+            final b = p.batchElement;
+            b.scaleX = width * cellSize;
+            b.scaleY = height * cellSize;
+            b.alpha = 0.4;
 
-      debugGraphic.lineStyle(0);
-      debugGraphic.drawRect(
-          bounds[0] * cellSize,
-          bounds[2] * cellSize,
-          width * cellSize,
-          height * cellSize);
+            if (itemId == 'item_can_place') {
+              b.r = 99 / 255;
+              b.g = 199 / 255;
+              b.b = 77 / 255;
+            }
+
+            if (itemId == 'item_cannot_place') {
+              b.r = 214 / 255;
+              b.g = 0;
+              b.b = 0;
+            }
+          });
     } 
 
     // render picked up item
@@ -908,12 +898,18 @@ class InventoryDragAndDropPrototype {
           lootDef.spriteKey);
       final w = toSlotSize(spriteData.sourceSize.w);
       final h = toSlotSize(spriteData.sourceSize.h);
+      final x = Main.Global.uiRoot.mouseX;
+      final y = Main.Global.uiRoot.mouseY;
 
-      debugGraphic.beginFill(0xffffff, 0.6);
-      debugGraphic.drawRect(
-          Main.Global.uiRoot.mouseX - w / 2,
-          Main.Global.uiRoot.mouseY - h / 2,
-          w, h);
+      Main.Global.uiSpriteBatch.emitSprite(
+          x, y,
+          lootDef.spriteKey,
+          (p) -> {
+            p.sortOrder = 3;
+
+            final b = p.batchElement;
+            b.scale = Hud.rScale;
+          });
     }
   }
 }
