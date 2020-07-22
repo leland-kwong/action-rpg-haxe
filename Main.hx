@@ -239,9 +239,19 @@ class Main extends hxd.App {
     if (game != null) {
       game.render(Global.time);
     }
-    for (hook in Global.renderHooks) {
-      hook(Global.time);
+
+    {
+      final nextRenderHooks = [];
+      for (hook in Global.renderHooks) {
+        final keepAlive = hook(Global.time);
+
+        if (keepAlive) {
+          nextRenderHooks.push(hook);
+        }
+      }
+      Global.renderHooks = nextRenderHooks;
     }
+
     Hud.render(Global.time);
     Hud.Inventory.render(Global.time);
     core.Anim.AnimEffect
@@ -459,11 +469,10 @@ class Main extends hxd.App {
         it.update(dt);
       }
 
-      acc += dt;
-
-
       Hud.update(dt);
       Hud.Inventory.update(dt);
+
+      acc += dt;
 
       var isNextFrame = acc >= frameTime;
       // handle fixed dt here
