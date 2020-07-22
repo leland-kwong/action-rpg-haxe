@@ -227,9 +227,9 @@ class Inventory {
          Main.Global.hoveredEntity.hoverStart);
       final distFromPlayer = Utils.distance(
           playerRef.x, playerRef.y, lootRef.x, lootRef.y);
-      final canPickupItem = isPickupMode && 
+      final playerCanPickupItem = isPickupMode && 
         distFromPlayer <= pickupRadius;
-      if (canPickupItem) {
+      if (playerCanPickupItem) {
         if (Main.Global.worldMouse.buttonDown == 0) {
           Main.Global.worldMouse.hoverState = 
             Main.HoverState.LootHoveredCanPickup;
