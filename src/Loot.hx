@@ -18,7 +18,15 @@ typedef LootInstance = {
 };
 
 class Loot {
-  static final lootDefinitions: Array<LootDef> = [
+  public static final lootDefinitions: Array<LootDef> = [
+  {
+    name: 'Green Arrow Socketable',
+    type: 'greenArrowSocketable',
+    category: 'socketable',
+    minDamage: 0,
+    maxDamage: 0,
+    spriteKey: 'ui/loot__socketable_green_arrow_up'
+  },
   {
     name: 'Basic Blaster',
     type: 'basicBlaster',
@@ -38,7 +46,7 @@ class Loot {
   {
     name: 'Null Item',
     type: 'nullItem',
-    category: 'ability',
+    category: 'nullCategory',
     minDamage: 0,
     maxDamage: 0,
     spriteKey: 'ui/placeholder'
@@ -54,10 +62,13 @@ class Loot {
   }
 
   public static function createInstance(
-      type: LootDefType): LootInstance {
+      types: Array<Int>): LootInstance {
+
+    final lootDefIndex = Utils.rollValues(types);
+
     return {
       id: Utils.uid(),
-      type: type
+      type: lootDefinitions[lootDefIndex].type
     };
   }
 }

@@ -37,8 +37,10 @@ class Utils {
       return min + Std.random(max-min+1);
   }
 
-  public static function rollValues(values: Array<Dynamic>) {
-    return Math.round(Math.random() * values.length);
+  public static function rollValues<T>(values: Array<T>) {
+    final rolledIndex = Math.round(Math.random() * values.length);
+
+    return values[rolledIndex];
   }
 
   static var idsCreated = 0;

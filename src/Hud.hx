@@ -542,7 +542,8 @@ class InventoryDragAndDropPrototype {
     debugGrid: Grid.create(16 * Hud.rScale),
     pickedUpItemId: NULL_PICKUP_ID,
     itemsById: [
-      NULL_PICKUP_ID => Loot.createInstance('nullItem')
+      NULL_PICKUP_ID => Loot.createInstance([
+          Loot.lootDefinitions.length - 1])
     ]
   };
 
@@ -575,7 +576,7 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance('nullItem'));
+          Loot.createInstance([0]));
     }
 
     {
@@ -585,7 +586,7 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance('basicBlaster'));
+          Loot.createInstance([1]));
     }
 
     {
@@ -595,9 +596,8 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance('spiderBots'));
+          Loot.createInstance([2]));
     }
-
   }
 
   static function prepareEquipmentSlots() {
