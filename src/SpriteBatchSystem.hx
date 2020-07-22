@@ -104,15 +104,16 @@ class SpriteBatchSystem {
       return fromCache;
     }
 
-    var spriteData = Reflect.field(
-        batchManager.spriteSheetData,
-        spriteKey);
+    final spriteData = getSpriteData(this, spriteKey);
 
+    // TODO: Consider using a placeholder sprite (pink box?) instead
+    // of crashing so the game can gracefully continue even though
+    // the graphic will not render properly.
     if (spriteData == null) {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    var tile = batchManager.spriteSheet.sub(
+    final tile = batchManager.spriteSheet.sub(
         spriteData.frame.x,
         spriteData.frame.y,
         spriteData.frame.w,
@@ -155,6 +156,15 @@ class SpriteBatchSystem {
     BatchManager.emit(batchManager, spriteRef);
 
     return spriteRef;
+  }
+
+  public static function getSpriteData(
+      s: SpriteBatchSystem,
+      spriteKey): SpriteData {
+
+    return Reflect.field(
+        s.batchManager.spriteSheetData, 
+        spriteKey);
   }
 
   public static function updateAll(dt: Float) {
