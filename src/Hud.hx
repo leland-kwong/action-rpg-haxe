@@ -1,7 +1,6 @@
 using core.Types;
 import Entity;
 import Grid;
-import Loot;
 
 typedef UiAction = {
   type: String,
@@ -16,6 +15,15 @@ typedef TiledUiProp = {
   type: String,
   value: Dynamic,
 };
+private typedef EquippableSlotMeta = {
+  equippedItemId: String,
+  allowedCategory: Loot.LootDefCat,
+  // slot dimensions and ui position
+  x: Int,
+  y: Int,
+  width: Int,
+  height: Int,
+}
 
 class TiledParser {
   static var cache: Map<
@@ -74,7 +82,7 @@ class Inventory {
   public static var state: {
     inventorySlotsGrid: GridRef,
     abilitySlotsGrid: GridRef,
-    lootInstancesById: Map<EntityId, LootInstance>
+    lootInstancesById: Map<EntityId, Loot.LootInstance>
   } = {
     // inventory grid resolution is a single slot
     inventorySlotsGrid: Grid.create(1), 
@@ -205,8 +213,7 @@ class Inventory {
         Main.Global.hoveredEntity.hoverStart = Main.Global.time;
       }
 
-      if (Entity.isNullId(
-            Main.Global.hoveredEntity.id)) {
+      if (entityRef.type == 'LOOT') {
         Main.Global.worldMouse.hoverState = 
           Main.HoverState.LootHovered;
       }
@@ -557,15 +564,106 @@ class InventoryDragAndDropPrototype {
   static final state = {
     initialized: false,
     invGrid: Grid.create(16 * Hud.rScale),
+    equipmentSlots: new Array<EquippableSlotMeta>(),
     debugGrid: Grid.create(16 * Hud.rScale),
     pickedUpItemId: NULL_PICKUP_ID,
     itemsById: [
-      NULL_PICKUP_ID => {
-        slotWidth: 16 * Hud.rScale,
-        slotHeight: 16 * Hud.rScale
-      }
+      NULL_PICKUP_ID => Loot.createInstance('nullItem')
     ]
   };
+
+  static function addTestItems(slotSize) {
+    final addItemToInv = (
+        slotX, slotY, lootInst) -> {
+      final lootDef = Loot.getDef(lootInst.type);
+      final spriteData = SpriteBatchSystem.getSpriteData(
+          Main.Global.uiSpriteBatch,
+          lootDef.spriteKey);
+      final slotWidth = toSlotSize(spriteData.sourceSize.w);
+      final slotHeight = toSlotSize(spriteData.sourceSize.h);
+
+      Grid.setItemRect(
+          state.invGrid,
+          slotX + slotWidth / 2,
+          slotY + slotHeight / 2,
+          slotWidth,
+          slotHeight,
+          lootInst.id);
+      state.itemsById.set(
+          lootInst.id, 
+          lootInst);
+    }
+
+    {
+      final slotX = 20 * slotSize;
+      final slotY = 4 * slotSize;
+      // add mock items
+      addItemToInv(
+          slotX,
+          slotY,
+          Loot.createInstance('nullItem'));
+    }
+
+    {
+      final slotX = 23 * slotSize;
+      final slotY = 5 * slotSize;
+      // add mock items
+      addItemToInv(
+          slotX,
+          slotY,
+          Loot.createInstance('spiderBots'));
+    }
+
+    {
+      final slotX = 21 * slotSize;
+      final slotY = 8 * slotSize;
+      // add mock items
+      addItemToInv(
+          slotX,
+          slotY,
+          Loot.createInstance('spiderBots'));
+    }
+
+  }
+
+  static function prepareEquipmentSlots() {
+    final hudLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json); 
+    final inventoryLayerRef = TiledParser
+      .findLayer(hudLayoutRef, 'inventory');
+    final interactRef = TiledParser
+      .findLayer(
+          inventoryLayerRef, 'interactable');
+    final equipmentSlots = Lambda.filter(
+        interactRef.objects,
+        (o) -> o.type == 'equipment_slot');  
+
+    state.equipmentSlots = Lambda.map(
+        equipmentSlots, (slot) -> {
+          final allowedCategory = Lambda.find(
+              slot.properties, 
+              (prop: {
+                name: String,
+                value: String
+              }) -> prop.name == 'allowedCategory')
+            .value;
+
+          return {
+            equippedItemId: null,
+            allowedCategory: allowedCategory,
+            x: slot.x * Hud.rScale,
+            y: slot.y * Hud.rScale,
+            width: slot.width * Hud.rScale,
+            height: slot.height * Hud.rScale
+          }
+        });
+
+    trace(state.equipmentSlots);
+  }
+
+  static function toSlotSize(value) {
+    return Math.ceil(value / 16) * 16 * Hud.rScale;
+  }
 
   public static function update(dt) {
     if (!Main.Global.uiState.inventory.opened) {
@@ -581,114 +679,25 @@ class InventoryDragAndDropPrototype {
       state.initialized = true;
 
       debugGraphic = new h2d.Graphics(Main.Global.uiRoot);
-
-      final addItemToInv = (
-          slotX, slotY, slotWidth, slotHeight, itemId) -> {
-        Grid.setItemRect(
-            state.invGrid,
-            slotX + (slotWidth / 2),
-            slotY + (slotHeight / 2),
-            slotWidth,
-            slotHeight,
-            itemId);
-        state.itemsById.set(
-            itemId, 
-            { 
-              slotWidth: slotWidth, 
-              slotHeight: slotHeight
-            });
-      }
-
-      {
-        final slotX = 20 * slotSize;
-        final slotY = 4 * slotSize;
-        final w = 2 * slotSize;
-        final h = 2 * slotSize;
-        // add mock items
-        addItemToInv(
-            slotX,
-            slotY,
-            w,
-            h,
-            Utils.uid());
-      }
-
-      {
-        final slotX = 23 * slotSize;
-        final slotY = 5 * slotSize;
-        final w = 2 * slotSize;
-        final h = 3 * slotSize;
-        // add mock items
-        addItemToInv(
-            slotX,
-            slotY,
-            w,
-            h,
-            Utils.uid());
-      }
-
-      {
-        final slotX = 21 * slotSize;
-        final slotY = 8 * slotSize;
-        final w = 1 * slotSize;
-        final h = 1 * slotSize;
-        // add mock items
-        addItemToInv(
-            slotX,
-            slotY,
-            w,
-            h,
-            Utils.uid());
-      }
-
-      {
-        final slotX = 22 * slotSize;
-        final slotY = 8 * slotSize;
-        final w = 1 * slotSize;
-        final h = 1 * slotSize;
-        // add mock items
-        addItemToInv(
-            slotX,
-            slotY,
-            w,
-            h,
-            Utils.uid());
-      }
-
-      {
-        final slotX = 22 * slotSize;
-        final slotY = 10 * slotSize;
-        final w = 1 * slotSize;
-        final h = 1 * slotSize;
-        // add mock items
-        addItemToInv(
-            slotX,
-            slotY,
-            w,
-            h,
-            Utils.uid());
-      }
-
-      {
-        final slotX = 26 * slotSize;
-        final slotY = 7 * slotSize;
-        final w = 1 * slotSize;
-        final h = 3 * slotSize;
-        // add mock items
-        addItemToInv(
-            slotX,
-            slotY,
-            w, h,
-            Utils.uid());
-      }
+      prepareEquipmentSlots();
+      addTestItems(slotSize);
     }
 
     // handle mouse interaction
     {
+      final lootInst = state.itemsById.get(state.pickedUpItemId);
+      final lootDef = Loot.getDef(lootInst.type);
+      final spriteData = SpriteBatchSystem.getSpriteData(
+          Main.Global.uiSpriteBatch,
+          lootDef.spriteKey);
+      final slotWidth = toSlotSize(spriteData.sourceSize.w);
+      final slotHeight = toSlotSize(spriteData.sourceSize.h);
+      final pickedUpItem = {
+        slotWidth: slotWidth,
+        slotHeight: slotHeight,
+      };
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
-      final pickedUpItem = state.itemsById.get(
-          state.pickedUpItemId);
       final w = pickedUpItem.slotWidth;
       final h = pickedUpItem.slotHeight;
       /*
@@ -707,6 +716,73 @@ class InventoryDragAndDropPrototype {
       final mouseSlotY = Math.round((my - halfHeight) / slotSize) * slotSize;
       final cx = mouseSlotX + halfWidth;
       final cy = mouseSlotY + halfHeight;
+      final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
+
+      // check collision with equipment slots
+      final checkEquipmentSlotCollisions = () -> {
+        final slotToEquip = Lambda.fold(
+            state.equipmentSlots, 
+            (slot, result: {
+              matchedSlot: EquippableSlotMeta,
+              distance: Float
+            }) -> {
+              final colSlot = new h2d.col.Bounds();
+              colSlot.set(slot.x, slot.y, slot.width, slot.height);
+              final colSlotCenter = colSlot.getCenter();
+              final colPickedUp = new h2d.col.Bounds();
+              colPickedUp.set(
+                  mx - pickedUpItem.slotWidth / 2, 
+                  my - pickedUpItem.slotHeight / 2, 
+                  pickedUpItem.slotWidth, 
+                  pickedUpItem.slotHeight);
+              final colPickedUpCenter = colPickedUp.getCenter();
+              final distBetweenCollisions = Utils.distance(
+                  colSlotCenter.x,
+                  colSlotCenter.y,
+                  colPickedUpCenter.x,
+                  colPickedUpCenter.y);
+
+              if (colSlot.intersects(colPickedUp) && 
+                  distBetweenCollisions < result.distance) {
+
+                return {
+                  matchedSlot: slot,
+                  distance: distBetweenCollisions
+                };
+              }
+
+              return result;
+            }, {
+              matchedSlot: null,
+              distance: Math.POSITIVE_INFINITY
+            }).matchedSlot;
+
+        if (slotToEquip != null) {
+          // final canEquip = pickedUpItem;
+          trace(slotToEquip.x, slotToEquip.y);
+          Main.Global.renderHooks.push((time) -> {
+            Main.Global.uiSpriteBatch.emitSprite(
+                slotToEquip.x, 
+                slotToEquip.y,
+                'ui/square_white',
+                null,
+                (p) -> {
+                  final b = p.batchElement;
+                  b.scaleX = slotToEquip.width;
+                  b.scaleY = slotToEquip.height;
+                  b.b = 0;
+                  b.a = 0.6;
+                });
+
+            return false;
+          });
+          // trace(haxe.Json.stringify(slotToEquip, null, '  '));
+        }
+      };
+
+      if (hasPickedUp) {
+        checkEquipmentSlotCollisions();
+      }
 
       Grid.removeItem(
           state.debugGrid, 
@@ -725,9 +801,6 @@ class InventoryDragAndDropPrototype {
             h)) <= 1;
 
       if (Main.Global.worldMouse.clicked) {
-        final hasPickedUp = state.pickedUpItemId != 
-          NULL_PICKUP_ID;
-
         final currentlyPickedUpItem = state.pickedUpItemId;
 
         if (canPlace) {
@@ -778,11 +851,17 @@ class InventoryDragAndDropPrototype {
           'item_cannot_place');
     }
   }
+
   public static function render(time) {
+    debugGraphic.clear();
+
+    if (!Main.Global.uiState.inventory.opened) {
+      return;
+    }
+
     final cellSize = state.invGrid.cellSize;
 
     // render inventory items
-    debugGraphic.clear();
     debugGraphic.beginFill(0xffffff, 0.4);
     debugGraphic.lineStyle(2, 0xffffff, 0.7);
 
@@ -822,10 +901,13 @@ class InventoryDragAndDropPrototype {
 
     // render picked up item
     if (state.pickedUpItemId != NULL_PICKUP_ID) {
-      final itemData = state.itemsById
-        .get(state.pickedUpItemId);
-      final w = itemData.slotWidth;
-      final h = itemData.slotHeight;
+      final lootInst = state.itemsById.get(state.pickedUpItemId);
+      final lootDef = Loot.getDef(lootInst.type);
+      final spriteData = SpriteBatchSystem.getSpriteData(
+          Main.Global.uiSpriteBatch,
+          lootDef.spriteKey);
+      final w = toSlotSize(spriteData.sourceSize.w);
+      final h = toSlotSize(spriteData.sourceSize.h);
 
       debugGraphic.beginFill(0xffffff, 0.6);
       debugGraphic.drawRect(
@@ -860,11 +942,11 @@ class Hud {
   }
 
   public static function update(dt: Float) {
-    Tooltip.update(dt);
-    InventoryDragAndDropPrototype.update(dt);
-
     Main.Global.worldMouse.hoverState = 
       Main.HoverState.None;
+
+    Tooltip.update(dt);
+    InventoryDragAndDropPrototype.update(dt);
 
     // show hovered ai info
     {
