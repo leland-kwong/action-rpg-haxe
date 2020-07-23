@@ -792,6 +792,7 @@ class InventoryDragAndDropPrototype {
                 'ui/square_white',
                 null,
                 (p) -> {
+                  p.sortOrder = 3;
                   final b = p.batchElement;
                   b.scaleX = slotToEquip.width;
                   b.scaleY = slotToEquip.height;
@@ -810,8 +811,10 @@ class InventoryDragAndDropPrototype {
             return false;
           };
 
-          Main.Global.renderHooks.push(
-              highlightSlotToEquip);
+          if (hasPickedUp) {
+            Main.Global.renderHooks.push(
+                highlightSlotToEquip);
+          }
 
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
@@ -939,6 +942,7 @@ class InventoryDragAndDropPrototype {
             null,
             (p) -> {
               final b = p.batchElement;
+              p.sortOrder = 2;
               b.scale = Hud.rScale;
             });
       }
@@ -1031,7 +1035,7 @@ class InventoryDragAndDropPrototype {
           x, y,
           lootDef.spriteKey,
           (p) -> {
-            p.sortOrder = 3;
+            p.sortOrder = 4;
 
             final b = p.batchElement;
             b.scale = Hud.rScale;
