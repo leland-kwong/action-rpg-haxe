@@ -75,9 +75,6 @@ class UiStateManager {
 }
 
 class Inventory {
-  static var ready = false;
-  static var interactGrid = Grid.create(16 * Hud.rScale);
-
   public static var state: {
     inventorySlotsGrid: GridRef,
     abilitySlotsGrid: GridRef,
@@ -175,31 +172,6 @@ class Inventory {
   }
 
   public static function update(dt: Float) {
-    if (!ready) {
-
-      ready = true;
-
-      trace('setup inventory interact grid');
-
-      final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json); 
-      final inventoryLayerRef = TiledParser
-        .findLayer(hudLayoutRef, 'inventory');
-      final interactLayer = TiledParser
-        .findLayer(inventoryLayerRef, 'interactable');
-      final interactObjects = interactLayer.objects;
-
-      for (o in interactObjects) {
-        Grid.setItemRect(
-            interactGrid,
-            (o.x + (o.width / 2)) * Hud.rScale,
-            (o.y + (o.height / 2)) * Hud.rScale,
-            o.width * Hud.rScale,
-            o.height * Hud.rScale,
-            'iInteract_${o.id}');
-      }
-    }
-
     // handle loot hover/pickup interaction
     final entityRef = Entity.getById(Main.Global.hoveredEntity.id);
     if (entityRef == Entity.NULL_ENTITY || 
