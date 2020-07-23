@@ -821,7 +821,11 @@ class InventoryDragAndDropPrototype {
         }
       }
 
-      // represents the allowable interaction status
+      /* 
+         Represents the interaction status. So we can render different
+         cursor styles depending upon what inventory interaction
+         area you are on.
+       */
       if (isInBounds) {
         Grid.setItemRect(
             state.debugGrid,
