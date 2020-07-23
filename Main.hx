@@ -233,37 +233,48 @@ class Main extends hxd.App {
   }
 
   public override function render(e: h3d.Engine) {
-    Main.Global.mainPhase = MainPhase.Render;
+    try {
 
-    // prepare all sprite batches 
-    if (game != null) {
-      game.render(Global.time);
-    }
+      Main.Global.mainPhase = MainPhase.Render;
 
-    {
-      final nextRenderHooks = [];
-      for (hook in Global.renderHooks) {
-        final keepAlive = hook(Global.time);
-
-        if (keepAlive) {
-          nextRenderHooks.push(hook);
-        }
+      // prepare all sprite batches 
+      if (game != null) {
+        game.render(Global.time);
       }
-      Global.renderHooks = nextRenderHooks;
+
+      {
+        final nextRenderHooks = [];
+        for (hook in Global.renderHooks) {
+          final keepAlive = hook(Global.time);
+
+          if (keepAlive) {
+            nextRenderHooks.push(hook);
+          }
+        }
+        Global.renderHooks = nextRenderHooks;
+      }
+
+      Hud.render(Global.time);
+      Hud.Inventory.render(Global.time);
+      core.Anim.AnimEffect
+        .render(Global.time);
+      // run sprite batches before engine rendering
+      SpriteBatchSystem.renderAll(Global.time);
+
+      Global.mainBackground.render(e);
+      super.render(e);
+      Global.particleScene.render(e);
+      Global.uiRoot.render(e);
+      Global.debugScene.render(e);
+
+    } catch (error: Dynamic) {
+
+      final stack = haxe.CallStack.exceptionStack();
+      trace(error);
+      trace(haxe.CallStack.toString(stack));
+      hxd.System.exit();
+
     }
-
-    Hud.render(Global.time);
-    Hud.Inventory.render(Global.time);
-    core.Anim.AnimEffect
-      .render(Global.time);
-    // run sprite batches before engine rendering
-    SpriteBatchSystem.renderAll(Global.time);
-
-    Global.mainBackground.render(e);
-    super.render(e);
-    Global.particleScene.render(e);
-    Global.uiRoot.render(e);
-    Global.debugScene.render(e);
   }
 
   function switchMainScene(sceneType: MainSceneType) {
