@@ -75,10 +75,6 @@ class UiStateManager {
 }
 
 class Inventory {
-  public static function inventorySlotInteract(
-      ref: InventoryRef) {
-  }
-
   // Puts an item into the first available slot.
   //
   // Dimensions are based on the native 
@@ -117,6 +113,7 @@ class Inventory {
     final cellSize = InventoryDragAndDropPrototype
       .state.invGrid.cellSize;
 
+    // look for nearest empty cell and put item in if available
     for (y in 0...maxRow) {
       for (x in 0...maxCol) {
         final cx = x + Math.floor(sw / 2);
@@ -156,12 +153,8 @@ class Inventory {
     return false;
   }
 
-  public static function abilityInteract(
-      ref: InventoryRef) {
-  }
-
   public static function update(dt: Float) {
-    // handle loot hover/pickup interaction
+    // handle game world loot hover/pickup interaction
     final entityRef = Entity.getById(Main.Global.hoveredEntity.id);
     if (entityRef == Entity.NULL_ENTITY || 
         entityRef.type == 'LOOT') {
