@@ -125,7 +125,7 @@
                  "objects":[
                         {
                          "gid":1,
-                         "height":14,
+                         "height":38,
                          "id":29,
                          "name":"",
                          "rotation":0,
@@ -133,7 +133,52 @@
                          "visible":true,
                          "width":148,
                          "x":166,
-                         "y":246
+                         "y":269
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }, 
+                {
+                 "color":"#ffff00",
+                 "draworder":"topdown",
+                 "id":14,
+                 "name":"equipped_ability_slots",
+                 "objects":[
+                        {
+                         "height":22,
+                         "id":258,
+                         "name":"",
+                         "rotation":0,
+                         "type":"hud_equipped_ability",
+                         "visible":true,
+                         "width":22,
+                         "x":206,
+                         "y":247
+                        }, 
+                        {
+                         "height":22,
+                         "id":259,
+                         "name":"",
+                         "rotation":0,
+                         "type":"hud_equipped_ability",
+                         "visible":true,
+                         "width":22,
+                         "x":229,
+                         "y":247
+                        }, 
+                        {
+                         "height":22,
+                         "id":260,
+                         "name":"",
+                         "rotation":0,
+                         "type":"hud_equipped_ability",
+                         "visible":true,
+                         "width":22,
+                         "x":252,
+                         "y":247
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -163,18 +208,6 @@
                          "width":9,
                          "x":305,
                          "y":256
-                        }, 
-                        {
-                         "gid":4,
-                         "height":22,
-                         "id":57,
-                         "name":"ui\/hud_ability_slot",
-                         "rotation":0,
-                         "type":"ui_interactable",
-                         "visible":true,
-                         "width":68,
-                         "x":206,
-                         "y":269
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -547,8 +580,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":14,
- "nextobjectid":255,
+ "nextlayerid":15,
+ "nextobjectid":262,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.4.1",

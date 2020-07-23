@@ -551,6 +551,14 @@ class InventoryDragAndDropPrototype {
     ]
   };
 
+  static public function getEquippedAbilities() {
+    return state.equipmentSlots;
+  }
+
+  static public function getItemById(id: String) {
+    return state.itemsById.get(id);
+  }
+
   static function addTestItems(slotSize) {
     final addItemToInv = (
         slotX, slotY, lootInst) -> {
@@ -627,7 +635,7 @@ class InventoryDragAndDropPrototype {
             .value;
 
           return {
-            equippedItemId: null,
+            equippedItemId: NULL_PICKUP_ID,
             allowedCategory: allowedCategory,
             x: slot.x * Hud.rScale,
             y: slot.y * Hud.rScale,
@@ -1135,6 +1143,11 @@ class Hud {
     final energyBars = TiledParser
       .findLayer(hudLayer, 'energy_bars')
       .objects;
+    final inventoryLayerRef = TiledParser
+      .findLayer(uiLayoutRef, 'inventory');
+    final hudEquippedAbilitySlots = TiledParser
+      .findLayer(hudLayer, 'equipped_ability_slots')
+      .objects;
     final barsCallback = (p) -> {
       p.sortOrder = 1.0;
       p.batchElement.scaleX = rScale * 1.0;
@@ -1191,6 +1204,33 @@ class Hud {
             'ui/cockpit_resource_bar_energy',
             null,
             barsCallback);
+      }
+    }
+
+    // render equipped abilities
+    {
+      final spriteEffect = (p) -> {
+        p.batchElement.scaleX = rScale * 1.0;
+        p.batchElement.scaleY = rScale * 1.0;
+      };
+      final inventoryEquippedSlots = InventoryDragAndDropPrototype
+          .getEquippedAbilities();
+
+      for (i in 0...inventoryEquippedSlots.length) {
+        final s = inventoryEquippedSlots[i];
+        final hudSlot = hudEquippedAbilitySlots[i];
+        final cx = (hudSlot.x + hudSlot.width / 2) * Hud.rScale;
+        final cy = (hudSlot.y + hudSlot.height / 2) * Hud.rScale;
+        final lootId = s.equippedItemId;
+        final lootInst = InventoryDragAndDropPrototype
+          .getItemById(lootId); 
+        final lootDef = Loot.getDef(lootInst.type);
+
+        Main.Global.uiSpriteBatch.emitSprite(
+            cx, cy,
+            lootDef.spriteKey,
+            null,
+            spriteEffect);
       }
     }
   }
