@@ -720,7 +720,7 @@ class InventoryDragAndDropPrototype {
           slotDefinition.height * Hud.rScale);
 
       // check collision with equipment slots
-      final checkEquipmentSlotCollisions = () -> {
+      final handleEquipmentSlots = () -> {
         final slotToEquip = Lambda.fold(
             state.equipmentSlots, 
             (slot, result: {
@@ -800,7 +800,7 @@ class InventoryDragAndDropPrototype {
       };
 
       if (hasPickedUp) {
-        checkEquipmentSlotCollisions();
+        handleEquipmentSlots();
       }
 
       Grid.removeItem(
