@@ -462,7 +462,6 @@ class Tooltip {
 }
 
 /*
-   TODO: Update loot pickup to use `InventoryDragAndDropPrototype`'s grid
    TODO: Add support for dropping an item on the floor
  */
 class InventoryDragAndDropPrototype {
@@ -796,8 +795,6 @@ class InventoryDragAndDropPrototype {
         final currentlyPickedUpItem = state.pickedUpItemId;
 
         if (canPlace) {
-          trace('pickup item', state.pickedUpItemId);
-
           final getFirstKey = (keys: Iterator<GridKey>) -> {
             for (k in keys) {
               return k;
@@ -821,9 +818,6 @@ class InventoryDragAndDropPrototype {
 
         final shouldPlace = hasPickedUp && canPlace;
         if (shouldPlace) {
-          trace('drop item');
-
-          // state.pickedUpItemId   
           Grid.setItemRect(
               state.invGrid,
               tcx,
@@ -910,7 +904,7 @@ class InventoryDragAndDropPrototype {
           });
     } 
 
-    // render pickup status
+    // render slot highlights (shows if you may drop/equip at given slot)
     for (itemId => bounds in state.debugGrid.itemCache) {
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
