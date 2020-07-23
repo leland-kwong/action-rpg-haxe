@@ -38,7 +38,8 @@ class Utils {
   }
 
   public static function rollValues<T>(values: Array<T>) {
-    final rolledIndex = Math.round(Math.random() * values.length);
+    final maxIndex = Math.max(0, values.length - 1);
+    final rolledIndex = Math.round(Math.random() * maxIndex);
 
     return values[rolledIndex];
   }
