@@ -659,7 +659,7 @@ class InventoryDragAndDropPrototype {
 
       // check collision with equipment slots
       final handleEquipmentSlots = () -> {
-        final slotToEquip = Lambda.fold(
+        final nearestAbilitySlot = Lambda.fold(
             state.equipmentSlots, 
             (slot, result: {
               matchedSlot: EquippableSlotMeta,
@@ -696,22 +696,22 @@ class InventoryDragAndDropPrototype {
               distance: Math.POSITIVE_INFINITY
             }).matchedSlot;
 
-        if (slotToEquip != null) {
+        if (nearestAbilitySlot != null) {
           final canEquip = lootDef.category == 
-            slotToEquip.allowedCategory ||
+            nearestAbilitySlot.allowedCategory ||
             state.pickedUpItemId == NULL_PICKUP_ID;
 
           final highlightSlotToEquip = (time) -> {
             Main.Global.uiSpriteBatch.emitSprite(
-                slotToEquip.x, 
-                slotToEquip.y,
+                nearestAbilitySlot.x, 
+                nearestAbilitySlot.y,
                 'ui/square_white',
                 null,
                 (p) -> {
                   p.sortOrder = 3;
                   final b = p.batchElement;
-                  b.scaleX = slotToEquip.width;
-                  b.scaleY = slotToEquip.height;
+                  b.scaleX = nearestAbilitySlot.width;
+                  b.scaleY = nearestAbilitySlot.height;
                   b.a = 0.6;
 
                   if (canEquip) {
@@ -735,8 +735,8 @@ class InventoryDragAndDropPrototype {
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
-            final originallyEquipped = slotToEquip.equippedItemId;
-            slotToEquip.equippedItemId = lootInst.id;
+            final originallyEquipped = nearestAbilitySlot.equippedItemId;
+            nearestAbilitySlot.equippedItemId = lootInst.id;
             state.pickedUpItemId = Utils.withDefault(
                 originallyEquipped,
                 NULL_PICKUP_ID);
@@ -847,15 +847,15 @@ class InventoryDragAndDropPrototype {
 
     final cellSize = state.invGrid.cellSize;
 
-    final renderEquippedItem = (slotToEquip) -> {
+    final renderEquippedItem = (abilitySlot) -> {
       final equippedLootInst = state.itemsById.get(
-          slotToEquip.equippedItemId);
+          abilitySlot.equippedItemId);
 
       if (equippedLootInst != null) {
         final lootDef = Loot.getDef(equippedLootInst.type);
         Main.Global.uiSpriteBatch.emitSprite(
-            slotToEquip.x + slotToEquip.width / 2,  
-            slotToEquip.y + slotToEquip.height / 2,
+            abilitySlot.x + abilitySlot.width / 2,  
+            abilitySlot.y + abilitySlot.height / 2,
             lootDef.spriteKey,
             null,
             (p) -> {
