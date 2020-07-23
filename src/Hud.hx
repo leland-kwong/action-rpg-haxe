@@ -133,12 +133,6 @@ class Inventory {
 
         // add success
         if (canFit) {
-          Main.Global.logData.recentlyPickedUp = {
-            x: x * cellSize + (sw / 2) * cellSize, 
-            y: y * cellSize + (sh / 2) * cellSize,
-            w: sw * cellSize,
-            h: sh * cellSize
-          };
           InventoryDragAndDropPrototype.addItemToInventory(
               x * cellSize + (sw / 2) * cellSize, 
               y * cellSize + (sh / 2) * cellSize, 
@@ -827,15 +821,18 @@ class InventoryDragAndDropPrototype {
         }
       }
 
-      Grid.setItemRect(
-          state.debugGrid,
-          cx,
-          cy,
-          w,
-          h,
-          canPlace ? 
-          'item_can_place' : 
-          'item_cannot_place');
+      // represents the allowable interaction status
+      if (isInBounds) {
+        Grid.setItemRect(
+            state.debugGrid,
+            cx,
+            cy,
+            w,
+            h,
+            canPlace ? 
+            'item_can_place' : 
+            'item_cannot_place');
+      }
     }
   }
 
