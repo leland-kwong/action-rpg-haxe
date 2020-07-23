@@ -62,12 +62,15 @@ class Loot {
   }
 
   public static function createInstance(
-      types: Array<Int>): LootInstance {
+      types: Array<Int>,
+      ?explicitId: String): LootInstance {
 
     final lootDefIndex = Utils.rollValues(types);
+    final id = explicitId != null ? 
+      explicitId : Utils.uid();
 
     return {
-      id: Utils.uid(),
+      id: id,
       type: lootDefinitions[lootDefIndex].type
     };
   }
