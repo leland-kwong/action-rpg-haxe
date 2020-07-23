@@ -547,7 +547,7 @@ class InventoryDragAndDropPrototype {
     pickedUpItemId: NULL_PICKUP_ID,
     itemsById: [
       NULL_PICKUP_ID => Loot.createInstance([
-          Loot.lootDefinitions.length - 1])
+          Loot.lootDefinitions.length - 1], NULL_PICKUP_ID)
     ]
   };
 
@@ -635,8 +635,6 @@ class InventoryDragAndDropPrototype {
             height: slot.height * Hud.rScale
           }
         });
-
-    trace(state.equipmentSlots);
   }
 
   static function toSlotSize(value) {
@@ -663,7 +661,10 @@ class InventoryDragAndDropPrototype {
 
     // handle mouse interaction
     {
-      final lootInst = state.itemsById.get(state.pickedUpItemId);
+      final pickedUpId = Utils.withDefault(
+          state.pickedUpItemId,
+          NULL_PICKUP_ID);
+      final lootInst = state.itemsById.get(pickedUpId);
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
           Main.Global.uiSpriteBatch,
@@ -760,9 +761,9 @@ class InventoryDragAndDropPrototype {
 
         if (slotToEquip != null) {
           final canEquip = lootDef.category == 
-            slotToEquip.allowedCategory;
+            slotToEquip.allowedCategory ||
+            state.pickedUpItemId == NULL_PICKUP_ID;
 
-          // final canEquip = pickedUpItem;
           final highlightSlotToEquip = (time) -> {
             Main.Global.uiSpriteBatch.emitSprite(
                 slotToEquip.x, 
@@ -787,21 +788,23 @@ class InventoryDragAndDropPrototype {
 
             return false;
           };
+
           Main.Global.renderHooks.push(
               highlightSlotToEquip);
 
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
+            // swap currently equipped with item at pointer
+            final originallyEquipped = slotToEquip.equippedItemId;
             slotToEquip.equippedItemId = lootInst.id;
-            state.pickedUpItemId = NULL_PICKUP_ID;
-            return;
+            state.pickedUpItemId = Utils.withDefault(
+                originallyEquipped,
+                NULL_PICKUP_ID);
           }
         }
       };
 
-      if (hasPickedUp) {
-        handleEquipmentSlots();
-      }
+      handleEquipmentSlots();
 
       Grid.removeItem(
           state.debugGrid, 
