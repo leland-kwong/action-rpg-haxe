@@ -94,17 +94,13 @@ class Inventory {
       ref: InventoryRef) {
   }
 
-  // puts an item into the first available slot
-  // dimensions are based on the native 
+  // Puts an item into the first available slot.
+  //
+  // Dimensions are based on the native 
   // pixel art's resolution (480 x 270)
   public static function inventorySlotAddItem(
-      itemId, 
-      pixelWidth, 
-      pixelHeight, 
       itemInstance: Loot.LootInstance): Bool {
 
-    final invGrid = state.inventorySlotsGrid;
-    final cellSize = invGrid.cellSize;
     final slotDefinition = {
       final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json); 
@@ -121,19 +117,31 @@ class Inventory {
         slotDefinition.properties, 
         (p: TiledUiProp) -> p.name == 'slotSize').value;
     // convert item dimensions to slot units 
+    final lootDef = Loot.getDef(itemInstance.type);
+    final spriteData = SpriteBatchSystem.getSpriteData(
+        Main.Global.uiSpriteBatch,
+        lootDef.spriteKey);
+    final pixelWidth = spriteData.sourceSize.w;
+    final pixelHeight = spriteData.sourceSize.h;
     final sw = Math.ceil(pixelWidth / slotSize);
     final sh = Math.ceil(pixelHeight / slotSize);
     final maxCol = Std.int(slotDefinition.width / slotSize);
     final maxRow = Std.int(slotDefinition.height / slotSize);
     final maxY = maxRow - 1;
     final maxX = maxCol - 1;
+    final cellSize = InventoryDragAndDropPrototype
+      .state.invGrid.cellSize;
 
     for (y in 0...maxRow) {
       for (x in 0...maxCol) {
         final cx = x + Math.floor(sw / 2);
         final cy = y + Math.floor(sh / 2);
         final filledSlots = Grid.getItemsInRect(
-            invGrid, cx, cy, sw, sh);
+            InventoryDragAndDropPrototype.state.invGrid, 
+            x * cellSize + (sw / 2) * cellSize, 
+            y * cellSize + (sh / 2) * cellSize, 
+            sw * cellSize,
+            sh * cellSize);
         final canFit = Lambda.count(
             filledSlots) == 0
           && cx - Math.floor(sw / 2) >= 0
@@ -143,10 +151,18 @@ class Inventory {
 
         // add success
         if (canFit) {
-          Grid.setItemRect(
-              invGrid, cx, cy, sw, sh, itemId);
-          state.lootInstancesById
-            .set(itemId, itemInstance);
+          Main.Global.logData.recentlyPickedUp = {
+            x: x * cellSize + (sw / 2) * cellSize, 
+            y: y * cellSize + (sh / 2) * cellSize,
+            w: sw * cellSize,
+            h: sh * cellSize
+          };
+          InventoryDragAndDropPrototype.addItemToInventory(
+              x * cellSize + (sw / 2) * cellSize, 
+              y * cellSize + (sh / 2) * cellSize, 
+              sw * cellSize,
+              sh * cellSize,
+              itemInstance);
           return true;
         }
       }
@@ -240,9 +256,6 @@ class Inventory {
         if (pickupItemButtonClicked) {
           final size = lootRef.radius * 2;
           final addSuccess = Inventory.inventorySlotAddItem(
-              lootRef.id, 
-              size, 
-              size, 
               Entity.getComponent(lootRef, 'lootInstance'));
 
           if (addSuccess) {
@@ -539,7 +552,7 @@ class InventoryDragAndDropPrototype {
   static var debugGraphic: h2d.Graphics;
 
   static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
-  static final state = {
+  static public final state = {
     initialized: false,
     invGrid: Grid.create(16 * Hud.rScale),
     equipmentSlots: new Array<EquippableSlotMeta>(),
@@ -557,6 +570,15 @@ class InventoryDragAndDropPrototype {
 
   static public function getItemById(id: String) {
     return state.itemsById.get(id);
+  }
+
+  static public function addItemToInventory(
+      cx, cy, slotWidth, slotHeight, lootInstance) {
+     
+    Grid.setItemRect(
+        state.invGrid, 
+        cx, cy, slotWidth, slotHeight, lootInstance.id);
+    state.itemsById.set(lootInstance.id, lootInstance);
   }
 
   static function addTestItems(slotSize) {
