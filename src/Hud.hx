@@ -77,7 +77,6 @@ class UiStateManager {
 class Inventory {
   static var ready = false;
   static var interactGrid = Grid.create(16 * Hud.rScale);
-  static var debugGraphic: h2d.Graphics;
 
   public static var state: {
     inventorySlotsGrid: GridRef,
@@ -310,11 +309,6 @@ class Inventory {
 
   public static function render(time: Float) {
     final globalState = Main.Global.uiState.inventory;
-
-    debugGraphic = debugGraphic == null 
-      ? new h2d.Graphics(Main.Global.uiRoot)
-      : debugGraphic;
-    debugGraphic.clear();
 
     if (!globalState.opened) {
       return;
@@ -549,8 +543,6 @@ class Tooltip {
    TODO: Add support for dropping an item on the floor
  */
 class InventoryDragAndDropPrototype {
-  static var debugGraphic: h2d.Graphics;
-
   static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
   static public final state = {
     initialized: false,
@@ -684,7 +676,6 @@ class InventoryDragAndDropPrototype {
     if (!state.initialized) {
       state.initialized = true;
 
-      debugGraphic = new h2d.Graphics(Main.Global.uiRoot);
       prepareEquipmentSlots();
       addTestItems(slotSize);
     }
@@ -929,17 +920,11 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function render(time) {
-    debugGraphic.clear();
-
     if (!Main.Global.uiState.inventory.opened) {
       return;
     }
 
     final cellSize = state.invGrid.cellSize;
-
-    // render inventory items
-    debugGraphic.beginFill(0xffffff, 0.4);
-    debugGraphic.lineStyle(2, 0xffffff, 0.7);
 
     final renderEquippedItem = (slotToEquip) -> {
       final equippedLootInst = state.itemsById.get(
