@@ -574,7 +574,7 @@ class InventoryDragAndDropPrototype {
     }
 
     {
-      final slotX = 20 * slotSize;
+      final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
       // add mock items
       addItemToInv(
@@ -584,7 +584,7 @@ class InventoryDragAndDropPrototype {
     }
 
     {
-      final slotX = 23 * slotSize;
+      final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
       // add mock items
       addItemToInv(
@@ -594,7 +594,7 @@ class InventoryDragAndDropPrototype {
     }
 
     {
-      final slotX = 21 * slotSize;
+      final slotX = 1 * slotSize;
       final slotY = 8 * slotSize;
       // add mock items
       addItemToInv(
@@ -829,12 +829,16 @@ class InventoryDragAndDropPrototype {
             return inventoryBounds.contains(pt);
           });
       };
+
+      // translate position so so the grid's 0,0 is relative to the slotDefinition
+      final tcx = cx - toSlotSize(slotDefinition.x);
+      final tcy = cy - toSlotSize(slotDefinition.y);
       final canPlace = isInBounds && 
         Lambda.count(
           Grid.getItemsInRect(
             state.invGrid,
-            cx,
-            cy,
+            tcx,
+            tcy,
             w,
             h)) <= 1;
 
@@ -854,8 +858,8 @@ class InventoryDragAndDropPrototype {
           final itemIdAtPosition = getFirstKey(
               Grid.getItemsInRect(
                 state.invGrid,
-                cx,
-                cy,
+                tcx,
+                tcy,
                 w, h).keys());
 
           Grid.removeItem(
@@ -865,14 +869,15 @@ class InventoryDragAndDropPrototype {
           state.pickedUpItemId = itemIdAtPosition;
         }
 
-        if (hasPickedUp && canPlace) {
+        final shouldPlace = hasPickedUp && canPlace;
+        if (shouldPlace) {
           trace('drop item');
 
           // state.pickedUpItemId   
           Grid.setItemRect(
               state.invGrid,
-              cx,
-              cy,
+              tcx,
+              tcy,
               w, h,
               currentlyPickedUpItem);
         }
@@ -925,16 +930,33 @@ class InventoryDragAndDropPrototype {
       renderEquippedItem(slot);
     }
 
+    // render inventory items
+    final slotDefinition = {
+      final hudLayoutRef = TiledParser.loadFile(
+          hxd.Res.ui_hud_layout_json); 
+      final inventoryLayerRef = TiledParser
+        .findLayer(hudLayoutRef, 'inventory');
+      final interactRef = TiledParser
+        .findLayer(
+            inventoryLayerRef, 'interactable');
+      Lambda.find(
+          interactRef.objects,
+          (o) -> o.name == 'inventory_slots');
+    }
     for (itemId => bounds in state.invGrid.itemCache) {
       final lootInst = state.itemsById.get(itemId);
       final lootDef = Loot.getDef(lootInst.type);
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
-      final cx = bounds[0] + width / 2;
-      final cy = bounds[2] + height / 2;
+      final screenCx = (bounds[0] + width / 2) * cellSize;
+      final screenCy = (bounds[2] + height / 2) * cellSize;
+      // translate position to inventory position
+      final invCx = screenCx + toSlotSize(slotDefinition.x);
+      final invCy = screenCy + toSlotSize(slotDefinition.y);
 
       Main.Global.uiSpriteBatch.emitSprite(
-          cx * cellSize, cy * cellSize,
+          invCx,
+          invCy,
           lootDef.spriteKey,
           (p) -> {
             p.sortOrder = 1;
