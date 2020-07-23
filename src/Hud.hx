@@ -75,17 +75,6 @@ class UiStateManager {
 }
 
 class Inventory {
-  public static var state: {
-    inventorySlotsGrid: GridRef,
-    abilitySlotsGrid: GridRef,
-    lootInstancesById: Map<EntityId, Loot.LootInstance>
-  } = {
-    // inventory grid resolution is a single slot
-    inventorySlotsGrid: Grid.create(1), 
-    abilitySlotsGrid: Grid.create(16 * Hud.rScale),
-    lootInstancesById: new Map()
-  };
-
   public static function inventorySlotInteract(
       ref: InventoryRef) {
   }
@@ -286,38 +275,6 @@ class Inventory {
       return;
     }
 
-    // render inventory items
-    {
-      final slotSize = 16 * Hud.rScale;
-      final cellRenderEffect = (p) -> {
-        final b: h2d.SpriteBatch.BatchElement 
-          = p.batchElement;
-        p.sortOrder = 2.0;
-        b.scale = slotSize - 4;
-        b.alpha = 0.3;
-        b.r = 0.5;
-      };
-
-      for (lootId => bounds in 
-          state.inventorySlotsGrid.itemCache) {
-        final x = bounds[0];
-        final y = bounds[2];
-        final width = bounds[1] - x;
-        final height = bounds[3] - y;
-        final lootInstance = state.lootInstancesById.get(lootId);
-        final lootDef = Loot.getDef(
-            lootInstance.type);
-
-        Main.Global.uiSpriteBatch.emitSprite(
-            (x * slotSize) + (width / 2 * slotSize) + 272 * Hud.rScale,
-            (y * slotSize) + (height / 2 * slotSize) + 32 * Hud.rScale,
-            lootDef.spriteKey,
-            (p) -> {
-              p.batchElement.scale = Hud.rScale;
-            });
-      }
-    }
-
     final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
     final inventoryLayerRef = TiledParser
@@ -326,6 +283,7 @@ class Inventory {
       .findLayer(inventoryLayerRef, 'background');
     final bgObjects = backgroundLayer.objects;
 
+    // render inventory background
     for (ref in bgObjects) {
       final cx = ref.x;
       final cy = ref.y;
