@@ -690,11 +690,34 @@ class InventoryDragAndDropPrototype {
        */
       final halfWidth = (w / 2);
       final halfHeight = (h / 2);
-      final mouseSlotX = Math.round((mx - halfWidth) / slotSize) * slotSize;
-      final mouseSlotY = Math.round((my - halfHeight) / slotSize) * slotSize;
+      final rectOriginX = mx - halfWidth;
+      final rectOriginY = my - halfHeight;
+      final mouseSlotX = Math.round(rectOriginX / slotSize) * slotSize;
+      final mouseSlotY = Math.round(rectOriginY / slotSize) * slotSize;
       final cx = mouseSlotX + halfWidth;
       final cy = mouseSlotY + halfHeight;
       final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
+      final slotDefinition = {
+        final hudLayoutRef = TiledParser.loadFile(
+            hxd.Res.ui_hud_layout_json); 
+        final inventoryLayerRef = TiledParser
+          .findLayer(hudLayoutRef, 'inventory');
+        final interactRef = TiledParser
+          .findLayer(
+              inventoryLayerRef, 'interactable');
+        Lambda.find(
+            interactRef.objects,
+            (o) -> o.name == 'inventory_slots');
+      }
+      final pickedUpItemBounds = new h2d.col.Bounds();
+      pickedUpItemBounds.set(
+          mouseSlotX, mouseSlotY, w, h);
+      final inventoryBounds = new h2d.col.Bounds();
+      inventoryBounds.set(
+          slotDefinition.x * Hud.rScale, 
+          slotDefinition.y * Hud.rScale, 
+          slotDefinition.width * Hud.rScale, 
+          slotDefinition.height * Hud.rScale);
 
       // check collision with equipment slots
       final checkEquipmentSlotCollisions = () -> {
@@ -788,7 +811,26 @@ class InventoryDragAndDropPrototype {
           state.debugGrid, 
           'item_cannot_place');
 
-      final canPlace = Lambda.count(
+      final isInBounds = {
+        final pib = pickedUpItemBounds;
+        final intersects = inventoryBounds
+          .intersects(pib);
+        // we subtract 1 from the max values since the algorithm
+        // calculates it as if the positions are in grid units
+        final cornerPoints = [
+          new h2d.col.Point(pib.xMin, pib.yMin),
+          new h2d.col.Point(pib.xMin, pib.yMax - 1),
+          new h2d.col.Point(pib.xMax - 1, pib.yMax - 1),
+          new h2d.col.Point(pib.xMax - 1, pib.yMin),
+        ];
+
+        intersects && 
+          Lambda.foreach(cornerPoints, (pt) -> {
+            return inventoryBounds.contains(pt);
+          });
+      };
+      final canPlace = isInBounds && 
+        Lambda.count(
           Grid.getItemsInRect(
             state.invGrid,
             cx,
