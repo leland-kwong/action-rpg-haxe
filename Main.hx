@@ -45,7 +45,7 @@ class Global {
   public static final traversableGrid: GridRef = 
     Grid.create(16);
   public static final lootColGrid: GridRef = 
-    Grid.create(2);
+    Grid.create(8);
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
