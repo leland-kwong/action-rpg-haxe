@@ -472,20 +472,21 @@ class Tooltip {
 class InventoryDragAndDropPrototype {
   static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
   static public final state = {
-    initialized: false,
-    invGrid: Grid.create(16 * Hud.rScale),
-    equipmentSlots: [null, null, null],
-    debugGrid: Grid.create(16 * Hud.rScale),
-    pickedUpItemId: NULL_PICKUP_ID,
+    equippedAbilitiesById: [null, null, null],
     itemsById: [
       NULL_PICKUP_ID => Loot.createInstance(
           ['nullItem'], NULL_PICKUP_ID)
     ],
+
+    initialized: false,
+    invGrid: Grid.create(16 * Hud.rScale),
+    debugGrid: Grid.create(16 * Hud.rScale),
+    pickedUpItemId: NULL_PICKUP_ID,
     interactSlots: new Array<h2d.Interactive>()
   };
 
   static public function getEquippedAbilities() {
-    return state.equipmentSlots;
+    return state.equippedAbilitiesById;
   }
 
   static public function getItemById(id: String) {
@@ -801,10 +802,10 @@ class InventoryDragAndDropPrototype {
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
-            final originallyEquipped = state.equipmentSlots[
+            final originallyEquipped = state.equippedAbilitiesById[
               nearestAbilitySlot.slotIndex];
             trace('originallyEquipped ', originallyEquipped);
-            state.equipmentSlots[
+            state.equippedAbilitiesById[
               nearestAbilitySlot.slotIndex] = lootInst.id;
             state.pickedUpItemId = Utils.withDefault(
                 originallyEquipped,
@@ -980,8 +981,8 @@ class InventoryDragAndDropPrototype {
     };
 
     final equipmentSlotDefs = getEquipmentSlotDefinitions();
-    for (index in 0...state.equipmentSlots.length) {
-      final itemId = state.equipmentSlots[index];
+    for (index in 0...state.equippedAbilitiesById.length) {
+      final itemId = state.equippedAbilitiesById[index];
       final abilitySlot = equipmentSlotDefs[index];
 
       renderEquippedItem(itemId, abilitySlot);
