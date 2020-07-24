@@ -593,7 +593,11 @@ class Ai extends Entity {
 
       final shouldDropLoot = type == 'ENEMY';
       if (shouldDropLoot) {
-        Game.createLootRef(x, y, [0, 1, 2]);
+        Game.createLootRef(x, y, [
+            Loot.lootDefinitions[0].type, 
+            Loot.lootDefinitions[1].type, 
+            Loot.lootDefinitions[2].type, 
+        ]);
       }
     }
 

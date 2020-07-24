@@ -65,7 +65,18 @@ class UiStateManager {
       case { type: 'INVENTORY_TOGGLE' }: {
         final s = uiState.inventory;
 
-        s.opened = !s.opened;
+        if (!s.opened) {
+          s.opened = true;
+          final closeInventory = () -> {
+            s.opened = false;
+          };
+          Stack.push(
+              Main.Global.escapeStack, 
+              'close inventory',
+              closeInventory);
+        } else {
+          Stack.pop(Main.Global.escapeStack);
+        } 
       }
       default: {
         throw 'invalid ui action ${action.type}';
@@ -457,6 +468,8 @@ class Tooltip {
 
 /*
    TODO: Add support for dropping an item on the floor
+   TODO: When loot drops on the floor, ensure that it 
+   does not drop utside of a traversable position.
  */
 class InventoryDragAndDropPrototype {
   static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
@@ -467,9 +480,10 @@ class InventoryDragAndDropPrototype {
     debugGrid: Grid.create(16 * Hud.rScale),
     pickedUpItemId: NULL_PICKUP_ID,
     itemsById: [
-      NULL_PICKUP_ID => Loot.createInstance([
-          Loot.lootDefinitions.length - 1], NULL_PICKUP_ID)
-    ]
+      NULL_PICKUP_ID => Loot.createInstance(
+          ['nullItem'], NULL_PICKUP_ID)
+    ],
+    interactSlots: new Array<h2d.Interactive>()
   };
 
   static public function getEquippedAbilities() {
@@ -518,7 +532,9 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance([0]));
+          Loot.createInstance([
+            Loot.lootDefinitions[0].type
+          ]));
     }
 
     {
@@ -528,7 +544,9 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance([1]));
+          Loot.createInstance([
+            Loot.lootDefinitions[1].type
+          ]));
     }
 
     {
@@ -538,7 +556,9 @@ class InventoryDragAndDropPrototype {
       addItemToInv(
           slotX,
           slotY,
-          Loot.createInstance([2]));
+          Loot.createInstance([
+            Loot.lootDefinitions[2].type
+          ]));
     }
   }
 
@@ -580,14 +600,60 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function update(dt) {
+    final slotSize = 16 * Hud.rScale;
+
+    // handle interact slots
+    {
+      // cleanup
+      if (!Main.Global.uiState.inventory.opened) {
+        Main.Global.worldMouse.hoverState = 
+          Main.HoverState.None;
+        for (interact in state.interactSlots) {
+          interact.remove();
+        }
+        state.interactSlots = [];
+      } else if (state.interactSlots.length == 0) {
+        final tiledInteractables = {
+          final hudLayoutRef = TiledParser.loadFile(
+              hxd.Res.ui_hud_layout_json); 
+          final inventoryLayerRef = TiledParser
+            .findLayer(hudLayoutRef, 'inventory');
+          final interactRef = TiledParser
+            .findLayer(
+                inventoryLayerRef, 'interactable');
+          interactRef.objects; 
+        }
+
+        state.interactSlots = Lambda.map(
+            tiledInteractables, 
+            (ti) -> {
+              final interact = new h2d.Interactive(
+                  ti.width * Hud.rScale,
+                  ti.height * Hud.rScale,
+                  Main.Global.uiRoot);
+              
+              interact.propagateEvents = true;
+              interact.x = ti.x * Hud.rScale;
+              interact.y = ti.y * Hud.rScale;
+
+              interact.onOver = (ev: hxd.Event) -> {
+                Main.Global.worldMouse.hoverState = 
+                  Main.HoverState.Ui;
+              }
+
+              interact.onOut = (ev: hxd.Event) -> {
+                Main.Global.worldMouse.hoverState = 
+                  Main.HoverState.None;
+              }
+
+              interact;
+            });
+      }
+    }
+
     if (!Main.Global.uiState.inventory.opened) {
       return;
     }
-
-    Main.Global.worldMouse.hoverState = 
-      Main.HoverState.Ui;
-
-    final slotSize = 16 * Hud.rScale;
 
     if (!state.initialized) {
       state.initialized = true;
@@ -596,7 +662,7 @@ class InventoryDragAndDropPrototype {
       addTestItems(slotSize);
     }
 
-    // handle mouse interaction
+    // handle slot interactions
     {
       final pickedUpId = Utils.withDefault(
           state.pickedUpItemId,
@@ -838,6 +904,24 @@ class InventoryDragAndDropPrototype {
             'item_cannot_place');
       }
     }
+
+    final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
+    final shouldDropItem = hasPickedUp && 
+      Main.Global.worldMouse.hoverState == 
+        Main.HoverState.None;
+
+    if (shouldDropItem) {
+      state.pickedUpItemId = NULL_PICKUP_ID;
+      Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
+      // final playerRef = Entity.getById('PLAYER');
+      // final lootInst = state.itemsById
+      //   .get(state.pickedUpItemId);
+      // final lootDef = Loot.getDef(lootInst.type);
+      // Game.createLootRef(
+      //     playerRef.x, 
+      //     playerRef.y, 
+      //     [])
+    }
   }
 
   public static function render(time) {
@@ -986,9 +1070,6 @@ class Hud {
   }
 
   public static function update(dt: Float) {
-    Main.Global.worldMouse.hoverState = 
-      Main.HoverState.None;
-
     Tooltip.update(dt);
     InventoryDragAndDropPrototype.update(dt);
 
