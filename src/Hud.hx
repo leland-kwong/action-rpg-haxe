@@ -928,7 +928,7 @@ class InventoryDragAndDropPrototype {
               playerRef.stats.pickupRadius - 10,
               10, 
               30));
-        Game.createLootRef(
+        Game.createLootEntity(
             playerRef.x + Utils.irnd(-dropRadius, dropRadius, true), 
             playerRef.y + Utils.irnd(-dropRadius, dropRadius, true), 
             lootInst);

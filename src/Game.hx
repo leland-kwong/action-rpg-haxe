@@ -598,7 +598,7 @@ class Ai extends Entity {
             Loot.lootDefinitions[1].type, 
             Loot.lootDefinitions[2].type, 
         ]);
-        Game.createLootRef(x, y, lootInstance);
+        Game.createLootEntity(x, y, lootInstance);
       }
     }
 
@@ -1493,7 +1493,7 @@ class Game extends h2d.Object {
     return isClearPath;
   }
 
-  public static function createLootRef(x, y, lootInstance) {
+  public static function createLootEntity(x, y, lootInstance) {
     final startX = x;
     final startY = y;
     final lootRef = new Entity({
