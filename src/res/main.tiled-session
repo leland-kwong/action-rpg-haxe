@@ -53,11 +53,11 @@
             "scaleInEditor": 1
         },
         "ui_hud_layout.tmx": {
-            "scale": 2,
-            "selectedLayer": 0,
+            "scale": 3,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 327.5,
-                "y": 150
+                "x": 303,
+                "y": 61.66666666666666
             }
         },
         "ui_inventory_layout.tmx": {

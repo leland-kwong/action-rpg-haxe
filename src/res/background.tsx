@@ -5,7 +5,7 @@
   <image width="1520" height="1184" source="../art/aseprite_exports/ui/level_intro.png"/>
  </tile>
  <tile id="1" type="pillar">
-  <image width="38" height="71" source="../art/aseprite_exports/ui/pillar.png"/>
+  <image width="42" height="88" source="../art/aseprite_exports/ui/pillar.png"/>
  </tile>
  <tile id="2">
   <image width="17" height="48" source="../art/aseprite_exports/ui/teleporter_pillar_left.png"/>
