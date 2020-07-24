@@ -904,7 +904,8 @@ class InventoryDragAndDropPrototype {
       }
     }
 
-    final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
+    final itemId = state.pickedUpItemId;
+    final hasPickedUp = itemId != NULL_PICKUP_ID;
     final canDropItem = hasPickedUp && 
       (Main.Global.worldMouse.hoverState == 
        Main.HoverState.None);
@@ -920,7 +921,7 @@ class InventoryDragAndDropPrototype {
       if (shouldDropItem) {
         final playerRef = Entity.getById('PLAYER');
         final lootInst = state.itemsById
-          .get(state.pickedUpItemId);
+          .get(itemId);
         final lootDef = Loot.getDef(lootInst.type);
         final dropRadius = Std.int(
             Utils.clamp(
@@ -930,7 +931,8 @@ class InventoryDragAndDropPrototype {
         Game.createLootRef(
             playerRef.x + Utils.irnd(-dropRadius, dropRadius, true), 
             playerRef.y + Utils.irnd(-dropRadius, dropRadius, true), 
-            [lootDef.type]);
+            lootInst);
+        state.itemsById.remove(state.pickedUpItemId);
         state.pickedUpItemId = NULL_PICKUP_ID;
 
         final restoreStateOnMouseRelease = (dt) -> {

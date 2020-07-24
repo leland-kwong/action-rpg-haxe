@@ -593,11 +593,12 @@ class Ai extends Entity {
 
       final shouldDropLoot = type == 'ENEMY';
       if (shouldDropLoot) {
-        Game.createLootRef(x, y, [
+        final lootInstance = Loot.createInstance([
             Loot.lootDefinitions[0].type, 
             Loot.lootDefinitions[1].type, 
             Loot.lootDefinitions[2].type, 
         ]);
+        Game.createLootRef(x, y, lootInstance);
       }
     }
 
@@ -1492,7 +1493,7 @@ class Game extends h2d.Object {
     return isClearPath;
   }
 
-  public static function createLootRef(x, y, typesToRoll) {
+  public static function createLootRef(x, y, lootInstance) {
     final startX = x;
     final startY = y;
     final lootRef = new Entity({
@@ -1521,7 +1522,7 @@ class Game extends h2d.Object {
     // as well as the loot type so we can look it up in the
     // loot definition table
     Entity.setComponent(lootRef, 'lootInstance', 
-        Loot.createInstance(typesToRoll));
+        lootInstance);
     lootRef.renderFn = (ref, time: Float) -> {
       // drop shadow
       Main.Global.sb.emitSprite(
