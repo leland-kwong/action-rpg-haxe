@@ -809,7 +809,7 @@ class Player extends Entity {
       return;
     }
     
-    final abilityIdByMouseBtn = [
+    final abilitySlotIndexByMouseBtn = [
       -1 => -1,
       0 => 0,
       1 => 1,
@@ -817,7 +817,7 @@ class Player extends Entity {
       3 => 2,
       4 => 3
     ];
-    final abilityId = abilityIdByMouseBtn[
+    final abilitySlotIndex = abilitySlotIndexByMouseBtn[
       Main.Global.worldMouse.buttonDown];
     final x2 = Main.Global.rootScene.mouseX;
     final y2 = Main.Global.rootScene.mouseY;
@@ -830,39 +830,52 @@ class Player extends Entity {
     var yCenterOffset = -8;
     var startY = y + yCenterOffset;
     var launchOffset = 12;
+    final equippedAbilities = Hud.InventoryDragAndDropPrototype
+      .getEquippedAbilities();
 
-    switch abilityId {
-      case 0: {
-        var energyCost = 2;
-        var hasEnoughEnergy = energyCost 
-          <= Main.Global.playerStats.currentEnergy;
-        var isUnavailable = Cooldown.has(cds, 'primaryAbility') 
-          || !hasEnoughEnergy;
+    final slotRef = equippedAbilities[abilitySlotIndex];
 
-        if (isUnavailable) {
-          return;
-        }
+    if (slotRef == null) {
+      return;
+    }
 
-        var abilityCooldown = 1/10;
-        Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
+    final lootInst = Hud.InventoryDragAndDropPrototype
+      .getItemById(slotRef.equippedItemId);
+    final lootDef = Loot.getDef(lootInst.type);
+    var energyCost = lootDef.energyCost;
+    var hasEnoughEnergy = energyCost 
+      <= Main.Global.playerStats.currentEnergy;
+    final cooldownKey = 'ability__${lootDef.type}';
+    var isUnavailable = Cooldown.has(cds, cooldownKey) 
+      || !hasEnoughEnergy;
+
+    if (isUnavailable) {
+      return;
+    }
+
+    // TODO: add `actionSpeed` prop which is different from ability cooldown
+    Cooldown.set(cds, 'recoveringFromAbility', lootDef.cooldown);
+    Cooldown.set(cds, cooldownKey, lootDef.cooldown);
+
+    switch lootDef.type {
+      case 'basicBlaster': {
         attackAnim.startTime = Main.Global.time;
 
         var angle = Math.atan2(y2 - startY, x2 - x);
         var x1 = x + Math.cos(angle) * launchOffset;
         var y1 = startY + Math.sin(angle) * launchOffset;
         var b = new Bullet(
-          x1,
-          y1,
-					x2,
-					y2,
-          250.0,
-          'ui/bullet_player_basic',
-          (ent) -> (
-            ent.type == 'ENEMY' || 
-            ent.type == 'OBSTACLE')
-        );
+            x1,
+            y1,
+            x2,
+            y2,
+            250.0,
+            'ui/bullet_player_basic',
+            (ent) -> (
+              ent.type == 'ENEMY' || 
+              ent.type == 'OBSTACLE')
+            );
         Main.Global.rootScene.addChild(b);
-        Cooldown.set(cds, 'primaryAbility', abilityCooldown);
 
         EntityStats.addEvent(
             Main.Global.playerStats, 
@@ -870,7 +883,7 @@ class Player extends Entity {
               value: energyCost });
       }
 
-      case 1: {
+      case 'channelBeam': {
         final tempState = Main.Global.tempState;
         final tickKey = 'kamehamehaChanneling';
         // handle beam channel ticks
@@ -884,15 +897,12 @@ class Player extends Entity {
           } else {
             tempState.set(tickKey, baseTickAmount);
           }
-          Main.Global.logData.kamehamehaChannelTick = 
-            tempState.get(tickKey);
           Cooldown.set(cds, tickKey, 0.05);
         }
 
         final additionalLength = 40 * Math.max(1, tempState.get(tickKey) * 2);
         final maxLength = 60 + additionalLength; 
         Main.Global.logData.laserMaxLength = maxLength;
-        final abilityCooldown = 0.0001;
         final laserCenterSpriteData = Reflect.field(
             Main.Global.sb.batchManager.spriteSheetData,
             'ui/kamehameha_center_width_1'
@@ -902,7 +912,6 @@ class Player extends Entity {
         final laserTailSpriteData = Reflect.field(
           Main.Global.sb.batchManager.spriteSheetData,
           'ui/kamehameha_tail');
-        Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
         final angle = Math.atan2(y2 - startY, x2 - x);
         final vx = Math.cos(angle);
         final vy = Math.sin(angle);
@@ -1017,7 +1026,9 @@ class Player extends Entity {
                         item.cds, 
                         laserHitCdKey, 
                         0.2 + cooldownReduction);
-                    item.damageTaken += 1;
+                    item.damageTaken += Utils.irnd(
+                        lootDef.minDamage, 
+                        lootDef.maxDamage);
                   }
 
                   adjustedEndPt = p;
@@ -1071,7 +1082,8 @@ class Player extends Entity {
         });
       }
 
-      case 2: {
+      // TODO: Bots damage is currently hard coded
+      case 'spiderBots': {
         final cdKey = 'ability_spider_bot';
 
         if (Cooldown.has(cds, cdKey)) {
