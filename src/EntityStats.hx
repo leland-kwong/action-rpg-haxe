@@ -7,21 +7,27 @@ typedef EventObject = {
 
 private typedef RecentEvents = Array<EventObject>;
 
-typedef StatsRef = {
+typedef InitialStats = {
   var maxHealth: Int;
   var maxEnergy: Int;
   var currentHealth: Float;
   var currentEnergy: Float;
   var energyRegeneration: Int; // per second
+  var ?pickupRadius: Int;
+}
+
+typedef StatsRef = {
+  > InitialStats,
+
   var recentEvents: RecentEvents;
   var _damageFromHits: Float;
-}
+};
 
 // TODO
 // We should rename this since we'll be able to 
 // use this this for npcs and enemies as well
 class EntityStats {
-  public static function create(props): StatsRef {
+  public static function create(props: InitialStats): StatsRef {
     final p = props;
 
     return {
@@ -31,6 +37,7 @@ class EntityStats {
       currentEnergy: p.currentEnergy,
       // per second
       energyRegeneration: p.energyRegeneration,
+      pickupRadius: p.pickupRadius,
       _damageFromHits: 0.0,
       recentEvents: []
     };

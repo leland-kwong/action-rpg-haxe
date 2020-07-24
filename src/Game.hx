@@ -658,12 +658,13 @@ class Player extends Entity {
     obstacleGrid = Main.Global.obstacleGrid;
 
     rootScene = s2d;
-    Main.Global.playerStats = EntityStats.create({
+    stats = Main.Global.playerStats = EntityStats.create({
       maxHealth: 100,
       maxEnergy: 100,
       currentHealth: 100.0,
       currentEnergy: 100.0,
-      energyRegeneration: 10, // per second
+      energyRegeneration: 10,
+      pickupRadius: 40 // per second
     });
 
     var runFrames = [

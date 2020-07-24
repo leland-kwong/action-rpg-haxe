@@ -195,14 +195,13 @@ class Inventory {
       final hoveredId = Main.Global.hoveredEntity.id;
       final lootRef = Entity.getById(hoveredId);
       final playerRef = Entity.getById('PLAYER');
-      final pickupRadius = 40;
       final isPickupMode = lootRef.type == 'LOOT' &&
         (Main.Global.worldMouse.buttonDownStartedAt >
          Main.Global.hoveredEntity.hoverStart);
       final distFromPlayer = Utils.distance(
           playerRef.x, playerRef.y, lootRef.x, lootRef.y);
       final playerCanPickupItem = isPickupMode && 
-        distFromPlayer <= pickupRadius;
+        distFromPlayer <= playerRef.stats.pickupRadius;
       if (playerCanPickupItem) {
         if (Main.Global.worldMouse.buttonDown == 0) {
           Main.Global.worldMouse.hoverState = 
@@ -906,21 +905,45 @@ class InventoryDragAndDropPrototype {
     }
 
     final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
-    final shouldDropItem = hasPickedUp && 
-      Main.Global.worldMouse.hoverState == 
-        Main.HoverState.None;
+    final canDropItem = hasPickedUp && 
+      (Main.Global.worldMouse.hoverState == 
+       Main.HoverState.None);
 
-    if (shouldDropItem) {
-      state.pickedUpItemId = NULL_PICKUP_ID;
-      Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
-      // final playerRef = Entity.getById('PLAYER');
-      // final lootInst = state.itemsById
-      //   .get(state.pickedUpItemId);
-      // final lootDef = Loot.getDef(lootInst.type);
-      // Game.createLootRef(
-      //     playerRef.x, 
-      //     playerRef.y, 
-      //     [])
+    if (canDropItem) {
+      if (Main.Global.worldMouse.buttonDown == 0) {
+        Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
+      } else {
+        Main.Global.worldMouse.hoverState = Main.HoverState.None;
+      }
+      final shouldDropItem = Main.Global.worldMouse.buttonDown == 0;
+
+      if (shouldDropItem) {
+        final playerRef = Entity.getById('PLAYER');
+        final lootInst = state.itemsById
+          .get(state.pickedUpItemId);
+        final lootDef = Loot.getDef(lootInst.type);
+        final dropRadius = Std.int(
+            Utils.clamp(
+              playerRef.stats.pickupRadius - 10,
+              10, 
+              30));
+        Game.createLootRef(
+            playerRef.x + Utils.irnd(-dropRadius, dropRadius, true), 
+            playerRef.y + Utils.irnd(-dropRadius, dropRadius, true), 
+            [lootDef.type]);
+        state.pickedUpItemId = NULL_PICKUP_ID;
+
+        final restoreStateOnMouseRelease = (dt) -> {
+          if (Main.Global.worldMouse.buttonDown == -1) {
+            Main.Global.worldMouse.hoverState = 
+              Main.HoverState.None;
+            return false;
+          };
+          return true;
+        }
+        Main.Global.updateHooks.push(
+            restoreStateOnMouseRelease);
+      }
     }
   }
 
