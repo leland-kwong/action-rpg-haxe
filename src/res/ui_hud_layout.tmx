@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="right-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="15" nextobjectid="262">
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="right-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="16" nextobjectid="266">
  <tileset firstgid="1" source="ui.tsx"/>
  <group id="7" name="inventory">
   <objectgroup id="13" name="background">
    <object id="226" name="ui/ui_inventory_underlay" gid="6" x="187" y="195" width="281" height="167"/>
+  </objectgroup>
+  <objectgroup id="15" name="textNodes">
+   <object id="264" x="327" y="13" width="87" height="16">
+    <text fontfamily="Orbitron ExtraBold" pixelsize="8" wrap="1" color="#2ce8f5" bold="1" halign="center">Inventory</text>
+   </object>
+   <object id="265" x="183" y="14" width="87" height="16">
+    <text fontfamily="Orbitron ExtraBold" pixelsize="8" wrap="1" color="#2ce8f5" bold="1" halign="center">Abilities</text>
+   </object>
   </objectgroup>
   <objectgroup color="#ffffff" id="9" name="interactable">
    <object id="249" name="inventory_slots" type="ui_interactable" x="272" y="32" width="192" height="160">

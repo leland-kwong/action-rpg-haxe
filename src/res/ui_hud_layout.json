@@ -29,6 +29,59 @@
                  "y":0
                 }, 
                 {
+                 "draworder":"topdown",
+                 "id":15,
+                 "name":"textNodes",
+                 "objects":[
+                        {
+                         "height":16,
+                         "id":264,
+                         "name":"",
+                         "rotation":0,
+                         "text":
+                            {
+                             "bold":true,
+                             "color":"#2ce8f5",
+                             "fontfamily":"Orbitron ExtraBold",
+                             "halign":"center",
+                             "pixelsize":8,
+                             "text":"Inventory",
+                             "wrap":true
+                            },
+                         "type":"",
+                         "visible":true,
+                         "width":87,
+                         "x":327,
+                         "y":13
+                        }, 
+                        {
+                         "height":16,
+                         "id":265,
+                         "name":"",
+                         "rotation":0,
+                         "text":
+                            {
+                             "bold":true,
+                             "color":"#2ce8f5",
+                             "fontfamily":"Orbitron ExtraBold",
+                             "halign":"center",
+                             "pixelsize":8,
+                             "text":"Abilities",
+                             "wrap":true
+                            },
+                         "type":"",
+                         "visible":true,
+                         "width":87,
+                         "x":183,
+                         "y":14
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }, 
+                {
                  "color":"#ffffff",
                  "draworder":"topdown",
                  "id":9,
@@ -580,8 +633,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":15,
- "nextobjectid":262,
+ "nextlayerid":16,
+ "nextobjectid":266,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.4.1",

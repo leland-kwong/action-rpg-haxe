@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "background.tsx",
+    "activeFile": "ui_hud_layout.tmx",
     "expandedProjectPaths": [
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
@@ -18,7 +18,7 @@
             "selectedLayer": 2,
             "viewCenter": {
                 "x": 880,
-                "y": 512
+                "y": 511
             }
         },
         "C:/Users/Lelan/projects/games/haxe-engine/autonomous-game/src/art/background.tsx": {
@@ -35,8 +35,8 @@
             "scale": 1,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 554,
-                "y": 430
+                "x": 880,
+                "y": 511.5
             }
         },
         "ui.tmx": {
@@ -53,11 +53,11 @@
             "scaleInEditor": 1
         },
         "ui_hud_layout.tmx": {
-            "scale": 8,
-            "selectedLayer": 3,
+            "scale": 2,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 263,
-                "y": 258
+                "x": 327.5,
+                "y": 150
             }
         },
         "ui_inventory_layout.tmx": {
@@ -89,18 +89,18 @@
         "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/level_intro.tmx",
         "level_intro.tmx",
         "background.tsx",
-        "ui.tmx",
-        "ui.tsx"
+        "ui.tsx",
+        "ui_hud_layout.tmx"
     ],
     "project": "main.tiled-project",
     "property.type": "string",
     "recentFiles": [
-        "ui_hud_layout.tmx",
-        "ui_inventory_layout.tmx",
-        "level_intro.tmx",
         "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/level_intro.tmx",
+        "level_intro.tmx",
         "background.tsx",
         "ui.tsx",
+        "ui_hud_layout.tmx",
+        "ui_inventory_layout.tmx",
         "ui_layout.tmx",
         "ui.tmx",
         "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/background.tsx",
