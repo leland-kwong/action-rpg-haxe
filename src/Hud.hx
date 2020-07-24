@@ -466,7 +466,6 @@ class Tooltip {
 }
 
 /*
-   TODO: Add support for dropping an item on the floor
    TODO: When loot drops on the floor, ensure that it 
    does not drop utside of a traversable position.
  */
@@ -475,7 +474,7 @@ class InventoryDragAndDropPrototype {
   static public final state = {
     initialized: false,
     invGrid: Grid.create(16 * Hud.rScale),
-    equipmentSlots: new Array<EquippableSlotMeta>(),
+    equipmentSlots: [null, null, null],
     debugGrid: Grid.create(16 * Hud.rScale),
     pickedUpItemId: NULL_PICKUP_ID,
     itemsById: [
@@ -561,7 +560,7 @@ class InventoryDragAndDropPrototype {
     }
   }
 
-  static function prepareEquipmentSlots() {
+  static function getEquipmentSlotDefinitions() {
     final hudLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json); 
     final inventoryLayerRef = TiledParser
@@ -573,7 +572,7 @@ class InventoryDragAndDropPrototype {
         interactRef.objects,
         (o) -> o.type == 'equipment_slot');  
 
-    state.equipmentSlots = Lambda.map(
+    return Lambda.map(
         equipmentSlots, (slot) -> {
           final allowedCategory = Lambda.find(
               slot.properties, 
@@ -657,7 +656,6 @@ class InventoryDragAndDropPrototype {
     if (!state.initialized) {
       state.initialized = true;
 
-      prepareEquipmentSlots();
       addTestItems(slotSize);
     }
 
@@ -724,12 +722,13 @@ class InventoryDragAndDropPrototype {
 
       // check collision with equipment slots
       final handleEquipmentSlots = () -> {
-        final nearestAbilitySlot = Lambda.fold(
-            state.equipmentSlots, 
+        final nearestAbilitySlot = Lambda.foldi(
+            getEquipmentSlotDefinitions(), 
             (slot, result: {
-              matchedSlot: EquippableSlotMeta,
+              slotDefinition: EquippableSlotMeta,
+              slotIndex: Int,
               distance: Float
-            }) -> {
+            }, index) -> {
               final colSlot = new h2d.col.Bounds();
               colSlot.set(slot.x, slot.y, slot.width, slot.height);
               final colSlotCenter = colSlot.getCenter();
@@ -750,33 +749,35 @@ class InventoryDragAndDropPrototype {
                   distBetweenCollisions < result.distance) {
 
                 return {
-                  matchedSlot: slot,
+                  slotDefinition: slot,
+                  slotIndex: index,
                   distance: distBetweenCollisions
                 };
               }
 
               return result;
             }, {
-              matchedSlot: null,
+              slotDefinition: null,
+              slotIndex: -1,
               distance: Math.POSITIVE_INFINITY
-            }).matchedSlot;
+            });
 
-        if (nearestAbilitySlot != null) {
+        if (nearestAbilitySlot.slotDefinition != null) {
           final canEquip = lootDef.category == 
-            nearestAbilitySlot.allowedCategory ||
+            nearestAbilitySlot.slotDefinition.allowedCategory ||
             state.pickedUpItemId == NULL_PICKUP_ID;
 
           final highlightSlotToEquip = (time) -> {
             Main.Global.uiSpriteBatch.emitSprite(
-                nearestAbilitySlot.x, 
-                nearestAbilitySlot.y,
+                nearestAbilitySlot.slotDefinition.x, 
+                nearestAbilitySlot.slotDefinition.y,
                 'ui/square_white',
                 null,
                 (p) -> {
                   p.sortOrder = 3;
                   final b = p.batchElement;
-                  b.scaleX = nearestAbilitySlot.width;
-                  b.scaleY = nearestAbilitySlot.height;
+                  b.scaleX = nearestAbilitySlot.slotDefinition.width;
+                  b.scaleY = nearestAbilitySlot.slotDefinition.height;
                   b.a = 0.6;
 
                   if (canEquip) {
@@ -800,8 +801,11 @@ class InventoryDragAndDropPrototype {
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
-            final originallyEquipped = nearestAbilitySlot.equippedItemId;
-            nearestAbilitySlot.equippedItemId = lootInst.id;
+            final originallyEquipped = state.equipmentSlots[
+              nearestAbilitySlot.slotIndex];
+            trace('originallyEquipped ', originallyEquipped);
+            state.equipmentSlots[
+              nearestAbilitySlot.slotIndex] = lootInst.id;
             state.pickedUpItemId = Utils.withDefault(
                 originallyEquipped,
                 NULL_PICKUP_ID);
@@ -956,9 +960,9 @@ class InventoryDragAndDropPrototype {
 
     final cellSize = state.invGrid.cellSize;
 
-    final renderEquippedItem = (abilitySlot) -> {
+    final renderEquippedItem = (itemId, abilitySlot) -> {
       final equippedLootInst = state.itemsById.get(
-          abilitySlot.equippedItemId);
+         itemId);
 
       if (equippedLootInst != null) {
         final lootDef = Loot.getDef(equippedLootInst.type);
@@ -975,8 +979,12 @@ class InventoryDragAndDropPrototype {
       }
     };
 
-    for (slot in state.equipmentSlots) {
-      renderEquippedItem(slot);
+    final equipmentSlotDefs = getEquipmentSlotDefinitions();
+    for (index in 0...state.equipmentSlots.length) {
+      final itemId = state.equipmentSlots[index];
+      final abilitySlot = equipmentSlotDefs[index];
+
+      renderEquippedItem(itemId, abilitySlot);
     }
 
     // render inventory items
@@ -1252,20 +1260,22 @@ class Hud {
           .getEquippedAbilities();
 
       for (i in 0...inventoryEquippedSlots.length) {
-        final s = inventoryEquippedSlots[i];
-        final hudSlot = hudEquippedAbilitySlots[i];
-        final cx = (hudSlot.x + hudSlot.width / 2) * Hud.rScale;
-        final cy = (hudSlot.y + hudSlot.height / 2) * Hud.rScale;
-        final lootId = s.equippedItemId;
-        final lootInst = InventoryDragAndDropPrototype
-          .getItemById(lootId); 
-        final lootDef = Loot.getDef(lootInst.type);
+        final lootId = inventoryEquippedSlots[i];
 
-        Main.Global.uiSpriteBatch.emitSprite(
-            cx, cy,
-            lootDef.spriteKey,
-            null,
-            spriteEffect);
+        if (lootId != null) {
+          final hudSlot = hudEquippedAbilitySlots[i];
+          final cx = (hudSlot.x + hudSlot.width / 2) * Hud.rScale;
+          final cy = (hudSlot.y + hudSlot.height / 2) * Hud.rScale;
+          final lootInst = InventoryDragAndDropPrototype
+            .getItemById(lootId); 
+          final lootDef = Loot.getDef(lootInst.type);
+
+          Main.Global.uiSpriteBatch.emitSprite(
+              cx, cy,
+              lootDef.spriteKey,
+              null,
+              spriteEffect);
+        }
       }
     }
   }

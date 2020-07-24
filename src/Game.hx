@@ -834,14 +834,14 @@ class Player extends Entity {
     final equippedAbilities = Hud.InventoryDragAndDropPrototype
       .getEquippedAbilities();
 
-    final slotRef = equippedAbilities[abilitySlotIndex];
+    final lootId = equippedAbilities[abilitySlotIndex];
 
-    if (slotRef == null) {
+    if (lootId == null) {
       return;
     }
 
     final lootInst = Hud.InventoryDragAndDropPrototype
-      .getItemById(slotRef.equippedItemId);
+      .getItemById(lootId);
     final lootDef = Loot.getDef(lootInst.type);
     var energyCost = lootDef.energyCost;
     var hasEnoughEnergy = energyCost 
