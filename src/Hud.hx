@@ -472,7 +472,7 @@ class Tooltip {
 class InventoryDragAndDropPrototype {
   static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
   static public final state = {
-    equippedAbilitiesById: [null, null, null],
+    equippedAbilitiesById: new haxe.ds.Vector<String>(3),
     itemsById: [
       NULL_PICKUP_ID => Loot.createInstance(
           ['nullItem'], NULL_PICKUP_ID)
