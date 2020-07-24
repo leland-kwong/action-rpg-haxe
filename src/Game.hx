@@ -593,75 +593,7 @@ class Ai extends Entity {
 
       final shouldDropLoot = type == 'ENEMY';
       if (shouldDropLoot) {
-        final startX = x;
-        final startY = y;
-        final lootRef = new Entity({
-          x: startX, 
-          y: startY,
-          radius: 11,
-        }); 
-        final endYOffset = Utils.irnd(-5, 5, true);
-        final endXOffset = Utils.irnd(-10, 10, true);
-        final lootDropAnimation = (dt: Float) -> {
-          final duration = 0.3;
-          final progress = Math.min(
-              1, 
-              (Main.Global.time - 
-               lootRef.createdAt) / duration);   
-          final z = Math.sin(progress * Math.PI) * 10;
-          lootRef.x = startX + endXOffset * progress;
-          lootRef.y = startY + endYOffset * progress - z;
-
-          return progress < 1;
-        };
-        Main.Global.updateHooks.push(lootDropAnimation);
-
-        lootRef.type = 'LOOT';
-        // instance-specific data such as the rolled rng values
-        // as well as the loot type so we can look it up in the
-        // loot definition table
-        Entity.setComponent(lootRef, 'lootInstance', 
-            Loot.createInstance([0, 1, 2]));
-        lootRef.renderFn = (ref, time: Float) -> {
-          // drop shadow
-          Main.Global.sb.emitSprite(
-              ref.x - ref.radius,
-              ref.y + ref.radius - 2,
-              'ui/square_white',
-              null,
-              (p) -> {
-                p.sortOrder = ref.y - 1;
-                p.batchElement.scaleX = ref.radius * 2;
-                p.batchElement.r = 0;
-                p.batchElement.g = 0;
-                p.batchElement.b = 0.2;
-                p.batchElement.a = 0.2;
-                p.batchElement.scaleY = ref.radius * 0.5;
-              });
-
-          final lootRenderFn = (p: SpriteRef) -> {
-            p.sortOrder = ref.y - 1;
-
-            if (Main.Global.hoveredEntity.id == 
-                ref.id) {
-              final hoverStart = Main.Global
-                .hoveredEntity.hoverStart;
-              p.batchElement.y = ref.y - 
-                Math.abs(
-                    Math.sin(time * 2 - hoverStart)) * 2;
-              p.batchElement.b = 0;
-              p.batchElement.r = 0;
-              p.batchElement.g = 1;
-            }
-          };
-          Main.Global.sb.emitSprite(
-              ref.x,
-              ref.y,
-              Loot.getDef(
-                Entity.getComponent(ref, 'lootInstance').type).spriteKey,
-              null,
-              lootRenderFn);
-        };
+        Game.createLootRef(x, y, [0, 1, 2]);
       }
     }
 
@@ -1541,6 +1473,78 @@ class Game extends h2d.Object {
 
     entity.canSeeTarget = true;
     return isClearPath;
+  }
+
+  public static function createLootRef(x, y, typesToRoll) {
+    final startX = x;
+    final startY = y;
+    final lootRef = new Entity({
+      x: startX, 
+      y: startY,
+      radius: 11,
+    }); 
+    final endYOffset = Utils.irnd(-5, 5, true);
+    final endXOffset = Utils.irnd(-10, 10, true);
+    final lootDropAnimation = (dt: Float) -> {
+      final duration = 0.3;
+      final progress = Math.min(
+          1, 
+          (Main.Global.time - 
+           lootRef.createdAt) / duration);   
+      final z = Math.sin(progress * Math.PI) * 10;
+      lootRef.x = startX + endXOffset * progress;
+      lootRef.y = startY + endYOffset * progress - z;
+
+      return progress < 1;
+    };
+    Main.Global.updateHooks.push(lootDropAnimation);
+
+    lootRef.type = 'LOOT';
+    // instance-specific data such as the rolled rng values
+    // as well as the loot type so we can look it up in the
+    // loot definition table
+    Entity.setComponent(lootRef, 'lootInstance', 
+        Loot.createInstance(typesToRoll));
+    lootRef.renderFn = (ref, time: Float) -> {
+      // drop shadow
+      Main.Global.sb.emitSprite(
+          ref.x - ref.radius,
+          ref.y + ref.radius - 2,
+          'ui/square_white',
+          null,
+          (p) -> {
+            p.sortOrder = ref.y - 1;
+            p.batchElement.scaleX = ref.radius * 2;
+            p.batchElement.r = 0;
+            p.batchElement.g = 0;
+            p.batchElement.b = 0.2;
+            p.batchElement.a = 0.2;
+            p.batchElement.scaleY = ref.radius * 0.5;
+          });
+
+      final lootRenderFn = (p: SpriteRef) -> {
+        p.sortOrder = ref.y - 1;
+
+        if (Main.Global.hoveredEntity.id == 
+            ref.id) {
+          final hoverStart = Main.Global
+            .hoveredEntity.hoverStart;
+          p.batchElement.y = ref.y - 
+            Math.abs(
+                Math.sin(time * 2 - hoverStart)) * 2;
+          p.batchElement.b = 0;
+          p.batchElement.r = 0;
+          p.batchElement.g = 1;
+        }
+      };
+      Main.Global.sb.emitSprite(
+          ref.x,
+          ref.y,
+          Loot.getDef(
+            Entity.getComponent(ref, 'lootInstance').type).spriteKey,
+          null,
+          lootRenderFn);
+    };
   }
 
   public function new(

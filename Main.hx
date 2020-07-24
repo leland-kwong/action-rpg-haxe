@@ -69,7 +69,7 @@ class Global {
       enabled: true
     },
     inventory: {
-      opened: true
+      opened: false
     }
   }
 
@@ -85,6 +85,8 @@ class Global {
     primary: h2d.Font,
     title: h2d.Font
   };
+
+  public static var escapeStack: Stack.StackRef = [];
 }
 
 enum UiState {
@@ -183,13 +185,15 @@ class HomeScreen extends h2d.Object {
       btn.x = btnGroup.x;
       btn.y = btnGroup.y;
     }
-  }
+    
+    Global.updateHooks.push((dt: Float) -> {
+      for (o in uiButtonsList) {
+        var btn = (o: UiButton);
+        btn.update(dt);
+      }
 
-  public function update(dt: Float) {
-    for (o in uiButtonsList) {
-      var btn = (o: UiButton);
-      btn.update(dt);
-    }
+      return parent != null;
+    });
   }
 }
 
@@ -203,7 +207,6 @@ class Main extends hxd.App {
   var acc = 0.0;
   var game: Game;
   var background: h2d.Bitmap;
-  var reactiveItems: Map<String, Dynamic> = new Map();
 
   function addBackground(s2d: h2d.Scene, color) {
     // background
@@ -274,21 +277,6 @@ class Main extends hxd.App {
       trace(haxe.CallStack.toString(stack));
       hxd.System.exit();
 
-    }
-  }
-
-  function switchMainScene(sceneType: MainSceneType) {
-    for (key => ref in reactiveItems) {
-      ref.remove();
-      reactiveItems.remove(key);
-    }
-
-    switch(sceneType) {
-      case MainSceneType.PlayGame: {
-        var hs = showHomeScreen();
-        Global.uiRoot.addChild(hs);
-        reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
-      }
     }
   }
 
@@ -397,6 +385,17 @@ class Main extends hxd.App {
 
       // switchMainScene(MainSceneType.PlayGame);
       game = new Game(s2d, game);
+      Stack.push(Global.escapeStack, 'goto home screen', () -> {
+        var hs = showHomeScreen();
+        Global.uiRoot.addChild(hs);
+
+        Stack.push(Global.escapeStack, 'back to game', () -> {
+          hs.remove();
+        });
+      });
+      Hud.UiStateManager.send({
+        type: 'INVENTORY_TOGGLE'
+      });
 
 #if debugMode
       var font = hxd.res.DefaultFont.get();
@@ -427,15 +426,23 @@ class Main extends hxd.App {
     }
 #end
 
+    if (Key.isPressed(Key.I)) {
+      Hud.UiStateManager.send({
+        type: 'INVENTORY_TOGGLE'
+      });
+    }
+
     if (Key.isPressed(Key.ESCAPE)) {
-      switchMainScene(MainSceneType.PlayGame);
+      Stack.pop(Global.escapeStack);
     }
   }
 
   // on each frame
   override function update(dt:Float) {
     try {
-      Main.Global.mainPhase = MainPhase.Update;
+
+      Global.logData.escapeStack = Global.escapeStack;
+      Global.mainPhase = MainPhase.Update;
 
       // set to 1/60 for a fixed 60fps
       var frameTime = dt;
@@ -476,10 +483,6 @@ class Main extends hxd.App {
 
       handleGlobalHotkeys();
 
-      for (it in reactiveItems) {
-        it.update(dt);
-      }
-
       Hud.update(dt);
       Hud.Inventory.update(dt);
 
@@ -497,10 +500,6 @@ class Main extends hxd.App {
           }
 
           game.update(s2d, frameTime);
-
-          if (game.isGameOver()) {
-            switchMainScene(MainSceneType.PlayGame);
-          }
         }
       }
 

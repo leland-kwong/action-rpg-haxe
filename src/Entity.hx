@@ -87,7 +87,7 @@ class Entity extends h2d.Object {
   public var components: Map<String, Dynamic> = new Map();
   public var neighborCheckInterval: Int = 2; // after X ticks
   public final createdAt = Main.Global.time;
-  var renderFn: (ref: Entity, time: Float) -> Void;
+  public var renderFn: (ref: Entity, time: Float) -> Void;
  
   public function new(
       props: EntityProps, 
