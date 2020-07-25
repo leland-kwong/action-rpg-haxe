@@ -84,6 +84,7 @@ class Entity extends h2d.Object {
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
   public var stats: EntityStats.StatsRef;
+  var deathAnimationStyle = 'default';
   public var components: Map<String, Dynamic> = new Map();
   public var neighborCheckInterval: Int = 2; // after X ticks
   public final createdAt = Main.Global.time;

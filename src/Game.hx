@@ -500,8 +500,34 @@ class Ai extends Entity {
           }
 
           case 'attack_self_detonate': {
+            final duration = 0.3;
             final startTime = Main.Global.time;
-            final duration = 0.4;
+            core.Anim.AnimEffect.add({
+              x: x + Utils.irnd(2, 2, true), 
+              y: y + Utils.irnd(2, 2, true),
+              z: 1,
+              frames: [
+                'explosion_animation/default-0'
+              ],
+              startTime: startTime,
+              duration: duration,
+              effectCallback: (p) -> {
+                final b: h2d.SpriteBatch.BatchElement 
+                  = p.batchElement;
+                final aliveTime = Main.Global.time 
+                  - startTime;
+                final progress = Easing
+                  .easeInCirc(aliveTime / duration);
+                
+                final scale = 1.2;
+                b.scale = scale - (scale * progress); 
+                b.alpha = 1 - progress;
+                b.g = 0.9 - progress * 0.5;
+                b.b = 0.7 - progress * 0.7;
+              }
+            });
+
+            final duration = 0.2;
             core.Anim.AnimEffect.add({
               x: x, 
               y: y,
@@ -519,13 +545,14 @@ class Ai extends Entity {
                 final progress = Easing
                   .easeInCirc(aliveTime / duration);
                 
-                final scale = 2;
+                final scale = 0.7;
                 b.scale = scale - (scale * progress); 
-                b.alpha = 0.5;
-                b.g = 1 - progress * 0.2;
-                b.b = 1 - progress * 0.7;
+                b.alpha = 1 - Math.sqrt(progress);
+                // b.g = 1 - progress * 0.2;
+                // b.b = 1 - progress * 0.7;
               }
             });
+
             health = 0;
             attackTarget.damageTaken += 2;
             final aoeSize = 30; // diameter
@@ -566,35 +593,41 @@ class Ai extends Entity {
     attackTarget = null;
 
     if (isDone()) {
-      // trigger death animation
-      final startTime = Main.Global.time;
-      final frames = [
-        'destroy_animation/default-0',
-        'destroy_animation/default-1',
-        'destroy_animation/default-2',
-        'destroy_animation/default-3',
-        'destroy_animation/default-4',
-        'destroy_animation/default-5',
-        'destroy_animation/default-6',
-        'destroy_animation/default-7',
-        'destroy_animation/default-8',
-        'destroy_animation/default-9',
-      ];
+      switch (deathAnimationStyle) {
+        case 'default': {
+          // trigger death animation
+          final startTime = Main.Global.time;
+          final frames = [
+            'destroy_animation/default-0',
+            'destroy_animation/default-1',
+            'destroy_animation/default-2',
+            'destroy_animation/default-3',
+            'destroy_animation/default-4',
+            'destroy_animation/default-5',
+            'destroy_animation/default-6',
+            'destroy_animation/default-7',
+            'destroy_animation/default-8',
+            'destroy_animation/default-9',
+          ];
 
-      for (_ in 0...Utils.irnd(3, 4)) {
-        final duration = Utils.rnd(0.3, 0.7);
-        final z = Utils.irnd(0, 1);
-        final dx = Utils.irnd(-6, 6, true);
-        final dy = Utils.irnd(-6, 6, true);
-        core.Anim.AnimEffect.add({
-          x: x + dx,
-          y: y + dy,
-          z: z,
-          dx: Utils.rnd(1, 2) * dx,
-          dy: Utils.rnd(1, 2) * dy,
-          startTime: startTime,
-          duration: duration,
-          frames: frames });
+          for (_ in 0...Utils.irnd(3, 4)) {
+            final duration = Utils.rnd(0.3, 0.7);
+            final z = Utils.irnd(0, 1);
+            final dx = Utils.irnd(-6, 6, true);
+            final dy = Utils.irnd(-6, 6, true);
+            core.Anim.AnimEffect.add({
+              x: x + dx,
+              y: y + dy,
+              z: z,
+              dx: Utils.rnd(1, 2) * dx,
+              dy: Utils.rnd(1, 2) * dy,
+              startTime: startTime,
+              duration: duration,
+              frames: frames });
+          }
+        }
+
+        default: {}
       }
 
       final canDropLoot = type == 'ENEMY';
@@ -1191,6 +1224,7 @@ class Player extends Entity {
             aiType: 'spiderBot',
           }, 4, findNearestTarget, attackTargetFilterFn);
           botRef.type = 'FRIENDLY_AI';
+          botRef.deathAnimationStyle = 'none';
         }
       }
     }
