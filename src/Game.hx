@@ -591,14 +591,23 @@ class Ai extends Entity {
           frames: frames });
       }
 
-      final shouldDropLoot = type == 'ENEMY';
-      if (shouldDropLoot) {
-        final lootInstance = Loot.createInstance([
-            Loot.lootDefinitions[0].type, 
-            Loot.lootDefinitions[1].type, 
-            Loot.lootDefinitions[2].type, 
+      final canDropLoot = type == 'ENEMY';
+      if (canDropLoot) {
+        final numItemsToDrop = Utils.rollValues([
+            0, 0, 0, 0, 1, 1, 2
         ]);
-        Game.createLootEntity(x, y, lootInstance);
+
+        for (_ in 0...numItemsToDrop) {
+          final lootInstance = Loot.createInstance([
+              Loot.lootDefinitions[0].type, 
+              Loot.lootDefinitions[1].type, 
+              Loot.lootDefinitions[2].type, 
+          ]);
+          Game.createLootEntity(
+              x + Utils.irnd(5, 10, true), 
+              y + Utils.irnd(5, 10, true), 
+              lootInstance);
+        }
       }
     }
 
