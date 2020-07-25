@@ -615,6 +615,17 @@ class Ai extends Entity {
               lootInstance);
         }
       }
+
+      // log enemy kill action
+      if (type == 'ENEMY') {
+        final enemyType = Entity.getComponent(
+            this, 'aiType');
+        Main.Global.questActions.push(
+            Quest.createAction(
+              'ENEMY_KILL', 
+              'intro_level',
+              { enemyType: enemyType }));
+      }
     }
 
     super.update(dt);

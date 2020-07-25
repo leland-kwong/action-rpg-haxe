@@ -1064,6 +1064,7 @@ class Hud {
   static final aiHealthBarWidth = 200;
   static var hoveredEntityId: Entity.EntityId;
   static var tooltipTf: h2d.Text;
+  static var questDisplay: h2d.Text;
 
   public static function init() {
     aiHealthBar = new h2d.Graphics(
@@ -1077,9 +1078,23 @@ class Hud {
 
     mapData = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
+
+    questDisplay = new h2d.Text(
+        Main.Global.fonts.primary,
+        Main.Global.uiRoot);
   }
 
   public static function update(dt: Float) {
+    Main.Global.questState = Lambda.fold(
+        Main.Global.questActions,
+        (a, qs) -> {
+          return Quest.updateQuestState(
+              a,
+              qs,
+              Quest.conditionsByName);
+        }, Main.Global.questState);
+    Main.Global.questActions = [];
+
     Tooltip.update(dt);
     InventoryDragAndDropPrototype.update(dt);
 
@@ -1143,6 +1158,17 @@ class Hud {
   public static function render(time: Float) {
     Tooltip.render(time);
     InventoryDragAndDropPrototype.render(time);
+
+    // render quest statuses
+    {
+      final maxWidth = 300;
+      questDisplay.text = Quest.format(
+          Main.Global.questState);
+      questDisplay.maxWidth = maxWidth;
+      final win = hxd.Window.getInstance();
+      questDisplay.x = win.width - maxWidth;
+      questDisplay.y = 500;
+    }
 
     var ps = Main.Global.playerStats;
 
