@@ -1059,7 +1059,7 @@ class InventoryDragAndDropPrototype {
 class Hud {
   public static var rScale = 4;
   static var mapData: TiledMapData;
-  static var tf: h2d.Text;
+  static var aiNameText: h2d.Text;
   static var aiHealthBar: h2d.Graphics;
   static final aiHealthBarWidth = 200;
   static var hoveredEntityId: Entity.EntityId;
@@ -1069,11 +1069,11 @@ class Hud {
     aiHealthBar = new h2d.Graphics(
         Main.Global.uiRoot);
     final font = Main.Global.fonts.primary;
-    tf = new h2d.Text(
+    aiNameText = new h2d.Text(
         font, 
         Main.Global.uiRoot);
-    tf.textAlign = Center;
-    tf.textColor = Game.Colors.pureWhite;
+    aiNameText.textAlign = Center;
+    aiNameText.textColor = Game.Colors.pureWhite;
 
     mapData = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
@@ -1086,9 +1086,9 @@ class Hud {
     // show hovered ai info
     {
       final healthBarHeight = 30;
-      tf.x = Main.Global.uiRoot.width / 2;
-      tf.y = 10;
-      aiHealthBar.x = tf.x - aiHealthBarWidth / 2;
+      aiNameText.x = Main.Global.uiRoot.width / 2;
+      aiNameText.y = 10;
+      aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
       aiHealthBar.y = 35;
 
       final x = Main.Global.rootScene.mouseX;
@@ -1117,7 +1117,7 @@ class Hud {
           Main.HoverState.Enemy;
         final entRef = Entity.getById(
           hoveredEntityId);
-        tf.text = entRef.type;
+        aiNameText.text = Entity.getComponent(entRef, 'aiType');
         final healthPctRemain = entRef.health / 
           entRef.stats.maxHealth;
         aiHealthBar.clear();
@@ -1133,7 +1133,7 @@ class Hud {
             healthPctRemain * aiHealthBarWidth, 
             healthBarHeight);
       } else {
-        tf.text = '';
+        aiNameText.text = '';
         aiHealthBar.clear();
       }
     }
