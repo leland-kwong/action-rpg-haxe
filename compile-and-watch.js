@@ -305,7 +305,11 @@ function startReplWatcher() {
       console.log('\n==== repl build success ===='.toUpperCase());
       console.log(stdout);
       delete require.cache[require.resolve('./temp/repl-haxe.js')];
-      require('./temp/repl-haxe.js');
+      try {
+        require('./temp/repl-haxe.js');
+      } catch (err) {
+        console.error('repl build error', err);
+      }
     });
   });
 }
