@@ -167,6 +167,11 @@ class Bullet extends Projectile {
 
 typedef EntityFilter = (ent: Entity) -> Bool;
 
+typedef AiProps = {
+  > Entity.EntityProps,
+  aiType: String
+};
+
 class Ai extends Entity {
   static var healthBySize = [
     1 => 5,
@@ -218,13 +223,14 @@ class Ai extends Entity {
     defaultAttackTargetFilterFn;
 
   public function new(
-      props, size, 
+      props: AiProps, size, 
       findTargetFn, ?attackTargetFilterFn) {
     super(props);
     neighborCheckInterval = 10;
     traversableGrid = Main.Global.traversableGrid;
 
     cds = new Cooldown();
+    Entity.setComponent(this, 'aiType', props.aiType);
 
     if (spriteSheet == null) {
       spriteSheet = hxd.Res.sprite_sheet_png.toTile();
@@ -1171,6 +1177,7 @@ class Player extends Entity {
             x: x + Utils.irnd(-lo, lo),
             y: y + Utils.irnd(-lo, lo),
             radius: 8,
+            aiType: 'spiderBot',
           }, 4, findNearestTarget, attackTargetFilterFn);
           botRef.type = 'FRIENDLY_AI';
         }
@@ -1298,6 +1305,16 @@ class MapObstacle extends Entity {
 
 // Spawns enemies over time
 class EnemySpawner extends Entity {
+  static final enemyTypes = [
+    'bat',
+    'botMage',
+  ];
+
+  static final sizeByEnemyType = [
+    'bat' => 1,
+    'botMage' => 2
+  ];
+
   var enemiesLeftToSpawn: Int;
   var spawnInterval = 0.001;
   var isDormant = true;
@@ -1352,13 +1369,15 @@ class EnemySpawner extends Entity {
     Cooldown.set(cds, 'recentlySpawned', spawnInterval);
     enemiesLeftToSpawn -= 1;
 
-    var size = Utils.irnd(1, 2);
+    final enemyType = Utils.rollValues(enemyTypes);
+    var size = sizeByEnemyType[enemyType];
     var radius = 3 + size * 6;
     var posRange = 20;
     var e = new Ai({
       x: x + Utils.irnd(-posRange, posRange),
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
+      aiType: enemyType,
       weight: 1.0,
     }, size, findTarget);
     parent.addChildAt(e, 0);
@@ -1479,6 +1498,7 @@ class Game extends h2d.Object {
         y: miniBossPos.y,
         radius: 30,
         sightRange: 150,
+        aiType: 'introLevelBoss',
         weight: 1.0,
       }, size, (_) -> player);
       Main.Global.rootScene.addChildAt(e, 0);
