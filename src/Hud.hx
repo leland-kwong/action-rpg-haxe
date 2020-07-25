@@ -502,6 +502,15 @@ class InventoryDragAndDropPrototype {
     state.itemsById.set(lootInstance.id, lootInstance);
   }
 
+  static public function equipItemToSlot(
+      lootInst: Loot.LootInstance, 
+      index) {
+
+    state.equippedAbilitiesById[index] = lootInst.id;
+    state.itemsById.set(lootInst.id, lootInst);
+
+  }
+
   static function addTestItems(slotSize) {
     final addItemToInv = (
         slotX, slotY, lootInst) -> {
@@ -804,9 +813,7 @@ class InventoryDragAndDropPrototype {
             // swap currently equipped with item at pointer
             final originallyEquipped = state.equippedAbilitiesById[
               nearestAbilitySlot.slotIndex];
-            trace('originallyEquipped ', originallyEquipped);
-            state.equippedAbilitiesById[
-              nearestAbilitySlot.slotIndex] = lootInst.id;
+            equipItemToSlot(lootInst, nearestAbilitySlot.slotIndex);
             state.pickedUpItemId = Utils.withDefault(
                 originallyEquipped,
                 NULL_PICKUP_ID);
