@@ -1,6 +1,6 @@
 class Fonts {
   public static function primary() {
-    return hxd.Res.orbitron.toFont();
+    return hxd.Res.orbitron_body.toFont();
   }
 
   public static function title() {

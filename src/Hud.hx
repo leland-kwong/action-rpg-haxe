@@ -1080,11 +1080,15 @@ class Hud {
         hxd.Res.ui_hud_layout_json);
 
     questDisplay = new h2d.Text(
-        Main.Global.fonts.primary);
+        Main.Global.fonts.primary,
+        Main.Global.uiRoot);
   }
 
   public static function update(dt: Float) {
-    Main.Global.uiRoot.addChildAt(questDisplay, 0);
+    questDisplay.text = '';
+    aiNameText.text = '';
+    aiHealthBar.clear();
+
     Main.Global.questState = Lambda.fold(
         Main.Global.questActions,
         (a, qs) -> {
@@ -1095,43 +1099,57 @@ class Hud {
         }, Main.Global.questState);
     Main.Global.questActions = [];
 
-    Tooltip.update(dt);
+    aiNameText.x = Main.Global.uiRoot.width / 2;
+    aiNameText.y = 10;
+    aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
+    aiHealthBar.y = 35;
+
+    final x = Main.Global.rootScene.mouseX;
+    final y = Main.Global.rootScene.mouseY;
+    final hoveredEntityId = Utils.withDefault(
+        Lambda.find(
+          Grid.getItemsInRect(
+            Main.Global.dynamicWorldGrid,
+            x, y, 5, 5),
+          (entityId) -> {
+            final entRef = Entity.getById(entityId);
+            final p = new h2d.col.Point(x, y);
+            final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
+            final distFromMouse = Utils.distance(
+                x, y, entRef.x, entRef.y);
+            final isMatch = c.contains(p) &&
+              entRef.type == 'ENEMY';
+
+            return isMatch;
+          }),
+        Entity.NULL_ENTITY.id);
+    Main.Global.hoveredEntity.id = 
+      hoveredEntityId;
     InventoryDragAndDropPrototype.update(dt);
+    Inventory.update(dt);
+    Tooltip.update(dt);
+    UiGrid.update(dt);
+  }
+
+  public static function render(time: Float) {
+    if (!Main.Global.uiState.hud.enabled) {
+      return;
+    }
+
+    Tooltip.render(time);
+    InventoryDragAndDropPrototype.render(time);
+    Inventory.render(time);
+    Hud.UiGrid.render(time);
 
     // show hovered ai info
     {
       final healthBarHeight = 30;
-      aiNameText.x = Main.Global.uiRoot.width / 2;
-      aiNameText.y = 10;
-      aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
-      aiHealthBar.y = 35;
-
-      final x = Main.Global.rootScene.mouseX;
-      final y = Main.Global.rootScene.mouseY;
-      final hoveredEntityId = Utils.withDefault(
-          Lambda.find(
-            Grid.getItemsInRect(
-              Main.Global.dynamicWorldGrid,
-              x, y, 5, 5),
-            (entityId) -> {
-              final entRef = Entity.getById(entityId);
-              final p = new h2d.col.Point(x, y);
-              final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
-              final distFromMouse = Utils.distance(
-                  x, y, entRef.x, entRef.y);
-              final isMatch = c.contains(p) &&
-                entRef.type == 'ENEMY';
-
-              return isMatch;
-            }),
-          Entity.NULL_ENTITY.id);
-      Main.Global.hoveredEntity.id = 
-        hoveredEntityId;
-      if (!Entity.isNullId(hoveredEntityId)) {
+      final hoveredEntityId = Main.Global.hoveredEntity.id;
+      final entRef = Entity.getById(
+          hoveredEntityId);
+      if (entRef.type == 'ENEMY') {
         Main.Global.worldMouse.hoverState = 
           Main.HoverState.Enemy;
-        final entRef = Entity.getById(
-          hoveredEntityId);
         aiNameText.text = Entity.getComponent(entRef, 'aiType');
         final healthPctRemain = entRef.health / 
           entRef.stats.maxHealth;
@@ -1147,17 +1165,8 @@ class Hud {
             0, 0, 
             healthPctRemain * aiHealthBarWidth, 
             healthBarHeight);
-      } else {
-        aiNameText.text = '';
-        aiHealthBar.clear();
-      }
+      } 
     }
-
-  }
-
-  public static function render(time: Float) {
-    Tooltip.render(time);
-    InventoryDragAndDropPrototype.render(time);
 
     final uiLayoutRef = TiledParser.loadFile(
         hxd.Res.ui_hud_layout_json);
@@ -1192,8 +1201,6 @@ class Hud {
                 p.batchElement.scale = Hud.rScale;
               });
         }
-      } else {
-        questDisplay.text = '';
       }
     }
 

@@ -1923,15 +1923,11 @@ class Game extends h2d.Object {
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
-
-    Hud.UiGrid.update(dt);
   }
 
   public function render(time: Float) {
     for (entityRef in Main.Global.entitiesToRender) {
       entityRef.render(time);
     }
-
-    Hud.UiGrid.render(time);
   }
 }

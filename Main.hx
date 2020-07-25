@@ -156,8 +156,6 @@ class HomeScreen extends h2d.Object {
     super();
 
     var leftMargin = 100;
-
-    final baseFontSize = 24;
     var titleFont = Main.Global.fonts.title;
     var titleText = new h2d.Text(titleFont, this);
     titleText.text = 'Astral Cowboy';
@@ -166,8 +164,6 @@ class HomeScreen extends h2d.Object {
     titleText.y = 300;
 
     var btnFont = Main.Global.fonts.primary.clone();
-    btnFont.resizeTo(1 * baseFontSize);
-
     var buttons: Array<Dynamic> = [
       ['Start Game', btnFont, () -> {
         this.remove();
@@ -175,7 +171,6 @@ class HomeScreen extends h2d.Object {
       }],
       ['Exit Game', btnFont, onGameExit],
     ];
-
     var btnGroup = {
       x: leftMargin,
       y: titleText.y + titleText.textHeight + 50
@@ -200,6 +195,30 @@ class HomeScreen extends h2d.Object {
         var btn = (o: UiButton);
         btn.update(dt);
       }
+
+      final isActive = parent != null;
+
+      Global.uiState.hud.enabled = !isActive;
+
+      return isActive;
+    });
+
+    Global.renderHooks.push((time) -> {
+      Global.uiSpriteBatch.emitSprite(
+          0, 0,
+          'ui/square_white',
+          null,
+          (p) -> {
+            final win = hxd.Window.getInstance();
+
+            p.batchElement.r = 0;
+            p.batchElement.g = 0;
+            p.batchElement.b = 0;
+            p.batchElement.a = 0.7;
+
+            p.batchElement.scaleX = win.width;
+            p.batchElement.scaleY = win.height;
+          });
 
       return parent != null;
     });
@@ -267,7 +286,6 @@ class Main extends hxd.App {
       }
 
       Hud.render(Global.time);
-      Hud.Inventory.render(Global.time);
       core.Anim.AnimEffect
         .render(Global.time);
       // run sprite batches before engine rendering
@@ -492,7 +510,6 @@ class Main extends hxd.App {
       handleGlobalHotkeys();
 
       Hud.update(dt);
-      Hud.Inventory.update(dt);
 
       acc += dt;
 
