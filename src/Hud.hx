@@ -1080,11 +1080,11 @@ class Hud {
         hxd.Res.ui_hud_layout_json);
 
     questDisplay = new h2d.Text(
-        Main.Global.fonts.primary,
-        Main.Global.uiRoot);
+        Main.Global.fonts.primary);
   }
 
   public static function update(dt: Float) {
+    Main.Global.uiRoot.addChildAt(questDisplay, 0);
     Main.Global.questState = Lambda.fold(
         Main.Global.questActions,
         (a, qs) -> {
@@ -1159,15 +1159,42 @@ class Hud {
     Tooltip.render(time);
     InventoryDragAndDropPrototype.render(time);
 
+    final uiLayoutRef = TiledParser.loadFile(
+        hxd.Res.ui_hud_layout_json);
+
     // render quest statuses
     {
-      final maxWidth = 300;
-      questDisplay.text = Quest.format(
-          Main.Global.questState);
-      questDisplay.maxWidth = maxWidth;
-      final win = hxd.Window.getInstance();
-      questDisplay.x = win.width - maxWidth;
-      questDisplay.y = 500;
+      if (!Main.Global.uiState.inventory.opened) {
+        final questLayer = TiledParser.findLayer(
+            uiLayoutRef, 'questLog');
+        final questRegions = TiledParser.findLayer(
+            questLayer, 'regions');
+        final rootObject = Lambda.find(
+            questRegions.objects,
+            (o: TiledObject) -> o.name == 'origin');
+        final maxWidth = 300;
+        questDisplay.text = Quest.format(
+            Main.Global.questState);
+        questDisplay.maxWidth = maxWidth;
+        final win = hxd.Window.getInstance();
+        questDisplay.x = rootObject.x * Hud.rScale;
+        questDisplay.y = rootObject.y * Hud.rScale;
+
+        final questLayerSprites = TiledParser.findLayer(
+            questLayer, 'sprites');
+        for (spriteObject in questLayerSprites.objects) {
+          Main.Global.uiSpriteBatch.emitSprite(
+              spriteObject.x * Hud.rScale,
+              spriteObject.y * Hud.rScale,
+              'ui/stylized_border_1',
+              null,
+              (p) -> {
+                p.batchElement.scale = Hud.rScale;
+              });
+        }
+      } else {
+        questDisplay.text = '';
+      }
     }
 
     var ps = Entity.getById('PLAYER').stats;
@@ -1176,8 +1203,6 @@ class Hud {
       return;
     }
 
-    final uiLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
     final hudLayer = TiledParser
       .findLayer(uiLayoutRef, 'hud');
     final cockpitUnderlay = TiledParser

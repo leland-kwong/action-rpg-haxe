@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="right-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="16" nextobjectid="266">
+<map version="1.4" tiledversion="1.4.1" orientation="orthogonal" renderorder="right-down" width="30" height="17" tilewidth="16" tileheight="16" infinite="0" nextlayerid="20" nextobjectid="269">
  <tileset firstgid="1" source="ui.tsx"/>
- <group id="7" name="inventory">
+ <group id="16" name="questLog">
+  <objectgroup id="17" name="sprites">
+   <object id="267" gid="7" x="394" y="114" width="63" height="5"/>
+  </objectgroup>
+  <objectgroup id="19" name="regions">
+   <object id="268" name="origin" x="400" y="116" width="71" height="92"/>
+  </objectgroup>
+ </group>
+ <group id="7" name="inventory" visible="0">
   <objectgroup id="13" name="background">
    <object id="226" name="ui/ui_inventory_underlay" gid="6" x="187" y="195" width="281" height="167"/>
   </objectgroup>

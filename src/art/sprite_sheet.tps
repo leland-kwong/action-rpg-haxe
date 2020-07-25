@@ -216,6 +216,7 @@
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-2.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-3.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-4.png</key>
+            <key type="filename">aseprite_exports/ui/placeholder.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -332,6 +333,7 @@
             <key type="filename">aseprite_exports/projectile_hit_animation/burst-6.png</key>
             <key type="filename">aseprite_exports/projectile_hit_animation/burst-7.png</key>
             <key type="filename">aseprite_exports/ui/bullet_enemy_large.png</key>
+            <key type="filename">aseprite_exports/ui/loot__socketable_green_arrow_up.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -389,21 +391,6 @@
                 <rect>37,4,74,7</rect>
                 <key>scale9Paddings</key>
                 <rect>37,4,74,7</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/hud_ability_slot.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>17,6,34,11</rect>
-                <key>scale9Paddings</key>
-                <rect>17,6,34,11</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -512,7 +499,9 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/loot__ability_spider_bot.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -554,6 +543,21 @@
                 <rect>0,0,1,1</rect>
                 <key>scale9Paddings</key>
                 <rect>0,0,1,1</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/stylized_border_1.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>16,1,31,3</rect>
+                <key>scale9Paddings</key>
+                <rect>16,1,31,3</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

@@ -121,9 +121,9 @@ class Quest {
       final description = Utils.withDefault(
           state.description, '');
       final checkmark = state.completed ? 'x' : '  ';
-      final nextLine = '${name}\n[${checkmark}] ${description}\n';
+      final nextLine = '${name}\n[${checkmark}] ${description}\n\n';
 
-      result = '${result}\n${nextLine}';
+      result = '${result}${nextLine}';
     }
 
     return result;

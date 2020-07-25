@@ -3,6 +3,61 @@
  "infinite":false,
  "layers":[
         {
+         "id":16,
+         "layers":[
+                {
+                 "draworder":"topdown",
+                 "id":17,
+                 "name":"sprites",
+                 "objects":[
+                        {
+                         "gid":7,
+                         "height":5,
+                         "id":267,
+                         "name":"",
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":63,
+                         "x":394,
+                         "y":114
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }, 
+                {
+                 "draworder":"topdown",
+                 "id":19,
+                 "name":"regions",
+                 "objects":[
+                        {
+                         "height":92,
+                         "id":268,
+                         "name":"origin",
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":71,
+                         "x":400,
+                         "y":116
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }],
+         "name":"questLog",
+         "opacity":1,
+         "type":"group",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
          "id":7,
          "layers":[
                 {
@@ -164,7 +219,7 @@
          "name":"inventory",
          "opacity":1,
          "type":"group",
-         "visible":true,
+         "visible":false,
          "x":0,
          "y":0
         }, 
@@ -633,8 +688,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":16,
- "nextobjectid":266,
+ "nextlayerid":20,
+ "nextobjectid":269,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.4.1",
