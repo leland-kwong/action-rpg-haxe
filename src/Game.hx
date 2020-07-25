@@ -500,58 +500,59 @@ class Ai extends Entity {
           }
 
           case 'attack_self_detonate': {
-            final duration = 0.3;
-            final startTime = Main.Global.time;
-            core.Anim.AnimEffect.add({
-              x: x + Utils.irnd(2, 2, true), 
-              y: y + Utils.irnd(2, 2, true),
-              z: 1,
-              frames: [
-                'explosion_animation/default-0'
-              ],
-              startTime: startTime,
-              duration: duration,
-              effectCallback: (p) -> {
-                final b: h2d.SpriteBatch.BatchElement 
-                  = p.batchElement;
-                final aliveTime = Main.Global.time 
-                  - startTime;
-                final progress = Easing
-                  .easeInCirc(aliveTime / duration);
-                
-                final scale = 1.2;
-                b.scale = scale - (scale * progress); 
-                b.alpha = 1 - progress;
-                b.g = 0.9 - progress * 0.5;
-                b.b = 0.7 - progress * 0.7;
-              }
-            });
+            // explosion animation
+            {
+              final startTime = Main.Global.time;
+              final duration = 0.3;
+              core.Anim.AnimEffect.add({
+                x: x + Utils.irnd(2, 2, true), 
+                y: y + Utils.irnd(2, 2, true),
+                z: 1,
+                frames: [
+                  'explosion_animation/default-0'
+                ],
+                startTime: startTime,
+                duration: duration,
+                effectCallback: (p) -> {
+                  final b: h2d.SpriteBatch.BatchElement 
+                    = p.batchElement;
+                  final aliveTime = Main.Global.time 
+                    - startTime;
+                  final progress = Easing
+                    .easeInCirc(aliveTime / duration);
 
-            final duration = 0.2;
-            core.Anim.AnimEffect.add({
-              x: x, 
-              y: y,
-              z: 2,
-              frames: [
-                'explosion_animation/default-0'
-              ],
-              startTime: startTime,
-              duration: duration,
-              effectCallback: (p) -> {
-                final b: h2d.SpriteBatch.BatchElement 
-                  = p.batchElement;
-                final aliveTime = Main.Global.time 
-                  - startTime;
-                final progress = Easing
-                  .easeInCirc(aliveTime / duration);
-                
-                final scale = 0.7;
-                b.scale = scale - (scale * progress); 
-                b.alpha = 1 - Math.sqrt(progress);
-                // b.g = 1 - progress * 0.2;
-                // b.b = 1 - progress * 0.7;
-              }
-            });
+                  final scale = 1.2;
+                  b.scale = scale - (scale * progress); 
+                  b.alpha = 1 - progress;
+                  b.g = 0.9 - progress * 0.5;
+                  b.b = 0.7 - progress * 0.7;
+                }
+              });
+
+              final duration = 0.2;
+              core.Anim.AnimEffect.add({
+                x: x, 
+                y: y,
+                z: 2,
+                frames: [
+                  'explosion_animation/default-0'
+                ],
+                startTime: startTime,
+                duration: duration,
+                effectCallback: (p) -> {
+                  final b: h2d.SpriteBatch.BatchElement 
+                    = p.batchElement;
+                  final aliveTime = Main.Global.time 
+                    - startTime;
+                  final progress = Easing
+                    .easeInCirc(aliveTime / duration);
+
+                  final scale = 0.7;
+                  b.scale = scale - (scale * progress); 
+                  b.alpha = 1 - Math.sqrt(progress);
+                }
+              });
+            }
 
             health = 0;
             attackTarget.damageTaken += 2;
