@@ -1458,7 +1458,6 @@ class MapData {
 
 class Game extends h2d.Object {
   public var level = 2;
-  var player: Player;
   var mousePointer: h2d.Object;
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
@@ -1469,17 +1468,17 @@ class Game extends h2d.Object {
   }
 
   public function isGameOver() {
-    return player.health <= 0;
+    final playerRef = Entity.getById('player');
+
+    return playerRef.health <= 0;
   }
 
   public function isLevelComplete() {
-    for (e in Entity.ALL_BY_ID) {
-      // enemies still remain, so level not complete
-      if (e.type == 'ENEMY') {
-        return false;
-      }
-    }
-    return true;
+    final numEnemies = Lambda.count(
+        Entity.ALL_BY_ID, 
+        (e) -> e.type == 'ENEMY');
+
+    return numEnemies == 0;
   }
 
   public function cleanupLevel() {
@@ -1509,7 +1508,7 @@ class Game extends h2d.Object {
           return item.type == 'enemySpawnPoint';
         });
       final spawnerFindTargetFn = (_) -> {
-        return player;
+        return Entity.getById('PLAYER');
       }
 
       Lambda.foreach(
@@ -1546,7 +1545,7 @@ class Game extends h2d.Object {
         sightRange: 150,
         aiType: 'introLevelBoss',
         weight: 1.0,
-      }, size, (_) -> player);
+      }, size, (_) -> Entity.getById('PLAYER'));
       Main.Global.rootScene.addChildAt(e, 0);
     }
   }
@@ -1750,13 +1749,15 @@ class Game extends h2d.Object {
     if (oldGame != null) {
       oldGame.cleanupLevel();
     }
-    player = new Player(
+    final playerRef = new Player(
       playerStartPos.x,
       playerStartPos.y - 6,
       s2d
     );
-    s2d.addChildAt(player, 0);
-    Camera.follow(Main.Global.mainCamera, player);
+    s2d.addChild(playerRef);
+    Camera.follow(
+        Main.Global.mainCamera, 
+        playerRef);
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
