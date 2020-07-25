@@ -1170,7 +1170,7 @@ class Hud {
       questDisplay.y = 500;
     }
 
-    var ps = Main.Global.playerStats;
+    var ps = Entity.getById('PLAYER').stats;
 
     if (ps == null) {
       return;

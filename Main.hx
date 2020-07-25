@@ -51,7 +51,6 @@ class Global {
   public static var time = 0.0;
   public static var dt = 0.0;
   public static var tickCount = 0;
-  public static var playerStats: EntityStats.StatsRef = null; 
   public static var resolutionScale = 4;
 
   // for convenience, not sure if this is performant enough

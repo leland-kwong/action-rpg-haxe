@@ -719,7 +719,7 @@ class Player extends Entity {
     obstacleGrid = Main.Global.obstacleGrid;
 
     rootScene = s2d;
-    stats = Main.Global.playerStats = EntityStats.create({
+    stats = EntityStats.create({
       maxHealth: 100,
       maxEnergy: 100,
       currentHealth: 100.0,
@@ -852,7 +852,7 @@ class Player extends Entity {
     {
       if (damageTaken > 0) {
         EntityStats.addEvent(
-            Main.Global.playerStats, 
+            Entity.getById('PLAYER').stats, 
             { type: 'DAMAGE_RECEIVED', 
               value: damageTaken });
         damageTaken = 0;
@@ -905,7 +905,7 @@ class Player extends Entity {
     final lootDef = Loot.getDef(lootInst.type);
     var energyCost = lootDef.energyCost;
     var hasEnoughEnergy = energyCost 
-      <= Main.Global.playerStats.currentEnergy;
+      <= Entity.getById('PLAYER').stats.currentEnergy;
     final cooldownKey = 'ability__${lootDef.type}';
     var isUnavailable = Cooldown.has(cds, cooldownKey) 
       || !hasEnoughEnergy;
@@ -939,7 +939,7 @@ class Player extends Entity {
         Main.Global.rootScene.addChild(b);
 
         EntityStats.addEvent(
-            Main.Global.playerStats, 
+            Entity.getById('PLAYER').stats, 
             { type: 'ENERGY_SPEND',
               value: energyCost });
       }
@@ -1780,7 +1780,7 @@ class Game extends h2d.Object {
     Main.Global.entitiesToRender = [];
 
     EntityStats.update(
-        Main.Global.playerStats, 
+        Entity.getById('PLAYER').stats,
         dt);
 
     Cooldown.update(SoundFx.globalCds, dt);
