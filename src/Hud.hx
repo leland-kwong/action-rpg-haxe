@@ -90,7 +90,7 @@ class Inventory {
   //
   // Dimensions are based on the native 
   // pixel art's resolution (480 x 270)
-  public static function inventorySlotAddItem(
+  public static function inventorySlotAutoAddItem(
       itemInstance: Loot.LootInstance): Bool {
 
     final slotDefinition = {
@@ -212,8 +212,9 @@ class Inventory {
           Main.Global.worldMouse.clicked;
         if (pickupItemButtonClicked) {
           final size = lootRef.radius * 2;
-          final addSuccess = Inventory.inventorySlotAddItem(
-              Entity.getComponent(lootRef, 'lootInstance'));
+          final addSuccess = Inventory
+            .inventorySlotAutoAddItem(
+                Entity.getComponent(lootRef, 'lootInstance'));
 
           if (addSuccess) {
             final animDuration = 0.2;
@@ -470,6 +471,8 @@ class Tooltip {
    does not drop utside of a traversable position.
  */
 class InventoryDragAndDropPrototype {
+  
+  static final slotSize = 16 * Hud.rScale;
   static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
   static public final state = {
     equippedAbilitiesById: new haxe.ds.Vector<String>(3),
@@ -511,62 +514,32 @@ class InventoryDragAndDropPrototype {
 
   }
 
-  static function addTestItems(slotSize) {
-    final addItemToInv = (
-        slotX, slotY, lootInst) -> {
-      final lootDef = Loot.getDef(lootInst.type);
-      final spriteData = SpriteBatchSystem.getSpriteData(
-          Main.Global.uiSpriteBatch,
-          lootDef.spriteKey);
-      final slotWidth = toSlotSize(spriteData.sourceSize.w);
-      final slotHeight = toSlotSize(spriteData.sourceSize.h);
-
-      Grid.setItemRect(
-          state.invGrid,
-          slotX + slotWidth / 2,
-          slotY + slotHeight / 2,
-          slotWidth,
-          slotHeight,
-          lootInst.id);
-      state.itemsById.set(
-          lootInst.id, 
-          lootInst);
-    }
-
+  static public function addTestItems() {
     {
       final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
-      // add mock items
-      addItemToInv(
-          slotX,
-          slotY,
-          Loot.createInstance([
-            Loot.lootDefinitions[0].type
-          ]));
+      final lootInstance = Loot.createInstance([
+          Loot.lootDefinitions[0].type
+      ]);
+      equipItemToSlot(lootInstance, 0); 
     }
 
     {
       final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
-      // add mock items
-      addItemToInv(
-          slotX,
-          slotY,
-          Loot.createInstance([
-            Loot.lootDefinitions[1].type
-          ]));
+      final lootInstance = Loot.createInstance([
+          Loot.lootDefinitions[1].type
+      ]);
+      equipItemToSlot(lootInstance, 1); 
     }
 
     {
       final slotX = 1 * slotSize;
       final slotY = 8 * slotSize;
-      // add mock items
-      addItemToInv(
-          slotX,
-          slotY,
-          Loot.createInstance([
-            Loot.lootDefinitions[2].type
-          ]));
+      final lootInstance = Loot.createInstance([
+          Loot.lootDefinitions[2].type
+      ]);
+      equipItemToSlot(lootInstance, 2); 
     }
   }
 
@@ -604,12 +577,10 @@ class InventoryDragAndDropPrototype {
   }
 
   static function toSlotSize(value) {
-    return Math.ceil(value / 16) * 16 * Hud.rScale;
+    return Math.ceil(value / 16) * slotSize;
   }
 
   public static function update(dt) {
-    final slotSize = 16 * Hud.rScale;
-
     // handle interact slots
     {
       // cleanup
@@ -665,8 +636,6 @@ class InventoryDragAndDropPrototype {
 
     if (!state.initialized) {
       state.initialized = true;
-
-      addTestItems(slotSize);
     }
 
     // handle slot interactions

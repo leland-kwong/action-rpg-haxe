@@ -393,9 +393,8 @@ class Main extends hxd.App {
           hs.remove();
         });
       });
-      Hud.UiStateManager.send({
-        type: 'INVENTORY_TOGGLE'
-      });
+      Hud.InventoryDragAndDropPrototype
+        .addTestItems();
 
 #if debugMode
       var font = hxd.res.DefaultFont.get();
