@@ -1463,7 +1463,6 @@ class Game extends h2d.Object {
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
   var MOUSE_POINTER_RADIUS = 5.0;
-  var enemySpawnerRefs: Array<EnemySpawner> = [];
 
   function calcNumEnemies(level: Int) {
     return level * Math.round(level /2);
@@ -1494,7 +1493,6 @@ class Game extends h2d.Object {
 
   override function onRemove() {
     cleanupLevel();
-    cleanupDisposedEntities();
   }
 
   public function newLevel(s2d: h2d.Scene) {
@@ -1514,15 +1512,17 @@ class Game extends h2d.Object {
         return player;
       }
 
-      enemySpawnerRefs = Lambda.map(
+      Lambda.foreach(
           enemySpawnPoints, 
           (point) -> {
-            return new EnemySpawner(
+            new EnemySpawner(
                 point.x,
                 point.y,
                 5,
                 s2d,
                 spawnerFindTargetFn);
+
+            return true;
           });  
     }
 
@@ -1768,18 +1768,6 @@ class Game extends h2d.Object {
     mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
   }
 
-  function cleanupDisposedEntities() {
-    for (a in Entity.ALL_BY_ID) {
-      if (a.isDone()) {
-        Entity.ALL_BY_ID.remove(a.id);
-        Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
-        Grid.removeItem(Main.Global.obstacleGrid, a.id);
-        Grid.removeItem(Main.Global.lootColGrid, a.id);
-        a.remove();
-      }
-    }
-  }
-
   public function update(s2d: h2d.Scene, dt: Float) {
     var isReady = mapRef != null;
 
@@ -1794,16 +1782,21 @@ class Game extends h2d.Object {
         Main.Global.playerStats, 
         dt);
 
-    for (ref in enemySpawnerRefs) {
-      ref.update(dt);
-    }
-
     Cooldown.update(SoundFx.globalCds, dt);
-
-    cleanupDisposedEntities();
 
     var groupIndex = 0;
     for (a in Entity.ALL_BY_ID) {
+
+      // cleanup entity
+      if (a.isDone()) {
+        Entity.ALL_BY_ID.remove(a.id);
+        Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
+        Grid.removeItem(Main.Global.obstacleGrid, a.id);
+        Grid.removeItem(Main.Global.lootColGrid, a.id);
+        a.remove();
+        continue;
+      }
+
       groupIndex += 1;
       // reset groupIndex
       if (groupIndex == 60) {
