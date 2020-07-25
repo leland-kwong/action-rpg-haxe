@@ -37,8 +37,11 @@ class Utils {
       return min + Std.random(max-min+1);
   }
 
-  public static function rollValues(values: Array<Dynamic>) {
-    return Math.round(Math.random() * values.length);
+  public static function rollValues<T>(values: Array<T>) {
+    final maxIndex = Math.max(0, values.length - 1);
+    final rolledIndex = Math.round(Math.random() * maxIndex);
+
+    return values[rolledIndex];
   }
 
   static var idsCreated = 0;
@@ -113,11 +116,22 @@ class Utils {
     return 0.0;
   }
 
+#if !replMode
   public static function loadJsonFile(res: hxd.res.Resource) {
     var path = Std.string(res);
 
     return haxe.Json.parse(
       hxd.Res.loader.load(path).toText()
     );
+  }
+#end
+
+  public static function withDefault<T>(
+      value: T, defaultValue: T) {
+    if (value == null) {
+      return defaultValue;
+    }
+
+    return value;
   }
 }

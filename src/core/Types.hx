@@ -3,8 +3,25 @@ package core;
 // seconds
 typedef Time = Float;
 
+typedef TiledObject = {
+  final id: Int;
+  final x: Int;
+  final y: Int;
+  final width: Int;
+  final height: Int;
+  final type: String;
+  final name: String;
+  final properties: Array<Dynamic>;
+}
+
+typedef TiledLayer = {
+  final name: String;
+  final ?objects: Array<TiledObject>;
+  final ?layers: Array<TiledLayer>;
+};
+
 typedef TiledMapData = { 
-  layers:Array<{ data:Array<Int>}>, 
+  > TiledLayer,
   tilewidth:Int, 
   tileheight:Int, 
   width:Int, 
@@ -14,15 +31,5 @@ typedef TiledMapData = {
 typedef MapDataRef = {
   var data: TiledMapData;
   var layersByName: Map<String, Dynamic>;
-}
-
-typedef TiledObject = {
-  final id: Int;
-  final x: Int;
-  final y: Int;
-  final width: Int;
-  final height: Int;
-  final type: String;
-  final name: String;
 }
 

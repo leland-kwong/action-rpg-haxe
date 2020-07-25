@@ -26,6 +26,14 @@ class Camera {
     ref.following = object;
   }
 
+  public static function toScreenPos(
+      ref: CameraRef, worldPosX: Float, worldPosY: Float) {
+    return [
+      worldPosX - ref.x + ref.w / 2,
+      worldPosY - ref.y + ref.h / 2,
+    ];
+  }
+
   public static function update(ref: CameraRef, dt: Float) {
     var f = ref.following;
 

@@ -15,6 +15,15 @@ enum MainPhase {
   Render;
 }
 
+enum HoverState {
+  None;
+  LootHovered;
+  // yet to be used
+  LootHoveredCanPickup;
+  Enemy;
+  Ui;
+}
+
 class Global {
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
@@ -24,7 +33,10 @@ class Global {
 
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
-    buttonDown: -1
+    buttonDown: -1,
+    buttonDownStartedAt: -1.0,
+    clicked: false,
+    hoverState: HoverState.None,
   }
   public static final obstacleGrid: GridRef = 
     Grid.create(16);
@@ -32,20 +44,49 @@ class Global {
     Grid.create(16);
   public static final traversableGrid: GridRef = 
     Grid.create(16);
+  public static final lootColGrid: GridRef = 
+    Grid.create(8);
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
   public static var dt = 0.0;
   public static var tickCount = 0;
-  public static var playerStats: PlayerStats.StatsRef = null; 
+  public static var playerStats: EntityStats.StatsRef = null; 
   public static var resolutionScale = 4;
+
+  // for convenience, not sure if this is performant enough
+  // for us to use for everything
   public static var updateHooks: 
-    Array<(dt: Float) -> Void> = [];
+    Array<(dt: Float) -> Bool> = [];
   public static var renderHooks: 
-    Array<(dt: Float) -> Void> = [];
+    Array<(dt: Float) -> Bool> = [];
+
   public static var mainPhase: MainPhase = null;
-  public static var logData: Dynamic;
+  public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
+  public static var uiState = {
+    hud: {
+      enabled: true
+    },
+    inventory: {
+      opened: false
+    }
+  }
+
+  public static var hoveredEntity = {
+    id: Entity.NULL_ENTITY.id,
+    hoverStart: -1.0
+  };
+  public static var tempState: Map<String, Float> = [
+    'kamehamehaTick' => 0.0
+  ];
+
+  public static var fonts: {
+    primary: h2d.Font,
+    title: h2d.Font
+  };
+
+  public static var escapeStack: Stack.StackRef = [];
 }
 
 enum UiState {
@@ -107,16 +148,16 @@ class HomeScreen extends h2d.Object {
 
     var leftMargin = 100;
 
-    var titleFont = Fonts.primary.get().clone();
-    titleFont.resizeTo(12 * 6);
+    final baseFontSize = 24;
+    var titleFont = Main.Global.fonts.title;
     var titleText = new h2d.Text(titleFont, this);
     titleText.text = 'Astral Cowboy';
     titleText.textColor = Game.Colors.pureWhite;
     titleText.x = leftMargin;
     titleText.y = 300;
 
-    var btnFont = Fonts.primary.get().clone();
-    btnFont.resizeTo(36);
+    var btnFont = Main.Global.fonts.primary.clone();
+    btnFont.resizeTo(1 * baseFontSize);
 
     var buttons: Array<Dynamic> = [
       ['Start Game', btnFont, () -> {
@@ -138,19 +179,21 @@ class HomeScreen extends h2d.Object {
       uiButtonsList.push(btn);
 
       if (prevBtn != null) {
-        btnGroup.y += prevBtn.button.height;
+        btnGroup.y += prevBtn.button.height + 10;
       }
 
       btn.x = btnGroup.x;
       btn.y = btnGroup.y;
     }
-  }
+    
+    Global.updateHooks.push((dt: Float) -> {
+      for (o in uiButtonsList) {
+        var btn = (o: UiButton);
+        btn.update(dt);
+      }
 
-  public function update(dt: Float) {
-    for (o in uiButtonsList) {
-      var btn = (o: UiButton);
-      btn.update(dt);
-    }
+      return parent != null;
+    });
   }
 }
 
@@ -164,7 +207,6 @@ class Main extends hxd.App {
   var acc = 0.0;
   var game: Game;
   var background: h2d.Bitmap;
-  var reactiveItems: Map<String, Dynamic> = new Map();
 
   function addBackground(s2d: h2d.Scene, color) {
     // background
@@ -194,46 +236,60 @@ class Main extends hxd.App {
   }
 
   public override function render(e: h3d.Engine) {
-    Main.Global.mainPhase = MainPhase.Render;
+    try {
 
-    // prepare all sprite batches 
-    if (game != null) {
-      game.render(Global.time);
-    }
-    for (hook in Global.renderHooks) {
-      hook(Global.time);
-    }
-    Hud.render(Global.time);
-    core.Anim.AnimEffect
-      .render(Global.time);
-    // run sprite batches before engine rendering
-    SpriteBatchSystem.renderAll(Global.time);
+      Main.Global.mainPhase = MainPhase.Render;
 
-    Global.mainBackground.render(e);
-    super.render(e);
-    Global.particleScene.render(e);
-    Global.uiRoot.render(e);
-    Global.debugScene.render(e);
-  }
-
-  function switchMainScene(sceneType: MainSceneType) {
-    for (key => ref in reactiveItems) {
-      ref.remove();
-      reactiveItems.remove(key);
-    }
-
-    switch(sceneType) {
-      case MainSceneType.PlayGame: {
-        var hs = showHomeScreen();
-        Global.uiRoot.addChild(hs);
-        reactiveItems['MainScene_PlayGame_HomeScreen'] = hs;
+      // prepare all sprite batches 
+      if (game != null) {
+        game.render(Global.time);
       }
+
+      {
+        final nextRenderHooks = [];
+        for (hook in Global.renderHooks) {
+          final keepAlive = hook(Global.time);
+
+          if (keepAlive) {
+            nextRenderHooks.push(hook);
+          }
+        }
+        Global.renderHooks = nextRenderHooks;
+      }
+
+      Hud.render(Global.time);
+      Hud.Inventory.render(Global.time);
+      core.Anim.AnimEffect
+        .render(Global.time);
+      // run sprite batches before engine rendering
+      SpriteBatchSystem.renderAll(Global.time);
+
+      Global.mainBackground.render(e);
+      super.render(e);
+      Global.particleScene.render(e);
+      Global.uiRoot.render(e);
+      Global.debugScene.render(e);
+
+    } catch (error: Dynamic) {
+
+      final stack = haxe.CallStack.exceptionStack();
+      trace(error);
+      trace(haxe.CallStack.toString(stack));
+      hxd.System.exit();
+
     }
   }
 
   override function init() {
     try {
+
+      hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
+
+      Main.Global.fonts = {
+        primary: Fonts.primary(),
+        title: Fonts.title()
+      };
 
       // setup scenes
       {
@@ -263,29 +319,55 @@ class Main extends hxd.App {
 
 #end
 
+      final win = hxd.Window.getInstance();
+      // make fullscreen
+      var nativePixelResolution = {
+        // TODO this should be based on
+        // the actual screen's resolution
+        x: 1920,
+        y: 1080
+      }
+
       {
-        function onEvent(event : hxd.Event) {
-          if (event.kind == hxd.Event.EventKind.EPush) {
-            Global.worldMouse.buttonDown = event.button;
+        final rootInteract = new h2d.Interactive(
+            nativePixelResolution.x,
+            nativePixelResolution.y,
+            Global.uiRoot);
+
+        rootInteract.propagateEvents = true;
+        rootInteract.enableRightButton = true;
+
+        var pointerDownAt = 0.0;
+
+        rootInteract.onClick = (_) -> {
+          // Click events trigger regardless of how long
+          // since the pointer was down. This fixes that.
+          final timeBetweenPointerDown = Global.time - pointerDownAt;
+          final clickTimeTolerance = 0.3; // seconds
+
+          if (timeBetweenPointerDown > clickTimeTolerance) {
+            return;
           }
-          if (event.kind == hxd.Event.EventKind.ERelease) {
-            Global.worldMouse.buttonDown = -1;
-          }
-        }
-        s2d.addEventListener(onEvent);
+
+          Global.worldMouse.clicked = true;
+
+          return;
+        };
+
+        rootInteract.onPush = (event : hxd.Event) -> {
+          pointerDownAt = Global.time;
+          Global.worldMouse.buttonDownStartedAt = Global.time;
+          Global.worldMouse.buttonDown = event.button;
+        };
+
+        rootInteract.onRelease = (event : hxd.Event) -> {
+          Global.worldMouse.buttonDown = -1;
+        };
       }
 
       // setup viewport
 #if !jsMode
       {
-        var win = hxd.Window.getInstance();
-        // make fullscreen
-        var nativePixelResolution = {
-          // TODO this should be based on
-          // the actual screen's resolution
-          x: 1920,
-          y: 1080
-        }
         win.resize(
             nativePixelResolution.x, 
             nativePixelResolution.y);
@@ -293,8 +375,6 @@ class Main extends hxd.App {
           .Fullscreen;
       }
 #end
-
-      hxd.Res.initEmbed();
 
       Global.mainCamera = Camera.create();
       
@@ -305,9 +385,19 @@ class Main extends hxd.App {
 
       // switchMainScene(MainSceneType.PlayGame);
       game = new Game(s2d, game);
+      Stack.push(Global.escapeStack, 'goto home screen', () -> {
+        var hs = showHomeScreen();
+        Global.uiRoot.addChild(hs);
+
+        Stack.push(Global.escapeStack, 'back to game', () -> {
+          hs.remove();
+        });
+      });
+      Hud.InventoryDragAndDropPrototype
+        .addTestItems();
 
 #if debugMode
-      var font = Fonts.primary.get().clone();
+      var font = hxd.res.DefaultFont.get();
       setupDebugInfo(font);
 #end
 
@@ -324,17 +414,34 @@ class Main extends hxd.App {
   }
 
   function handleGlobalHotkeys() {
-    var Key = hxd.Key;
+    final Key = hxd.Key;
+
+#if debugMode
+    final isForceExit = Key.isDown(Key.CTRL) &&
+      Key.isPressed(Key.Q);
+
+    if (isForceExit) {
+      hxd.System.exit();
+    }
+#end
+
+    if (Key.isPressed(Key.I)) {
+      Hud.UiStateManager.send({
+        type: 'INVENTORY_TOGGLE'
+      });
+    }
 
     if (Key.isPressed(Key.ESCAPE)) {
-      switchMainScene(MainSceneType.PlayGame);
+      Stack.pop(Global.escapeStack);
     }
   }
 
   // on each frame
   override function update(dt:Float) {
     try {
-      Main.Global.mainPhase = MainPhase.Update;
+
+      Global.logData.escapeStack = Global.escapeStack;
+      Global.mainPhase = MainPhase.Update;
 
       // set to 1/60 for a fixed 60fps
       var frameTime = dt;
@@ -356,11 +463,12 @@ class Main extends hxd.App {
           numActiveEntitiesToRender: 
             Main.Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
-            .nextAnimations.length
+            .nextAnimations.length,
+          numUpdateHooks: Main.Global.updateHooks.length,
+          numRenderHooks: Main.Global.renderHooks.length,
         }, null, '  ');
         var text = [
           'stats: ${formattedStats}',
-          'mouse: ${Json.stringify(Global.worldMouse, null, '  ')}',
           'log: ${Json.stringify(Global.logData, null, '  ')}'
         ].join('\n');
         var debugUiMargin = 10;
@@ -374,9 +482,8 @@ class Main extends hxd.App {
 
       handleGlobalHotkeys();
 
-      for (it in reactiveItems) {
-        it.update(dt);
-      }
+      Hud.update(dt);
+      Hud.Inventory.update(dt);
 
       acc += dt;
 
@@ -392,28 +499,56 @@ class Main extends hxd.App {
           }
 
           game.update(s2d, frameTime);
-
-          if (game.isGameOver()) {
-            switchMainScene(MainSceneType.PlayGame);
-          }
         }
       }
 
       background.width = s2d.width;
       background.height = s2d.height;
 
+      final nextHooks = [];
       for (update in Main.Global.updateHooks) {
-        update(dt);
+        final shouldKeepAlive = update(dt);
+
+        if (shouldKeepAlive) {
+          nextHooks.push(update); 
+        }
       }
+      Main.Global.updateHooks = nextHooks;
 
       core.Anim.AnimEffect
         .update(dt);
       SpriteBatchSystem.updateAll(dt);
+      // sync up scenes with the camera
+      {
+        // IMPORTANT: update the camera position first
+        // before updating the scenes otherwise they
+        // will be lagging behind
+        Camera.update(Main.Global.mainCamera, dt);
+        Camera.setSize(
+            Main.Global.mainCamera,
+            Main.Global.rootScene.width,
+            Main.Global.rootScene.height);
+
+        // update scenes to move relative to camera
+        var cam_center_x = -Main.Global.mainCamera.x 
+          + Math.fround(Main.Global.rootScene.width / 2);
+        var cam_center_y = -Main.Global.mainCamera.y 
+          + Math.fround(Main.Global.rootScene.height / 2);
+        for (scene in [
+            Main.Global.rootScene,
+            Main.Global.particleScene,
+            Main.Global.debugScene
+        ]) {
+          scene.x = cam_center_x;
+          scene.y = cam_center_y;
+        }
+      }
 
       final tickFrequency = 144;
       Main.Global.tickCount = Std.int(
           Main.Global.time / (1 / tickFrequency));
 
+      Global.worldMouse.clicked = false;
     } catch (error: Dynamic) {
 
       final stack = haxe.CallStack.exceptionStack();

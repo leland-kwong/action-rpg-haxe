@@ -53,11 +53,12 @@ class Cooldown {
 }
 
 class Entity extends h2d.Object {
-  static var NULL_ENTITY: Entity = {
+  public static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
       x: 0, 
       y: 0, 
-      radius: 0
+      radius: 0,
+      id: 'NULL_ENTITY'
     }, true);
     defaultEntity.type = 'NULL_ENTITY';
     defaultEntity;
@@ -68,7 +69,7 @@ class Entity extends h2d.Object {
   public var neighbors: Array<EntityId> = [];
   public var id: EntityId;
   public var type = 'UNKNOWN_TYPE';
-  public var radius: Int;
+  public var radius = 0;
   public var avoidanceRadius: Int;
   public var dx = 0.0;
   public var dy = 0.0;
@@ -82,25 +83,29 @@ class Entity extends h2d.Object {
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
-  public var stats: PlayerStats.StatsRef;
-  public final neighborCheckInterval: Int = 2; // after X ticks
+  public var stats: EntityStats.StatsRef;
+  public var components: Map<String, Dynamic> = new Map();
+  public var neighborCheckInterval: Int = 2; // after X ticks
+  public final createdAt = Main.Global.time;
+  public var renderFn: (ref: Entity, time: Float) -> Void;
  
   public function new(
       props: EntityProps, 
       fromInitialization = false) {
+ 
+    id = props.id == null
+      ? 'entity_${idGenerated++}'
+      : props.id;
 
     if (fromInitialization) {
       return;
     }
-    
+
     super();
 
+    radius = props.radius;
     x = props.x;
     y = props.y;
-    id = props.id == null
-      ? 'entity_${idGenerated++}'
-      : props.id;
-    radius = props.radius;
     avoidanceRadius = props.avoidanceRadius != null
       ? props.avoidanceRadius : radius;
     if (props.weight != null) {
@@ -108,6 +113,23 @@ class Entity extends h2d.Object {
     }
 
     ALL_BY_ID.set(id, this);
+  }
+
+  public static function setComponent(
+      ref: Entity, type: String, value: Dynamic) {
+
+    if (value == null) {
+      ref.components.remove(type);
+      return;
+    }
+
+    ref.components.set(type, value);
+  }
+
+  public static function getComponent<T>(
+      ref: Entity, type: String): T {
+
+    return ref.components.get(type);
   }
 
   public function update(dt: Float) {
@@ -152,10 +174,18 @@ class Entity extends h2d.Object {
     }
   }
 
-  public function render(time: Float) {}
+  public function render(time: Float) {
+    if (renderFn != null) {
+      renderFn(this, time);
+    }
+  }
 
   public function isDone() {
     return health <= 0;
+  }
+
+  public static function destroy(id: EntityId) {
+    Entity.getById(id).health = 0;
   }
 
   public static function getById(
@@ -172,4 +202,7 @@ class Entity extends h2d.Object {
     return ref;
   }
 
+  public static function isNullId(id: EntityId) {
+    return id == NULL_ENTITY.id;
+  }
 }

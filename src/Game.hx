@@ -200,7 +200,7 @@ class Ai extends Entity {
   static var spriteSheet: h2d.Tile;
   static var spriteSheetData: Dynamic;
 
-  var font: h2d.Font = Fonts.primary.get().clone();
+  var font: h2d.Font = Main.Global.fonts.primary;
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
@@ -236,7 +236,7 @@ class Ai extends Entity {
     status = 'UNTARGETABLE';
     speed = 0.0;
     health = healthBySize[size];
-    stats = PlayerStats.create({
+    stats = EntityStats.create({
       maxHealth: health,
       currentHealth: health,
       maxEnergy: 0,
@@ -590,6 +590,16 @@ class Ai extends Entity {
           duration: duration,
           frames: frames });
       }
+
+      final shouldDropLoot = type == 'ENEMY';
+      if (shouldDropLoot) {
+        final lootInstance = Loot.createInstance([
+            Loot.lootDefinitions[0].type, 
+            Loot.lootDefinitions[1].type, 
+            Loot.lootDefinitions[2].type, 
+        ]);
+        Game.createLootEntity(x, y, lootInstance);
+      }
     }
 
     super.update(dt);
@@ -638,6 +648,7 @@ class Player extends Entity {
       y: y,
       radius: 6,
       weight: 1.0,
+      id: 'PLAYER'
     });
     cds = new Cooldown();
     type = 'PLAYER';
@@ -648,12 +659,13 @@ class Player extends Entity {
     obstacleGrid = Main.Global.obstacleGrid;
 
     rootScene = s2d;
-    Main.Global.playerStats = PlayerStats.create({
+    stats = Main.Global.playerStats = EntityStats.create({
       maxHealth: 100,
       maxEnergy: 100,
       currentHealth: 100.0,
       currentEnergy: 100.0,
-      energyRegeneration: 10, // per second
+      energyRegeneration: 10,
+      pickupRadius: 40 // per second
     });
 
     var runFrames = [
@@ -771,26 +783,7 @@ class Player extends Entity {
       }
     }
 
-    final abilityIdByMouseBtn = [
-      -1 => -1,
-      0 => 0,
-      1 => 1,
-      2 => -1,
-      3 => 2,
-      4 => 3
-    ];
-    var abilityId = abilityIdByMouseBtn[
-      Main.Global.worldMouse.buttonDown];
-
-    if (!Cooldown.has(cds, 'recoveringFromAbility')) {
-      final mx = Main.Global.rootScene.mouseX;
-      final my = Main.Global.rootScene.mouseY;
-      useAbility(mx, my, abilityId);
-      final actionDx = Math.cos(Math.atan2(my - y, mx - x));
-      if (actionDx != 0) {
-        facingX = actionDx > 0 ? 1 : -1;
-      }
-    }
+    useAbility();
 
     if (!Cooldown.has(cds, 'recoveringFromAbility')) {
       movePlayer();
@@ -798,7 +791,7 @@ class Player extends Entity {
 
     {
       if (damageTaken > 0) {
-        PlayerStats.addEvent(
+        EntityStats.addEvent(
             Main.Global.playerStats, 
             { type: 'DAMAGE_RECEIVED', 
               value: damageTaken });
@@ -807,57 +800,110 @@ class Player extends Entity {
     }
   }
 
-  public function useAbility(
-      x2: Float, y2: Float, ability: Int) {
+  public function useAbility() {
+    final hoverState = Main.Global.worldMouse.hoverState;
+    final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
+        || hoverState == Main.HoverState.LootHoveredCanPickup
+        || hoverState == Main.HoverState.Ui;
+
+    if (preventAbilityUse) {
+      return;
+    }
+    
+    final abilitySlotIndexByMouseBtn = [
+      -1 => -1,
+      0 => 0,
+      1 => 1,
+      2 => -1,
+      3 => 2,
+      4 => 3
+    ];
+    final abilitySlotIndex = abilitySlotIndexByMouseBtn[
+      Main.Global.worldMouse.buttonDown];
+    final x2 = Main.Global.rootScene.mouseX;
+    final y2 = Main.Global.rootScene.mouseY;
+    final actionDx = Math.cos(Math.atan2(y2 - y, x2 - x));
+
+    if (actionDx != 0) {
+      facingX = actionDx > 0 ? 1 : -1;
+    }
+
     var yCenterOffset = -8;
     var startY = y + yCenterOffset;
     var launchOffset = 12;
+    final equippedAbilities = Hud.InventoryDragAndDropPrototype
+      .getEquippedAbilities();
 
-    switch ability {
-      case 0: {
-        var energyCost = 2;
-        var hasEnoughEnergy = energyCost 
-          <= Main.Global.playerStats.currentEnergy;
-        var isUnavailable = Cooldown.has(cds, 'primaryAbility') 
-          || !hasEnoughEnergy;
+    final lootId = equippedAbilities[abilitySlotIndex];
 
-        if (isUnavailable) {
-          return;
-        }
+    if (lootId == null) {
+      return;
+    }
 
-        var abilityCooldown = 1/10;
-        Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
+    final lootInst = Hud.InventoryDragAndDropPrototype
+      .getItemById(lootId);
+    final lootDef = Loot.getDef(lootInst.type);
+    var energyCost = lootDef.energyCost;
+    var hasEnoughEnergy = energyCost 
+      <= Main.Global.playerStats.currentEnergy;
+    final cooldownKey = 'ability__${lootDef.type}';
+    var isUnavailable = Cooldown.has(cds, cooldownKey) 
+      || !hasEnoughEnergy;
+
+    if (isUnavailable) {
+      return;
+    }
+
+    // TODO: add `actionSpeed` prop which is different from ability cooldown
+    Cooldown.set(cds, 'recoveringFromAbility', lootDef.cooldown);
+    Cooldown.set(cds, cooldownKey, lootDef.cooldown);
+
+    switch lootDef.type {
+      case 'basicBlaster': {
         attackAnim.startTime = Main.Global.time;
 
         var angle = Math.atan2(y2 - startY, x2 - x);
         var x1 = x + Math.cos(angle) * launchOffset;
         var y1 = startY + Math.sin(angle) * launchOffset;
         var b = new Bullet(
-          x1,
-          y1,
-					x2,
-					y2,
-          250.0,
-          'ui/bullet_player_basic',
-          (ent) -> (
-            ent.type == 'ENEMY' || 
-            ent.type == 'OBSTACLE')
-        );
+            x1,
+            y1,
+            x2,
+            y2,
+            250.0,
+            'ui/bullet_player_basic',
+            (ent) -> (
+              ent.type == 'ENEMY' || 
+              ent.type == 'OBSTACLE')
+            );
         Main.Global.rootScene.addChild(b);
-        Cooldown.set(cds, 'primaryAbility', abilityCooldown);
 
-        PlayerStats.addEvent(
+        EntityStats.addEvent(
             Main.Global.playerStats, 
             { type: 'ENERGY_SPEND',
               value: energyCost });
       }
 
-      case 1: {
-        if (Cooldown.has(cds, 'ability_2')) {
-          return;
+      case 'channelBeam': {
+        final tempState = Main.Global.tempState;
+        final tickKey = 'kamehamehaChanneling';
+        // handle beam channel ticks
+        {
+          final baseTickAmount = 0.3;
+          final tickRate = .01;
+          if (Cooldown.has(cds, tickKey)) {
+            final curTick = Utils.withDefault(
+                tempState.get(tickKey), 0);
+            tempState.set(tickKey, Math.min(1, curTick + tickRate));
+          } else {
+            tempState.set(tickKey, baseTickAmount);
+          }
+          Cooldown.set(cds, tickKey, 0.05);
         }
 
-        final abilityCooldown = 0.0001;
+        final additionalLength = 40 * Math.max(1, tempState.get(tickKey) * 2);
+        final maxLength = 60 + additionalLength; 
+        Main.Global.logData.laserMaxLength = maxLength;
         final laserCenterSpriteData = Reflect.field(
             Main.Global.sb.batchManager.spriteSheetData,
             'ui/kamehameha_center_width_1'
@@ -866,10 +912,7 @@ class Player extends Entity {
           laserCenterSpriteData.frame.h;
         final laserTailSpriteData = Reflect.field(
           Main.Global.sb.batchManager.spriteSheetData,
-          'ui/kamehameha_tail'
-        );
-        final maxLength = 175;
-        Cooldown.set(cds, 'recoveringFromAbility', abilityCooldown);
+          'ui/kamehameha_tail');
         final angle = Math.atan2(y2 - startY, x2 - x);
         final vx = Math.cos(angle);
         final vy = Math.sin(angle);
@@ -979,8 +1022,14 @@ class Player extends Entity {
 
                   var laserHitCdKey = 'kamehamehaHit';
                   if (!Cooldown.has(item.cds, laserHitCdKey)) {
-                    Cooldown.set(item.cds, laserHitCdKey, 0.2);
-                    item.damageTaken += 1;
+                    final cooldownReduction = -tempState.get(tickKey) * 0.1;
+                    Cooldown.set(
+                        item.cds, 
+                        laserHitCdKey, 
+                        0.2 + cooldownReduction);
+                    item.damageTaken += Utils.irnd(
+                        lootDef.minDamage, 
+                        lootDef.maxDamage);
                   }
 
                   adjustedEndPt = p;
@@ -1034,7 +1083,8 @@ class Player extends Entity {
         });
       }
 
-      case 2: {
+      // TODO: Bots damage is currently hard coded
+      case 'spiderBots': {
         final cdKey = 'ability_spider_bot';
 
         if (Cooldown.has(cds, cdKey)) {
@@ -1135,7 +1185,7 @@ class Player extends Entity {
       x, y,
       core.Anim.getFrame(activeAnim, time),
       null,
-      (p) ->  {
+      (p) -> {
         p.batchElement.scaleX = facingX;
       }
     );
@@ -1152,7 +1202,9 @@ class Player extends Entity {
               'ui/kamehameha_head'
               );
           final laserHeadWidth = laserHeadSpriteData.frame.w;
-          final yScaleRand = Utils.irnd(0, 1) * 0.125;
+          final tickPercent = Main.Global.tempState.get(
+                'kamehamehaChanneling');
+          final yScale = tickPercent + Utils.irnd(0, 1) * 0.125;
           
           // laser head
           final angle = Math.atan2(
@@ -1167,7 +1219,7 @@ class Player extends Entity {
                 'ui/kamehameha_head',
                 angle,
                 (p) -> {
-                  p.batchElement.scaleY = 1 + yScaleRand;
+                  p.batchElement.scaleY = yScale;
                 });
           }
 
@@ -1180,7 +1232,7 @@ class Player extends Entity {
 
               b.scaleX = Math.round(
                   Utils.distance(lcx, lcy, endPt.x, endPt.y));
-              b.scaleY = 1 + yScaleRand; 
+              b.scaleY = yScale; 
             };
 
             // laser center
@@ -1208,8 +1260,7 @@ class Player extends Entity {
                 (p) -> {
                   p.batchElement.scaleX = 1 + 
                     Utils.irnd(0, 1) * 0.25;
-                  p.batchElement.scaleY = 1 + 
-                    yScaleRand; 
+                  p.batchElement.scaleY = yScale; 
                 });
           }
         }
@@ -1294,7 +1345,7 @@ class EnemySpawner extends Entity {
 
     var size = Utils.irnd(1, 2);
     var radius = 3 + size * 6;
-    var posRange = 100;
+    var posRange = 20;
     var e = new Ai({
       x: x + Utils.irnd(-posRange, posRange),
       y: y + Utils.irnd(-posRange, posRange),
@@ -1442,6 +1493,78 @@ class Game extends h2d.Object {
     return isClearPath;
   }
 
+  public static function createLootEntity(x, y, lootInstance) {
+    final startX = x;
+    final startY = y;
+    final lootRef = new Entity({
+      x: startX, 
+      y: startY,
+      radius: 11,
+    }); 
+    final endYOffset = Utils.irnd(-5, 5, true);
+    final endXOffset = Utils.irnd(-10, 10, true);
+    final lootDropAnimation = (dt: Float) -> {
+      final duration = 0.3;
+      final progress = Math.min(
+          1, 
+          (Main.Global.time - 
+           lootRef.createdAt) / duration);   
+      final z = Math.sin(progress * Math.PI) * 10;
+      lootRef.x = startX + endXOffset * progress;
+      lootRef.y = startY + endYOffset * progress - z;
+
+      return progress < 1;
+    };
+    Main.Global.updateHooks.push(lootDropAnimation);
+
+    lootRef.type = 'LOOT';
+    // instance-specific data such as the rolled rng values
+    // as well as the loot type so we can look it up in the
+    // loot definition table
+    Entity.setComponent(lootRef, 'lootInstance', 
+        lootInstance);
+    lootRef.renderFn = (ref, time: Float) -> {
+      // drop shadow
+      Main.Global.sb.emitSprite(
+          ref.x - ref.radius,
+          ref.y + ref.radius - 2,
+          'ui/square_white',
+          null,
+          (p) -> {
+            p.sortOrder = ref.y - 1;
+            p.batchElement.scaleX = ref.radius * 2;
+            p.batchElement.r = 0;
+            p.batchElement.g = 0;
+            p.batchElement.b = 0.2;
+            p.batchElement.a = 0.2;
+            p.batchElement.scaleY = ref.radius * 0.5;
+          });
+
+      final lootRenderFn = (p: SpriteRef) -> {
+        p.sortOrder = ref.y - 1;
+
+        if (Main.Global.hoveredEntity.id == 
+            ref.id) {
+          final hoverStart = Main.Global
+            .hoveredEntity.hoverStart;
+          p.batchElement.y = ref.y - 
+            Math.abs(
+                Math.sin(time * 2 - hoverStart)) * 2;
+          p.batchElement.b = 0;
+          p.batchElement.r = 0;
+          p.batchElement.g = 1;
+        }
+      };
+      Main.Global.sb.emitSprite(
+          ref.x,
+          ref.y,
+          Loot.getDef(
+            Entity.getComponent(ref, 'lootInstance').type).spriteKey,
+          null,
+          lootRenderFn);
+    };
+  }
+
   public function new(
     s2d: h2d.Scene,
     oldGame: Game
@@ -1576,6 +1699,7 @@ class Game extends h2d.Object {
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(Main.Global.obstacleGrid, a.id);
+        Grid.removeItem(Main.Global.lootColGrid, a.id);
         a.remove();
       }
     }
@@ -1591,7 +1715,7 @@ class Game extends h2d.Object {
     // reset list before next loop
     Main.Global.entitiesToRender = [];
 
-    PlayerStats.update(
+    EntityStats.update(
         Main.Global.playerStats, 
         dt);
 
@@ -1676,24 +1800,38 @@ class Game extends h2d.Object {
         }
       }
 
-      final isDynamic = a.type != 'OBSTACLE' 
-        && a.type != 'PROJECTILE';
-      if (isDynamic) {
-        Grid.setItemRect(
-            Main.Global.dynamicWorldGrid,
-            a.x,
-            a.y,
-            a.radius * 2,
-            a.radius * 2,
-            a.id);
-      } else if (a.type == 'OBSTACLE') {
-        Grid.setItemRect(
-            Main.Global.obstacleGrid,
-            a.x,
-            a.y,
-            a.radius * 2,
-            a.radius * 2,
-            a.id);
+      switch (a) {
+        case 
+          { type: 'PLAYER' } 
+        | { type: 'ENEMY' } 
+        | { type: 'FRIENDLY_AI' }: {
+          Grid.setItemRect(
+              Main.Global.dynamicWorldGrid,
+              a.x,
+              a.y,
+              a.radius * 2,
+              a.radius * 2,
+              a.id);
+        }
+        case { type: 'OBSTACLE' }: {
+          Grid.setItemRect(
+              Main.Global.obstacleGrid,
+              a.x,
+              a.y,
+              a.radius * 2,
+              a.radius * 2,
+              a.id);
+        }
+        case { type: 'LOOT' }: {
+          Grid.setItemRect(
+              Main.Global.lootColGrid,
+              a.x,
+              a.y,
+              a.radius * 2,
+              a.radius * 2,
+              a.id);
+        }
+        default: {}
       }
 
       a.update(dt);
@@ -1717,34 +1855,14 @@ class Game extends h2d.Object {
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
 
-    // sync up scenes with the camera
-    {
-      Camera.setSize(
-          Main.Global.mainCamera,
-          Main.Global.rootScene.width,
-          Main.Global.rootScene.height);
-
-      // update scenes to move relative to camera
-      var cam_center_x = -Main.Global.mainCamera.x 
-        + Math.fround(Main.Global.rootScene.width / 2);
-      var cam_center_y = -Main.Global.mainCamera.y 
-        + Math.fround(Main.Global.rootScene.height / 2);
-      for (scene in [
-          Main.Global.rootScene,
-          Main.Global.particleScene,
-          Main.Global.debugScene
-      ]) {
-        scene.x = cam_center_x;
-        scene.y = cam_center_y;
-      }
-
-      Camera.update(Main.Global.mainCamera, dt);
-    }
+    Hud.UiGrid.update(dt);
   }
 
   public function render(time: Float) {
     for (entityRef in Main.Global.entitiesToRender) {
       entityRef.render(time);
     }
+
+    Hud.UiGrid.render(time);
   }
 }

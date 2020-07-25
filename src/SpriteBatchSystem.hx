@@ -97,22 +97,24 @@ class SpriteBatchSystem {
     instances.push(batchManager);
   }
 
-  function makeTile(spriteKey: String) {
+  public static function makeTile(
+      sbs: SpriteBatchSystem, spriteKey: String) {
     final fromCache = tileCache.get(spriteKey);
 
     if (fromCache != null) {
       return fromCache;
     }
 
-    var spriteData = Reflect.field(
-        batchManager.spriteSheetData,
-        spriteKey);
+    final spriteData = getSpriteData(sbs, spriteKey);
 
+    // TODO: Consider using a placeholder sprite (pink box?) instead
+    // of crashing so the game can gracefully continue even though
+    // the graphic will not render properly.
     if (spriteData == null) {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    var tile = batchManager.spriteSheet.sub(
+    final tile = sbs.batchManager.spriteSheet.sub(
         spriteData.frame.x,
         spriteData.frame.y,
         spriteData.frame.w,
@@ -137,7 +139,8 @@ class SpriteBatchSystem {
     ?effectCallback: EffectCallback,
     ?z: Float = 0) {
 
-    final g = new BatchElement(makeTile(spriteKey));
+    final g = new BatchElement(
+        makeTile(this, spriteKey));
     if (angle != null) {
       g.rotation = angle;
     }
@@ -155,6 +158,15 @@ class SpriteBatchSystem {
     BatchManager.emit(batchManager, spriteRef);
 
     return spriteRef;
+  }
+
+  public static function getSpriteData(
+      s: SpriteBatchSystem,
+      spriteKey): SpriteData {
+
+    return Reflect.field(
+        s.batchManager.spriteSheetData, 
+        spriteKey);
   }
 
   public static function updateAll(dt: Float) {
