@@ -1,10 +1,4 @@
 typedef GameAction = {
-  /* 
-   * Action type examples
-   * 
-   * `killed_{enemyType}`
-   * `retrieved_{lootType}`
-   */
   type: String,
   // zone at which the action occured
   location: String,
