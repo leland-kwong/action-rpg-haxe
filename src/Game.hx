@@ -1376,6 +1376,7 @@ class EnemySpawner extends Entity {
       radius: 0
     });
     enemiesLeftToSpawn = numEnemies;
+    type = 'ENEMY';
     cds = new Cooldown();
     this.parent = parent;
     this.x = x;
