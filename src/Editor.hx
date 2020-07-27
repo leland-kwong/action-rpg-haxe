@@ -1,6 +1,7 @@
 /*
- * [ ] paint objects by placing them anywhere
- * [ ] option to snap to grid
+ * [x] paint objects by placing them anywhere
+ * [ ] layer system
+ * [ ] option to toggle snap to grid
  */
 
 enum EditorMode {
@@ -25,6 +26,7 @@ class Editor {
   static var previousButtonDown = -1;
   static var editorMode = EditorMode.Paint;
   static var isPanning = false;
+  static var showObjectCenters = false;
   static var dragStartPos = {
     x: 0,
     y: 0
@@ -33,7 +35,7 @@ class Editor {
     x: 0,
     y: 0
   };
-  static var zoom = 2;
+  static var zoom = 2.0;
   static var selectedObjectType = 'white_square';
   static var objectTypeMenu: Array<{
     x: Int,
@@ -81,12 +83,13 @@ class Editor {
         Grid.removeItem(
             editorState.grid,
             key);
+        editorState.itemTypeById.remove(key);
       }
     };
 
     final handleZoom = (e: hxd.Event) -> {
       if (e.kind == hxd.Event.EventKind.EWheel) {
-        zoom -= Std.int(e.wheelDelta);
+        zoom = Math.max(1, zoom - Std.int(e.wheelDelta));
       }
     }
     Main.Global.uiRoot.addEventListener(handleZoom);
@@ -126,6 +129,7 @@ class Editor {
       Main.Global.logData.editor = {
         panning: isPanning,
         editorMode: Std.string(editorMode),
+        editorState: editorState
       };
 
       final Key = hxd.Key;
@@ -133,6 +137,8 @@ class Editor {
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
 
+      isPanning = false; 
+      showObjectCenters = false;
       updateObjectTypeList();
 
       final menuItemHovered  = Lambda.fold(
@@ -159,18 +165,23 @@ class Editor {
         selectedObjectType = menuItemHovered.value;
       }
 
-      isPanning = false; 
+      // handle hotkeys 
+      {
+        if (Key.isDown(Key.SPACE)) {
+          isPanning = true; 
+        }
 
-      if (Key.isDown(Key.SPACE)) {
-        isPanning = true; 
-      }
+        if (Key.isDown(Key.C)) {
+          showObjectCenters = true;
+        }
 
-      if (Key.isPressed(Key.E)) {
-        editorMode = EditorMode.Erase;
-      }
+        if (Key.isPressed(Key.E)) {
+          editorMode = EditorMode.Erase;
+        }
 
-      if (Key.isPressed(Key.B)) {
-        editorMode = EditorMode.Paint;
+        if (Key.isPressed(Key.B)) {
+          editorMode = EditorMode.Paint;
+        }
       }
 
       if (previousButtonDown != buttonDown) {
@@ -234,6 +245,14 @@ class Editor {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = zoom;
       };
+      final centerCircleRadius = 10;
+      final centerCircleSpriteEffect = (p) -> {
+        final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+        p.sortOrder = 99999999.0;
+        // b.g = 0.8;
+        b.b = 0.2;
+        b.scale = centerCircleRadius * 2;
+      };
 
       // render items in grid
       for (itemId => bounds in grid.itemCache) {
@@ -243,14 +262,24 @@ class Editor {
         final cy = bounds[2] + height / 2;
         final itemType = editorState.itemTypeById.get(itemId);
         final objectMeta = objectMetaByType.get(itemType);
+        final screenCX = ((cx * cellSize)) * zoom + editorState.translate.x;
+        final screenCY = ((cy * cellSize)) * zoom + editorState.translate.y;
 
         Main.Global.uiSpriteBatch.emitSprite(
-            ((cx * cellSize)) * zoom + editorState.translate.x,
-            ((cy * cellSize)) * zoom + editorState.translate.y,
+            screenCX,
+            screenCY,
             // 'ui/square_tile_test',
             objectMeta.spriteKey,
             null,
             spriteEffectZoom);
+
+        if (showObjectCenters) {
+          Main.Global.uiSpriteBatch.emitSprite(
+              screenCX - centerCircleRadius,
+              screenCY - centerCircleRadius,
+              'ui/square_white',
+              centerCircleSpriteEffect);
+        }
       }
 
       // render object type menu options
@@ -275,22 +304,6 @@ class Editor {
               spriteEffect);
 
           y += menuItem.height * scale;
-        }
-      }
-
-      for (y => row in grid.data) {
-        for (x => col in row) {
-          Main.Global.uiSpriteBatch.emitSprite(
-              ((x * cellSize) + (cellSize / 2)) * zoom + editorState.translate.x,
-              ((y * cellSize) + (cellSize / 2)) * zoom + editorState.translate.y,
-              'ui/square_tile_test',
-              // 'enemy-2_animation/idle-0',
-              null,
-              (p) -> {
-                p.sortOrder = -9999999;
-                p.batchElement.alpha = 0.2;
-                spriteEffectZoom(p);
-              });
         }
       }
 
