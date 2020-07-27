@@ -10,6 +10,15 @@ enum EditorMode {
 }
 
 class Editor {
+  static final objectMetaByType = [
+    'white_square' => {
+      spriteKey: 'ui/square_tile_test',
+    },
+    'enemy_1' => {
+      spriteKey: 'enemy-2_animation/idle-0',
+    }
+  ];
+
   static var previousButtonDown = -1;
   static var editorMode = EditorMode.Paint;
   static var isPanning = false;
@@ -22,6 +31,7 @@ class Editor {
     y: 0
   };
   static var zoom = 2;
+  static var selectedObjectType = 'white_square';
 
   // state to be serialized and saved
   static var editorState = {
@@ -29,23 +39,27 @@ class Editor {
       x: 0,
       y: 0
     },
-    grid: Grid.create(16)
+    grid: Grid.create(16),
+    itemTypeById: new Map<String, String>()
   };
 
   public static function init() {
     final cellSize = editorState.grid.cellSize;
 
-    final insertSquare = (gridX, gridY) -> {
+    final insertSquare = (gridX, gridY, id, objectType) -> {
       Grid.setItemRect(
           editorState.grid,
           (gridX * cellSize) + (cellSize / 2),
           (gridY * cellSize) + (cellSize / 2),
           cellSize,
           cellSize,
-          Utils.uid());
+          id);
+
+      editorState.itemTypeById
+        .set(id, objectType);
     };
 
-    final removeSquare = (gridX, gridY) -> {
+    final removeSquare = (gridX, gridY, width, height) -> {
       final items = Grid.getItemsInRect(
           editorState.grid,
           (gridX * cellSize) + (cellSize / 2),
@@ -60,9 +74,6 @@ class Editor {
       }
     };
 
-    insertSquare(0, 0);
-    insertSquare(1, 1);
-
     final handleZoom = (e: hxd.Event) -> {
       if (e.kind == hxd.Event.EventKind.EWheel) {
         zoom -= Std.int(e.wheelDelta);
@@ -72,10 +83,8 @@ class Editor {
 
     function update(dt) {
       Main.Global.logData.editor = {
-        previousButtonDown: previousButtonDown,
+        panning: isPanning,
         editorMode: Std.string(editorMode),
-        dragStartPos: dragStartPos,
-        translate: translate,
       };
 
       final Key = hxd.Key;
@@ -113,7 +122,6 @@ class Editor {
         } else {
           final tx = editorState.translate.x;
           final ty = editorState.translate.y;
-          final key = 'white_square';
           final gridX = Math.floor((mx - tx) / cellSize / zoom);
           final gridY = Math.floor((my - ty) / cellSize / zoom);
 
@@ -121,13 +129,24 @@ class Editor {
             case EditorMode.Erase: {
               removeSquare(
                   gridX,
-                  gridY);
+                  gridY,
+                  cellSize,
+                  cellSize);
             }
-                                   // painting
+
+            // replaces the cell with new value
             case EditorMode.Paint: {
+              removeSquare(
+                  gridX,
+                  gridY,
+                  cellSize,
+                  cellSize);
+
               insertSquare(
                   gridX,
-                  gridY);
+                  gridY,
+                  Utils.uid(),
+                  selectedObjectType);
             }
 
             default: {}
@@ -148,15 +167,36 @@ class Editor {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = zoom;
       };
+      for (itemId => bounds in grid.itemCache) {
+        final width = bounds[1] - bounds[0];
+        final cx = bounds[0] + width / 2;
+        final height = bounds[3] - bounds[2];
+        final cy = bounds[2] + height / 2;
+        final itemType = editorState.itemTypeById.get(itemId);
+        final objectMeta = objectMetaByType.get(itemType);
+
+        Main.Global.uiSpriteBatch.emitSprite(
+            ((cx * cellSize)) * zoom + editorState.translate.x,
+            ((cy * cellSize)) * zoom + editorState.translate.y,
+            // 'ui/square_tile_test',
+            objectMeta.spriteKey,
+            null,
+            spriteEffect);
+      }
+
       for (y => row in grid.data) {
         for (x => col in row) {
           Main.Global.uiSpriteBatch.emitSprite(
               ((x * cellSize) + (cellSize / 2)) * zoom + editorState.translate.x,
               ((y * cellSize) + (cellSize / 2)) * zoom + editorState.translate.y,
-              // 'ui/square_tile_test',
-              'enemy-2_animation/idle-0',
+              'ui/square_tile_test',
+              // 'enemy-2_animation/idle-0',
               null,
-              spriteEffect);
+              (p) -> {
+                p.sortOrder = -9999999;
+                p.batchElement.alpha = 0.2;
+                spriteEffect(p);
+              });
         }
       }
 
