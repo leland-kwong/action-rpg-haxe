@@ -285,7 +285,6 @@ class Main extends hxd.App {
         Global.renderHooks = nextRenderHooks;
       }
 
-      Hud.render(Global.time);
       core.Anim.AnimEffect
         .render(Global.time);
       // run sprite batches before engine rendering
@@ -309,7 +308,6 @@ class Main extends hxd.App {
 
   override function init() {
     try {
-
       hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
 
@@ -508,8 +506,6 @@ class Main extends hxd.App {
       Global.time += dt;
 
       handleGlobalHotkeys();
-
-      Hud.update(dt);
 
       acc += dt;
 
