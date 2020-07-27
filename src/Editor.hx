@@ -32,6 +32,13 @@ class Editor {
   };
   static var zoom = 2;
   static var selectedObjectType = 'white_square';
+  static var objectTypeMenu: Array<{
+    x: Int,
+    y: Int,
+    width: Int,
+    height: Int,
+    type: String
+  }> = [];
 
   // state to be serialized and saved
   static var editorState = {
@@ -81,6 +88,28 @@ class Editor {
     }
     Main.Global.uiRoot.addEventListener(handleZoom);
 
+    function updateObjectTypeList() {
+      final win = hxd.Window.getInstance();
+      var oy = 50;
+      final itemSize = 50; 
+      final x = win.width - 200;
+      final scale = 2;
+
+      objectTypeMenu = [];
+
+      for (type => meta in objectMetaByType) {
+        objectTypeMenu.push({
+          x: x,
+          y: oy,
+          width: itemSize,
+          height: itemSize,
+          type: type,
+        });
+
+        oy += itemSize * scale;
+      }
+    }
+
     function update(dt) {
       Main.Global.logData.editor = {
         panning: isPanning,
@@ -91,6 +120,32 @@ class Editor {
       final buttonDown = Main.Global.worldMouse.buttonDown;
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
+
+      updateObjectTypeList();
+
+      final menuItemHovered  = Lambda.fold(
+          objectTypeMenu,
+          (menuItem, result: { value: String, itemDist: Float }) -> {
+            final d = Utils.distance(mx , my, menuItem.x, menuItem.y);
+
+            if (d < result.itemDist) {
+              return {
+                value: menuItem.type,
+                itemDist: d
+              };
+            }
+
+            return result;
+          }, {
+            value: null,
+            itemDist: 50
+          });
+      final isMenuItemHovered = menuItemHovered.value != null;
+      // handle object menu selection
+      if (isMenuItemHovered && 
+          Main.Global.worldMouse.clicked) {
+        selectedObjectType = menuItemHovered.value;
+      }
 
       isPanning = false; 
 
@@ -112,7 +167,7 @@ class Editor {
         dragStartPos.y = Std.int(my);
       }
 
-      if (buttonDown == 0) {
+      if (buttonDown == 0 && !isMenuItemHovered) {
         if (isPanning) {
           final dx = mx - dragStartPos.x;
           final dy = my - dragStartPos.y;
@@ -157,13 +212,14 @@ class Editor {
         translate.y = editorState.translate.y;
       }
 
-
       return true;
     }
 
     function render(time) {
+      final mx = Main.Global.uiRoot.mouseX;
+      final my = Main.Global.uiRoot.mouseY;
       final grid = editorState.grid;
-      final spriteEffect = (p) -> {
+      final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = zoom;
       };
@@ -181,7 +237,32 @@ class Editor {
             // 'ui/square_tile_test',
             objectMeta.spriteKey,
             null,
-            spriteEffect);
+            spriteEffectZoom);
+      }
+
+      // render object type options
+      {
+        final win = hxd.Window.getInstance();
+        var y = 50;
+        final x = win.width - 200;
+        final scale = 2;
+        final spriteEffect = (p) -> {
+          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+          b.scale = scale;
+        };
+        for (menuItem in objectTypeMenu) {
+          final spriteKey = objectMetaByType
+            .get(menuItem.type)
+            .spriteKey;
+          Main.Global.uiSpriteBatch.emitSprite(
+              menuItem.x,
+              menuItem.y,
+              spriteKey,
+              null,
+              spriteEffect);
+
+          y += menuItem.height * scale;
+        }
       }
 
       for (y => row in grid.data) {
@@ -195,9 +276,24 @@ class Editor {
               (p) -> {
                 p.sortOrder = -9999999;
                 p.batchElement.alpha = 0.2;
-                spriteEffect(p);
+                spriteEffectZoom(p);
               });
         }
+      }
+
+      // show selection at cursor
+      if (editorMode == EditorMode.Paint) {
+        final spriteKey = objectMetaByType
+          .get(selectedObjectType).spriteKey;
+        Main.Global.uiSpriteBatch.emitSprite(
+            mx,
+            my,
+            spriteKey,
+            null,
+            (p) -> {
+              p.sortOrder = 1000 * 1000;
+              spriteEffectZoom(p);
+            });
       }
 
       return true;
