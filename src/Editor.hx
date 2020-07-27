@@ -11,12 +11,15 @@ enum EditorMode {
 
 class Editor {
   static final objectMetaByType = [
-    'white_square' => {
-      spriteKey: 'ui/square_tile_test',
+    'pillar' => {
+      spriteKey: 'ui/pillar',
     },
     'enemy_1' => {
       spriteKey: 'enemy-2_animation/idle-0',
-    }
+    },
+    'white_square' => {
+      spriteKey: 'ui/square_tile_test',
+    },
   ];
 
   static var previousButtonDown = -1;
@@ -87,6 +90,15 @@ class Editor {
       }
     }
     Main.Global.uiRoot.addEventListener(handleZoom);
+
+    function toGridPos(screenX: Float, screenY: Float) {
+      final tx = editorState.translate.x;
+      final ty = editorState.translate.y;
+      final gridX = Math.floor((screenX - tx) / cellSize / zoom);
+      final gridY = Math.floor((screenY - ty) / cellSize / zoom);
+
+      return [gridX, gridY];
+    }
 
     function updateObjectTypeList() {
       final win = hxd.Window.getInstance();
@@ -175,10 +187,9 @@ class Editor {
           editorState.translate.x = Std.int(translate.x + dx);
           editorState.translate.y = Std.int(translate.y + dy);
         } else {
-          final tx = editorState.translate.x;
-          final ty = editorState.translate.y;
-          final gridX = Math.floor((mx - tx) / cellSize / zoom);
-          final gridY = Math.floor((my - ty) / cellSize / zoom);
+          final mouseGridPos = toGridPos(mx, my);
+          final gridX = mouseGridPos[0];
+          final gridY = mouseGridPos[1];
 
           switch (editorMode) {
             case EditorMode.Erase: {
@@ -223,6 +234,8 @@ class Editor {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = zoom;
       };
+
+      // render items in grid
       for (itemId => bounds in grid.itemCache) {
         final width = bounds[1] - bounds[0];
         final cx = bounds[0] + width / 2;
@@ -240,7 +253,7 @@ class Editor {
             spriteEffectZoom);
       }
 
-      // render object type options
+      // render object type menu options
       {
         final win = hxd.Window.getInstance();
         var y = 50;
@@ -281,6 +294,7 @@ class Editor {
         }
       }
 
+      final drawSortSelection = 1000 * 1000;
       // show selection at cursor
       if (editorMode == EditorMode.Paint) {
         final spriteKey = objectMetaByType
@@ -291,7 +305,33 @@ class Editor {
             spriteKey,
             null,
             (p) -> {
-              p.sortOrder = 1000 * 1000;
+              final b: h2d.SpriteBatch.BatchElement = 
+                p.batchElement;
+              b.alpha = 0.3;
+              p.sortOrder = drawSortSelection;
+              spriteEffectZoom(p);
+            });
+      }
+
+      // show hovered cell at cursor
+      {
+        final mouseGridPos = toGridPos(
+            mx, 
+            my);
+        final hc = cellSize / 2;
+        Main.Global.uiSpriteBatch.emitSprite(
+            (((mouseGridPos[0] * cellSize) + hc) * zoom) + 
+            editorState.translate.x,
+            (((mouseGridPos[1] * cellSize) + hc) * zoom) + 
+            editorState.translate.y,
+            'ui/square_tile_test',
+            null,
+            (p) -> {
+              final b: h2d.SpriteBatch.BatchElement = 
+                p.batchElement;
+              p.sortOrder = drawSortSelection - 1;
+              b.b = 0;
+              b.alpha = 0.3;
               spriteEffectZoom(p);
             });
       }
