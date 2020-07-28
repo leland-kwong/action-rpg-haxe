@@ -21,6 +21,52 @@
                 "y": 511
             }
         },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/action rpg.tsx": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/home-base.tsx": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-1.tmx": {
+            "scale": 0.700625,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 480.2854594112399,
+                "y": 640.85637823372
+            }
+        },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-2.tmx": {
+            "scale": 0.700625,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 480.9991079393398,
+                "y": 605.1739518287243
+            }
+        },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-3.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 4,
+            "viewCenter": {
+                "x": 540.6666666666666,
+                "y": 1222.6666666666665
+            }
+        },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-4.tmx": {
+            "scale": 0.700625,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 480.2854594112399,
+                "y": 640.85637823372
+            }
+        },
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-5.tmx": {
+            "scale": 0.700625,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 480.2854594112399,
+                "y": 640.85637823372
+            }
+        },
         "C:/Users/Lelan/projects/games/haxe-engine/autonomous-game/src/art/background.tsx": {
             "dynamicWrapping": true,
             "scaleInDock": 0.75,
@@ -31,12 +77,28 @@
             "scaleInDock": 0.125,
             "scaleInEditor": 0.75
         },
-        "level_intro.tmx": {
-            "scale": 1,
-            "selectedLayer": 1,
+        "level_1.tmx": {
+            "scale": 0.33,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 527,
-                "y": 421
+                "x": 451.5151515151515,
+                "y": -1009.090909090909
+            }
+        },
+        "level_intro.tmx": {
+            "scale": 0.5,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 658,
+                "y": 756
+            }
+        },
+        "level_test.tmx": {
+            "scale": 0.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 692,
+                "y": 468
             }
         },
         "ui.tmx": {
@@ -54,10 +116,10 @@
         },
         "ui_hud_layout.tmx": {
             "scale": 2,
-            "selectedLayer": 0,
+            "selectedLayer": 7,
             "viewCenter": {
-                "x": 236,
-                "y": 168.5
+                "x": 212,
+                "y": 137.5
             }
         },
         "ui_inventory_layout.tmx": {
@@ -95,16 +157,18 @@
     "project": "main.tiled-project",
     "property.type": "string",
     "recentFiles": [
-        "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/level_intro.tmx",
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-1.tmx",
         "level_intro.tmx",
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-2.tmx",
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-5.tmx",
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-4.tmx",
+        "C:/Users/Lelan/projects/games/arpg-love/assets/maps/room-3.tmx",
+        "level_test.tmx",
+        "level_1.tmx",
+        "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/level_intro.tmx",
         "background.tsx",
         "ui.tsx",
-        "ui_hud_layout.tmx",
-        "ui_inventory_layout.tmx",
-        "ui_layout.tmx",
-        "ui.tmx",
-        "//wsl$/Ubuntu/home/lkwong/projects/games/autonomous-game/src/res/background.tsx",
-        "C:/Users/Lelan/projects/games/haxe-engine/autonomous-game/src/art/background.tsx"
+        "ui_hud_layout.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.type": 1

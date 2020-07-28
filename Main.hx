@@ -30,6 +30,7 @@ class Global {
   public static var particleScene: h2d.Scene;
   public static var uiRoot: h2d.Scene;
   public static var debugScene: h2d.Scene;
+  public static var staticScene: h2d.Scene;
 
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
@@ -293,6 +294,7 @@ class Main extends hxd.App {
       Global.mainBackground.render(e);
       super.render(e);
       Global.particleScene.render(e);
+      Global.staticScene.render(e);
       Global.uiRoot.render(e);
       Global.debugScene.render(e);
 
@@ -334,12 +336,17 @@ class Main extends hxd.App {
             Global.resolutionScale);
         Global.debugScene = new h2d.Scene();
 
+        // used for experimental projects
+        Global.staticScene = new h2d.Scene();
+        sevents.addScene(Global.staticScene);
+
         background = addBackground(
             Global.mainBackground, 0x333333);
       }
 
 #if !production
 
+      Editor.init();
       Tests.run();      
 
 #end
@@ -408,18 +415,20 @@ class Main extends hxd.App {
       Global.uiSpriteBatch = new SpriteBatchSystem(
           Global.uiRoot);
 
-      // switchMainScene(MainSceneType.PlayGame);
-      game = new Game(s2d, game);
-      Stack.push(Global.escapeStack, 'goto home screen', () -> {
-        var hs = showHomeScreen();
-        Global.uiRoot.addChild(hs);
+      final runGame = false;
+      if (runGame) {
+        game = new Game(s2d, game);
+        Stack.push(Global.escapeStack, 'goto home screen', () -> {
+          var hs = showHomeScreen();
+          Global.uiRoot.addChild(hs);
 
-        Stack.push(Global.escapeStack, 'back to game', () -> {
-          hs.remove();
+          Stack.push(Global.escapeStack, 'back to game', () -> {
+            hs.remove();
+          });
         });
-      });
-      Hud.InventoryDragAndDropPrototype
-        .addTestItems();
+        Hud.InventoryDragAndDropPrototype
+          .addTestItems();
+      }
 
 #if debugMode
       var font = hxd.res.DefaultFont.get();
@@ -464,6 +473,12 @@ class Main extends hxd.App {
   // on each frame
   override function update(dt:Float) {
     try {
+      {
+        // reset scene data each update
+        Global.staticScene.x = 0;
+        Global.staticScene.y = 0;
+        Global.staticScene.scaleMode = ScaleMode.Zoom(1);
+      }
 
       Global.logData.escapeStack = Global.escapeStack;
       Global.mainPhase = MainPhase.Update;

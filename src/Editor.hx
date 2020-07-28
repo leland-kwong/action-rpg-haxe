@@ -47,14 +47,11 @@ class Editor {
 
   static var localState = {
     actions: new Array<Dynamic>(),
-    activeLayerId: 'layer_0',
-    // TODO: change to a map keyed by layerId
-    // we can do this because we have a separate
-    // list for layer ordering
-    tileRowsByLayer: new Array<{
-      id: String,
-      tileRows: Map<Int, h2d.TileGroup>
-    }>()
+    activeLayerId: 'layer_a',
+    tileRowsByLayerId: new Map<
+      String,
+      Map<Int, h2d.TileGroup>
+    >()
   };
 
   // state to be serialized and saved
@@ -64,14 +61,12 @@ class Editor {
       y: 0
     },
     layerOrderById: [
-      'layer_0'
+      'layer_a',
+      'layer_b'
     ],
-    // TODO: change to a map keyed by layerId
-    gridByLayer: [
-    {
-      id: 'layer_0',
-      grid: Grid.create(16)
-    }
+    gridByLayerId: [
+    'layer_a' =>  Grid.create(16),
+    'layer_b' =>  Grid.create(16),
     ],
     itemTypeById: new Map<String, String>()
   };
@@ -89,10 +84,8 @@ class Editor {
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
-    final activeGrid = Lambda.find(
-        editorState.gridByLayer,
-        (layer) -> layer.id == localState.activeLayerId)
-      .grid;
+    final activeGrid = editorState.gridByLayerId.get(
+        localState.activeLayerId);
     final cellSize = activeGrid.cellSize;
 
     final insertSquare = (gridX, gridY, id, objectType) -> {
@@ -186,28 +179,31 @@ class Editor {
     }
 
     function update(dt) {
+      Main.Global.logData.activeLayer = localState.activeLayerId;
+
       {
         final tileRowsRedrawn: Map<Int, Bool> = new Map();
         // [SIDE-EFFECT] creates a layer if it doesn't exist
-        final activeTileRowLayer = {
-          final activeLayer = Lambda.find(
-            localState.tileRowsByLayer,
-            (layer) -> layer.id == localState.activeLayerId);
+        final activeTileRows = {
+          final activeLayerId = localState.activeLayerId;
+          final tileRows = localState.tileRowsByLayerId
+            .get(activeLayerId);
 
-          if (activeLayer == null) {
-            final newLayer = {
-              id: localState.activeLayerId,
-              tileRows: new Map()
-            };
-            localState.tileRowsByLayer.push(newLayer);
-            newLayer;
+          if (tileRows == null) {
+            final newTileRows = new Map();
+            localState.tileRowsByLayerId.set(
+                activeLayerId,
+                newTileRows);
+            newTileRows;
           } else {
-            activeLayer;
+            tileRows;
           }
         }
-        final activeTileRows = activeTileRowLayer.tileRows;
 
-        // sort tilegroups by y position so they draw properly
+        //TODO: sort tileroups by layer as well
+
+        // sort tilegroups by layer order and 
+        // row position so they draw properly
         {
           final rowIndices = [];
           for (rowIndex in activeTileRows.keys()) {
@@ -350,6 +346,14 @@ class Editor {
 
         if (Key.isPressed(Key.B)) {
           editorMode = EditorMode.Paint;
+        }
+
+        if (Key.isPressed(Key.NUMBER_1)) {
+          localState.activeLayerId = 'layer_a';
+        }
+
+        if (Key.isPressed(Key.NUMBER_2)) {
+          localState.activeLayerId = 'layer_b';
         }
       }
 
