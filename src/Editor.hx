@@ -47,7 +47,14 @@ class Editor {
 
   static var localState = {
     actions: new Array<Dynamic>(),
-    tileRows: new Map<Int, h2d.TileGroup>()
+    activeLayerId: 'layer_0',
+    // TODO: change to a map keyed by layerId
+    // we can do this because we have a separate
+    // list for layer ordering
+    tileRowsByLayer: new Array<{
+      id: String,
+      tileRows: Map<Int, h2d.TileGroup>
+    }>()
   };
 
   // state to be serialized and saved
@@ -56,7 +63,16 @@ class Editor {
       x: 0,
       y: 0
     },
-    grid: Grid.create(16),
+    layerOrderById: [
+      'layer_0'
+    ],
+    // TODO: change to a map keyed by layerId
+    gridByLayer: [
+    {
+      id: 'layer_0',
+      grid: Grid.create(16)
+    }
+    ],
     itemTypeById: new Map<String, String>()
   };
 
@@ -73,14 +89,18 @@ class Editor {
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
-    final cellSize = editorState.grid.cellSize;
+    final activeGrid = Lambda.find(
+        editorState.gridByLayer,
+        (layer) -> layer.id == localState.activeLayerId)
+      .grid;
+    final cellSize = activeGrid.cellSize;
 
     final insertSquare = (gridX, gridY, id, objectType) -> {
       final cx = (gridX * cellSize) + (cellSize / 2);
       final cy = (gridY * cellSize) + (cellSize / 2);
 
       Grid.setItemRect(
-          editorState.grid,
+          activeGrid,
           cx, 
           cy,
           cellSize,
@@ -105,7 +125,7 @@ class Editor {
       final cx = (gridX * cellSize) + (cellSize / 2);
       final cy = (gridY * cellSize) + (cellSize / 2);
       final items = Grid.getItemsInRect(
-          editorState.grid,
+          activeGrid,
           cx,
           cy,
           cellSize,
@@ -113,7 +133,7 @@ class Editor {
 
       for (key in items) {
         Grid.removeItem(
-            editorState.grid,
+            activeGrid,
             key);
         editorState.itemTypeById.remove(key);
       }
@@ -168,11 +188,29 @@ class Editor {
     function update(dt) {
       {
         final tileRowsRedrawn: Map<Int, Bool> = new Map();
+        // [SIDE-EFFECT] creates a layer if it doesn't exist
+        final activeTileRowLayer = {
+          final activeLayer = Lambda.find(
+            localState.tileRowsByLayer,
+            (layer) -> layer.id == localState.activeLayerId);
+
+          if (activeLayer == null) {
+            final newLayer = {
+              id: localState.activeLayerId,
+              tileRows: new Map()
+            };
+            localState.tileRowsByLayer.push(newLayer);
+            newLayer;
+          } else {
+            activeLayer;
+          }
+        }
+        final activeTileRows = activeTileRowLayer.tileRows;
 
         // sort tilegroups by y position so they draw properly
         {
           final rowIndices = [];
-          for (rowIndex in localState.tileRows.keys()) {
+          for (rowIndex in activeTileRows.keys()) {
             rowIndices.push(rowIndex);
           }
           rowIndices.sort((a, b) -> {
@@ -188,7 +226,7 @@ class Editor {
           });
           for (rowIndex in rowIndices) {
             Main.Global.staticScene.addChild(
-                localState.tileRows.get(rowIndex));
+                activeTileRows.get(rowIndex));
           }
         }
 
@@ -198,16 +236,16 @@ class Editor {
                 'PAINT_CELL'
               | 'CLEAR_CELL': {
 
-                final cellSize = editorState.grid.cellSize;
+                final cellSize = activeGrid.cellSize;
                 final rowIndex = action.gridY;
                   final tg = {
-                    final tg = localState.tileRows.get(rowIndex);
+                    final tg = activeTileRows.get(rowIndex);
 
                     if (tg == null) {
                       final newTg = new h2d.TileGroup(
                           spriteSheetTile,
                           Main.Global.staticScene);
-                      localState.tileRows.set(rowIndex, newTg);
+                      activeTileRows.set(rowIndex, newTg);
                       newTg;
                     } else {
                       tg;
@@ -220,7 +258,7 @@ class Editor {
                   tg.clear();
                 
                   final gridRow = Utils.withDefault(
-                      editorState.grid.data.get(rowIndex),
+                      activeGrid.data.get(rowIndex),
                       new Map());
                   // repaint row
                   for (colIndex => cellData in gridRow) {
@@ -377,7 +415,7 @@ class Editor {
     function render(time) {
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
-      final grid = editorState.grid;
+      final grid = activeGrid;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = zoom;
