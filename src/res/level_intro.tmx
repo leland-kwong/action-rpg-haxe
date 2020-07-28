@@ -4,7 +4,7 @@
   <export target="level_intro.json" format="json"/>
  </editorsettings>
  <tileset firstgid="1" source="background.tsx"/>
- <layer id="1" name="background" width="100" height="100" visible="0" offsetx="0" offsety="112">
+ <layer id="1" name="background" width="100" height="100" offsetx="0" offsety="112">
   <data encoding="csv">
    <chunk x="0" y="64" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -108,26 +108,4 @@
   <object id="145" name="ui/pillar" type="mapObject" gid="2" x="811" y="616" width="42" height="88"/>
   <object id="146" name="ui/pillar" type="mapObject" gid="2" x="811" y="824" width="42" height="88"/>
  </objectgroup>
- <layer id="6" name="tileTest" width="100" height="100">
-  <data encoding="csv">
-   <chunk x="0" y="48" width="16" height="16">
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-</chunk>
-  </data>
- </layer>
 </map>
