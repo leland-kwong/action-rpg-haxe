@@ -45,6 +45,10 @@ class Editor {
     type: String
   }> = [];
 
+  static var localState = {
+    tileRows: new Map<Int, h2d.TileGroup>()
+  };
+
   // state to be serialized and saved
   static var editorState = {
     translate: {
@@ -55,7 +59,86 @@ class Editor {
     itemTypeById: new Map<String, String>()
   };
 
+  static function tileGroupTest(
+      spriteSheetTile, 
+      spriteSheetData,
+      rowIndex) {
+    final tg = {
+      final tg = localState.tileRows.get(rowIndex);
+
+      if (tg == null) {
+        final newTg = new h2d.TileGroup(
+              spriteSheetTile,
+              Main.Global.staticScene);
+        localState.tileRows.set(rowIndex, 
+           newTg);
+        newTg;
+      } else {
+        tg;
+      }
+    }
+    final pillarTile = {
+      final spriteData = Reflect.field(
+          spriteSheetData,
+          'ui/pillar');
+      spriteSheetTile.sub(
+          spriteData.frame.x,
+          spriteData.frame.y,
+          spriteData.frame.w,
+          spriteData.frame.h);
+    }
+    final squareTile = {
+      final spriteData = Reflect.field(
+          spriteSheetData,
+          'ui/square_tile_test');
+      spriteSheetTile.sub(
+          spriteData.frame.x,
+          spriteData.frame.y,
+          spriteData.frame.w,
+          spriteData.frame.h);
+    }
+
+    final refreshTileGroup = (dt) -> {
+      tg.clear();
+
+      for (x in 100...1000) {
+        tg.add(x * 40, rowIndex * 40, pillarTile);
+      }
+
+      return true;
+    };
+
+    if (rowIndex == 0) {
+      Main.Global.updateHooks.push(refreshTileGroup);
+    }
+    refreshTileGroup(0);
+  }
+
   public static function init() {
+    final sbs = new SpriteBatchSystem(
+        Main.Global.staticScene);
+
+    final testTileGroup = false;
+
+    if (testTileGroup) {
+      final spriteSheetTile = 
+        hxd.Res.sprite_sheet_png.toTile();
+      final spriteSheetData = Utils.loadJsonFile(
+          hxd.Res.sprite_sheet_json).frames;
+      var rowIndex = 0;
+      Main.Global.updateHooks.push((dt) -> {
+        for (_ in 0...6) {
+          tileGroupTest(
+              spriteSheetTile, 
+              spriteSheetData,
+              rowIndex);
+          rowIndex += 1;
+        }
+
+        return rowIndex < 800;
+      });
+    }
+
     final cellSize = editorState.grid.cellSize;
 
     final insertSquare = (gridX, gridY, id, objectType) -> {
@@ -92,7 +175,7 @@ class Editor {
         zoom = Math.max(1, zoom - Std.int(e.wheelDelta));
       }
     }
-    Main.Global.uiRoot.addEventListener(handleZoom);
+    Main.Global.staticScene.addEventListener(handleZoom);
 
     function toGridPos(screenX: Float, screenY: Float) {
       final tx = editorState.translate.x;
@@ -238,8 +321,8 @@ class Editor {
     }
 
     function render(time) {
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.staticScene.mouseX;
+      final my = Main.Global.staticScene.mouseY;
       final grid = editorState.grid;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
@@ -265,7 +348,7 @@ class Editor {
         final screenCX = ((cx * cellSize)) * zoom + editorState.translate.x;
         final screenCY = ((cy * cellSize)) * zoom + editorState.translate.y;
 
-        Main.Global.uiSpriteBatch.emitSprite(
+        sbs.emitSprite(
             screenCX,
             screenCY,
             // 'ui/square_tile_test',
@@ -274,7 +357,7 @@ class Editor {
             spriteEffectZoom);
 
         if (showObjectCenters) {
-          Main.Global.uiSpriteBatch.emitSprite(
+          sbs.emitSprite(
               screenCX - centerCircleRadius,
               screenCY - centerCircleRadius,
               'ui/square_white',
@@ -296,7 +379,7 @@ class Editor {
           final spriteKey = objectMetaByType
             .get(menuItem.type)
             .spriteKey;
-          Main.Global.uiSpriteBatch.emitSprite(
+          sbs.emitSprite(
               menuItem.x,
               menuItem.y,
               spriteKey,
@@ -312,7 +395,7 @@ class Editor {
       if (editorMode == EditorMode.Paint) {
         final spriteKey = objectMetaByType
           .get(selectedObjectType).spriteKey;
-        Main.Global.uiSpriteBatch.emitSprite(
+        sbs.emitSprite(
             mx,
             my,
             spriteKey,
@@ -332,7 +415,7 @@ class Editor {
             mx, 
             my);
         final hc = cellSize / 2;
-        Main.Global.uiSpriteBatch.emitSprite(
+        sbs.emitSprite(
             (((mouseGridPos[0] * cellSize) + hc) * zoom) + 
             editorState.translate.x,
             (((mouseGridPos[1] * cellSize) + hc) * zoom) + 
