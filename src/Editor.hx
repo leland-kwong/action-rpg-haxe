@@ -217,8 +217,8 @@ class Editor {
 
       final Key = hxd.Key;
       final buttonDown = Main.Global.worldMouse.buttonDown;
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.staticScene.mouseX;
+      final my = Main.Global.staticScene.mouseY;
 
       isPanning = false; 
       showObjectCenters = false;
