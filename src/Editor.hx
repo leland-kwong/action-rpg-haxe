@@ -1,6 +1,16 @@
 /*
+ * NOTE: To keep things simple, we will only store one id
+ * per object in the grid since we can derive all the
+ * object information directly from that id. This way we're
+ * not having to deal with varying issues around objects
+ * changing their size because their position remains static
+ *
  * [x] paint objects by placing them anywhere
- * [ ] layer system
+ * [x] basic layer system
+ * [ ] serialize state to disk
+ * [ ] undo/redo system
+ * [ ] Automatically select layer based on object type.
+       The layer id would be defined on the object type itself.
  * [ ] option to toggle snap to grid
  */
 
@@ -65,8 +75,8 @@ class Editor {
       'layer_b'
     ],
     gridByLayerId: [
-    'layer_a' =>  Grid.create(16),
-    'layer_b' =>  Grid.create(16),
+    'layer_a' => Grid.create(16),
+    'layer_b' => Grid.create(16),
     ],
     itemTypeById: new Map<String, String>()
   };
@@ -84,16 +94,14 @@ class Editor {
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
-    final activeGrid = editorState.gridByLayerId.get(
-        localState.activeLayerId);
-    final cellSize = activeGrid.cellSize;
 
-    final insertSquare = (gridX, gridY, id, objectType) -> {
+    final insertSquare = (gridRef, gridX, gridY, id, objectType) -> {
+      final cellSize = gridRef.cellSize;
       final cx = (gridX * cellSize) + (cellSize / 2);
       final cy = (gridY * cellSize) + (cellSize / 2);
 
       Grid.setItemRect(
-          activeGrid,
+          gridRef,
           cx, 
           cy,
           cellSize,
@@ -114,11 +122,12 @@ class Editor {
       });
     };
 
-    final removeSquare = (gridX, gridY, width, height) -> {
+    final removeSquare = (gridRef, gridX, gridY, width, height) -> {
+      final cellSize = gridRef.cellSize;
       final cx = (gridX * cellSize) + (cellSize / 2);
       final cy = (gridY * cellSize) + (cellSize / 2);
       final items = Grid.getItemsInRect(
-          activeGrid,
+          gridRef,
           cx,
           cy,
           cellSize,
@@ -126,7 +135,7 @@ class Editor {
 
       for (key in items) {
         Grid.removeItem(
-            activeGrid,
+            gridRef,
             key);
         editorState.itemTypeById.remove(key);
       }
@@ -147,7 +156,8 @@ class Editor {
     }
     Main.Global.staticScene.addEventListener(handleZoom);
 
-    function toGridPos(screenX: Float, screenY: Float) {
+    function toGridPos(gridRef, screenX: Float, screenY: Float) {
+      final cellSize = gridRef.cellSize;
       final tx = editorState.translate.x;
       final ty = editorState.translate.y;
       final gridX = Math.floor((screenX - tx) / cellSize / zoom);
@@ -179,6 +189,9 @@ class Editor {
     }
 
     function update(dt) {
+      final activeGrid = editorState.gridByLayerId.get(
+          localState.activeLayerId);
+      final cellSize = activeGrid.cellSize;
       Main.Global.logData.activeLayer = localState.activeLayerId;
 
       {
@@ -197,32 +210,6 @@ class Editor {
             newTileRows;
           } else {
             tileRows;
-          }
-        }
-
-        //TODO: sort tileroups by layer as well
-
-        // sort tilegroups by layer order and 
-        // row position so they draw properly
-        {
-          final rowIndices = [];
-          for (rowIndex in activeTileRows.keys()) {
-            rowIndices.push(rowIndex);
-          }
-          rowIndices.sort((a, b) -> {
-            if (a < b) {
-              return -1;
-            }
-
-            if (a > b) {
-              return 1;
-            }
-
-            return 0;
-          });
-          for (rowIndex in rowIndices) {
-            Main.Global.staticScene.addChild(
-                activeTileRows.get(rowIndex));
           }
         }
 
@@ -284,6 +271,34 @@ class Editor {
               }
 
             default: {}
+          }
+        }
+
+        // sort tilegroups by layer order and 
+        // row position so they draw properly
+        for (layerId in editorState.layerOrderById) {
+          final tRows = Utils.withDefault(
+              localState.tileRowsByLayerId.get(layerId),
+              new Map());
+          final rowIndices = [];
+          for (rowIndex in tRows.keys()) {
+            rowIndices.push(rowIndex);
+          }
+          rowIndices.sort((a, b) -> {
+            if (a < b) {
+              return -1;
+            }
+
+            if (a > b) {
+              return 1;
+            }
+
+            return 0;
+          });
+          for (rowIndex in rowIndices) {
+            final tileGroup = tRows.get(rowIndex);
+            Main.Global.staticScene.addChild(
+                tileGroup);
           }
         }
 
@@ -372,13 +387,14 @@ class Editor {
           editorState.translate.x = Std.int(translate.x + dx);
           editorState.translate.y = Std.int(translate.y + dy);
         } else {
-          final mouseGridPos = toGridPos(mx, my);
+          final mouseGridPos = toGridPos(activeGrid, mx, my);
           final gridX = mouseGridPos[0];
           final gridY = mouseGridPos[1];
 
           switch (editorMode) {
             case EditorMode.Erase: {
               removeSquare(
+                  activeGrid,
                   gridX,
                   gridY,
                   cellSize,
@@ -388,12 +404,14 @@ class Editor {
             // replaces the cell with new value
             case EditorMode.Paint: {
               removeSquare(
+                  activeGrid,
                   gridX,
                   gridY,
                   cellSize,
                   cellSize);
 
               insertSquare(
+                  activeGrid,
                   gridX,
                   gridY,
                   Utils.uid(),
@@ -417,9 +435,11 @@ class Editor {
     }
 
     function render(time) {
+      final activeGrid = editorState.gridByLayerId
+        .get(localState.activeLayerId);
+      final cellSize = activeGrid.cellSize;
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
-      final grid = activeGrid;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = zoom;
@@ -480,6 +500,7 @@ class Editor {
       // show hovered cell at cursor
       {
         final mouseGridPos = toGridPos(
+            activeGrid,
             mx, 
             my);
         final hc = cellSize / 2;
