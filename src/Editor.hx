@@ -46,6 +46,7 @@ class Editor {
   }> = [];
 
   static var localState = {
+    actions: new Array<Dynamic>(),
     tileRows: new Map<Int, h2d.TileGroup>()
   };
 
@@ -59,106 +60,54 @@ class Editor {
     itemTypeById: new Map<String, String>()
   };
 
-  static function tileGroupTest(
-      spriteSheetTile, 
-      spriteSheetData,
-      rowIndex) {
-    final tg = {
-      final tg = localState.tileRows.get(rowIndex);
-
-      if (tg == null) {
-        final newTg = new h2d.TileGroup(
-              spriteSheetTile,
-              Main.Global.staticScene);
-        localState.tileRows.set(rowIndex, 
-           newTg);
-        newTg;
-      } else {
-        tg;
-      }
-    }
-    final pillarTile = {
-      final spriteData = Reflect.field(
-          spriteSheetData,
-          'ui/pillar');
-      spriteSheetTile.sub(
-          spriteData.frame.x,
-          spriteData.frame.y,
-          spriteData.frame.w,
-          spriteData.frame.h);
-    }
-    final squareTile = {
-      final spriteData = Reflect.field(
-          spriteSheetData,
-          'ui/square_tile_test');
-      spriteSheetTile.sub(
-          spriteData.frame.x,
-          spriteData.frame.y,
-          spriteData.frame.w,
-          spriteData.frame.h);
-    }
-
-    final refreshTileGroup = (dt) -> {
-      tg.clear();
-
-      for (x in 100...1000) {
-        tg.add(x * 40, rowIndex * 40, pillarTile);
-      }
-
-      return true;
-    };
-
-    if (rowIndex == 0) {
-      Main.Global.updateHooks.push(refreshTileGroup);
-    }
-    refreshTileGroup(0);
+  public static function sendAction(
+      state: Dynamic, 
+      action: Dynamic) {
+    state.actions.push(action);
   }
 
   public static function init() {
+    final spriteSheetTile = 
+      hxd.Res.sprite_sheet_png.toTile();
+    final spriteSheetData = Utils.loadJsonFile(
+        hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
-        Main.Global.staticScene);
-
-    final testTileGroup = false;
-
-    if (testTileGroup) {
-      final spriteSheetTile = 
-        hxd.Res.sprite_sheet_png.toTile();
-      final spriteSheetData = Utils.loadJsonFile(
-          hxd.Res.sprite_sheet_json).frames;
-      var rowIndex = 0;
-      Main.Global.updateHooks.push((dt) -> {
-        for (_ in 0...6) {
-          tileGroupTest(
-              spriteSheetTile, 
-              spriteSheetData,
-              rowIndex);
-          rowIndex += 1;
-        }
-
-        return rowIndex < 800;
-      });
-    }
-
+        Main.Global.uiRoot);
     final cellSize = editorState.grid.cellSize;
 
     final insertSquare = (gridX, gridY, id, objectType) -> {
+      final cx = (gridX * cellSize) + (cellSize / 2);
+      final cy = (gridY * cellSize) + (cellSize / 2);
+
       Grid.setItemRect(
           editorState.grid,
-          (gridX * cellSize) + (cellSize / 2),
-          (gridY * cellSize) + (cellSize / 2),
+          cx, 
+          cy,
           cellSize,
           cellSize,
           id);
 
       editorState.itemTypeById
         .set(id, objectType);
+
+      sendAction(localState, {
+        type: 'PAINT_CELL',
+        x: cx,
+        y: cy,
+        gridX: gridX,
+        gridY: gridY,
+        spriteKey: objectMetaByType
+          .get(objectType).spriteKey
+      });
     };
 
     final removeSquare = (gridX, gridY, width, height) -> {
+      final cx = (gridX * cellSize) + (cellSize / 2);
+      final cy = (gridY * cellSize) + (cellSize / 2);
       final items = Grid.getItemsInRect(
           editorState.grid,
-          (gridX * cellSize) + (cellSize / 2),
-          (gridY * cellSize) + (cellSize / 2),
+          cx,
+          cy,
           cellSize,
           cellSize);
 
@@ -168,6 +117,14 @@ class Editor {
             key);
         editorState.itemTypeById.remove(key);
       }
+
+      sendAction(localState, {
+        type: 'CLEAR_CELL',
+        x: cx,
+        y: cy,
+        gridX: gridX,
+        gridY: gridY,
+      });
     };
 
     final handleZoom = (e: hxd.Event) -> {
@@ -209,16 +166,107 @@ class Editor {
     }
 
     function update(dt) {
+      {
+        final tileRowsRedrawn: Map<Int, Bool> = new Map();
+
+        // sort tilegroups by y position so they draw properly
+        {
+          final rowIndices = [];
+          for (rowIndex in localState.tileRows.keys()) {
+            rowIndices.push(rowIndex);
+          }
+          rowIndices.sort((a, b) -> {
+            if (a < b) {
+              return -1;
+            }
+
+            if (a > b) {
+              return 1;
+            }
+
+            return 0;
+          });
+          for (rowIndex in rowIndices) {
+            Main.Global.staticScene.addChild(
+                localState.tileRows.get(rowIndex));
+          }
+        }
+
+        for (action in localState.actions) {
+          switch (action.type) {
+            case 
+                'PAINT_CELL'
+              | 'CLEAR_CELL': {
+
+                final cellSize = editorState.grid.cellSize;
+                final rowIndex = action.gridY;
+                  final tg = {
+                    final tg = localState.tileRows.get(rowIndex);
+
+                    if (tg == null) {
+                      final newTg = new h2d.TileGroup(
+                          spriteSheetTile,
+                          Main.Global.staticScene);
+                      localState.tileRows.set(rowIndex, newTg);
+                      newTg;
+                    } else {
+                      tg;
+                    }
+                  };
+
+                // clear row first
+                if (tileRowsRedrawn.get(rowIndex) == null) {
+                  tileRowsRedrawn.set(rowIndex, true);
+                  tg.clear();
+                
+                  final gridRow = Utils.withDefault(
+                      editorState.grid.data.get(rowIndex),
+                      new Map());
+                  // repaint row
+                  for (colIndex => cellData in gridRow) {
+                    for (itemId in cellData) {
+                      final objectType = editorState.itemTypeById
+                        .get(itemId);
+                      final spriteKey = objectMetaByType
+                        .get(objectType).spriteKey;
+                      final spriteData = Reflect.field(
+                          spriteSheetData,
+                          spriteKey);
+                      final tile = spriteSheetTile.sub(
+                          spriteData.frame.x,
+                          spriteData.frame.y,
+                          spriteData.frame.w,
+                          spriteData.frame.h);
+                      tile.setCenterRatio(
+                          spriteData.pivot.x,
+                          spriteData.pivot.y);
+                      tg.add(
+                          colIndex * cellSize + (cellSize / 2),
+                          action.y,
+                          tile);
+                    }
+                  }
+                }
+              }
+
+            default: {}
+          }
+        }
+
+        // clear old actions list
+        localState.actions = [];
+      }
+
       Main.Global.logData.editor = {
         panning: isPanning,
         editorMode: Std.string(editorMode),
-        editorState: editorState
+        // editorState: editorState
       };
 
       final Key = hxd.Key;
       final buttonDown = Main.Global.worldMouse.buttonDown;
-      final mx = Main.Global.staticScene.mouseX;
-      final my = Main.Global.staticScene.mouseY;
+      final mx = Main.Global.uiRoot.mouseX;
+      final my = Main.Global.uiRoot.mouseY;
 
       isPanning = false; 
       showObjectCenters = false;
@@ -273,6 +321,7 @@ class Editor {
         dragStartPos.y = Std.int(my);
       }
 
+      // handle grid interaction
       if (buttonDown == 0 && !isMenuItemHovered) {
         if (isPanning) {
           final dx = mx - dragStartPos.x;
@@ -317,12 +366,17 @@ class Editor {
         translate.y = editorState.translate.y;
       }
 
+      Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
+          zoom);
+      Main.Global.staticScene.x = editorState.translate.x / zoom;
+      Main.Global.staticScene.y = editorState.translate.y / zoom;
+
       return true;
     }
 
     function render(time) {
-      final mx = Main.Global.staticScene.mouseX;
-      final my = Main.Global.staticScene.mouseY;
+      final mx = Main.Global.uiRoot.mouseX;
+      final my = Main.Global.uiRoot.mouseY;
       final grid = editorState.grid;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
@@ -336,34 +390,6 @@ class Editor {
         b.b = 0.2;
         b.scale = centerCircleRadius * 2;
       };
-
-      // render items in grid
-      for (itemId => bounds in grid.itemCache) {
-        final width = bounds[1] - bounds[0];
-        final cx = bounds[0] + width / 2;
-        final height = bounds[3] - bounds[2];
-        final cy = bounds[2] + height / 2;
-        final itemType = editorState.itemTypeById.get(itemId);
-        final objectMeta = objectMetaByType.get(itemType);
-        final screenCX = ((cx * cellSize)) * zoom + editorState.translate.x;
-        final screenCY = ((cy * cellSize)) * zoom + editorState.translate.y;
-
-        sbs.emitSprite(
-            screenCX,
-            screenCY,
-            // 'ui/square_tile_test',
-            objectMeta.spriteKey,
-            null,
-            spriteEffectZoom);
-
-        if (showObjectCenters) {
-          sbs.emitSprite(
-              screenCX - centerCircleRadius,
-              screenCY - centerCircleRadius,
-              'ui/square_white',
-              centerCircleSpriteEffect);
-        }
-      }
 
       // render object type menu options
       {
