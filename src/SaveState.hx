@@ -15,48 +15,41 @@ class SaveState {
   static var saveDir = 'external-assets';
 
   public static function save(
-    data: Dynamic,
-    keyPath: String,
-    persistUrl: Null<String>,
-    onSuccess: (res: Null<Dynamic>) -> Void,
-    onError: (e: Dynamic) -> Void
-  ) {
-    var serializer = new Serializer();
-    serializer.serialize(data);
-    var serialized = serializer.toString();
+      serialized: String,
+      keyPath: String,
+      persistUrl: Null<String>,
+      onSuccess: (res: Null<Dynamic>) -> Void,
+      onError: (e: Dynamic) -> Void) {
 
     try {
-    #if jsMode
+#if jsMode
       if (persistUrl != null) {
         var fetch = js.Browser.window.fetch;
 
         fetch(
-          new js.html.Request(persistUrl),
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: haxe.Json.stringify({
-              data: serialized,
-              file: keyPath
+            new js.html.Request(persistUrl),
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: serialized          
             })
-          }
-        )
-        .then(onSuccess)
-        .catchError(onError);
+          .then(onSuccess)
+          .catchError(onError);
       }
       else {
         var ls = Browser.getLocalStorage();
         ls.setItem(keyPath, serialized);
         onSuccess(null);
       }
-    #else
+#else
       if (!FileSystem.exists(saveDir)) {
         FileSystem.createDirectory(saveDir);
       }
       File.saveContent('${saveDir}/${keyPath}', serialized);
-    #end
+      onSuccess(null);
+#end
     }
     catch (err: Dynamic) {
       onError(err);

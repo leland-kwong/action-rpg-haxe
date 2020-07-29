@@ -8,10 +8,10 @@
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
  * [ ] serialize state to disk
+ * [ ] load state from disk
+ * [ ] improve zoom ux
  * [ ] undo/redo system
- * [ ] Automatically select layer based on object type.
-       The layer id would be defined on the object type itself.
- * [ ] option to toggle snap to grid
+ * [ ] adjustable brush size to paint multiple items at once
  */
 
 enum EditorMode {
@@ -20,7 +20,50 @@ enum EditorMode {
   Erase;
 }
 
+typedef ProfilerRef = Map<String, {startedAt: Float, time: Float}>;
+typedef EditorStateAction = {
+  type: String,
+  layerId: String,
+  gridY: Int
+};
+
+
+class Profiler {
+  public static function create(): ProfilerRef {
+    final timesByLabel = new Map();
+
+    return timesByLabel;
+  }
+
+  static function getTimeInstance(ref: ProfilerRef, label) {
+    final inst = ref.get(label);
+
+    if (inst == null) {
+      final newInst = {startedAt: 0.0, time: 0.0};
+      ref.set(label, newInst);
+
+      return newInst;
+    }
+
+    return inst;
+  }
+
+  public static function start(ref: ProfilerRef, label) {
+    getTimeInstance(ref, label).startedAt = Sys.cpuTime();
+  }
+
+  public static function end(ref: ProfilerRef, label) {
+    final inst = getTimeInstance(ref, label);
+    final executionTime = (Sys.cpuTime() - inst.startedAt) * 1000;
+    inst.time = executionTime;
+
+    return executionTime;
+  }
+}
+
 class Editor {
+  static var initialized = false;
+
   static final objectMetaByType = [
     'pillar' => {
       spriteKey: 'ui/pillar',
@@ -56,7 +99,8 @@ class Editor {
   }> = [];
 
   static var localState = {
-    actions: new Array<Dynamic>(),
+    actions: new Array<EditorStateAction>(),
+    stateToSave: null,
     activeLayerId: 'layer_a',
     tileRowsByLayerId: new Map<
       String,
@@ -82,18 +126,96 @@ class Editor {
   };
 
   public static function sendAction(
-      state: Dynamic, 
+      state: Dynamic,
       action: Dynamic) {
     state.actions.push(action);
   }
 
   public static function init() {
-    final spriteSheetTile = 
+    final profiler = Profiler.create();
+    final spriteSheetTile =
       hxd.Res.sprite_sheet_png.toTile();
     final spriteSheetData = Utils.loadJsonFile(
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
+    // eds is short for `editor data state`
+    final savePath = 'editor-data/foobar.eds';
+
+    SaveState.load(
+        savePath,
+        false,
+        (unserialized) -> {
+          if (unserialized == null) {
+            trace('[editor load] no data to load at `${savePath}`');
+
+            return;
+          }
+          editorState = unserialized;
+
+          var itemCount = 0;
+          for (layerId => grid in editorState.gridByLayerId) {
+            final gridData = grid.data;
+
+            for (rowIndex => rowData in gridData) {
+
+              itemCount += Lambda.count(rowData);
+
+              sendAction(localState, {
+                type: 'PAINT_CELL',
+                layerId: layerId,
+                gridY: rowIndex,
+              });
+            }
+          }
+
+          Main.Global.logData.loadStateItemCount = itemCount;
+        }, (err) -> {
+          trace(
+              '[editor error] failed to load `${savePath}`', 
+              err);
+        });
+
+    final autoSaveOnChange = () -> {
+      final interval = 1 / 10;
+      var savePending = false;
+
+      while (true) {
+
+        Sys.sleep(interval);
+
+        try {
+          final stateToSave = localState.stateToSave;
+          if (!savePending && stateToSave != null) {
+            // prevent another save from happening 
+            // until this is complete
+            savePending = true;
+            localState.stateToSave = null;
+            Profiler.start(profiler, 'serializeJson');
+            final serialized = {
+              haxe.Serializer.run(
+                  stateToSave);
+            }
+
+            SaveState.save(
+                serialized,
+                savePath,
+                null,
+                (res) -> {
+                  Profiler.end(profiler, 'serializeJson');
+                  Main.Global.logData.editorPerf = profiler;
+                  savePending = false;
+                }, (error) -> {
+                  trace(error);
+                });
+          }
+        } catch (err) {
+          trace(err);
+        }
+      }
+    };
+
+    sys.thread.Thread.create(autoSaveOnChange);
 
     final insertSquare = (gridRef, gridX, gridY, id, objectType) -> {
       final cellSize = gridRef.cellSize;
@@ -102,7 +224,7 @@ class Editor {
 
       Grid.setItemRect(
           gridRef,
-          cx, 
+          cx,
           cy,
           cellSize,
           cellSize,
@@ -113,12 +235,8 @@ class Editor {
 
       sendAction(localState, {
         type: 'PAINT_CELL',
-        x: cx,
-        y: cy,
-        gridX: gridX,
+        layerId: localState.activeLayerId,
         gridY: gridY,
-        spriteKey: objectMetaByType
-          .get(objectType).spriteKey
       });
     };
 
@@ -142,9 +260,7 @@ class Editor {
 
       sendAction(localState, {
         type: 'CLEAR_CELL',
-        x: cx,
-        y: cy,
-        gridX: gridX,
+        layerId: localState.activeLayerId,
         gridY: gridY,
       });
     };
@@ -169,7 +285,7 @@ class Editor {
     function updateObjectTypeList() {
       final win = hxd.Window.getInstance();
       var oy = 50;
-      final itemSize = 50; 
+      final itemSize = 50;
       final x = win.width - 200;
       final scale = 2;
 
@@ -189,57 +305,66 @@ class Editor {
     }
 
     function update(dt) {
+      isPanning = false;
+      showObjectCenters = false;
+      updateObjectTypeList();
+
       final activeGrid = editorState.gridByLayerId.get(
           localState.activeLayerId);
       final cellSize = activeGrid.cellSize;
       Main.Global.logData.activeLayer = localState.activeLayerId;
 
       {
-        final tileRowsRedrawn: Map<Int, Bool> = new Map();
-        // [SIDE-EFFECT] creates a layer if it doesn't exist
-        final activeTileRows = {
-          final activeLayerId = localState.activeLayerId;
-          final tileRows = localState.tileRowsByLayerId
-            .get(activeLayerId);
-
-          if (tileRows == null) {
-            final newTileRows = new Map();
-            localState.tileRowsByLayerId.set(
-                activeLayerId,
-                newTileRows);
-            newTileRows;
-          } else {
-            tileRows;
-          }
-        }
+        final tileRowsRedrawn: Map<String, Bool> = new Map();
 
         for (action in localState.actions) {
           switch (action.type) {
-            case 
+            case
                 'PAINT_CELL'
               | 'CLEAR_CELL': {
 
+                localState.stateToSave = editorState;
+
+                final activeGrid = editorState.gridByLayerId.get(
+                    action.layerId);
+                // [SIDE-EFFECT] creates a layer if it doesn't exist
+                final activeTileRows = {
+                  final activeLayerId = action.layerId;
+                  final tileRows = localState.tileRowsByLayerId
+                    .get(activeLayerId);
+
+                  if (tileRows == null) {
+                    final newTileRows = new Map();
+                    localState.tileRowsByLayerId.set(
+                        activeLayerId,
+                        newTileRows);
+                    newTileRows;
+                  } else {
+                    tileRows;
+                  }
+                }
                 final cellSize = activeGrid.cellSize;
                 final rowIndex = action.gridY;
-                  final tg = {
-                    final tg = activeTileRows.get(rowIndex);
+                final tg = {
+                  final tg = activeTileRows.get(rowIndex);
 
-                    if (tg == null) {
-                      final newTg = new h2d.TileGroup(
-                          spriteSheetTile,
-                          Main.Global.staticScene);
-                      activeTileRows.set(rowIndex, newTg);
-                      newTg;
-                    } else {
-                      tg;
-                    }
-                  };
+                  if (tg == null) {
+                    final newTg = new h2d.TileGroup(
+                        spriteSheetTile,
+                        Main.Global.staticScene);
+                    activeTileRows.set(rowIndex, newTg);
+                    newTg;
+                  } else {
+                    tg;
+                  }
+                };
 
                 // clear row first
-                if (tileRowsRedrawn.get(rowIndex) == null) {
-                  tileRowsRedrawn.set(rowIndex, true);
+                final rowId = '${action.layerId}__${rowIndex}';
+                if (tileRowsRedrawn.get(rowId) == null) {
+                  tileRowsRedrawn.set(rowId, true);
                   tg.clear();
-                
+
                   final gridRow = Utils.withDefault(
                       activeGrid.data.get(rowIndex),
                       new Map());
@@ -262,8 +387,8 @@ class Editor {
                           spriteData.pivot.x,
                           spriteData.pivot.y);
                       tg.add(
-                          colIndex * cellSize + (cellSize / 2),
-                          action.y,
+                          (colIndex * cellSize) + (cellSize / 2),
+                          (rowIndex * cellSize) + (cellSize / 2),
                           tile);
                     }
                   }
@@ -274,7 +399,7 @@ class Editor {
           }
         }
 
-        // sort tilegroups by layer order and 
+        // sort tilegroups by layer order and
         // row position so they draw properly
         for (layerId in editorState.layerOrderById) {
           final tRows = Utils.withDefault(
@@ -316,11 +441,6 @@ class Editor {
       final buttonDown = Main.Global.worldMouse.buttonDown;
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
-
-      isPanning = false; 
-      showObjectCenters = false;
-      updateObjectTypeList();
-
       final menuItemHovered  = Lambda.fold(
           objectTypeMenu,
           (menuItem, result: { value: String, itemDist: Float }) -> {
@@ -340,15 +460,15 @@ class Editor {
           });
       final isMenuItemHovered = menuItemHovered.value != null;
       // handle object menu selection
-      if (isMenuItemHovered && 
+      if (isMenuItemHovered &&
           Main.Global.worldMouse.clicked) {
         selectedObjectType = menuItemHovered.value;
       }
 
-      // handle hotkeys 
+      // handle hotkeys
       {
         if (Key.isDown(Key.SPACE)) {
-          isPanning = true; 
+          isPanning = true;
         }
 
         if (Key.isDown(Key.C)) {
@@ -386,6 +506,7 @@ class Editor {
 
           editorState.translate.x = Std.int(translate.x + dx);
           editorState.translate.y = Std.int(translate.y + dy);
+          // handle grid update
         } else {
           final mouseGridPos = toGridPos(activeGrid, mx, my);
           final gridX = mouseGridPos[0];
@@ -489,7 +610,7 @@ class Editor {
             spriteKey,
             null,
             (p) -> {
-              final b: h2d.SpriteBatch.BatchElement = 
+              final b: h2d.SpriteBatch.BatchElement =
                 p.batchElement;
               b.alpha = 0.3;
               p.sortOrder = drawSortSelection;
@@ -501,18 +622,18 @@ class Editor {
       {
         final mouseGridPos = toGridPos(
             activeGrid,
-            mx, 
+            mx,
             my);
         final hc = cellSize / 2;
         sbs.emitSprite(
-            (((mouseGridPos[0] * cellSize) + hc) * zoom) + 
+            (((mouseGridPos[0] * cellSize) + hc) * zoom) +
             editorState.translate.x,
-            (((mouseGridPos[1] * cellSize) + hc) * zoom) + 
+            (((mouseGridPos[1] * cellSize) + hc) * zoom) +
             editorState.translate.y,
             'ui/square_tile_test',
             null,
             (p) -> {
-              final b: h2d.SpriteBatch.BatchElement = 
+              final b: h2d.SpriteBatch.BatchElement =
                 p.batchElement;
               p.sortOrder = drawSortSelection - 1;
               b.b = 0;
@@ -522,6 +643,19 @@ class Editor {
       }
 
       return true;
+    }
+
+    function paintTestItems() {
+      for (rowIndex in 0...100) {
+        for (colIndex in 0...400) {
+          insertSquare(
+              editorState.gridByLayerId.get(localState.activeLayerId),
+              colIndex,
+              rowIndex,
+              Utils.uid(),
+              'white_square');
+        }
+      }
     }
 
     Main.Global.updateHooks.push(update);
