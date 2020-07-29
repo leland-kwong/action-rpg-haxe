@@ -11,6 +11,7 @@
  * [ ] load state from disk
  * [ ] improve zoom ux
  * [ ] undo/redo system
+ * [ ] option to toggle layer visibility
  * [ ] adjustable brush size to paint multiple items at once
  */
 
@@ -23,8 +24,12 @@ enum EditorMode {
 typedef ProfilerRef = Map<String, {startedAt: Float, time: Float}>;
 typedef EditorStateAction = {
   type: String,
-  layerId: String,
-  gridY: Int
+  ?layerId: String,
+  ?gridY: Int,
+  ?translate: {
+    x: Int,
+    y: Int
+  }  
 };
 
 
@@ -101,6 +106,8 @@ class Editor {
   static var localState = {
     actions: new Array<EditorStateAction>(),
     stateToSave: null,
+    // eds is short for `editor data state`
+    activeFile: 'editor-data/test_data.eds',
     activeLayerId: 'layer_a',
     tileRowsByLayerId: new Map<
       String,
@@ -114,6 +121,7 @@ class Editor {
       x: 0,
       y: 0
     },
+    updatedAt: Date.now(),
     layerOrderById: [
       'layer_a',
       'layer_b'
@@ -139,15 +147,14 @@ class Editor {
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
-    // eds is short for `editor data state`
-    final savePath = 'editor-data/foobar.eds';
+    final loadPath = localState.activeFile;
 
     SaveState.load(
-        savePath,
+        loadPath,
         false,
         (unserialized) -> {
           if (unserialized == null) {
-            trace('[editor load] no data to load at `${savePath}`');
+            trace('[editor load] no data to load at `${loadPath}`');
 
             return;
           }
@@ -162,7 +169,7 @@ class Editor {
               itemCount += Lambda.count(rowData);
 
               sendAction(localState, {
-                type: 'PAINT_CELL',
+                type: 'PAINT_CELL_FROM_LOADING_STATE',
                 layerId: layerId,
                 gridY: rowIndex,
               });
@@ -172,7 +179,7 @@ class Editor {
           Main.Global.logData.loadStateItemCount = itemCount;
         }, (err) -> {
           trace(
-              '[editor error] failed to load `${savePath}`', 
+              '[editor error] failed to load `${loadPath}`', 
               err);
         });
 
@@ -186,6 +193,7 @@ class Editor {
 
         try {
           final stateToSave = localState.stateToSave;
+          final filePath = localState.activeFile;
           if (!savePending && stateToSave != null) {
             // prevent another save from happening 
             // until this is complete
@@ -199,7 +207,7 @@ class Editor {
 
             SaveState.save(
                 serialized,
-                savePath,
+                filePath,
                 null,
                 (res) -> {
                   Profiler.end(profiler, 'serializeJson');
@@ -319,11 +327,12 @@ class Editor {
 
         for (action in localState.actions) {
           switch (action.type) {
+            case 'PAN_VIEWPORT':
+              editorState.translate = action.translate;
             case
                 'PAINT_CELL'
-              | 'CLEAR_CELL': {
-
-                localState.stateToSave = editorState;
+              | 'CLEAR_CELL'
+              | 'PAINT_CELL_FROM_LOADING_STATE': {
 
                 final activeGrid = editorState.gridByLayerId.get(
                     action.layerId);
@@ -397,6 +406,10 @@ class Editor {
 
             default: {}
           }
+
+          if (action.type != 'PAINT_CELL_FROM_LOADING_STATE') {
+            localState.stateToSave = editorState;
+          }
         }
 
         // sort tilegroups by layer order and
@@ -428,13 +441,16 @@ class Editor {
         }
 
         // clear old actions list
+        if (localState.actions.length > 0) {
+          editorState.updatedAt = Date.now();
+        }
         localState.actions = [];
       }
 
       Main.Global.logData.editor = {
         panning: isPanning,
         editorMode: Std.string(editorMode),
-        // editorState: editorState
+        updatedAt: editorState.updatedAt
       };
 
       final Key = hxd.Key;
@@ -504,8 +520,13 @@ class Editor {
           final dx = mx - dragStartPos.x;
           final dy = my - dragStartPos.y;
 
-          editorState.translate.x = Std.int(translate.x + dx);
-          editorState.translate.y = Std.int(translate.y + dy);
+          sendAction(localState, {
+            type: 'PAN_VIEWPORT',
+            translate: {
+              x: Std.int(translate.x + dx),
+              y: Std.int(translate.y + dy),
+            }
+          });
           // handle grid update
         } else {
           final mouseGridPos = toGridPos(activeGrid, mx, my);
