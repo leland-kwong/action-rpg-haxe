@@ -7,8 +7,13 @@
  *
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
- * [ ] serialize state to disk
- * [ ] load state from disk
+ * [ ] (wip - nearly done) serialize state to disk.
+       Currently can randomly crash. One possible cause
+       is that we're mutating state while the thread is
+       in mid-serialization. We need a better way of mutating
+       state that doesn't interfere with the thread trying
+       to access that at the same time.
+ * [ ] (wip - nearly done) load state from disk
  * [ ] improve zoom ux
  * [ ] undo/redo system
  * [ ] option to toggle layer visibility
@@ -189,9 +194,9 @@ class Editor {
 
       while (true) {
 
-        Sys.sleep(interval);
-
         try {
+          Sys.sleep(interval);
+
           final stateToSave = localState.stateToSave;
           final filePath = localState.activeFile;
           if (!savePending && stateToSave != null) {
