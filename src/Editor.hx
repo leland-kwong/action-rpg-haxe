@@ -87,7 +87,6 @@ class Editor {
     ]
   }
 
-  static var previousButtonDown = -1;
   static var editorMode = EditorMode.Paint;
   static var isPanning = false;
   static var showObjectCenters = false;
@@ -110,6 +109,7 @@ class Editor {
   }> = [];
 
   static var localState = {
+    previousButtonDown: -1,
     actions: new Array<EditorStateAction>(),
     stateToSave: null,
     // eds is short for `editor data state`
@@ -513,8 +513,8 @@ class Editor {
         }
       }
 
-      if (previousButtonDown != buttonDown) {
-        previousButtonDown = buttonDown;
+      if (localState.previousButtonDown != buttonDown) {
+        localState.previousButtonDown = buttonDown;
         dragStartPos.x = Std.int(mx);
         dragStartPos.y = Std.int(my);
       }
