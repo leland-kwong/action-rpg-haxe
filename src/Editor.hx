@@ -88,10 +88,6 @@ class Editor {
   }
 
   static var showObjectCenters = false;
-  static var dragStartPos = {
-    x: 0,
-    y: 0
-  };
   static var selectedObjectType = 'white_square';
   static var objectTypeMenu: Array<{
     x: Int,
@@ -102,6 +98,10 @@ class Editor {
   }> = [];
 
   static var localState = {
+    dragStartPos: {
+      x: 0,
+      y: 0
+    },
     translate: {
       x: 0,
       y: 0
@@ -516,15 +516,15 @@ class Editor {
 
       if (localState.previousButtonDown != buttonDown) {
         localState.previousButtonDown = buttonDown;
-        dragStartPos.x = Std.int(mx);
-        dragStartPos.y = Std.int(my);
+        localState.dragStartPos.x = Std.int(mx);
+        localState.dragStartPos.y = Std.int(my);
       }
 
       // handle grid interaction
       if (buttonDown == 0 && !isMenuItemHovered) {
         if (localState.isPanning) {
-          final dx = mx - dragStartPos.x;
-          final dy = my - dragStartPos.y;
+          final dx = mx - localState.dragStartPos.x;
+          final dy = my - localState.dragStartPos.y;
 
           sendAction(localState, {
             type: 'PAN_VIEWPORT',
