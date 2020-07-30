@@ -672,19 +672,6 @@ class Editor {
       return true;
     }
 
-    function paintTestItems() {
-      for (rowIndex in 0...100) {
-        for (colIndex in 0...400) {
-          insertSquare(
-              editorState.gridByLayerId.get(localState.activeLayerId),
-              colIndex,
-              rowIndex,
-              Utils.uid(),
-              'white_square');
-        }
-      }
-    }
-
     Main.Global.updateHooks.push(update);
     Main.Global.renderHooks.push(render);
   }
