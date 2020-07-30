@@ -7,16 +7,15 @@
  *
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
- * [ ] (wip - nearly done) serialize state to disk.
-       Currently can randomly crash. One possible cause
-       is that we're mutating state while the thread is
-       in mid-serialization. We need a better way of mutating
-       state that doesn't interfere with the thread trying
-       to access that at the same time.
- * [ ] (wip - nearly done) load state from disk
+ * [x] load state from disk
  * [ ] improve zoom ux
  * [ ] undo/redo system
  * [ ] option to toggle layer visibility
+ * [ ] [BUG] Serializing state of large files can sometimes crash.
+       One possible cause is that we're mutating state while the 
+       thread is in mid-serialization. We need a better way of mutating
+       state that doesn't interfere with the thread trying to access that 
+       at the same time.
  * [ ] adjustable brush size to paint multiple items at once
  */
 
@@ -72,19 +71,21 @@ class Profiler {
 }
 
 class Editor {
-  static var initialized = false;
-
-  static final objectMetaByType = [
-    'pillar' => {
-      spriteKey: 'ui/pillar',
-    },
-    'enemy_1' => {
-      spriteKey: 'enemy-2_animation/idle-0',
-    },
-    'white_square' => {
-      spriteKey: 'ui/square_tile_test',
-    },
-  ];
+  // all configuration stuff lives here
+  static final config = {
+    activeFile: 'editor-data/test_data.eds',
+    objectMetaByType: [
+      'pillar' => {
+        spriteKey: 'ui/pillar',
+      },
+      'enemy_1' => {
+        spriteKey: 'enemy-2_animation/idle-0',
+      },
+      'white_square' => {
+        spriteKey: 'ui/square_tile_test',
+      },
+    ]
+  }
 
   static var previousButtonDown = -1;
   static var editorMode = EditorMode.Paint;
@@ -112,7 +113,6 @@ class Editor {
     actions: new Array<EditorStateAction>(),
     stateToSave: null,
     // eds is short for `editor data state`
-    activeFile: 'editor-data/test_data.eds',
     activeLayerId: 'layer_a',
     tileRowsByLayerId: new Map<
       String,
@@ -152,7 +152,7 @@ class Editor {
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
-    final loadPath = localState.activeFile;
+    final loadPath = config.activeFile;
 
     SaveState.load(
         loadPath,
@@ -198,7 +198,7 @@ class Editor {
           Sys.sleep(interval);
 
           final stateToSave = localState.stateToSave;
-          final filePath = localState.activeFile;
+          final filePath = config.activeFile;
           if (!savePending && stateToSave != null) {
             // prevent another save from happening 
             // until this is complete
@@ -304,7 +304,7 @@ class Editor {
 
       objectTypeMenu = [];
 
-      for (type => meta in objectMetaByType) {
+      for (type => meta in config.objectMetaByType) {
         objectTypeMenu.push({
           x: x,
           y: oy,
@@ -387,7 +387,7 @@ class Editor {
                     for (itemId in cellData) {
                       final objectType = editorState.itemTypeById
                         .get(itemId);
-                      final spriteKey = objectMetaByType
+                      final spriteKey = config.objectMetaByType
                         .get(objectType).spriteKey;
                       final spriteData = Reflect.field(
                           spriteSheetData,
@@ -611,7 +611,7 @@ class Editor {
           b.scale = scale;
         };
         for (menuItem in objectTypeMenu) {
-          final spriteKey = objectMetaByType
+          final spriteKey = config.objectMetaByType
             .get(menuItem.type)
             .spriteKey;
           sbs.emitSprite(
@@ -628,7 +628,7 @@ class Editor {
       final drawSortSelection = 1000 * 1000;
       // show selection at cursor
       if (editorMode == EditorMode.Paint) {
-        final spriteKey = objectMetaByType
+        final spriteKey = config.objectMetaByType
           .get(selectedObjectType).spriteKey;
         sbs.emitSprite(
             mx,
