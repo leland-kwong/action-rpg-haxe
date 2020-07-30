@@ -73,7 +73,7 @@ class Profiler {
 class Editor {
   // all configuration stuff lives here
   static final config = {
-    activeFile: 'editor-data/test_data.eds',
+    activeFile: 'editor-data/editor_test_data.eds',
     objectMetaByType: [
       'pillar' => {
         spriteKey: 'ui/pillar',
