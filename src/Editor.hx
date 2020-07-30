@@ -73,13 +73,16 @@ class Profiler {
 class Editor {
   // all configuration stuff lives here
   static final config = {
-    activeFile: 'editor-data/editor_test_data.eds',
+    activeFile: 'editor-data/level_1.eds',
     objectMetaByType: [
       'pillar' => {
         spriteKey: 'ui/pillar',
       },
       'enemy_1' => {
         spriteKey: 'enemy-2_animation/idle-0',
+      },
+      'tile_1' => {
+        spriteKey: 'ui/level_1_tile',
       },
       'white_square' => {
         spriteKey: 'ui/square_tile_test',
@@ -297,10 +300,10 @@ class Editor {
 
     function updateObjectTypeList() {
       final win = hxd.Window.getInstance();
-      var oy = 50;
-      final itemSize = 50;
-      final x = win.width - 200;
-      final scale = 2;
+      final itemSize = 100;
+      var oy = itemSize;
+      final x = win.width - itemSize - 10;
+      final itemSpacing = 10;
 
       objectTypeMenu = [];
 
@@ -313,7 +316,7 @@ class Editor {
           type: type,
         });
 
-        oy += itemSize * scale;
+        oy += (itemSize + itemSpacing);
       }
     }
 
@@ -597,15 +600,20 @@ class Editor {
 
       // render object type menu options
       {
-        final win = hxd.Window.getInstance();
-        var y = 50;
-        final x = win.width - 200;
-        final scale = 2;
-        final spriteEffect = (p) -> {
-          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-          b.scale = scale;
-        };
         for (menuItem in objectTypeMenu) {
+          final spriteData = Reflect.field(
+              spriteSheetData,
+              config.objectMetaByType.get(menuItem.type)
+              .spriteKey);
+          final scale = {
+            final spriteHeight = spriteData.sourceSize.h;
+            menuItem.height / spriteHeight;
+          }
+          final spriteEffect = (p) -> {
+            final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+            b.scale = scale;
+          };
+
           final spriteKey = config.objectMetaByType
             .get(menuItem.type)
             .spriteKey;
@@ -615,8 +623,6 @@ class Editor {
               spriteKey,
               null,
               spriteEffect);
-
-          y += menuItem.height * scale;
         }
       }
 
