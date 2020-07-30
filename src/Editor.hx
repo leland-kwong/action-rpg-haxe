@@ -88,7 +88,6 @@ class Editor {
   }
 
   static var showObjectCenters = false;
-  static var selectedObjectType = 'white_square';
   static var objectTypeMenu: Array<{
     x: Int,
     y: Int,
@@ -98,6 +97,7 @@ class Editor {
   }> = [];
 
   static var localState = {
+    selectedObjectType: 'white_square',
     dragStartPos: {
       x: 0,
       y: 0
@@ -484,7 +484,7 @@ class Editor {
       // handle object menu selection
       if (isMenuItemHovered &&
           Main.Global.worldMouse.clicked) {
-        selectedObjectType = menuItemHovered.value;
+        localState.selectedObjectType = menuItemHovered.value;
       }
 
       // handle hotkeys
@@ -563,7 +563,7 @@ class Editor {
                   gridX,
                   gridY,
                   Utils.uid(),
-                  selectedObjectType);
+                  localState.selectedObjectType);
             }
 
             default: {}
@@ -630,7 +630,7 @@ class Editor {
       // show selection at cursor
       if (localState.editorMode == EditorMode.Paint) {
         final spriteKey = config.objectMetaByType
-          .get(selectedObjectType).spriteKey;
+          .get(localState.selectedObjectType).spriteKey;
         sbs.emitSprite(
             mx,
             my,
