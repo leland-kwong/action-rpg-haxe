@@ -92,10 +92,6 @@ class Editor {
     x: 0,
     y: 0
   };
-  static var translate = {
-    x: 0,
-    y: 0
-  };
   static var selectedObjectType = 'white_square';
   static var objectTypeMenu: Array<{
     x: Int,
@@ -106,6 +102,10 @@ class Editor {
   }> = [];
 
   static var localState = {
+    translate: {
+      x: 0,
+      y: 0
+    },
     isPanning: false,
     editorMode: EditorMode.Paint,
     zoom: 2.0,
@@ -529,8 +529,8 @@ class Editor {
           sendAction(localState, {
             type: 'PAN_VIEWPORT',
             translate: {
-              x: Std.int(translate.x + dx),
-              y: Std.int(translate.y + dy),
+              x: Std.int(localState.translate.x + dx),
+              y: Std.int(localState.translate.y + dy),
             }
           });
           // handle grid update
@@ -570,8 +570,8 @@ class Editor {
           }
         }
       } else {
-        translate.x = editorState.translate.x;
-        translate.y = editorState.translate.y;
+        localState.translate.x = editorState.translate.x;
+        localState.translate.y = editorState.translate.y;
       }
 
       Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
