@@ -87,7 +87,6 @@ class Editor {
     ]
   }
 
-  static var isPanning = false;
   static var showObjectCenters = false;
   static var dragStartPos = {
     x: 0,
@@ -107,6 +106,7 @@ class Editor {
   }> = [];
 
   static var localState = {
+    isPanning: false,
     editorMode: EditorMode.Paint,
     zoom: 2.0,
     previousButtonDown: -1,
@@ -319,7 +319,7 @@ class Editor {
     }
 
     function update(dt) {
-      isPanning = false;
+      localState.isPanning = false;
       showObjectCenters = false;
       updateObjectTypeList();
 
@@ -454,7 +454,7 @@ class Editor {
       }
 
       Main.Global.logData.editor = {
-        panning: isPanning,
+        panning: localState.isPanning,
         editorMode: Std.string(localState.editorMode),
         updatedAt: editorState.updatedAt
       };
@@ -490,7 +490,7 @@ class Editor {
       // handle hotkeys
       {
         if (Key.isDown(Key.SPACE)) {
-          isPanning = true;
+          localState.isPanning = true;
         }
 
         if (Key.isDown(Key.C)) {
@@ -522,7 +522,7 @@ class Editor {
 
       // handle grid interaction
       if (buttonDown == 0 && !isMenuItemHovered) {
-        if (isPanning) {
+        if (localState.isPanning) {
           final dx = mx - dragStartPos.x;
           final dy = my - dragStartPos.y;
 
