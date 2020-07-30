@@ -123,30 +123,45 @@ class Editor {
   };
 
   // state to be serialized and saved
-  static var editorState = {
-    translate: {
-      x: 0,
-      y: 0
-    },
-    updatedAt: Date.now(),
-    layerOrderById: [
-      'layer_a',
-      'layer_b'
-    ],
-    gridByLayerId: [
-    'layer_a' => Grid.create(16),
-    'layer_b' => Grid.create(16),
-    ],
-    itemTypeById: new Map<String, String>()
-  };
+  static var editorState = null;
 
-  public static function sendAction(
+  static function sendAction(
       state: Dynamic,
       action: Dynamic) {
     state.actions.push(action);
   }
 
+  static function windowCenterPos() {
+    final win = hxd.Window.getInstance();
+
+    return {
+      x: Math.round(win.width / 2),
+      y: Math.round(win.height / 2)
+    }
+  }
+
   public static function init() {
+    editorState = {
+      final winCenter = windowCenterPos();
+
+      {
+        translate: {
+          x: Math.round(winCenter.x),
+          y: Math.round(winCenter.y)
+        },
+        updatedAt: Date.now(),
+        layerOrderById: [
+          'layer_a',
+          'layer_b'
+        ],
+        gridByLayerId: [
+          'layer_a' => Grid.create(16),
+          'layer_b' => Grid.create(16),
+        ],
+        itemTypeById: new Map<String, String>()
+      };
+    }
+
     final profiler = Profiler.create();
     final spriteSheetTile =
       hxd.Res.sprite_sheet_png.toTile();
@@ -456,6 +471,7 @@ class Editor {
 
       Main.Global.logData.editor = {
         panning: localState.isPanning,
+        translate: editorState.translate,
         editorMode: Std.string(localState.editorMode),
         updatedAt: editorState.updatedAt
       };
@@ -508,6 +524,18 @@ class Editor {
 
         if (Key.isPressed(Key.NUMBER_2)) {
           localState.activeLayerId = 'layer_b';
+        }
+
+        // pan viewport to center of screen
+        if (Key.isPressed(Key.F)) {
+          final winCenter = windowCenterPos();
+          sendAction(localState, {
+            type: 'PAN_VIEWPORT',
+            translate: {
+              x: Std.int(winCenter.x),
+              y: Std.int(winCenter.y),
+            }
+          });
         }
       }
 
@@ -666,6 +694,23 @@ class Editor {
               b.b = 0;
               b.alpha = 0.3;
               spriteEffectZoom(p);
+            });
+      }
+
+      // show origin
+      {
+        sbs.emitSprite(
+            editorState.translate.x,
+            editorState.translate.y,
+            'ui/square_white',
+            null,
+            (p) -> {
+              final b: h2d.SpriteBatch.BatchElement =
+                p.batchElement;
+              b.scale = 10; 
+              p.sortOrder = drawSortSelection + 1;
+              b.b = 0.4;
+              b.alpha = 0.6;
             });
       }
 
