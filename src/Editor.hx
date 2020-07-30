@@ -98,7 +98,6 @@ class Editor {
     x: 0,
     y: 0
   };
-  static var zoom = 2.0;
   static var selectedObjectType = 'white_square';
   static var objectTypeMenu: Array<{
     x: Int,
@@ -109,6 +108,7 @@ class Editor {
   }> = [];
 
   static var localState = {
+    zoom: 2.0,
     previousButtonDown: -1,
     actions: new Array<EditorStateAction>(),
     stateToSave: null,
@@ -280,7 +280,8 @@ class Editor {
 
     final handleZoom = (e: hxd.Event) -> {
       if (e.kind == hxd.Event.EventKind.EWheel) {
-        zoom = Math.max(1, zoom - Std.int(e.wheelDelta));
+        localState.zoom = Math.max(
+            1, localState.zoom - Std.int(e.wheelDelta));
       }
     }
     Main.Global.staticScene.addEventListener(handleZoom);
@@ -289,8 +290,8 @@ class Editor {
       final cellSize = gridRef.cellSize;
       final tx = editorState.translate.x;
       final ty = editorState.translate.y;
-      final gridX = Math.floor((screenX - tx) / cellSize / zoom);
-      final gridY = Math.floor((screenY - ty) / cellSize / zoom);
+      final gridX = Math.floor((screenX - tx) / cellSize / localState.zoom);
+      final gridY = Math.floor((screenY - ty) / cellSize / localState.zoom);
 
       return [gridX, gridY];
     }
@@ -574,9 +575,9 @@ class Editor {
       }
 
       Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
-          zoom);
-      Main.Global.staticScene.x = editorState.translate.x / zoom;
-      Main.Global.staticScene.y = editorState.translate.y / zoom;
+          localState.zoom);
+      Main.Global.staticScene.x = editorState.translate.x / localState.zoom;
+      Main.Global.staticScene.y = editorState.translate.y / localState.zoom;
 
       return true;
     }
@@ -589,7 +590,7 @@ class Editor {
       final my = Main.Global.uiRoot.mouseY;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-        b.scale = zoom;
+        b.scale = localState.zoom;
       };
       final centerCircleRadius = 10;
       final centerCircleSpriteEffect = (p) -> {
@@ -652,9 +653,9 @@ class Editor {
             my);
         final hc = cellSize / 2;
         sbs.emitSprite(
-            (((mouseGridPos[0] * cellSize) + hc) * zoom) +
+            (((mouseGridPos[0] * cellSize) + hc) * localState.zoom) +
             editorState.translate.x,
-            (((mouseGridPos[1] * cellSize) + hc) * zoom) +
+            (((mouseGridPos[1] * cellSize) + hc) * localState.zoom) +
             editorState.translate.y,
             'ui/square_tile_test',
             null,
