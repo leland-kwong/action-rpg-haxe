@@ -87,7 +87,6 @@ class Editor {
     ]
   }
 
-  static var editorMode = EditorMode.Paint;
   static var isPanning = false;
   static var showObjectCenters = false;
   static var dragStartPos = {
@@ -108,6 +107,7 @@ class Editor {
   }> = [];
 
   static var localState = {
+    editorMode: EditorMode.Paint,
     zoom: 2.0,
     previousButtonDown: -1,
     actions: new Array<EditorStateAction>(),
@@ -455,7 +455,7 @@ class Editor {
 
       Main.Global.logData.editor = {
         panning: isPanning,
-        editorMode: Std.string(editorMode),
+        editorMode: Std.string(localState.editorMode),
         updatedAt: editorState.updatedAt
       };
 
@@ -498,11 +498,11 @@ class Editor {
         }
 
         if (Key.isPressed(Key.E)) {
-          editorMode = EditorMode.Erase;
+          localState.editorMode = EditorMode.Erase;
         }
 
         if (Key.isPressed(Key.B)) {
-          editorMode = EditorMode.Paint;
+          localState.editorMode = EditorMode.Paint;
         }
 
         if (Key.isPressed(Key.NUMBER_1)) {
@@ -539,7 +539,7 @@ class Editor {
           final gridX = mouseGridPos[0];
           final gridY = mouseGridPos[1];
 
-          switch (editorMode) {
+          switch (localState.editorMode) {
             case EditorMode.Erase: {
               removeSquare(
                   activeGrid,
@@ -628,7 +628,7 @@ class Editor {
 
       final drawSortSelection = 1000 * 1000;
       // show selection at cursor
-      if (editorMode == EditorMode.Paint) {
+      if (localState.editorMode == EditorMode.Paint) {
         final spriteKey = config.objectMetaByType
           .get(selectedObjectType).spriteKey;
         sbs.emitSprite(
