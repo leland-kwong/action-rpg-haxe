@@ -87,7 +87,6 @@ class Editor {
     ]
   }
 
-  static var showObjectCenters = false;
   static var objectTypeMenu: Array<{
     x: Int,
     y: Int,
@@ -320,7 +319,6 @@ class Editor {
 
     function update(dt) {
       localState.isPanning = false;
-      showObjectCenters = false;
       updateObjectTypeList();
 
       final activeGrid = editorState.gridByLayerId.get(
@@ -491,10 +489,6 @@ class Editor {
       {
         if (Key.isDown(Key.SPACE)) {
           localState.isPanning = true;
-        }
-
-        if (Key.isDown(Key.C)) {
-          showObjectCenters = true;
         }
 
         if (Key.isPressed(Key.E)) {
