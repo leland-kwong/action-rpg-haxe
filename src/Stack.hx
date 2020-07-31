@@ -15,10 +15,8 @@ class Stack {
   public static function pop(sr: StackRef) {
     final item = sr.pop();
 
-    if (item == null) {
-      throw 'empty escape stack should not happen';
+    if (item != null) {
+      item.fn();
     }
-
-    item.fn();
   }
 }
