@@ -100,17 +100,27 @@ class Editor {
     type: String
   }> = [];
 
-  static final initialLocalState = {
-    isDragStart: false,
-    isDragging: false,
-    isDragEnd: false,
-  };
+  static function initialLocalState() {
+    return {
+      isDragStart: false,
+      isDragging: false,
+      isDragEnd: false,
+
+      marqueeSelection: {
+        x1: 0,
+        y1: 0,
+        x2: 0,
+        y2: 0
+      }
+    };
+  }
+
   static var localState = {
     selectedObjectType: 'white_square',
 
-    isDragStart: initialLocalState.isDragStart,
-    isDragging: initialLocalState.isDragging,
-    isDragEnd: initialLocalState.isDragEnd,
+    isDragStart: initialLocalState().isDragStart,
+    isDragging: initialLocalState().isDragging,
+    isDragEnd: initialLocalState().isDragEnd,
 
     dragStartPos: {
       x: 0,
@@ -120,12 +130,8 @@ class Editor {
       x: 0,
       y: 0
     },
-    marqueeSelection: {
-      x1: 0,
-      y1: 0,
-      x2: 0,
-      y2: 0
-    },
+    marqueeSelection: initialLocalState()
+      .marqueeSelection,
 
     editorMode: EditorMode.Paint,
     previousEditorMode: EditorMode.Paint,
@@ -144,6 +150,8 @@ class Editor {
   // state to be serialized and saved
   static var editorState = null;
 
+  // adds an action to the queue to be
+  // processed on the next update loop
   static function sendAction(
       state: Dynamic,
       action: Dynamic) {
@@ -320,6 +328,31 @@ class Editor {
       });
     };
 
+    function clearMarqueeSelection() {
+      final marqueeLayerId = 'layer_marquee_selection';
+      final marqueeGrid = editorState.gridByLayerId
+        .get(marqueeLayerId);
+
+      for (_ => bounds in marqueeGrid.itemCache) {
+        final width = bounds[1] - bounds[0];
+        final cx = Math.floor(bounds[0] + width / 2);
+        final height = bounds[3] - bounds[2];
+        final cy = Math.floor(bounds[2] + height / 2);
+
+        removeSquare(
+            marqueeGrid,
+            cx,
+            cy,
+            width,
+            height,
+            marqueeLayerId);
+      }
+
+      // also reset rectangle selection area
+      localState.marqueeSelection = initialLocalState()
+        .marqueeSelection;
+    }
+
     final handleZoom = (e: hxd.Event) -> {
       if (e.kind == hxd.Event.EventKind.EWheel) {
         localState.zoom = Math.max(
@@ -386,8 +419,11 @@ class Editor {
 
         for (action in localState.actions) {
           switch (action.type) {
-            case 'PAN_VIEWPORT':
+            case 'PAN_VIEWPORT': {
               editorState.translate = action.translate;
+            }
+            case 'CLEAR_MARQUEE_SELECTION': {
+            }
             case
                 'PAINT_CELL'
               | 'CLEAR_CELL'
@@ -594,12 +630,13 @@ class Editor {
           localState.editorMode = EditorMode.MarqueeSelect;
         }
 
-        if (Key.isDown(Key.CTRL)) {
-          if (localState.editorMode == EditorMode.MarqueeSelect) {
-            final marqueeLayerId = 'layer_marquee_selection';
-            final marqueeGrid = editorState.gridByLayerId
-              .get(marqueeLayerId);
-            final action = {
+        if (localState.editorMode == EditorMode.MarqueeSelect) {
+          final action = {
+            if (Key.isPressed(Key.ESCAPE)) {
+
+              'CLEAR_MARQUEE_SELECTION';
+
+            } else if (Key.isDown(Key.CTRL)) {
               if (Key.isPressed(Key.C)) {
                 'COPY';
               }
@@ -608,63 +645,67 @@ class Editor {
                 'CUT';
               }
 
-
               else if (Key.isPressed(Key.V)) {
                 'PASTE';
-              }
+              } else {
 
-              else {
                 'NONE';
               }
-            };
 
-            // copy selection
-            if (action == 'COPY' || action == 'CUT') {
-              final activeGrid = editorState.gridByLayerId
-                .get(localState.activeLayerId);
-              final selection = localState.marqueeSelection;
-              final xMin = Math.min(
-                  selection.x1, 
-                  selection.x2);
-              final xMax = Math.max(
-                  selection.x1, 
-                  selection.x2);
-              final yMin = Math.min(
-                  selection.y1, 
-                  selection.y2);
-              final yMax = Math.max(
-                  selection.y1, 
-                  selection.y2);
-              final gridXMin = Math.floor(xMin / marqueeGrid.cellSize);
-              final gridXMax = Math.floor(xMax / marqueeGrid.cellSize);
-              final gridYMin = Math.floor(yMin / marqueeGrid.cellSize);
-              final gridYMax = Math.floor(yMax / marqueeGrid.cellSize);
+            } else if (Key.isPressed(Key.DELETE)) {
 
-              // clear previous selection
-              for (_ => bounds in marqueeGrid.itemCache) {
-                final width = bounds[1] - bounds[0];
-                final cx = Math.floor(bounds[0] + width / 2);
-                final height = bounds[3] - bounds[2];
-                final cy = Math.floor(bounds[2] + height / 2);
+              'DELETE';
 
-                removeSquare(
-                    marqueeGrid,
-                    cx,
-                    cy,
-                    width,
-                    height,
-                    marqueeLayerId);
-              }
+            } else {
 
-              for (gridY in gridYMin...gridYMax) {
-                for (gridX in gridXMin...gridXMax) {
-                  final cellData = Utils.withDefault(
-                      Grid.getCell(activeGrid, gridX, gridY),
-                      new Map());
-                  for (itemId in cellData) {
-                    final objectType = editorState.itemTypeById.get(
-                        itemId);
+              'NONE';
 
+            }
+          };
+
+          if (action == 'CLEAR_MARQUEE_SELECTION') {
+            clearMarqueeSelection();
+          }
+
+          final marqueeLayerId = 'layer_marquee_selection';
+          final marqueeGrid = editorState.gridByLayerId
+            .get(marqueeLayerId);
+
+          // copy selection
+          if (action == 'COPY' || action == 'CUT' || action == 'DELETE') {
+            final activeGrid = editorState.gridByLayerId
+              .get(localState.activeLayerId);
+            final selection = localState.marqueeSelection;
+            final xMin = Math.min(
+                selection.x1, 
+                selection.x2);
+            final xMax = Math.max(
+                selection.x1, 
+                selection.x2);
+            final yMin = Math.min(
+                selection.y1, 
+                selection.y2);
+            final yMax = Math.max(
+                selection.y1, 
+                selection.y2);
+            final gridXMin = Math.floor(xMin / marqueeGrid.cellSize);
+            final gridXMax = Math.floor(xMax / marqueeGrid.cellSize);
+            final gridYMin = Math.floor(yMin / marqueeGrid.cellSize);
+            final gridYMax = Math.floor(yMax / marqueeGrid.cellSize);
+
+            clearMarqueeSelection();
+
+            for (gridY in gridYMin...gridYMax) {
+              for (gridX in gridXMin...gridXMax) {
+                final cellData = Utils.withDefault(
+                    Grid.getCell(activeGrid, gridX, gridY),
+                    new Map());
+                for (itemId in cellData) {
+                  final objectType = editorState.itemTypeById.get(
+                      itemId);
+
+                  // copy selection to 'clipboard'
+                  if (action == 'CUT' || action == 'COPY') {
                     insertSquare(
                         marqueeGrid,
                         // insert relative to 0,0 of marqueeGrid
@@ -673,62 +714,62 @@ class Editor {
                         Utils.uid(),
                         objectType,
                         marqueeLayerId);
+                  }
 
-                    if (action == 'CUT') {
-                      removeSquare(
-                          activeGrid,
-                          gridX,
-                          gridY,
-                          activeGrid.cellSize,
-                          activeGrid.cellSize,
-                          localState.activeLayerId);
-                    }
+                  if (action == 'CUT' || action == 'DELETE') {
+                    removeSquare(
+                        activeGrid,
+                        gridX,
+                        gridY,
+                        activeGrid.cellSize,
+                        activeGrid.cellSize,
+                        localState.activeLayerId);
                   }
                 }
               }
             }
+          }
 
-            // paste selection
-            if (action == 'PASTE') {
-              final snapToGrid = (x, y, cellSize) -> {
-                final gridX = Math.round(x / cellSize);
-                final gridY = Math.round(y / cellSize);
-                final x = Std.int(gridX * cellSize);
-                final y = Std.int(gridY * cellSize);
+          // paste selection
+          if (action == 'PASTE') {
+            final snapToGrid = (x, y, cellSize) -> {
+              final gridX = Math.round(x / cellSize);
+              final gridY = Math.round(y / cellSize);
+              final x = Std.int(gridX * cellSize);
+              final y = Std.int(gridY * cellSize);
 
-                return {
-                  x: x,
-                  y: y
-                };
-              }
+              return {
+                x: x,
+                y: y
+              };
+            }
 
-              for (itemId => bounds in marqueeGrid.itemCache) {
-                final width = bounds[1] - bounds[0];
-                final cx = Math.floor(bounds[0] + width / 2);
-                final height = bounds[3] - bounds[2];
-                final cy = Math.floor(bounds[2] + height / 2);
-                final objectType = editorState.itemTypeById.get(
-                    itemId);
-                final activeGrid = editorState.gridByLayerId
-                  .get(localState.activeLayerId);
-                final mx = Main.Global.uiRoot.mouseX;
-                final my = Main.Global.uiRoot.mouseY;
-                final tx = localState.translate.x;
-                final ty = localState.translate.y;
-                final zoom = localState.zoom;
-                final snappedMousePos = snapToGrid(
-                    Math.floor((mx - tx)),
-                    Math.floor((my - ty)),
-                    Std.int(marqueeGrid.cellSize * zoom));
+            for (itemId => bounds in marqueeGrid.itemCache) {
+              final width = bounds[1] - bounds[0];
+              final cx = Math.floor(bounds[0] + width / 2);
+              final height = bounds[3] - bounds[2];
+              final cy = Math.floor(bounds[2] + height / 2);
+              final objectType = editorState.itemTypeById.get(
+                  itemId);
+              final activeGrid = editorState.gridByLayerId
+                .get(localState.activeLayerId);
+              final mx = Main.Global.uiRoot.mouseX;
+              final my = Main.Global.uiRoot.mouseY;
+              final tx = localState.translate.x;
+              final ty = localState.translate.y;
+              final zoom = localState.zoom;
+              final snappedMousePos = snapToGrid(
+                  Math.floor((mx - tx)),
+                  Math.floor((my - ty)),
+                  Std.int(marqueeGrid.cellSize * zoom));
 
-                insertSquare(
-                    activeGrid,
-                    cx + Std.int(snappedMousePos.x / cellSize / zoom),
-                    cy + Std.int(snappedMousePos.y / cellSize / zoom),
-                    Utils.uid(),
-                    objectType,
-                    localState.activeLayerId);
-              }
+              insertSquare(
+                  activeGrid,
+                  cx + Std.int(snappedMousePos.x / cellSize / zoom),
+                  cy + Std.int(snappedMousePos.y / cellSize / zoom),
+                  Utils.uid(),
+                  objectType,
+                  localState.activeLayerId);
             }
           }
         }
@@ -853,8 +894,8 @@ class Editor {
       Main.Global.staticScene.x = editorState.translate.x / localState.zoom;
       Main.Global.staticScene.y = editorState.translate.y / localState.zoom;
 
-      localState.isDragStart = initialLocalState.isDragStart;
-      localState.isDragEnd = initialLocalState.isDragEnd;
+      localState.isDragStart = initialLocalState().isDragStart;
+      localState.isDragEnd = initialLocalState().isDragEnd;
 
       return true;
     }
