@@ -8,7 +8,7 @@
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
  * [x] load state from disk
- * [ ] [WIP] area selection cut/paste/delete
+ * [x] area selection cut/paste/delete
  * [ ] improve zoom ux
  * [ ] undo/redo system
  * [ ] option to toggle layer visibility
@@ -577,6 +577,7 @@ class Editor {
 
       Main.Global.logData.editor = {
         translate: editorState.translate,
+        zoom: localState.zoom,
         editorMode: Std.string(localState.editorMode),
         marqueeSelection: localState.marqueeSelection,
         updatedAt: editorState.updatedAt,
@@ -626,17 +627,17 @@ class Editor {
           }
         }
 
+        if (Key.isPressed(Key.ESCAPE)) {
+          clearMarqueeSelection();
+        }
+
         if (Key.isPressed(Key.M)) {
           localState.editorMode = EditorMode.MarqueeSelect;
         }
 
         if (localState.editorMode == EditorMode.MarqueeSelect) {
           final action = {
-            if (Key.isPressed(Key.ESCAPE)) {
-
-              'CLEAR_MARQUEE_SELECTION';
-
-            } else if (Key.isDown(Key.CTRL)) {
+            if (Key.isDown(Key.CTRL)) {
               if (Key.isPressed(Key.C)) {
                 'COPY';
               }
@@ -662,10 +663,6 @@ class Editor {
 
             }
           };
-
-          if (action == 'CLEAR_MARQUEE_SELECTION') {
-            clearMarqueeSelection();
-          }
 
           final marqueeLayerId = 'layer_marquee_selection';
           final marqueeGrid = editorState.gridByLayerId
