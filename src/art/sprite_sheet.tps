@@ -217,6 +217,8 @@
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-3.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-4.png</key>
             <key type="filename">aseprite_exports/ui/placeholder.png</key>
+            <key type="filename">aseprite_exports/ui/square_map_traversable_indicator.png</key>
+            <key type="filename">aseprite_exports/ui/square_tile_test.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -484,6 +486,21 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/level_1_tile.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.125</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>4,4,8,8</rect>
+                <key>scale9Paddings</key>
+                <rect>4,4,8,8</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/level_intro.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -558,6 +575,21 @@
                 <rect>16,1,31,3</rect>
                 <key>scale9Paddings</key>
                 <rect>16,1,31,3</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/teleporter_base.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.4375,0.34104</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>48,43,96,87</rect>
+                <key>scale9Paddings</key>
+                <rect>48,43,96,87</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
