@@ -278,30 +278,6 @@ class Editor {
 
     sys.thread.Thread.create(autoSaveOnChange);
 
-    final insertSquare = (
-        gridRef, gridX, gridY, id, objectType, layerId) -> {
-      final cellSize = gridRef.cellSize;
-      final cx = (gridX * cellSize) + (cellSize / 2);
-      final cy = (gridY * cellSize) + (cellSize / 2);
-
-      Grid.setItemRect(
-          gridRef,
-          cx,
-          cy,
-          cellSize,
-          cellSize,
-          id);
-
-      editorState.itemTypeById
-        .set(id, objectType);
-
-      sendAction(localState, {
-        type: 'PAINT_CELL',
-        layerId: layerId,
-        gridY: gridY,
-      });
-    };
-
     final removeSquare = (
         gridRef, gridX, gridY, width, height, layerId) -> {
       final cellSize = gridRef.cellSize;
@@ -323,6 +299,40 @@ class Editor {
 
       sendAction(localState, {
         type: 'CLEAR_CELL',
+        layerId: layerId,
+        gridY: gridY,
+      });
+    };
+
+    final insertSquare = (
+        gridRef, gridX, gridY, id, objectType, layerId) -> {
+      final cellSize = gridRef.cellSize;
+      final cx = (gridX * cellSize) + (cellSize / 2);
+      final cy = (gridY * cellSize) + (cellSize / 2);
+
+      // we want to replace the current cell value
+      // with a new value
+      removeSquare(
+          gridRef,
+          gridX,
+          gridY,
+          cellSize,
+          cellSize,
+          layerId);
+
+      Grid.setItemRect(
+          gridRef,
+          cx,
+          cy,
+          cellSize,
+          cellSize,
+          id);
+
+      editorState.itemTypeById
+        .set(id, objectType);
+
+      sendAction(localState, {
+        type: 'PAINT_CELL',
         layerId: layerId,
         gridY: gridY,
       });
@@ -881,14 +891,6 @@ class Editor {
 
             // replaces the cell with new value
             case EditorMode.Paint: {
-              removeSquare(
-                  activeGrid,
-                  gridX,
-                  gridY,
-                  cellSize,
-                  cellSize,
-                  localState.activeLayerId);
-
               insertSquare(
                   activeGrid,
                   gridX,
