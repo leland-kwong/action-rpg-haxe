@@ -9,7 +9,7 @@
  * [x] basic layer system
  * [x] load state from disk
  * [x] area selection cut/paste/delete
- * [ ] improve zoom ux
+ * [x] improve zoom ux
  * [ ] undo/redo system
  * [ ] option to toggle layer visibility
  * [ ] [BUG] Serializing state of large files can sometimes crash.
@@ -355,8 +355,26 @@ class Editor {
 
     final handleZoom = (e: hxd.Event) -> {
       if (e.kind == hxd.Event.EventKind.EWheel) {
-        localState.zoom = Math.max(
-            1, localState.zoom - Std.int(e.wheelDelta));
+        final currentZoom = localState.zoom;
+        final nextZoom = Math.max(
+            1, currentZoom - Std.int(e.wheelDelta));
+
+        // translate so that it is zooming to cursor position
+        {
+          final win = hxd.Window.getInstance();
+          final wmx = win.mouseX;
+          final wmy = win.mouseY;
+          final newTranslate = {
+            x: Std.int(wmx / nextZoom
+                   - (wmx / currentZoom - editorState.translate.x)),
+            y: Std.int(wmy / nextZoom
+                - (wmy / currentZoom - editorState.translate.y)),
+          };
+
+          editorState.translate = newTranslate;
+        }
+
+        localState.zoom = nextZoom;
       }
     }
 
@@ -376,8 +394,8 @@ class Editor {
 
     function toGridPos(gridRef, screenX: Float, screenY: Float) {
       final cellSize = gridRef.cellSize;
-      final tx = editorState.translate.x;
-      final ty = editorState.translate.y;
+      final tx = editorState.translate.x * localState.zoom;
+      final ty = editorState.translate.y * localState.zoom;
       final gridX = Math.floor((screenX - tx) / cellSize / localState.zoom);
       final gridY = Math.floor((screenY - ty) / cellSize / localState.zoom);
 
@@ -558,8 +576,8 @@ class Editor {
               final mx = Main.Global.uiRoot.mouseX;
               final my = Main.Global.uiRoot.mouseY;
               final snappedMousePos = snapToGrid(
-                  (mx - editorState.translate.x),
-                  (my - editorState.translate.y),
+                  (mx - editorState.translate.x * localState.zoom),
+                  (my - editorState.translate.y * localState.zoom),
                   cellSize);
 
               tileGroup.x = snappedMousePos.x / localState.zoom;
@@ -752,8 +770,8 @@ class Editor {
                 .get(localState.activeLayerId);
               final mx = Main.Global.uiRoot.mouseX;
               final my = Main.Global.uiRoot.mouseY;
-              final tx = localState.translate.x;
-              final ty = localState.translate.y;
+              final tx = localState.translate.x * localState.zoom;
+              final ty = localState.translate.y * localState.zoom;
               final zoom = localState.zoom;
               final snappedMousePos = snapToGrid(
                   Math.floor((mx - tx)),
@@ -787,14 +805,14 @@ class Editor {
           localState.activeLayerId = 'layer_b';
         }
 
-        // pan viewport to center of screen
+        // pan viewport to origin (0, 0)
         if (Key.isPressed(Key.F)) {
           final winCenter = windowCenterPos();
           sendAction(localState, {
             type: 'PAN_VIEWPORT',
             translate: {
-              x: Std.int(winCenter.x),
-              y: Std.int(winCenter.y),
+              x: Std.int(winCenter.x / localState.zoom),
+              y: Std.int(winCenter.y / localState.zoom),
             }
           });
         }
@@ -813,10 +831,12 @@ class Editor {
       if (localState.editorMode == EditorMode.MarqueeSelect) {
         final cellSize = editorState.gridByLayerId
           .get(localState.activeLayerId).cellSize * localState.zoom;
-        final gridX = Math.round((mx - localState.translate.x) / cellSize);
-        final gridY = Math.round((my - localState.translate.y) / cellSize);
-        final x = Std.int((gridX * cellSize) / localState.zoom);
-        final y = Std.int((gridY * cellSize) / localState.zoom);
+        final translate = localState.translate;
+        final zoom = localState.zoom;
+        final gridX = Math.round((mx - translate.x * zoom) / cellSize);
+        final gridY = Math.round((my - translate.y * zoom) / cellSize);
+        final x = Std.int((gridX * cellSize) / zoom);
+        final y = Std.int((gridY * cellSize) / zoom);
 
         if (localState.isDragStart) {
           localState.marqueeSelection.x1 = x;
@@ -838,8 +858,8 @@ class Editor {
           sendAction(localState, {
             type: 'PAN_VIEWPORT',
             translate: {
-              x: Std.int(localState.translate.x + dx),
-              y: Std.int(localState.translate.y + dy),
+              x: Std.int(localState.translate.x + dx / localState.zoom),
+              y: Std.int(localState.translate.y + dy / localState.zoom),
             }
           });
           // handle grid update
@@ -888,8 +908,8 @@ class Editor {
 
       Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
           localState.zoom);
-      Main.Global.staticScene.x = editorState.translate.x / localState.zoom;
-      Main.Global.staticScene.y = editorState.translate.y / localState.zoom;
+      Main.Global.staticScene.x = editorState.translate.x;
+      Main.Global.staticScene.y = editorState.translate.y;
 
       localState.isDragStart = initialLocalState().isDragStart;
       localState.isDragEnd = initialLocalState().isDragEnd;
@@ -972,9 +992,9 @@ class Editor {
         final hc = cellSize / 2;
         sbs.emitSprite(
             (((mouseGridPos[0] * cellSize) + hc) * localState.zoom) +
-            editorState.translate.x,
+            editorState.translate.x * localState.zoom,
             (((mouseGridPos[1] * cellSize) + hc) * localState.zoom) +
-            editorState.translate.y,
+            editorState.translate.y * localState.zoom,
             'ui/square_tile_test',
             null,
             (p) -> {
@@ -990,8 +1010,8 @@ class Editor {
       // show origin
       {
         sbs.emitSprite(
-            editorState.translate.x,
-            editorState.translate.y,
+            editorState.translate.x * localState.zoom,
+            editorState.translate.y * localState.zoom,
             'ui/square_white',
             null,
             (p) -> {
@@ -1007,9 +1027,9 @@ class Editor {
       // render marquee selection rectangle
       if (localState.editorMode == EditorMode.MarqueeSelect) {
         final selection = localState.marqueeSelection;
-        final tx = localState.translate.x;
-        final ty = localState.translate.y;
         final zoom = localState.zoom;
+        final tx = localState.translate.x * zoom;
+        final ty = localState.translate.y * zoom;
 
         sbs.emitSprite(
             (Math.min(selection.x1, selection.x2)) * zoom + tx,
