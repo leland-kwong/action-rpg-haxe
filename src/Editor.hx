@@ -10,14 +10,13 @@
  * [x] load state from disk
  * [x] area selection cut/paste/delete
  * [x] improve zoom ux
- * [ ] undo/redo system
  * [ ] option to toggle layer visibility
+ * [ ] undo/redo system
  * [ ] [BUG] Serializing state of large files can sometimes crash.
-       One possible cause is that we're mutating state while the 
+       One possible cause is that we're mutating state while the
        thread is in mid-serialization. We need a better way of mutating
-       state that doesn't interfere with the thread trying to access that 
+       state that doesn't interfere with the thread trying to access that
        at the same time.
- * [ ] adjustable brush size to paint multiple items at once
  */
 
 enum EditorMode {
@@ -35,7 +34,7 @@ typedef EditorStateAction = {
   ?translate: {
     x: Int,
     y: Int
-  }  
+  }
 };
 
 
@@ -77,17 +76,26 @@ class Editor {
   static final config = {
     activeFile: 'editor-data/level_1.eds',
     objectMetaByType: [
+      'white_square' => {
+        spriteKey: 'ui/square_tile_test',
+      },
+      'traversable_square' => {
+        spriteKey: 'ui/square_map_traversable_indicator',
+      },
       'pillar' => {
         spriteKey: 'ui/pillar',
+      },
+      'player' => {
+        spriteKey: 'player_animation/idle-0'
+      },
+      'teleporter' => {
+        spriteKey: 'ui/teleporter_base',
       },
       'enemy_1' => {
         spriteKey: 'enemy-2_animation/idle-0',
       },
       'tile_1' => {
         spriteKey: 'ui/level_1_tile',
-      },
-      'white_square' => {
-        spriteKey: 'ui/square_tile_test',
       },
     ]
   }
@@ -115,38 +123,7 @@ class Editor {
     };
   }
 
-  static var localState = {
-    selectedObjectType: 'white_square',
-
-    isDragStart: initialLocalState().isDragStart,
-    isDragging: initialLocalState().isDragging,
-    isDragEnd: initialLocalState().isDragEnd,
-
-    dragStartPos: {
-      x: 0,
-      y: 0
-    },
-    translate: {
-      x: 0,
-      y: 0
-    },
-    marqueeSelection: initialLocalState()
-      .marqueeSelection,
-
-    editorMode: EditorMode.Paint,
-    previousEditorMode: EditorMode.Paint,
-
-    zoom: 2.0,
-    actions: new Array<EditorStateAction>(),
-    stateToSave: null,
-    // eds is short for `editor data state`
-    activeLayerId: 'layer_a',
-    tileRowsByLayerId: new Map<
-      String,
-      Map<Int, h2d.TileGroup>
-    >()
-  };
-
+  static var localState = null; 
   // state to be serialized and saved
   static var editorState = null;
 
@@ -179,18 +156,67 @@ class Editor {
         },
         updatedAt: Date.now(),
         layerOrderById: [
-          'layer_a',
-          'layer_b',
+          'layer_1',
+          'layer_2',
+          'layer_3',
+          'layer_4',
+          'layer_5',
+          'layer_6',
+          'layer_7',
+          'layer_8',
+          'layer_prefab',
+          // this is just for the marquee selection
+          // and should not be selectable
           'layer_marquee_selection',
         ],
         gridByLayerId: [
-          'layer_a' => Grid.create(cellSize),
-          'layer_b' => Grid.create(cellSize),
+          'layer_1' => Grid.create(cellSize),
+          'layer_2' => Grid.create(cellSize),
+          'layer_3' => Grid.create(cellSize),
+          'layer_4' => Grid.create(cellSize),
+          'layer_5' => Grid.create(cellSize),
+          'layer_6' => Grid.create(cellSize),
+          'layer_7' => Grid.create(cellSize),
+          'layer_8' => Grid.create(cellSize),
+          'layer_prefab' => Grid.create(cellSize),
           'layer_marquee_selection' => Grid.create(cellSize),
         ],
         itemTypeById: new Map<String, String>()
       };
     }
+
+    localState = {
+      selectedObjectType: 'white_square',
+
+      isDragStart: initialLocalState().isDragStart,
+      isDragging: initialLocalState().isDragging,
+      isDragEnd: initialLocalState().isDragEnd,
+
+      dragStartPos: {
+        x: 0,
+        y: 0
+      },
+      translate: {
+        x: 0,
+        y: 0
+      },
+      marqueeSelection: initialLocalState()
+        .marqueeSelection,
+
+      editorMode: EditorMode.Paint,
+      previousEditorMode: EditorMode.Paint,
+
+      zoom: 1.0,
+      actions: new Array<EditorStateAction>(),
+      stateToSave: null,
+      // set to first layer by default
+      activeLayerId: editorState.layerOrderById[0],
+      tileRowsByLayerId: new Map<
+        String,
+      Map<Int, h2d.TileGroup>
+        >()
+    };
+
 
     final profiler = Profiler.create();
     final spriteSheetTile =
@@ -232,7 +258,7 @@ class Editor {
           Main.Global.logData.loadStateItemCount = itemCount;
         }, (err) -> {
           trace(
-              '[editor error] failed to load `${loadPath}`', 
+              '[editor error] failed to load `${loadPath}`',
               err);
         });
 
@@ -248,7 +274,7 @@ class Editor {
           final stateToSave = localState.stateToSave;
           final filePath = config.activeFile;
           if (!savePending && stateToSave != null) {
-            // prevent another save from happening 
+            // prevent another save from happening
             // until this is complete
             savePending = true;
             localState.stateToSave = null;
@@ -643,13 +669,13 @@ class Editor {
       {
         // toggle panning mode
         {
-          if (Key.isDown(Key.SPACE) && 
+          if (Key.isDown(Key.SPACE) &&
               localState.editorMode != EditorMode.Panning) {
             localState.previousEditorMode = localState.editorMode;
             localState.editorMode = EditorMode.Panning;
           }
 
-          if (Key.isReleased(Key.SPACE) && 
+          if (Key.isReleased(Key.SPACE) &&
               localState.editorMode == EditorMode.Panning) {
             localState.editorMode = localState.previousEditorMode;
           }
@@ -702,16 +728,16 @@ class Editor {
               .get(localState.activeLayerId);
             final selection = localState.marqueeSelection;
             final xMin = Math.min(
-                selection.x1, 
+                selection.x1,
                 selection.x2);
             final xMax = Math.max(
-                selection.x1, 
+                selection.x1,
                 selection.x2);
             final yMin = Math.min(
-                selection.y1, 
+                selection.y1,
                 selection.y2);
             final yMax = Math.max(
-                selection.y1, 
+                selection.y1,
                 selection.y2);
             final gridXMin = Math.floor(xMin / marqueeGrid.cellSize);
             final gridXMax = Math.floor(xMax / marqueeGrid.cellSize);
@@ -807,12 +833,28 @@ class Editor {
           localState.editorMode = EditorMode.Paint;
         }
 
-        if (Key.isPressed(Key.NUMBER_1)) {
-          localState.activeLayerId = 'layer_a';
-        }
+        // switch layer
+        {
+          final layerKeys = [
+            Key.NUMBER_1,
+            Key.NUMBER_2,
+            Key.NUMBER_3,
+            Key.NUMBER_4,
+            Key.NUMBER_5,
+            Key.NUMBER_6,
+            Key.NUMBER_7,
+            Key.NUMBER_8,
+            Key.NUMBER_9,
+          ];
+          for (i in 0...layerKeys.length) {
+            final key = layerKeys[i];
+            final isSelected = Key.isPressed(key);
 
-        if (Key.isPressed(Key.NUMBER_2)) {
-          localState.activeLayerId = 'layer_b';
+            if (isSelected) {
+              localState.activeLayerId =
+                editorState.layerOrderById[i];
+            }
+          }
         }
 
         // pan viewport to origin (0, 0)
@@ -925,6 +967,7 @@ class Editor {
       final cellSize = activeGrid.cellSize;
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
+      final zoom = localState.zoom;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = localState.zoom;
@@ -967,46 +1010,91 @@ class Editor {
       }
 
       final drawSortSelection = 1000 * 1000;
-      // show selection at cursor
-      if (localState.editorMode == EditorMode.Paint) {
-        final spriteKey = config.objectMetaByType
-          .get(localState.selectedObjectType).spriteKey;
-        sbs.emitSprite(
-            mx,
-            my,
-            spriteKey,
-            null,
-            (p) -> {
-              final b: h2d.SpriteBatch.BatchElement =
-                p.batchElement;
-              b.alpha = 0.3;
-              p.sortOrder = drawSortSelection;
-              spriteEffectZoom(p);
-            });
-      }
 
-      // show hovered cell at cursor
       {
         final mouseGridPos = toGridPos(
             activeGrid,
             mx,
             my);
         final hc = cellSize / 2;
-        sbs.emitSprite(
-            (((mouseGridPos[0] * cellSize) + hc) * localState.zoom) +
-            editorState.translate.x * localState.zoom,
-            (((mouseGridPos[1] * cellSize) + hc) * localState.zoom) +
-            editorState.translate.y * localState.zoom,
-            'ui/square_tile_test',
-            null,
-            (p) -> {
-              final b: h2d.SpriteBatch.BatchElement =
-                p.batchElement;
-              p.sortOrder = drawSortSelection - 1;
-              b.b = 0;
-              b.alpha = 0.3;
-              spriteEffectZoom(p);
-            });
+        final cx = (((mouseGridPos[0] * cellSize) + hc) * localState.zoom) +
+          editorState.translate.x * localState.zoom;
+        final cy = (((mouseGridPos[1] * cellSize) + hc) * localState.zoom) +
+          editorState.translate.y * localState.zoom;
+
+        // show selection at cursor
+        if (localState.editorMode == EditorMode.Paint) {
+          final spriteKey = config.objectMetaByType
+            .get(localState.selectedObjectType).spriteKey;
+          sbs.emitSprite(
+              cx, cy,
+              spriteKey,
+              null,
+              (p) -> {
+                final b: h2d.SpriteBatch.BatchElement =
+                  p.batchElement;
+                b.alpha = 0.3;
+                p.sortOrder = drawSortSelection;
+                spriteEffectZoom(p);
+              });
+        }
+
+        // show hovered cell (rectangle) at cursor
+        {
+          final alpha = 0.8;
+          final sortOrder = drawSortSelection + 1;
+          // north edge
+          sbs.emitSprite(
+              cx - hc * zoom, cy - hc * zoom,
+              'ui/square_white',
+              null,
+              (p) -> {
+                final b: h2d.SpriteBatch.BatchElement =
+                  p.batchElement;
+                p.sortOrder = sortOrder;
+                b.scaleX = activeGrid.cellSize * zoom;
+                b.alpha = alpha;
+              });
+
+          // east edge
+          sbs.emitSprite(
+              cx + hc * zoom, cy - hc * zoom,
+              'ui/square_white',
+              null,
+              (p) -> {
+                final b: h2d.SpriteBatch.BatchElement =
+                  p.batchElement;
+                p.sortOrder = sortOrder;
+                b.scaleY = activeGrid.cellSize * zoom;
+                b.alpha = alpha;
+              });
+
+          // south edge
+          sbs.emitSprite(
+              cx - hc * zoom, cy + hc * zoom,
+              'ui/square_white',
+              null,
+              (p) -> {
+                final b: h2d.SpriteBatch.BatchElement =
+                  p.batchElement;
+                p.sortOrder = sortOrder;
+                b.scaleX = activeGrid.cellSize * zoom;
+                b.alpha = alpha;
+              });
+
+          // west edge
+          sbs.emitSprite(
+              cx - hc * zoom, cy - hc * zoom,
+              'ui/square_white',
+              null,
+              (p) -> {
+                final b: h2d.SpriteBatch.BatchElement =
+                  p.batchElement;
+                p.sortOrder = sortOrder;
+                b.scaleY = activeGrid.cellSize * zoom;
+                b.alpha = alpha;
+              });
+        }
       }
 
       // show origin
@@ -1019,7 +1107,7 @@ class Editor {
             (p) -> {
               final b: h2d.SpriteBatch.BatchElement =
                 p.batchElement;
-              b.scale = 10; 
+              b.scale = 10;
               p.sortOrder = drawSortSelection + 1;
               b.b = 0.4;
               b.alpha = 0.6;
@@ -1041,8 +1129,8 @@ class Editor {
             (p) -> {
               final b: h2d.SpriteBatch.BatchElement =
                 p.batchElement;
-              b.scaleX = Math.abs(selection.x1 - selection.x2) * zoom; 
-              b.scaleY = Math.abs(selection.y1 - selection.y2) * zoom; 
+              b.scaleX = Math.abs(selection.x1 - selection.x2) * zoom;
+              b.scaleY = Math.abs(selection.y1 - selection.y2) * zoom;
               p.sortOrder = drawSortSelection + 2;
               b.b = 0.4;
               b.alpha = 0.3;
