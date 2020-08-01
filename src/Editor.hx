@@ -3,20 +3,24 @@
  * per object in the grid since we can derive all the
  * object information directly from that id. This way we're
  * not having to deal with varying issues around objects
- * changing their size because their position remains static
+ * changing their size because their position remains static.
  *
- * [x] paint objects by placing them anywhere
- * [x] basic layer system
- * [x] load state from disk
- * [x] area selection cut/paste/delete
- * [x] improve zoom ux
- * [ ] option to toggle layer visibility
+ * [ ] Put brush selection onto marquee layer. This way we can
+       consolidate the brush and marquee selection into the same
+       api. We'll also need to allow left-click to paint the
+       current marquee selection.
  * [ ] undo/redo system
  * [ ] [BUG] Serializing state of large files can sometimes crash.
        One possible cause is that we're mutating state while the
        thread is in mid-serialization. We need a better way of mutating
        state that doesn't interfere with the thread trying to access that
        at the same time.
+ * [x] paint objects by placing them anywhere
+ * [x] basic layer system
+ * [x] load state from disk
+ * [x] area selection cut/paste/delete
+ * [x] improve zoom ux
+ * [x] layer visibility toggling
  */
 
 enum EditorMode {
@@ -36,7 +40,6 @@ typedef EditorStateAction = {
     y: Int
   }
 };
-
 
 class Profiler {
   public static function create(): ProfilerRef {
@@ -68,6 +71,24 @@ class Profiler {
     inst.time = executionTime;
 
     return executionTime;
+  }
+}
+
+class EditorTileGroup extends h2d.TileGroup {
+  var shouldDraw: () -> Bool;
+
+  public override function new(
+      t : h2d.Tile, 
+      ?parent : h2d.Object,
+      shouldDraw) {
+    super(t, parent);
+    this.shouldDraw = shouldDraw;
+  }
+
+  override function draw(ctx: h2d.RenderContext) {
+    if (shouldDraw()) {
+      super.draw(ctx);
+    }
   }
 }
 
@@ -209,6 +230,8 @@ class Editor {
       zoom: 1.0,
       actions: new Array<EditorStateAction>(),
       stateToSave: null,
+      showAllLayers: true,
+      layersToShow: [],
       // set to first layer by default
       activeLayerId: editorState.layerOrderById[0],
       tileRowsByLayerId: new Map<
@@ -507,9 +530,16 @@ class Editor {
                   final tg = activeTileRows.get(rowIndex);
 
                   if (tg == null) {
-                    final newTg = new h2d.TileGroup(
+                    final isVisibleLayer = (layerId) -> 
+                      layerId == action.layerId;
+                    final newTg = new EditorTileGroup(
                         spriteSheetTile,
-                        Main.Global.staticScene);
+                        Main.Global.staticScene,
+                        () -> {
+                          return Lambda.find(
+                              localState.layersToShow,
+                              isVisibleLayer) != null;
+                        });
                     activeTileRows.set(rowIndex, newTg);
                     newTg;
                   } else {
@@ -630,10 +660,10 @@ class Editor {
       }
 
       Main.Global.logData.editor = {
-        translate: editorState.translate,
-        zoom: localState.zoom,
+        showAllLayers: localState.showAllLayers,
         editorMode: Std.string(localState.editorMode),
-        marqueeSelection: localState.marqueeSelection,
+        zoom: localState.zoom,
+        translate: editorState.translate,
         updatedAt: editorState.updatedAt,
       };
 
@@ -687,6 +717,10 @@ class Editor {
 
         if (Key.isPressed(Key.M)) {
           localState.editorMode = EditorMode.MarqueeSelect;
+        }
+
+        if (Key.isPressed(Key.TAB)) {
+          localState.showAllLayers = !localState.showAllLayers;
         }
 
         if (localState.editorMode == EditorMode.MarqueeSelect) {
@@ -948,6 +982,19 @@ class Editor {
       } else {
         localState.translate.x = editorState.translate.x;
         localState.translate.y = editorState.translate.y;
+      }
+
+      // update layerVisibility
+      {
+        localState.layersToShow = {
+          localState.showAllLayers
+          ? editorState.layerOrderById
+          : [
+            localState.activeLayerId,
+            'layer_marquee_selection',
+            'layer_prefab'
+          ];
+        }
       }
 
       Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
