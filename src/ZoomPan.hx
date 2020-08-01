@@ -1,3 +1,5 @@
+// an example on how to zoom relative to the mouse position
+
 class ZoomPan {
   static function winMousePos() {
     final win = hxd.Window.getInstance();
@@ -17,16 +19,15 @@ class ZoomPan {
       x: x,
       y: y
     });
-    final initialTranslate = vec2(0.0, 0.0);
     final state = {
       zoom: 1.0,
       translate: {
-        x: initialTranslate.x,
-        y: initialTranslate.y
+        x: 100.0,
+        y: 100.0
       },
       screenTranslate: {
-        x: initialTranslate.x,
-        y: initialTranslate.y
+        x: 0.0,
+        y: 0.0
       },
       activeCircleId: 'c1',
       lockToCircle: true
@@ -78,8 +79,12 @@ class ZoomPan {
         final wm = winMousePos();
         g.beginFill(0x2cb5e7, 0.8); 
         g.drawCircle(
-            wm.x / state.zoom - state.screenTranslate.x, 
-            wm.y / state.zoom - state.screenTranslate.y,
+            wm.x / state.zoom 
+            - state.screenTranslate.x 
+            - state.translate.x, 
+            wm.y / state.zoom 
+            - state.screenTranslate.y 
+            - state.translate.y,
             15);
       }
     }
@@ -104,20 +109,19 @@ class ZoomPan {
           x: (state.lockToCircle ? wm.x : screenZoomTo.x) / newZoom,
           y: (state.lockToCircle ? wm.y : screenZoomTo.y) / newZoom 
         };
-        // final screenAdjust = {
-        //   x: wm.x / newZoom,
-        //   y: wm.y / newZoom
-        // };
         final screenAdjust = {
-          x: wm.x / newZoom - (wm.x / state.zoom - state.screenTranslate.x),
-          y: wm.y / newZoom - (wm.y / state.zoom - state.screenTranslate.y)
+          x: wm.x / newZoom 
+            // readjust according to previous mouse zoom position
+            - (wm.x / state.zoom - state.screenTranslate.x),
+          y: wm.y / newZoom 
+            - (wm.y / state.zoom - state.screenTranslate.y)
         };
 
-        trace(Lambda.map([
-            wm.x / state.zoom - state.screenTranslate.x,
-            wm.y / state.zoom - state.screenTranslate.y,
-            state.screenTranslate.x,
-            state.screenTranslate.y], Math.round));
+        // trace(Lambda.map([
+        //     wm.x / state.zoom - state.screenTranslate.x,
+        //     wm.y / state.zoom - state.screenTranslate.y,
+        //     state.screenTranslate.x,
+        //     state.screenTranslate.y], Math.round));
 
         state.zoom = newZoom;
         state.screenTranslate.x = screenAdjust.x;
@@ -137,12 +141,12 @@ class ZoomPan {
       Main.Global.logData.winMouse = winMousePos();
       Main.Global.logData.zoomProgramState = state;
       s2d.scaleMode = ScaleMode.Zoom(state.zoom);
-      s2d.x = state.screenTranslate.x;
-      s2d.y = state.screenTranslate.y;
+      s2d.x = state.screenTranslate.x + state.translate.x;
+      s2d.y = state.screenTranslate.y + state.translate.y;
 
       final Key = hxd.Key;
       {
-        final speed = 100;
+        final speed = 300;
         var dx = 0;
         var dy = 0;
         if (Key.isDown(Key.W)) {
@@ -159,6 +163,8 @@ class ZoomPan {
         }
 
         // pan the canvas
+        state.translate.x += dx * dt * speed;
+        state.translate.y += dy * dt * speed;
       }
 
       if (Key.isPressed(Key.NUMBER_1)) {
