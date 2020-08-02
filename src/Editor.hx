@@ -10,7 +10,7 @@
        consolidate the brush and marquee selection into the same
        api. We'll also need to allow left-click to paint the
        current marquee selection.
- * [ ] [BUG] Serializing state of large files can sometimes crash.
+ * [ ] [BUG] Serializing state can sometimes crash.
        One possible cause is that we're mutating state while the
        thread is in mid-serialization. We need a better way of mutating
        state that doesn't interfere with the thread trying to access that
@@ -310,12 +310,12 @@ class Editor {
         });
 
     final saveAsync = () -> {
-      final interval = 1 / 10;
-      var savePending = false;
+      try {
+        final interval = 1 / 10;
+        var savePending = false;
 
-      while (true) {
+        while (true) {
 
-        try {
           Sys.sleep(interval);
 
           final stateToSave = localState.stateToSave;
@@ -343,9 +343,9 @@ class Editor {
                   trace(error);
                 });
           }
-        } catch (err) {
-          trace(err);
-        }
+        }       
+      } catch(err) {
+        trace('[editor save error]', err.stack);
       }
     };
 
