@@ -5,18 +5,39 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
- * [ ] Controls for switching grid snapping sizes
+ * [ ] 1. Make grids 16 pixel cell size so when we make a marquee
+          selection we're not having to query every single pixel
+          on the screen.
+       2. Also need to change the map value of `editorState.itemTypeById`
+          to be an object like:
+          ```
+          {
+            type: {objectType},
+            x:    {objectXPosition},
+            y:    {objectYPosition},
+          }
+          ```
+          This way we can then determine the object's true position.
+       3. Also need to store the object's position to
+          `localState.itemIdsByPosition` so that we can quickly replace
+          any item that shares the same position on that layer. We can
+          set this information when `insertSquare` is called. The reason
+          we store this on local state as opposed to editor state is
+          because this information does not need to be serialized, its
+          really just for quickly querying an object by its position
+          during run time.
+ * [ ] undo/redo system
  * [ ] Put brush selection onto marquee layer. This way we can
        consolidate the brush and marquee selection into the same
        api. We'll also need to allow left-click to paint the
        current marquee selection.
- * [ ] undo/redo system
  * [ ] [BUG] Serializing state of large files can sometimes crash.
        One possible cause is that we're mutating state while the
        thread is in mid-serialization. We need a better way of mutating
        state that doesn't interfere with the thread trying to access that
        at the same time.
  * [ ] State versioning so we can properly migrate data
+ * [x] Controls for switching grid snapping sizes
  * [x] Custom grid snap size
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
@@ -91,7 +112,7 @@ class EditorTileGroup extends h2d.TileGroup {
   var shouldDraw: () -> Bool;
 
   public override function new(
-      t : h2d.Tile, 
+      t : h2d.Tile,
       ?parent : h2d.Object,
       shouldDraw) {
     super(t, parent);
@@ -157,7 +178,7 @@ class Editor {
     };
   }
 
-  static var localState = null; 
+  static var localState = null;
   // state to be serialized and saved
   static var editorState: EditorState;
 
@@ -181,10 +202,6 @@ class Editor {
   public static function init() {
     editorState = {
       final winCenter = windowCenterPos();
-      // DO NOT CHANGE: 
-      // All grids are now a cellsize of 1 since
-      // positioning of operations is handled via
-      // a separate grid snapping option `localState.snapGridSize`
       final cellSize = 1;
 
       {
@@ -483,9 +500,9 @@ class Editor {
       final tx = editorState.translate.x * localState.zoom;
       final ty = editorState.translate.y * localState.zoom;
       final hg = gridSize / 2 * localState.zoom;
-      final gridX = Math.floor((screenX - tx + hg) / gridSize / localState.zoom) 
+      final gridX = Math.floor((screenX - tx + hg) / gridSize / localState.zoom)
         * gridSize;
-      final gridY = Math.floor((screenY - ty + hg) / gridSize / localState.zoom) 
+      final gridY = Math.floor((screenY - ty + hg) / gridSize / localState.zoom)
         * gridSize;
 
       return [gridX, gridY];
@@ -559,7 +576,7 @@ class Editor {
                   final tg = activeTileRows.get(rowIndex);
 
                   if (tg == null) {
-                    final isVisibleLayer = (layerId) -> 
+                    final isVisibleLayer = (layerId) ->
                       layerId == action.layerId;
                     final newTg = new EditorTileGroup(
                         spriteSheetTile,
@@ -744,7 +761,7 @@ class Editor {
 
         // toggle grid snap size
         if (Key.isPressed(Key.S)) {
-          localState.snapGridSize = 
+          localState.snapGridSize =
             localState.snapGridSize == 1
             ? 16
             : 1;
