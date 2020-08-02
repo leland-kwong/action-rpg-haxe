@@ -112,7 +112,15 @@ class EditorTileGroup extends h2d.TileGroup {
 
 class Editor {
   // all configuration stuff lives here
-  static final config = {
+  public static final config: {
+    activeFile: String,
+    autoSave: Bool,
+    objectMetaByType: Map<String, {
+      spriteKey: String,
+      ?type: String,
+      ?id: String
+    }>
+  } = {
     activeFile: 'editor-data/level_1.eds',
     autoSave: false,
     objectMetaByType: [
@@ -121,12 +129,18 @@ class Editor {
       },
       'traversable_square' => {
         spriteKey: 'ui/square_map_traversable_indicator',
+        type: 'floorTile'
       },
       'pillar' => {
         spriteKey: 'ui/pillar',
       },
       'player' => {
-        spriteKey: 'player_animation/idle-0'
+        spriteKey: 'player_animation/idle-0',
+        // fixed id
+        id: 'playerStartPos'
+      },
+      'enemySpawnPoint' => {
+        spriteKey: 'ui/enemy_spawn_point'
       },
       'teleporter' => {
         spriteKey: 'ui/teleporter_base',
@@ -136,6 +150,7 @@ class Editor {
       },
       'tile_1' => {
         spriteKey: 'ui/level_1_tile',
+        type: 'floorTile'
       },
     ]
   }
@@ -395,7 +410,8 @@ class Editor {
     };
 
     final insertSquare = (
-        gridRef, gridX, gridY, id, objectType, layerId) -> {
+        gridRef: Grid.GridRef, 
+        gridX, gridY, id, objectType, layerId) -> {
       if (localState.editorUiRegion != EditorUiRegion.MainMap) {
         return;
       }
@@ -404,6 +420,20 @@ class Editor {
       final snapGridSize = localState.snapGridSize;
       final cx = gridX;
       final cy = gridY;
+      final hasSharedId = editorState.itemTypeById.exists(id);
+
+      // remove item that shares same id
+      if (hasSharedId) {
+        final bounds = gridRef.itemCache.get(id); 
+        final x = bounds[0];
+        final y = bounds[2];
+
+        removeSquare(
+            gridRef,
+            x, y,
+            1, 1,
+            layerId);
+      }
 
       // we want to replace the current cell value
       // with a new value
@@ -774,6 +804,7 @@ class Editor {
 
       Main.Global.logData.editor = {
         activeUiRegion: Std.string(localState.editorUiRegion),
+        activeLayerId: localState.activeLayerId,
         regionState: localState.uiRegionState.get(EditorUiRegion.PaletteSelector),
         showAllLayers: localState.showAllLayers,
         snapGridSize: localState.snapGridSize,
@@ -1097,11 +1128,16 @@ class Editor {
 
             // replaces the cell with new value
             case EditorMode.Paint: {
+              final objectMeta = config.objectMetaByType.get(
+                  localState.selectedObjectType);
+              final id = Utils.withDefault(
+                  objectMeta.id,
+                  Utils.uid());
               insertSquare(
                   activeGrid,
                   gridX,
                   gridY,
-                  Utils.uid(),
+                  id,
                   localState.selectedObjectType,
                   localState.activeLayerId);
             }
