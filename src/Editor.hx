@@ -5,6 +5,7 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
+ * [ ] [WIP] Custom grid snap size
  * [ ] Put brush selection onto marquee layer. This way we can
        consolidate the brush and marquee selection into the same
        api. We'll also need to allow left-click to paint the
@@ -15,6 +16,7 @@
        thread is in mid-serialization. We need a better way of mutating
        state that doesn't interfere with the thread trying to access that
        at the same time.
+ * [ ] State versioning so we can properly migrate data
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
  * [x] load state from disk
@@ -39,6 +41,16 @@ typedef EditorStateAction = {
     x: Int,
     y: Int
   }
+};
+typedef EditorState = {
+  translate: {
+    x: Int,
+    y: Int,
+  },
+  updatedAt: Date,
+  layerOrderById: Array<String>,
+  gridByLayerId: Map<String, Grid.GridRef>,
+  itemTypeById: Map<String, String>
 };
 
 class Profiler {
@@ -146,7 +158,7 @@ class Editor {
 
   static var localState = null; 
   // state to be serialized and saved
-  static var editorState = null;
+  static var editorState: EditorState;
 
   // adds an action to the queue to be
   // processed on the next update loop
@@ -168,7 +180,11 @@ class Editor {
   public static function init() {
     editorState = {
       final winCenter = windowCenterPos();
-      final cellSize = 16;
+      // DO NOT CHANGE: 
+      // All grids are now a cellsize of 1 since
+      // positioning of operations is handled via
+      // a separate grid snapping option `localState.snapGridSize`
+      final cellSize = 1;
 
       {
         translate: {
@@ -212,6 +228,7 @@ class Editor {
       isDragStart: initialLocalState().isDragStart,
       isDragging: initialLocalState().isDragging,
       isDragEnd: initialLocalState().isDragEnd,
+      snapGridSize: 16,
 
       dragStartPos: {
         x: 0,
@@ -250,18 +267,27 @@ class Editor {
         Main.Global.uiRoot);
     final loadPath = config.activeFile;
     final s2d = Main.Global.staticScene;
+    // custom transformation function to
+    // modify the saved data.
+    final migrateState = (state: EditorState) -> {
+      return state;
+    };
 
     SaveState.load(
         loadPath,
         false,
         (unserialized) -> {
-          if (unserialized == null) {
+          final transformed = migrateState(unserialized);
+
+          if (transformed == null) {
             trace('[editor load] no data to load at `${loadPath}`');
 
             return;
           }
-          editorState = unserialized;
 
+          editorState = transformed;
+
+          // repaint items from old state
           var itemCount = 0;
           for (layerId => grid in editorState.gridByLayerId) {
             final gridData = grid.data;
@@ -330,8 +356,8 @@ class Editor {
     final removeSquare = (
         gridRef, gridX, gridY, width, height, layerId) -> {
       final cellSize = gridRef.cellSize;
-      final cx = (gridX * cellSize) + (cellSize / 2);
-      final cy = (gridY * cellSize) + (cellSize / 2);
+      final cx = gridX;
+      final cy = gridY;
       final items = Grid.getItemsInRect(
           gridRef,
           cx,
@@ -356,8 +382,9 @@ class Editor {
     final insertSquare = (
         gridRef, gridX, gridY, id, objectType, layerId) -> {
       final cellSize = gridRef.cellSize;
-      final cx = (gridX * cellSize) + (cellSize / 2);
-      final cy = (gridY * cellSize) + (cellSize / 2);
+      final snapGridSize = localState.snapGridSize;
+      final cx = gridX;
+      final cy = gridY;
 
       // we want to replace the current cell value
       // with a new value
@@ -373,8 +400,8 @@ class Editor {
           gridRef,
           cx,
           cy,
-          cellSize,
-          cellSize,
+          1,
+          1,
           id);
 
       editorState.itemTypeById
@@ -451,12 +478,14 @@ class Editor {
     s2d.addEventListener(handleZoom);
     s2d.addEventListener(handleDrag);
 
-    function toGridPos(gridRef, screenX: Float, screenY: Float) {
-      final cellSize = gridRef.cellSize;
+    function toGridPos(gridSize: Int, gridRef, screenX: Float, screenY: Float) {
       final tx = editorState.translate.x * localState.zoom;
       final ty = editorState.translate.y * localState.zoom;
-      final gridX = Math.floor((screenX - tx) / cellSize / localState.zoom);
-      final gridY = Math.floor((screenY - ty) / cellSize / localState.zoom);
+      final hg = gridSize / 2 * localState.zoom;
+      final gridX = Math.floor((screenX - tx + hg) / gridSize / localState.zoom) 
+        * gridSize;
+      final gridY = Math.floor((screenY - ty + hg) / gridSize / localState.zoom) 
+        * gridSize;
 
       return [gridX, gridY];
     }
@@ -524,7 +553,6 @@ class Editor {
                     tileRows;
                   }
                 }
-                final cellSize = activeGrid.cellSize;
                 final rowIndex = action.gridY;
                 final tg = {
                   final tg = activeTileRows.get(rowIndex);
@@ -579,8 +607,8 @@ class Editor {
                           spriteData.pivot.x,
                           spriteData.pivot.y);
                       tg.add(
-                          (colIndex * cellSize) + (cellSize / 2),
-                          (rowIndex * cellSize) + (cellSize / 2),
+                          colIndex,
+                          rowIndex,
                           tile);
                     }
                   }
@@ -915,14 +943,14 @@ class Editor {
 
       // handle marquee selection via mouse drag
       if (localState.editorMode == EditorMode.MarqueeSelect) {
-        final cellSize = editorState.gridByLayerId
-          .get(localState.activeLayerId).cellSize * localState.zoom;
-        final translate = localState.translate;
         final zoom = localState.zoom;
+        final cellSize = localState.snapGridSize * zoom;
+        final hg = cellSize / 2;
+        final translate = localState.translate;
         final gridX = Math.round((mx - translate.x * zoom) / cellSize);
         final gridY = Math.round((my - translate.y * zoom) / cellSize);
-        final x = Std.int((gridX * cellSize) / zoom);
-        final y = Std.int((gridY * cellSize) / zoom);
+        final x = Std.int(((gridX * cellSize) - hg) / zoom);
+        final y = Std.int(((gridY * cellSize) - hg) / zoom);
 
         if (localState.isDragStart) {
           localState.marqueeSelection.x1 = x;
@@ -950,7 +978,8 @@ class Editor {
           });
           // handle grid update
         } else {
-          final mouseGridPos = toGridPos(activeGrid, mx, my);
+          final mouseGridPos = toGridPos(
+              localState.snapGridSize, activeGrid, mx, my);
           final gridX = mouseGridPos[0];
           final gridY = mouseGridPos[1];
 
@@ -1059,14 +1088,16 @@ class Editor {
       final drawSortSelection = 1000 * 1000;
 
       {
+        final snapGridSize = localState.snapGridSize;
         final mouseGridPos = toGridPos(
+            snapGridSize,
             activeGrid,
             mx,
             my);
-        final hc = cellSize / 2;
-        final cx = (((mouseGridPos[0] * cellSize) + hc) * localState.zoom) +
+        final hc = snapGridSize / 2;
+        final cx = (((mouseGridPos[0])) * localState.zoom) +
           editorState.translate.x * localState.zoom;
-        final cy = (((mouseGridPos[1] * cellSize) + hc) * localState.zoom) +
+        final cy = (((mouseGridPos[1])) * localState.zoom) +
           editorState.translate.y * localState.zoom;
 
         // show selection at cursor
@@ -1099,7 +1130,7 @@ class Editor {
                 final b: h2d.SpriteBatch.BatchElement =
                   p.batchElement;
                 p.sortOrder = sortOrder;
-                b.scaleX = activeGrid.cellSize * zoom;
+                b.scaleX = snapGridSize * zoom;
                 b.alpha = alpha;
               });
 
@@ -1112,7 +1143,7 @@ class Editor {
                 final b: h2d.SpriteBatch.BatchElement =
                   p.batchElement;
                 p.sortOrder = sortOrder;
-                b.scaleY = activeGrid.cellSize * zoom;
+                b.scaleY = snapGridSize * zoom;
                 b.alpha = alpha;
               });
 
@@ -1125,7 +1156,7 @@ class Editor {
                 final b: h2d.SpriteBatch.BatchElement =
                   p.batchElement;
                 p.sortOrder = sortOrder;
-                b.scaleX = activeGrid.cellSize * zoom;
+                b.scaleX = snapGridSize * zoom;
                 b.alpha = alpha;
               });
 
@@ -1138,7 +1169,7 @@ class Editor {
                 final b: h2d.SpriteBatch.BatchElement =
                   p.batchElement;
                 p.sortOrder = sortOrder;
-                b.scaleY = activeGrid.cellSize * zoom;
+                b.scaleY = snapGridSize * zoom;
                 b.alpha = alpha;
               });
         }
