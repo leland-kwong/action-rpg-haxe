@@ -118,7 +118,7 @@ class Editor {
     objectMetaByType: Map<String, {
       spriteKey: String,
       ?type: String,
-      ?id: String
+      ?sharedId: String
     }>
   } = {
     activeFile: 'editor-data/level_1.eds',
@@ -137,7 +137,7 @@ class Editor {
       'player' => {
         spriteKey: 'player_animation/idle-0',
         // fixed id
-        id: 'playerStartPos'
+        sharedId: 'playerStartPos'
       },
       'enemySpawnPoint' => {
         spriteKey: 'ui/enemy_spawn_point'
@@ -611,6 +611,16 @@ class Editor {
       }
     }
 
+    function createId(objectType) {
+      final objectMeta = config.objectMetaByType.get(
+          localState.selectedObjectType);
+
+      final sharedId = objectMeta.sharedId;
+
+      return sharedId == null 
+        ? Utils.uid() : sharedId;
+    }
+
     function update(dt) {
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
@@ -954,7 +964,7 @@ class Editor {
                           // insert relative to 0,0 of marqueeGrid
                           gridX - gridXMin,
                           gridY - gridYMin,
-                          Utils.uid(),
+                          createId(objectType),
                           objectType,
                           marqueeLayerId);
                     }
@@ -1012,7 +1022,7 @@ class Editor {
                   activeGrid,
                   cx + Std.int(snappedMousePos.x / zoom),
                   cy + Std.int(snappedMousePos.y / zoom),
-                  Utils.uid(),
+                  createId(objectType),
                   objectType,
                   localState.activeLayerId);
             }
@@ -1128,16 +1138,11 @@ class Editor {
 
             // replaces the cell with new value
             case EditorMode.Paint: {
-              final objectMeta = config.objectMetaByType.get(
-                  localState.selectedObjectType);
-              final id = Utils.withDefault(
-                  objectMeta.id,
-                  Utils.uid());
               insertSquare(
                   activeGrid,
                   gridX,
                   gridY,
-                  id,
+                  createId(localState.selectedObjectType),
                   localState.selectedObjectType,
                   localState.activeLayerId);
             }
