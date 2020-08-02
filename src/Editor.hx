@@ -33,6 +33,11 @@ enum EditorMode {
   MarqueeSelect;
 }
 
+enum EditorUiRegion {
+  MainMap;
+  PaletteSelector;
+}
+
 typedef ProfilerRef = Map<String, {startedAt: Float, time: Float}>;
 typedef EditorStateAction = {
   type: String,
@@ -221,6 +226,14 @@ class Editor {
     }
 
     localState = {
+      editorUiRegion: EditorUiRegion.MainMap,
+      uiRegionRects: new Map<EditorUiRegion, h2d.col.Bounds>(),
+      uiRegionState: [
+        EditorUiRegion.PaletteSelector => {
+          scrollY: 0
+        }
+      ],
+
       selectedObjectType: 'white_square',
 
       isDragStart: initialLocalState().isDragStart,
@@ -353,6 +366,10 @@ class Editor {
 
     final removeSquare = (
         gridRef, gridX, gridY, width, height, layerId) -> {
+      if (localState.editorUiRegion != EditorUiRegion.MainMap) {
+        return;
+      }
+
       final cellSize = gridRef.cellSize;
       final cx = gridX;
       final cy = gridY;
@@ -379,6 +396,10 @@ class Editor {
 
     final insertSquare = (
         gridRef, gridX, gridY, id, objectType, layerId) -> {
+      if (localState.editorUiRegion != EditorUiRegion.MainMap) {
+        return;
+      }
+
       final cellSize = gridRef.cellSize;
       final snapGridSize = localState.snapGridSize;
       final cx = gridX;
@@ -438,6 +459,10 @@ class Editor {
     }
 
     final handleZoom = (e: hxd.Event) -> {
+      if (localState.editorUiRegion != EditorUiRegion.MainMap) {
+        return;
+      }
+
       if (e.kind == hxd.Event.EventKind.EWheel) {
         final currentZoom = localState.zoom;
         final nextZoom = Math.max(
@@ -473,8 +498,42 @@ class Editor {
         localState.isDragging = false;
       }
     }
-    s2d.addEventListener(handleZoom);
-    s2d.addEventListener(handleDrag);
+
+    final handlePaletteMenu = (e: hxd.Event) -> {
+      if (localState.editorUiRegion != EditorUiRegion.PaletteSelector) {
+        return;
+      }
+
+      final action = {
+        if (e.kind == hxd.Event.EventKind.EWheel) {
+          'SCROLL';
+        } else {
+          'NONE';
+        }
+      }
+
+      switch(action) {
+        case 'SCROLL': {
+          final state = localState.uiRegionState
+            .get(EditorUiRegion.PaletteSelector);
+          state.scrollY = Std.int(Math.min(0, state.scrollY + e.wheelDelta));
+          return;
+        }
+
+        default: {}
+      }
+    };
+
+    final listener = (e: hxd.Event) -> {
+      for (fn in [
+          handleZoom, 
+          handleDrag, 
+          handlePaletteMenu]) {
+        fn(e);
+      }
+    };
+
+    s2d.addEventListener(listener);
 
     function toGridPos(gridSize: Int, gridRef, screenX: Float, screenY: Float) {
       final tx = editorState.translate.x * localState.zoom;
@@ -491,10 +550,22 @@ class Editor {
     function updateObjectTypeList() {
       final win = hxd.Window.getInstance();
       final itemSize = 100;
-      var oy = itemSize;
-      final x = win.width - itemSize - 10;
+      final sidePadding = 20;
+      final regionState = localState.uiRegionState
+        .get(EditorUiRegion.PaletteSelector);
+      final scrollSpeed = 50;
+      var oy = itemSize + regionState.scrollY * scrollSpeed;
+      final x = Std.int(win.width - itemSize / 2) - sidePadding;
       final itemSpacing = 10;
-
+      final uiRect = new h2d.col.Bounds();
+      uiRect.set(
+          x - itemSize / 2 - sidePadding,
+          0,
+          itemSize + sidePadding * 2,
+          win.height);
+      localState.uiRegionRects.set(
+          EditorUiRegion.PaletteSelector,
+          uiRect);
       objectTypeMenu = [];
 
       for (type => meta in config.objectMetaByType) {
@@ -511,12 +582,26 @@ class Editor {
     }
 
     function update(dt) {
+      final mx = Main.Global.uiRoot.mouseX;
+      final my = Main.Global.uiRoot.mouseY;
+
       updateObjectTypeList();
+      localState.editorUiRegion = {
+        final p = new h2d.col.Point(mx, my);
+        var activeRegion = EditorUiRegion.MainMap; 
+
+        for (regionType => bounds in localState.uiRegionRects) {
+          if (bounds.contains(p)) {
+            activeRegion = regionType;
+          }
+        }
+
+        activeRegion;
+      };
 
       final activeGrid = editorState.gridByLayerId.get(
           localState.activeLayerId);
       final cellSize = localState.snapGridSize;
-      Main.Global.logData.activeLayer = localState.activeLayerId;
 
       {
         final tileRowsRedrawn: Map<String, Bool> = new Map();
@@ -688,6 +773,8 @@ class Editor {
       }
 
       Main.Global.logData.editor = {
+        activeUiRegion: Std.string(localState.editorUiRegion),
+        regionState: localState.uiRegionState.get(EditorUiRegion.PaletteSelector),
         showAllLayers: localState.showAllLayers,
         snapGridSize: localState.snapGridSize,
         editorMode: Std.string(localState.editorMode),
@@ -698,8 +785,6 @@ class Editor {
 
       final Key = hxd.Key;
       final buttonDown = Main.Global.worldMouse.buttonDown;
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
       final menuItemHovered  = Lambda.fold(
           objectTypeMenu,
           (menuItem, result: { value: String, itemDist: Float }) -> {
@@ -1115,11 +1200,6 @@ class Editor {
           editorState.translate.x * localState.zoom;
         final cy = (((mouseGridPos[1])) * localState.zoom) +
           editorState.translate.y * localState.zoom;
-
-        Main.Global.logData.snapPos = {
-          cx: cx,
-          cy: cy
-        };
 
         // show selection at cursor
         if (localState.editorMode == EditorMode.Paint) {
