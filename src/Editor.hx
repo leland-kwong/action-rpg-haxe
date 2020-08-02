@@ -5,7 +5,7 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
- * [ ] [WIP] Custom grid snap size
+ * [ ] Controls for switching grid snapping sizes
  * [ ] Put brush selection onto marquee layer. This way we can
        consolidate the brush and marquee selection into the same
        api. We'll also need to allow left-click to paint the
@@ -17,6 +17,7 @@
        state that doesn't interfere with the thread trying to access that
        at the same time.
  * [ ] State versioning so we can properly migrate data
+ * [x] Custom grid snap size
  * [x] paint objects by placing them anywhere
  * [x] basic layer system
  * [x] load state from disk
@@ -517,7 +518,7 @@ class Editor {
 
       final activeGrid = editorState.gridByLayerId.get(
           localState.activeLayerId);
-      final cellSize = activeGrid.cellSize;
+      final cellSize = localState.snapGridSize;
       Main.Global.logData.activeLayer = localState.activeLayerId;
 
       {
@@ -652,10 +653,11 @@ class Editor {
             // move marquee selection relative to mouse position
             if (layerId == 'layer_marquee_selection') {
               final snapToGrid = (x: Float, y: Float, cellSize) -> {
+                final hg = cellSize / 2;
                 final gridX = Math.round(x / cellSize);
                 final gridY = Math.round(y / cellSize);
-                final x = Std.int(gridX * cellSize);
-                final y = Std.int(gridY * cellSize);
+                final x = Std.int(gridX * cellSize + hg);
+                final y = Std.int(gridY * cellSize + hg);
 
                 return {
                   x: x,
@@ -666,7 +668,7 @@ class Editor {
               final marqueeGrid = editorState.gridByLayerId
                 .get('layer_marquee_selection');
               final cellSize = Std.int(
-                  marqueeGrid.cellSize * localState.zoom);
+                  localState.snapGridSize * localState.zoom);
               final mx = Main.Global.uiRoot.mouseX;
               final my = Main.Global.uiRoot.mouseY;
               final snappedMousePos = snapToGrid(
@@ -689,6 +691,7 @@ class Editor {
 
       Main.Global.logData.editor = {
         showAllLayers: localState.showAllLayers,
+        snapGridSize: localState.snapGridSize,
         editorMode: Std.string(localState.editorMode),
         zoom: localState.zoom,
         translate: editorState.translate,
@@ -737,6 +740,14 @@ class Editor {
               localState.editorMode == EditorMode.Panning) {
             localState.editorMode = localState.previousEditorMode;
           }
+        }
+
+        // toggle grid snap size
+        if (Key.isPressed(Key.S)) {
+          localState.snapGridSize = 
+            localState.snapGridSize == 1
+            ? 16
+            : 1;
         }
 
         if (Key.isPressed(Key.ESCAPE)) {
@@ -801,10 +812,10 @@ class Editor {
             final yMax = Math.max(
                 selection.y1,
                 selection.y2);
-            final gridXMin = Math.floor(xMin / marqueeGrid.cellSize);
-            final gridXMax = Math.floor(xMax / marqueeGrid.cellSize);
-            final gridYMin = Math.floor(yMin / marqueeGrid.cellSize);
-            final gridYMax = Math.floor(yMax / marqueeGrid.cellSize);
+            final gridXMin = Std.int(xMin);
+            final gridXMax = Std.int(xMax);
+            final gridYMin = Std.int(yMin);
+            final gridYMax = Std.int(yMax);
 
             clearMarqueeSelection();
 
@@ -846,10 +857,11 @@ class Editor {
           // paste selection
           if (action == 'PASTE') {
             final snapToGrid = (x, y, cellSize) -> {
+              final hg = cellSize / 2;
               final gridX = Math.round(x / cellSize);
               final gridY = Math.round(y / cellSize);
-              final x = Std.int(gridX * cellSize);
-              final y = Std.int(gridY * cellSize);
+              final x = Std.int(gridX * cellSize + hg);
+              final y = Std.int(gridY * cellSize + hg);
 
               return {
                 x: x,
@@ -874,12 +886,12 @@ class Editor {
               final snappedMousePos = snapToGrid(
                   Math.floor((mx - tx)),
                   Math.floor((my - ty)),
-                  Std.int(marqueeGrid.cellSize * zoom));
+                  Std.int(localState.snapGridSize * zoom));
 
               insertSquare(
                   activeGrid,
-                  cx + Std.int(snappedMousePos.x / cellSize / zoom),
-                  cy + Std.int(snappedMousePos.y / cellSize / zoom),
+                  cx + Std.int(snappedMousePos.x / zoom),
+                  cy + Std.int(snappedMousePos.y / zoom),
                   Utils.uid(),
                   objectType,
                   localState.activeLayerId);
@@ -1099,6 +1111,11 @@ class Editor {
           editorState.translate.x * localState.zoom;
         final cy = (((mouseGridPos[1])) * localState.zoom) +
           editorState.translate.y * localState.zoom;
+
+        Main.Global.logData.snapPos = {
+          cx: cx,
+          cy: cy
+        };
 
         // show selection at cursor
         if (localState.editorMode == EditorMode.Paint) {
