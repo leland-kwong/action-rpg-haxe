@@ -5,27 +5,6 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
- * [ ] 1. Make grids 16 pixel cell size so when we make a marquee
-          selection we're not having to query every single pixel
-          on the screen.
-       2. Also need to change the map value of `editorState.itemTypeById`
-          to be an object like:
-          ```
-          {
-            type: {objectType},
-            x:    {objectXPosition},
-            y:    {objectYPosition},
-          }
-          ```
-          This way we can then determine the object's true position.
-       3. Also need to store the object's position to
-          `localState.itemIdsByPosition` so that we can quickly replace
-          any item that shares the same position on that layer. We can
-          set this information when `insertSquare` is called. The reason
-          we store this on local state as opposed to editor state is
-          because this information does not need to be serialized, its
-          really just for quickly querying an object by its position
-          during run time.
  * [ ] undo/redo system
  * [ ] Put brush selection onto marquee layer. This way we can
        consolidate the brush and marquee selection into the same
@@ -130,6 +109,7 @@ class Editor {
   // all configuration stuff lives here
   static final config = {
     activeFile: 'editor-data/level_1.eds',
+    autoSave: false,
     objectMetaByType: [
       'white_square' => {
         spriteKey: 'ui/square_tile_test',
@@ -329,7 +309,7 @@ class Editor {
               err);
         });
 
-    final autoSaveOnChange = () -> {
+    final saveAsync = () -> {
       final interval = 1 / 10;
       var savePending = false;
 
@@ -369,7 +349,7 @@ class Editor {
       }
     };
 
-    sys.thread.Thread.create(autoSaveOnChange);
+    sys.thread.Thread.create(saveAsync);
 
     final removeSquare = (
         gridRef, gridX, gridY, width, height, layerId) -> {
@@ -636,7 +616,8 @@ class Editor {
             default: {}
           }
 
-          if (action.type != 'PAINT_CELL_FROM_LOADING_STATE') {
+          if (config.autoSave && 
+              action.type != 'PAINT_CELL_FROM_LOADING_STATE') {
             localState.stateToSave = editorState;
           }
         }
@@ -759,6 +740,11 @@ class Editor {
           }
         }
 
+        // manually trigger a save
+        if (Key.isDown(Key.CTRL) && Key.isPressed(Key.S)) {
+          localState.stateToSave = editorState;
+        }
+
         // toggle grid snap size
         if (Key.isPressed(Key.S)) {
           localState.snapGridSize =
@@ -838,33 +824,34 @@ class Editor {
 
             for (gridY in gridYMin...gridYMax) {
               for (gridX in gridXMin...gridXMax) {
-                final cellData = Utils.withDefault(
-                    Grid.getCell(activeGrid, gridX, gridY),
-                    new Map());
-                for (itemId in cellData) {
-                  final objectType = editorState.itemTypeById.get(
-                      itemId);
+                final cellData = Grid.getCell(activeGrid, gridX, gridY);
 
-                  // copy selection to 'clipboard'
-                  if (action == 'CUT' || action == 'COPY') {
-                    insertSquare(
-                        marqueeGrid,
-                        // insert relative to 0,0 of marqueeGrid
-                        gridX - gridXMin,
-                        gridY - gridYMin,
-                        Utils.uid(),
-                        objectType,
-                        marqueeLayerId);
-                  }
+                if (cellData != null) {
+                  for (itemId in cellData) {
+                    final objectType = editorState.itemTypeById.get(
+                        itemId);
 
-                  if (action == 'CUT' || action == 'DELETE') {
-                    removeSquare(
-                        activeGrid,
-                        gridX,
-                        gridY,
-                        activeGrid.cellSize,
-                        activeGrid.cellSize,
-                        localState.activeLayerId);
+                    // copy selection to 'clipboard'
+                    if (action == 'CUT' || action == 'COPY') {
+                      insertSquare(
+                          marqueeGrid,
+                          // insert relative to 0,0 of marqueeGrid
+                          gridX - gridXMin,
+                          gridY - gridYMin,
+                          Utils.uid(),
+                          objectType,
+                          marqueeLayerId);
+                    }
+
+                    if (action == 'CUT' || action == 'DELETE') {
+                      removeSquare(
+                          activeGrid,
+                          gridX,
+                          gridY,
+                          activeGrid.cellSize,
+                          activeGrid.cellSize,
+                          localState.activeLayerId);
+                    }
                   }
                 }
               }
