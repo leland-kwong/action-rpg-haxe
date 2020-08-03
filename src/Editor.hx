@@ -124,19 +124,14 @@ class Editor {
       ?type: String,
       ?sharedId: String,
       ?ignoreRender: Bool,
-    }>
+      ?isAutoTile: Bool,
+    }>,
+    snapGridSizes: Array<Int>
   } = {
-    activeFile: 'editor-data/level_1.eds',
-    autoSave: false,
+    activeFile: 'editor-data/temp.eds',
+    // activeFile: 'editor-data/level_1.eds',
+    autoSave: true,
     objectMetaByType: [
-      'white_square' => {
-        spriteKey: 'ui/square_tile_test',
-      },
-      'traversable_square' => {
-        spriteKey: 'ui/square_map_traversable_indicator',
-        type: 'traversableSpace',
-        ignoreRender: true
-      },
       'pillar' => {
         spriteKey: 'ui/pillar',
       },
@@ -154,23 +149,19 @@ class Editor {
       'teleporter' => {
         spriteKey: 'ui/teleporter_base',
       },
-      'teleporter_pillar_left' => {
-        spriteKey: 'ui/teleporter_pillar_left'
-      },
-      'teleporter_pillar_right' => {
-        spriteKey: 'ui/teleporter_pillar_right'
-      },
       'enemy_1' => {
         spriteKey: 'enemy-2_animation/idle-0',
       },
       'tile_1' => {
-        spriteKey: 'ui/level_1_tile',
-        type: 'traversableSpace'
+        spriteKey: 'ui/tile_1_1',
+        type: 'traversableSpace',
+        isAutoTile: true
       },
       'bridge_vertical' => {
         spriteKey: 'ui/bridge_vertical',
       }
-    ]
+    ],
+    snapGridSizes: [1, 8, 16]
   }
 
   static var objectTypeMenu: Array<{
@@ -267,12 +258,12 @@ class Editor {
         }
       ],
 
-      selectedObjectType: 'white_square',
+      selectedObjectType: 'tile_1',
 
       isDragStart: initialLocalState().isDragStart,
       isDragging: initialLocalState().isDragging,
       isDragEnd: initialLocalState().isDragEnd,
-      snapGridSize: 16,
+      snapGridSize: config.snapGridSizes[2],
 
       dragStartPos: {
         x: 0,
@@ -412,11 +403,15 @@ class Editor {
           cy,
           cellSize,
           cellSize);
+      var isAutoTile = false;
 
       for (key in items) {
         Grid.removeItem(
             gridRef,
             key);
+        final objectType = editorState.itemTypeById.get(key);
+        final objectMeta = config.objectMetaByType.get(objectType); 
+        isAutoTile = objectMeta.isAutoTile == true;
         editorState.itemTypeById.remove(key);
       }
 
@@ -425,6 +420,22 @@ class Editor {
         layerId: layerId,
         gridY: gridY,
       });
+
+      if (isAutoTile) {
+        // refresh row above
+        sendAction(localState, {
+          type: 'REFRESH_ROW',
+          layerId: layerId,
+          gridY: gridY + localState.snapGridSize
+        });
+
+        // refresh row below
+        sendAction(localState, {
+          type: 'REFRESH_ROW',
+          layerId: layerId,
+          gridY: gridY - localState.snapGridSize
+        });
+      }
     };
 
     final insertSquare = (
@@ -479,6 +490,25 @@ class Editor {
         layerId: layerId,
         gridY: gridY,
       });
+
+      final objectType = editorState.itemTypeById.get(id);
+      final objectMeta = config.objectMetaByType.get(objectType); 
+
+      if (objectMeta.isAutoTile) {
+        // refresh row above
+        sendAction(localState, {
+          type: 'REFRESH_ROW',
+          layerId: layerId,
+          gridY: gridY + localState.snapGridSize
+        });
+
+        // refresh row below
+        sendAction(localState, {
+          type: 'REFRESH_ROW',
+          layerId: layerId,
+          gridY: gridY - localState.snapGridSize
+        });
+      }
     };
 
     function clearMarqueeSelection() {
@@ -661,10 +691,15 @@ class Editor {
           localState.activeLayerId);
       final cellSize = localState.snapGridSize;
 
+      function isTileItem(cellData) {
+        return cellData != null;
+      }
+
       {
         final tileRowsRedrawn: Map<String, Bool> = new Map();
+        final currentActions = localState.actions;
 
-        for (action in localState.actions) {
+        for (action in currentActions) {
           switch (action.type) {
             case 'PAN_VIEWPORT': {
               editorState.translate = action.translate;
@@ -674,8 +709,8 @@ class Editor {
             case
                 'PAINT_CELL'
               | 'CLEAR_CELL'
-              | 'PAINT_CELL_FROM_LOADING_STATE': {
-
+              | 'PAINT_CELL_FROM_LOADING_STATE'
+              | 'REFRESH_ROW': {
                 final activeGrid = editorState.gridByLayerId.get(
                     action.layerId);
                 // [SIDE-EFFECT] creates a tileGroup if it doesn't exist
@@ -734,8 +769,23 @@ class Editor {
                     for (itemId in cellData) {
                       final objectType = editorState.itemTypeById
                         .get(itemId);
-                      final spriteKey = config.objectMetaByType
-                        .get(objectType).spriteKey;
+                      final spriteKey = {
+                        if (objectType == 'tile_1') {
+                          final gridRef = editorState.gridByLayerId
+                            .get(action.layerId);
+                          final tileValue = AutoTile.getValue(
+                              gridRef,
+                              colIndex,
+                              rowIndex,
+                              isTileItem);
+
+                          'ui/tile_1_${tileValue}';
+                        } else {
+
+                          config.objectMetaByType
+                            .get(objectType).spriteKey;
+                        }
+                      }
                       final spriteData = Reflect.field(
                           spriteSheetData,
                           spriteKey);
@@ -794,11 +844,10 @@ class Editor {
             // move marquee selection relative to mouse position
             if (layerId == 'layer_marquee_selection') {
               final snapToGrid = (x: Float, y: Float, cellSize) -> {
-                final hg = cellSize / 2;
                 final gridX = Math.round(x / cellSize);
                 final gridY = Math.round(y / cellSize);
-                final x = Std.int(gridX * cellSize + hg);
-                final y = Std.int(gridY * cellSize + hg);
+                final x = Std.int(gridX * cellSize);
+                final y = Std.int(gridY * cellSize);
 
                 return {
                   x: x,
@@ -891,10 +940,18 @@ class Editor {
 
         // toggle grid snap size
         if (Key.isPressed(Key.S)) {
-          localState.snapGridSize =
-            localState.snapGridSize == 1
-            ? 16
-            : 1;
+          final snapOpts = config.snapGridSizes;
+          final curSettingIndex = Lambda.findIndex(
+              snapOpts,
+              (gs) -> gs == localState.snapGridSize);
+          // cycle to next
+          final nextSetting = curSettingIndex + 1;
+          final shouldResetToStart = 
+            nextSetting > (snapOpts.length - 1);
+          localState.snapGridSize = snapOpts[
+            shouldResetToStart
+              ? 0
+              : nextSetting];
         }
 
         if (Key.isPressed(Key.ESCAPE)) {
@@ -1005,11 +1062,10 @@ class Editor {
           // paste selection
           if (action == 'PASTE') {
             final snapToGrid = (x, y, cellSize) -> {
-              final hg = cellSize / 2;
               final gridX = Math.round(x / cellSize);
               final gridY = Math.round(y / cellSize);
-              final x = Std.int(gridX * cellSize + hg);
-              final y = Std.int(gridY * cellSize + hg);
+              final x = Std.int(gridX * cellSize);
+              final y = Std.int(gridY * cellSize);
 
               return {
                 x: x,
@@ -1105,12 +1161,11 @@ class Editor {
       if (localState.editorMode == EditorMode.MarqueeSelect) {
         final zoom = localState.zoom;
         final cellSize = localState.snapGridSize * zoom;
-        final hg = cellSize / 2;
         final translate = localState.translate;
         final gridX = Math.round((mx - translate.x * zoom) / cellSize);
         final gridY = Math.round((my - translate.y * zoom) / cellSize);
-        final x = Std.int(((gridX * cellSize) - hg) / zoom);
-        final y = Std.int(((gridY * cellSize) - hg) / zoom);
+        final x = Std.int((gridX * cellSize) / zoom);
+        final y = Std.int((gridY * cellSize) / zoom);
 
         if (localState.isDragStart) {
           localState.marqueeSelection.x1 = x;
@@ -1260,7 +1315,7 @@ class Editor {
         final cy = (((mouseGridPos[1])) * localState.zoom) +
           editorState.translate.y * localState.zoom;
 
-        // show selection at cursor
+        // show active brush at cursor
         if (localState.editorMode == EditorMode.Paint) {
           final spriteKey = config.objectMetaByType
             .get(localState.selectedObjectType).spriteKey;
