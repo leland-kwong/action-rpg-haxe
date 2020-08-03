@@ -1529,25 +1529,23 @@ class Game extends h2d.Object {
 
         tileGrids;
       };
-      // used for adding an offset value for the center tile position
-      // since items bounds[0] and bounds[2] are xMin and yMin
-      final centerOffset = 0;
       final traversableGrid = Grid.create(cellSize);
       Main.Global.traversableGrid = traversableGrid;
       final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
 
-      final addToTileGrid = (tileGrid, x, y, itemId) -> {
+      final addToTileGrid = (
+          tileGrid, x: Int, y: Int, itemId) -> {
         Grid.setItemRect(
             tileGrid,
-            x + centerOffset, 
-            y + centerOffset,
+            x, 
+            y,
             tileGrid.cellSize,
             tileGrid.cellSize,
             itemId);
         truePositionByItemId.set(
             itemId, 
-            { x: x + centerOffset, 
-              y: y + centerOffset });
+            { x: x, 
+              y: y });
       }
 
 
@@ -1565,8 +1563,8 @@ class Game extends h2d.Object {
           switch(objectType) {
             case 'enemySpawnPoint': {
               new EnemySpawner(
-                  x + centerOffset,
-                  y + centerOffset,
+                  x,
+                  y,
                   5,
                   Main.Global.rootScene,
                   spawnerFindTargetFn);
@@ -1575,8 +1573,8 @@ class Game extends h2d.Object {
             case 'intro_level_boss': {
               final size = 3;
               final e = new Ai({
-                x: x + centerOffset,
-                y: y + centerOffset,
+                x: x,
+                y: y,
                 radius: 30,
                 sightRange: 150,
                 aiType: 'introLevelBoss',
@@ -1594,8 +1592,8 @@ class Game extends h2d.Object {
                   spriteData.sourceSize.w / 2);
               new MapObstacle({
                 id: 'mapObstacle_${itemId}',
-                x: x + centerOffset,
-                y: y + centerOffset,
+                x: x,
+                y: y,
                 radius: radius,
                 avoidanceRadius: radius + 3
               }, objectMeta);
@@ -1603,8 +1601,8 @@ class Game extends h2d.Object {
 
             case 'player': {
               final playerRef = new Player(
-                  x + centerOffset,
-                  y + centerOffset,
+                  x,
+                  y,
                   Main.Global.rootScene);
               Main.Global.rootScene.addChild(playerRef);
               Camera.follow(
@@ -1672,8 +1670,8 @@ class Game extends h2d.Object {
               if (objectMeta.type == 'traversableSpace') {
                 Grid.setItemRect(
                     traversableGrid,
-                    x + centerOffset, 
-                    y + centerOffset, 
+                    x, 
+                    y, 
                     tileGrid.cellSize,
                     tileGrid.cellSize,
                     itemId);
