@@ -5,7 +5,7 @@ typedef EntityId = String;
 typedef EntityProps = {
   var x: Float;
   var y: Float;
-  var radius: Int;
+  var ?radius: Int;
   var ?avoidanceRadius: Int;
   var ?id: EntityId;
   var ?weight: Float;
@@ -104,14 +104,13 @@ class Entity extends h2d.Object {
 
     super();
 
-    radius = props.radius;
+    radius = Utils.withDefault(
+        props.radius, radius);
     x = props.x;
     y = props.y;
-    avoidanceRadius = props.avoidanceRadius != null
-      ? props.avoidanceRadius : radius;
-    if (props.weight != null) {
-      weight = props.weight;
-    }
+    avoidanceRadius = Utils.withDefault(
+        props.avoidanceRadius, radius);
+    weight = Utils.withDefault(props.weight, weight);
 
     ALL_BY_ID.set(id, this);
   }

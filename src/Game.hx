@@ -1586,6 +1586,22 @@ class Game extends h2d.Object {
                       playerRef);
                 }
 
+                case 
+                    'teleporter_pillar_left'
+                  | 'teleporter_pillar_right': {
+                    final ref = new Entity({
+                      x: x + centerOffset,
+                      y: y + centerOffset,
+                    });
+
+                    ref.renderFn = (_, _) -> {
+                      Main.Global.sb.emitSprite(
+                          x + centerOffset,
+                          y + centerOffset,
+                          objectMeta.spriteKey); 
+                    };
+                }
+
                 // everything else is treated as a tile 
                 default: {
                   final tileGrid = tileGridByLayerId.get(layerId); 

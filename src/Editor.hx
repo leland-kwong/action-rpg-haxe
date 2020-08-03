@@ -147,6 +147,12 @@ class Editor {
       'teleporter' => {
         spriteKey: 'ui/teleporter_base',
       },
+      'teleporter_pillar_left' => {
+        spriteKey: 'ui/teleporter_pillar_left'
+      },
+      'teleporter_pillar_right' => {
+        spriteKey: 'ui/teleporter_pillar_right'
+      },
       'enemy_1' => {
         spriteKey: 'enemy-2_animation/idle-0',
       },
