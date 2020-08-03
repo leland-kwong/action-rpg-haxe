@@ -236,6 +236,7 @@ class Main extends hxd.App {
   var acc = 0.0;
   var game: Game;
   var background: h2d.Bitmap;
+  var sceneCleanupFn: () -> Void;
 
   function addBackground(s2d: h2d.Scene, color) {
     // background
@@ -310,6 +311,30 @@ class Main extends hxd.App {
 
   override function init() {
     try {
+      final sceneToLoad = 'game';
+      final scenes = [
+        'editor' => () -> {
+          Editor.init();
+
+          return () -> {};
+        },
+        'game' => () -> {
+          game = new Game(s2d, game);
+          Stack.push(Global.escapeStack, 'goto home screen', () -> {
+            var hs = showHomeScreen();
+            Global.uiRoot.addChild(hs);
+
+            Stack.push(Global.escapeStack, 'back to game', () -> {
+              hs.remove();
+            });
+          });
+          Hud.InventoryDragAndDropPrototype
+            .addTestItems();
+
+          return () -> {};
+        }
+      ];
+
       hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
 
@@ -346,7 +371,6 @@ class Main extends hxd.App {
 
 #if !production
 
-      Editor.init();
       Tests.run();      
 
 #end
@@ -415,26 +439,13 @@ class Main extends hxd.App {
       Global.uiSpriteBatch = new SpriteBatchSystem(
           Global.uiRoot);
 
-      final runGame = false;
-      if (runGame) {
-        game = new Game(s2d, game);
-        Stack.push(Global.escapeStack, 'goto home screen', () -> {
-          var hs = showHomeScreen();
-          Global.uiRoot.addChild(hs);
-
-          Stack.push(Global.escapeStack, 'back to game', () -> {
-            hs.remove();
-          });
-        });
-        Hud.InventoryDragAndDropPrototype
-          .addTestItems();
-      }
 
 #if debugMode
       var font = hxd.res.DefaultFont.get();
       setupDebugInfo(font);
 #end
 
+      sceneCleanupFn = scenes.get(sceneToLoad)();
       Hud.init();
 
     } catch (error: Dynamic) {
@@ -530,11 +541,6 @@ class Main extends hxd.App {
         acc -= frameTime;
 
         if (game != null) {
-          var levelCleared = game.isLevelComplete();
-          if (levelCleared) {
-            game.newLevel(s2d);
-          }
-
           game.update(s2d, frameTime);
         }
       }
