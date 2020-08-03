@@ -5,6 +5,10 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
+ * [ ] [WIP] migrate `level_1.eds` map data to shift each object by a half cell
+       in the north and west direction so things line up properly. Right now
+       when we load up the map in game, we have to shift everything by a half
+       cell so everything lines up.
  * [ ] undo/redo system
  * [ ] Put brush selection onto marquee layer. This way we can
        consolidate the brush and marquee selection into the same
@@ -582,11 +586,11 @@ class Editor {
     function toGridPos(gridSize: Int, gridRef, screenX: Float, screenY: Float) {
       final tx = editorState.translate.x * localState.zoom;
       final ty = editorState.translate.y * localState.zoom;
-      final hg = gridSize / 2 * localState.zoom;
-      final gridX = Math.floor((screenX - tx + hg) / gridSize / localState.zoom)
-        * gridSize;
-      final gridY = Math.floor((screenY - ty + hg) / gridSize / localState.zoom)
-        * gridSize;
+      final hg = gridSize / 2;
+      final gridX = Math.floor((screenX - tx) / gridSize / localState.zoom)
+        * gridSize + hg;
+      final gridY = Math.floor((screenY - ty) / gridSize / localState.zoom)
+        * gridSize + hg;
 
       return [gridX, gridY];
     }
@@ -712,7 +716,7 @@ class Editor {
                   }
                 };
 
-                // clear row first
+                // refresh tile row
                 final rowId = '${action.layerId}__${rowIndex}';
                 if (tileRowsRedrawn.get(rowId) == null) {
                   tileRowsRedrawn.set(rowId, true);
