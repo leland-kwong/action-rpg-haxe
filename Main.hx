@@ -237,6 +237,12 @@ class Main extends hxd.App {
   var game: Game;
   var background: h2d.Bitmap;
   var sceneCleanupFn: () -> Void;
+  public static final nativePixelResolution = {
+    // TODO this should be based on
+    // the actual screen's resolution
+    x: 1920,
+    y: 1080
+  };
 
   function addBackground(s2d: h2d.Scene, color) {
     // background
@@ -376,13 +382,6 @@ class Main extends hxd.App {
 #end
 
       final win = hxd.Window.getInstance();
-      // make fullscreen
-      var nativePixelResolution = {
-        // TODO this should be based on
-        // the actual screen's resolution
-        x: 1920,
-        y: 1080
-      }
 
       {
         final rootInteract = new h2d.Interactive(
@@ -424,6 +423,7 @@ class Main extends hxd.App {
       // setup viewport
 #if !jsMode
       {
+        // make fullscreen
         win.resize(
             nativePixelResolution.x, 
             nativePixelResolution.y);

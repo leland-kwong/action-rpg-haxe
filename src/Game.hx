@@ -1498,57 +1498,167 @@ class Game extends h2d.Object {
   public function newLevel(s2d: h2d.Scene) {
     level += 1;
 
-    {
-      final parsedTiledMap = MapData.create(
-          hxd.Res.level_intro_json);
-      final layersByName = parsedTiledMap.layersByName;
-      final objectsRects: Array<core.Types.TiledObject> = 
-        layersByName.get('objects').objects;
-      final enemySpawnPoints = Lambda
-        .filter(objectsRects, (item) -> {
-          return item.type == 'enemySpawnPoint';
-        });
-      final spawnerFindTargetFn = (_) -> {
-        return Entity.getById('PLAYER');
-      }
+    SaveState.load(
+        'editor-data/level_1.eds',
+        false,
+        (mapData: Editor.EditorState) -> {
+          final spawnerFindTargetFn = (_) -> {
+            return Entity.getById('PLAYER');
+          }
+          final spriteSheetTile =
+            hxd.Res.sprite_sheet_png.toTile();
+          final spriteSheetData = Utils.loadJsonFile(
+              hxd.Res.sprite_sheet_json).frames;
+          final layersToIgnore = [
+            'layer_prefab',
+            'layer_marquee_selection'
+          ];
+          final orderedLayers = Lambda.filter(
+              mapData.layerOrderById,
+              (layerId) -> {
+                return !Lambda.exists(
+                    layersToIgnore, 
+                    (l) -> l == layerId);
+              });
+          final tileGridByLayerId = {
+            final tileGrids = new Map();
 
-      Lambda.foreach(
-          enemySpawnPoints, 
-          (point) -> {
-            new EnemySpawner(
-                point.x,
-                point.y,
-                5,
-                s2d,
-                spawnerFindTargetFn);
+            for (layerId in orderedLayers) {
+              tileGrids.set(layerId, Grid.create(16));
+            }
+
+            tileGrids;
+          };
+          final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
+
+          for (layerId in orderedLayers) {
+            final grid = mapData.gridByLayerId.get(layerId);
+
+            for (itemId => bounds in grid.itemCache) {
+              final objectType = mapData.itemTypeById.get(itemId);
+              final x = bounds[0];
+              final y = bounds[2];
+
+              switch(objectType) {
+                case 'enemySpawnPoint': {
+                  new EnemySpawner(
+                      x,
+                      y,
+                      5,
+                      Main.Global.rootScene,
+                      spawnerFindTargetFn);
+                } 
+
+                case 'player': {
+                  final playerRef = new Player(
+                      x,
+                      y,
+                      Main.Global.rootScene);
+                  Main.Global.rootScene.addChild(playerRef);
+                  Camera.follow(
+                      Main.Global.mainCamera, 
+                      playerRef);
+                }
+
+                // everything else is treated as a tile 
+                default: {
+                  final tileGrid = tileGridByLayerId.get(layerId); 
+                  final gridRow = y;
+                  Grid.setItemRect(
+                      tileGrid,
+                      x, y,
+                      tileGrid.cellSize,
+                      tileGrid.cellSize,
+                      itemId);
+                  truePositionByItemId.set(itemId, {x: x, y : y});
+                }
+              }
+            }
+          }
+
+          final tg = new h2d.TileGroup(
+              spriteSheetTile,
+              Main.Global.rootScene);
+
+          Main.Global.updateHooks.push((dt) -> {
+            final width = Std.int(Main.nativePixelResolution.x 
+              / Main.Global.resolutionScale);
+            final height = Std.int(Main.nativePixelResolution.y 
+              / Main.Global.resolutionScale);
+            final idsRendered = new Map();
+
+            tg.clear();
+
+            for (layerId in orderedLayers) {
+              final tileGrid = tileGridByLayerId.get(layerId);
+
+              Grid.eachCellInRect(
+                  tileGrid,
+                  width / 2, 
+                  height / 2,
+                  width,
+                  height,
+                  (gridX, gridY, cellData) -> {
+                    if (cellData != null) {
+                      for (itemId in cellData) {
+                        if (!idsRendered.exists(itemId)) {
+                          idsRendered.set(itemId, true);
+
+                          final objectType = mapData.itemTypeById.get(itemId);
+                          final spriteKey = Editor.config.objectMetaByType
+                            .get(objectType).spriteKey;
+                          final spriteData = Reflect.field(
+                              spriteSheetData,
+                              spriteKey);
+                          final tile = spriteSheetTile.sub(
+                              spriteData.frame.x,
+                              spriteData.frame.y,
+                              spriteData.frame.w,
+                              spriteData.frame.h);
+                          tile.setCenterRatio(
+                              spriteData.pivot.x,
+                              spriteData.pivot.y);
+                          final pos = truePositionByItemId.get(itemId);
+                          tg.add(
+                              pos.x,
+                              pos.y,
+                              tile);
+                        }
+                      }
+                    }
+                  });
+            }
 
             return true;
-          });  
-    }
+          });
+
+        }, (err) -> {
+          trace('[load level failure]', err.stack);
+        });
 
 
     // intro_boss
-    {
-      var parsedTiledMap = MapData.create(
-          hxd.Res.level_intro_json);
-      var layersByName = parsedTiledMap.layersByName;
-      var mapObjects: Array<Dynamic> = 
-        layersByName.get('objects').objects;
-      var miniBossPos: Dynamic = Lambda.find(
-          mapObjects, 
-          (item) -> item.name == 'mini_boss_position');
-      var size = 3;
+    // {
+    //   var parsedTiledMap = MapData.create(
+    //       hxd.Res.level_intro_json);
+    //   var layersByName = parsedTiledMap.layersByName;
+    //   var mapObjects: Array<Dynamic> = 
+    //     layersByName.get('objects').objects;
+    //   var miniBossPos: Dynamic = Lambda.find(
+    //       mapObjects, 
+    //       (item) -> item.name == 'mini_boss_position');
+    //   var size = 3;
 
-      var e = new Ai({
-        x: miniBossPos.x,
-        y: miniBossPos.y,
-        radius: 30,
-        sightRange: 150,
-        aiType: 'introLevelBoss',
-        weight: 1.0,
-      }, size, (_) -> Entity.getById('PLAYER'));
-      Main.Global.rootScene.addChildAt(e, 0);
-    }
+    //   var e = new Ai({
+    //     x: miniBossPos.x,
+    //     y: miniBossPos.y,
+    //     radius: 30,
+    //     sightRange: 150,
+    //     aiType: 'introLevelBoss',
+    //     weight: 1.0,
+    //   }, size, (_) -> Entity.getById('PLAYER'));
+    //   Main.Global.rootScene.addChildAt(e, 0);
+    // }
   }
 
   // triggers a side-effect to change `canSeeTarget`
@@ -1651,114 +1761,77 @@ class Game extends h2d.Object {
     var spriteSheetData = Main.Global.sb
       .batchManager.spriteSheetData;
 
-    // load map background
-    {
-      var bgData = Reflect.field(
-          spriteSheetData, 
-          'ui/level_intro');
-      var tile = spriteSheet.sub(
-        bgData.frame.x,
-        bgData.frame.y,
-        bgData.frame.w,
-        bgData.frame.h
-      );
-      var bmp = new h2d.Bitmap(tile, s2d);
-    }
-
-    var parsedTiledMap = MapData.create(
-        hxd.Res.level_intro_json);
-    var layersByName = parsedTiledMap.layersByName;
-    var mapObjects: Array<Dynamic> = 
-      layersByName.get('objects').objects;
-    var playerStartPos: Dynamic = Lambda.find(
-        mapObjects, 
-        (item) -> item.name == 'player_start');
-
     Main.Global.rootScene = s2d;
 
     // setup traversible grid
-    {
-      var traversableRects: Array<Dynamic> = 
-        layersByName.get('traversable').objects;
-      var updateTraversableGrid = (item: TiledObject) -> {
-        Grid.setItemRect(
-          Main.Global.traversableGrid,
-          (item.x + item.width / 2),
-          (item.y + item.height / 2),
-          item.width,
-          item.height,
-          Std.string(item.id)
-        );
-        return true;
-      }
-      Lambda.foreach(traversableRects, updateTraversableGrid);
+    // {
+    //   var traversableRects: Array<Dynamic> = 
+    //     layersByName.get('traversable').objects;
+    //   var updateTraversableGrid = (item: TiledObject) -> {
+    //     Grid.setItemRect(
+    //       Main.Global.traversableGrid,
+    //       (item.x + item.width / 2),
+    //       (item.y + item.height / 2),
+    //       item.width,
+    //       item.height,
+    //       Std.string(item.id)
+    //     );
+    //     return true;
+    //   }
+    //   Lambda.foreach(traversableRects, updateTraversableGrid);
 
-      var debugTraversalGrid = false;
-      if (debugTraversalGrid) {
-        // debug traversable positions
-        var traversableGridItems = Main.Global
-          .traversableGrid.itemCache;
-        var g = new h2d.Graphics(Main.Global.debugScene);
-        g.beginFill(Game.Colors.yellow, 0.3);
-        var cellSize = Main.Global.traversableGrid.cellSize;
-        for (key => item in traversableGridItems) {
-          var xMin = item[0] * cellSize;
-          var xMax = item[1] * cellSize;
-          var yMin = item[2] * cellSize;
-          var yMax = item[3] * cellSize;
-          var width = xMax - xMin;
-          var height = yMax - yMin;
+    //   var debugTraversalGrid = false;
+    //   if (debugTraversalGrid) {
+    //     // debug traversable positions
+    //     var traversableGridItems = Main.Global
+    //       .traversableGrid.itemCache;
+    //     var g = new h2d.Graphics(Main.Global.debugScene);
+    //     g.beginFill(Game.Colors.yellow, 0.3);
+    //     var cellSize = Main.Global.traversableGrid.cellSize;
+    //     for (key => item in traversableGridItems) {
+    //       var xMin = item[0] * cellSize;
+    //       var xMax = item[1] * cellSize;
+    //       var yMin = item[2] * cellSize;
+    //       var yMax = item[3] * cellSize;
+    //       var width = xMax - xMin;
+    //       var height = yMax - yMin;
 
-          g.drawRect(xMin, yMin, width, height);
-        }
-      }
-    }
+    //       g.drawRect(xMin, yMin, width, height);
+    //     }
+    //   }
+    // }
 
     // AGENDA: setup map pillars
     // setup environment obstacle colliders
-    {
-      final objectsRects: Array<core.Types.TiledObject> = 
-        layersByName.get('objects').objects;
-      final pillarObjects = Lambda
-        .filter(objectsRects, (item) -> {
-          return item.type == 'mapObject';
-        });
-      Lambda.foreach(pillarObjects, (item) -> {
-        final spriteKey = item.name;
-        final spriteData: SpriteBatchSystem.SpriteData = 
-          Reflect.field(
-              spriteSheetData, 
-              spriteKey);
-        final cx = item.x + item.width / 2;
-        final pivotYOffset = Math.round(
-            spriteData.pivot.y * spriteData.sourceSize.h);
-        final cy = item.y - item.height
-          + pivotYOffset;
-        final radius = Std.int((item.width - 2) / 2);
-        new MapObstacle({
-          id: 'mapObstacle_${item.id}',
-          x: cx,
-          y: cy,
-          radius: radius,
-          avoidanceRadius: radius + 3
-        }, item);
-        return true;
-      });
-    }
-
-    s2d.addChild(this);
-    if (oldGame != null) {
-      oldGame.cleanupLevel();
-    }
-    final playerRef = new Player(
-      playerStartPos.x,
-      playerStartPos.y - 6,
-      s2d
-    );
-    s2d.addChild(playerRef);
-    Camera.follow(
-        Main.Global.mainCamera, 
-        playerRef);
+    // {
+    //   final objectsRects: Array<core.Types.TiledObject> = 
+    //     layersByName.get('objects').objects;
+    //   final pillarObjects = Lambda
+    //     .filter(objectsRects, (item) -> {
+    //       return item.type == 'mapObject';
+    //     });
+    //   Lambda.foreach(pillarObjects, (item) -> {
+    //     final spriteKey = item.name;
+    //     final spriteData: SpriteBatchSystem.SpriteData = 
+    //       Reflect.field(
+    //           spriteSheetData, 
+    //           spriteKey);
+    //     final cx = item.x + item.width / 2;
+    //     final pivotYOffset = Math.round(
+    //         spriteData.pivot.y * spriteData.sourceSize.h);
+    //     final cy = item.y - item.height
+    //       + pivotYOffset;
+    //     final radius = Std.int((item.width - 2) / 2);
+    //     new MapObstacle({
+    //       id: 'mapObstacle_${item.id}',
+    //       x: cx,
+    //       y: cy,
+    //       radius: radius,
+    //       avoidanceRadius: radius + 3
+    //     }, item);
+    //     return true;
+    //   });
+    // }
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
@@ -1768,6 +1841,8 @@ class Game extends h2d.Object {
     mousePointerSprite = new h2d.Graphics(mousePointer);
     mousePointerSprite.beginFill(0xffda3d, 0.3);
     mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
+
+    newLevel(Main.Global.rootScene);
   }
 
   public function update(s2d: h2d.Scene, dt: Float) {
