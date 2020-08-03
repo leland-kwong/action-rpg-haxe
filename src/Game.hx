@@ -1334,7 +1334,9 @@ class Player extends Entity {
 }
 
 class MapObstacle extends Entity {
-  var meta: core.Types.TiledObject;
+  var meta: {
+    spriteKey: String
+  } = null;
 
   public function new(props: EntityProps, meta) {
     super(props);
@@ -1345,7 +1347,7 @@ class MapObstacle extends Entity {
 
   public override function render(_) {
     Main.Global.sb.emitSprite(
-      x, y, meta.name);
+      x, y, meta.spriteKey);
   }
 }
 
@@ -1542,6 +1544,8 @@ class Game extends h2d.Object {
 
             for (itemId => bounds in grid.itemCache) {
               final objectType = mapData.itemTypeById.get(itemId);
+              final objectMeta = Editor.config.objectMetaByType
+                .get(objectType);
               final x = bounds[0];
               final y = bounds[2];
 
@@ -1554,6 +1558,22 @@ class Game extends h2d.Object {
                       Main.Global.rootScene,
                       spawnerFindTargetFn);
                 } 
+
+                case 'pillar': {
+                  final spriteKey = objectMeta.spriteKey;
+                  final spriteData = Reflect.field(
+                      spriteSheetData,
+                      spriteKey);
+                  final radius = Std.int(
+                      spriteData.sourceSize.w / 2);
+                  new MapObstacle({
+                    id: 'mapObstacle_${itemId}',
+                    x: x + centerOffset,
+                    y: y + centerOffset,
+                    radius: radius,
+                    avoidanceRadius: radius + 3
+                  }, objectMeta);
+                }
 
                 case 'player': {
                   final playerRef = new Player(
@@ -1570,20 +1590,22 @@ class Game extends h2d.Object {
                 default: {
                   final tileGrid = tileGridByLayerId.get(layerId); 
                   final gridRow = y;
-                  Grid.setItemRect(
-                      tileGrid,
-                      x + centerOffset, y + centerOffset,
-                      tileGrid.cellSize,
-                      tileGrid.cellSize,
-                      itemId);
-                  truePositionByItemId.set(itemId, 
-                      {
-                        x: x + centerOffset, 
-                        y: y + centerOffset});
 
-                  final objectMeta = Editor.config.objectMetaByType
-                    .get(objectType);
-                  if (objectMeta.type == 'floorTile') {
+                  if (!objectMeta.ignoreRender) {
+                    Grid.setItemRect(
+                        tileGrid,
+                        x + centerOffset, 
+                        y + centerOffset,
+                        tileGrid.cellSize,
+                        tileGrid.cellSize,
+                        itemId);
+                    truePositionByItemId.set(
+                        itemId, 
+                        { x: x + centerOffset, 
+                          y: y + centerOffset });
+                  }
+
+                  if (objectMeta.type == 'traversableSpace') {
                     Grid.setItemRect(
                         traversableGrid,
                         x + centerOffset, 
@@ -1642,39 +1664,44 @@ class Game extends h2d.Object {
                   }
                 }
               };
+              final mc = Main.Global.mainCamera;
+              final threshold = 200;
 
               Grid.eachCellInRect(
                   tileGrid,
-                  width / 2, 
-                  height / 2,
-                  width,
-                  height,
+                  mc.x, 
+                  mc.y,
+                  mc.w + threshold,
+                  mc.h + threshold,
                   addTileToTileGroup);
             }
 
-            final renderedIds = new Map();
-            for (itemId => bounds in traversableGrid.itemCache) {
-              if (renderedIds.exists(itemId)) {
-                continue;
-              }
+            final debugTraversablePositions = false;
+            if (debugTraversablePositions) {
+              final renderedIds = new Map();
+              for (itemId => bounds in traversableGrid.itemCache) {
+                if (renderedIds.exists(itemId)) {
+                  continue;
+                }
 
-              final spriteKey = 'ui/square_map_traversable_indicator';
-              final spriteData = Reflect.field(
-                  spriteSheetData,
-                  spriteKey);
-              final tile = spriteSheetTile.sub(
-                  spriteData.frame.x,
-                  spriteData.frame.y,
-                  spriteData.frame.w,
-                  spriteData.frame.h);
-              tile.setCenterRatio(
-                  spriteData.pivot.x,
-                  spriteData.pivot.y);
-              final cellSize = traversableGrid.cellSize;
-              tg.add(
-                  bounds[0] * cellSize + spriteData.sourceSize.w / 2,
-                  bounds[2] * cellSize + spriteData.sourceSize.h / 2,
-                  tile);
+                final spriteKey = 'ui/square_map_traversable_indicator';
+                final spriteData = Reflect.field(
+                    spriteSheetData,
+                    spriteKey);
+                final tile = spriteSheetTile.sub(
+                    spriteData.frame.x,
+                    spriteData.frame.y,
+                    spriteData.frame.w,
+                    spriteData.frame.h);
+                tile.setCenterRatio(
+                    spriteData.pivot.x,
+                    spriteData.pivot.y);
+                final cellSize = traversableGrid.cellSize;
+                tg.add(
+                    bounds[0] * cellSize + spriteData.sourceSize.w / 2,
+                    bounds[2] * cellSize + spriteData.sourceSize.h / 2,
+                    tile);
+              }
             }
 
             return true;

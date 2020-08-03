@@ -118,7 +118,8 @@ class Editor {
     objectMetaByType: Map<String, {
       spriteKey: String,
       ?type: String,
-      ?sharedId: String
+      ?sharedId: String,
+      ?ignoreRender: Bool,
     }>
   } = {
     activeFile: 'editor-data/level_1.eds',
@@ -129,7 +130,8 @@ class Editor {
       },
       'traversable_square' => {
         spriteKey: 'ui/square_map_traversable_indicator',
-        type: 'floorTile'
+        type: 'traversableSpace',
+        ignoreRender: true
       },
       'pillar' => {
         spriteKey: 'ui/pillar',
@@ -150,7 +152,7 @@ class Editor {
       },
       'tile_1' => {
         spriteKey: 'ui/level_1_tile',
-        type: 'floorTile'
+        type: 'traversableSpace'
       },
     ]
   }
