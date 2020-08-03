@@ -1460,7 +1460,7 @@ class MapData {
 }
 
 class Game extends h2d.Object {
-  public var level = 2;
+  public var level = 1;
   var mousePointer: h2d.Object;
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
@@ -1500,248 +1500,250 @@ class Game extends h2d.Object {
   public function newLevel(s2d: h2d.Scene) {
     level += 1;
 
-    SaveState.load(
-        'editor-data/level_1.eds',
-        false,
-        (mapData: Editor.EditorState) -> {
-          final cellSize = 16;
-          final spawnerFindTargetFn = (_) -> {
-            return Entity.getById('PLAYER');
-          }
-          final spriteSheetTile =
-            hxd.Res.sprite_sheet_png.toTile();
-          final spriteSheetData = Utils.loadJsonFile(
-              hxd.Res.sprite_sheet_json).frames;
-          final layersToIgnore = [
-            'layer_prefab',
-            'layer_marquee_selection'
-          ];
-          final orderedLayers = Lambda.filter(
-              mapData.layerOrderById,
-              (layerId) -> {
-                return !Lambda.exists(
-                    layersToIgnore, 
-                    (l) -> l == layerId);
-              });
-          final tileGridByLayerId = {
-            final tileGrids = new Map();
+    final processMap = (mapData: Editor.EditorState) -> {
+      final cellSize = 16;
+      final spawnerFindTargetFn = (_) -> {
+        return Entity.getById('PLAYER');
+      }
+      final spriteSheetTile =
+        hxd.Res.sprite_sheet_png.toTile();
+      final spriteSheetData = Utils.loadJsonFile(
+          hxd.Res.sprite_sheet_json).frames;
+      final layersToIgnore = [
+        'layer_prefab',
+        'layer_marquee_selection'
+      ];
+      final orderedLayers = Lambda.filter(
+          mapData.layerOrderById,
+          (layerId) -> {
+            return !Lambda.exists(
+                layersToIgnore, 
+                (l) -> l == layerId);
+          });
+      final tileGridByLayerId = {
+        final tileGrids = new Map();
 
-            for (layerId in orderedLayers) {
-              tileGrids.set(layerId, Grid.create(cellSize));
+        for (layerId in orderedLayers) {
+          tileGrids.set(layerId, Grid.create(cellSize));
+        }
+
+        tileGrids;
+      };
+      // used for adding an offset value for the center tile position
+      // since items bounds[0] and bounds[2] are xMin and yMin
+      final centerOffset = Std.int(cellSize / 2);
+      final traversableGrid = Grid.create(cellSize);
+      Main.Global.traversableGrid = traversableGrid;
+      final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
+
+      for (layerId in orderedLayers) {
+        final grid = mapData.gridByLayerId.get(layerId);
+
+        for (itemId => bounds in grid.itemCache) {
+          final objectType = mapData.itemTypeById.get(itemId);
+          final objectMeta = Editor.config.objectMetaByType
+            .get(objectType);
+          final x = bounds[0];
+          final y = bounds[2];
+
+          switch(objectType) {
+            case 'enemySpawnPoint': {
+              new EnemySpawner(
+                  x + centerOffset,
+                  y + centerOffset,
+                  5,
+                  Main.Global.rootScene,
+                  spawnerFindTargetFn);
+            } 
+
+            case 'intro_level_boss': {
+              final size = 3;
+              final e = new Ai({
+                x: x + centerOffset,
+                y: y + centerOffset,
+                radius: 30,
+                sightRange: 150,
+                aiType: 'introLevelBoss',
+                weight: 1.0,
+              }, size, (_) -> Entity.getById('PLAYER'));
+              Main.Global.rootScene.addChildAt(e, 0);
             }
 
-            tileGrids;
-          };
-          final traversableGrid = Grid.create(cellSize);
-          // used for adding an offset value for the center tile position
-          // since items bounds[0] and bounds[2] are xMin and yMin
-          final centerOffset = Std.int(cellSize / 2);
-          Main.Global.traversableGrid = traversableGrid;
-          final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
+            case 'pillar': {
+              final spriteKey = objectMeta.spriteKey;
+              final spriteData = Reflect.field(
+                  spriteSheetData,
+                  spriteKey);
+              final radius = Std.int(
+                  spriteData.sourceSize.w / 2);
+              new MapObstacle({
+                id: 'mapObstacle_${itemId}',
+                x: x + centerOffset,
+                y: y + centerOffset,
+                radius: radius,
+                avoidanceRadius: radius + 3
+              }, objectMeta);
+            }
 
-          for (layerId in orderedLayers) {
-            final grid = mapData.gridByLayerId.get(layerId);
+            case 'player': {
+              final playerRef = new Player(
+                  x + centerOffset,
+                  y + centerOffset,
+                  Main.Global.rootScene);
+              Main.Global.rootScene.addChild(playerRef);
+              Camera.follow(
+                  Main.Global.mainCamera, 
+                  playerRef);
+            }
 
-            for (itemId => bounds in grid.itemCache) {
-              final objectType = mapData.itemTypeById.get(itemId);
-              final objectMeta = Editor.config.objectMetaByType
-                .get(objectType);
-              final x = bounds[0];
-              final y = bounds[2];
+                           case 
+                             'teleporter_pillar_left'
+                             | 'teleporter_pillar_right': {
+                               final ref = new Entity({
+                                 x: x + centerOffset,
+                                 y: y + centerOffset,
+                               });
 
-              switch(objectType) {
-                case 'enemySpawnPoint': {
-                  new EnemySpawner(
-                      x + centerOffset,
-                      y + centerOffset,
-                      5,
-                      Main.Global.rootScene,
-                      spawnerFindTargetFn);
-                } 
+                               ref.renderFn = (_, _) -> {
+                                 Main.Global.sb.emitSprite(
+                                     x + centerOffset,
+                                     y + centerOffset,
+                                     objectMeta.spriteKey); 
+                               };
+                             }
 
-                case 'intro_level_boss': {
-                  final size = 3;
-                  final e = new Ai({
-                    x: x + centerOffset,
-                    y: y + centerOffset,
-                    radius: 30,
-                    sightRange: 150,
-                    aiType: 'introLevelBoss',
-                    weight: 1.0,
-                  }, size, (_) -> Entity.getById('PLAYER'));
-                  Main.Global.rootScene.addChildAt(e, 0);
-                }
+                           // everything else is treated as a tile 
+            default: {
+              final tileGrid = tileGridByLayerId.get(layerId); 
+              final gridRow = y;
 
-                case 'pillar': {
-                  final spriteKey = objectMeta.spriteKey;
+              if (!objectMeta.ignoreRender) {
+                Grid.setItemRect(
+                    tileGrid,
+                    x + centerOffset, 
+                    y + centerOffset,
+                    tileGrid.cellSize,
+                    tileGrid.cellSize,
+                    itemId);
+                truePositionByItemId.set(
+                    itemId, 
+                    { x: x + centerOffset, 
+                      y: y + centerOffset });
+              }
+
+              if (objectMeta.type == 'traversableSpace') {
+                Grid.setItemRect(
+                    traversableGrid,
+                    x + centerOffset, 
+                    y + centerOffset, 
+                    tileGrid.cellSize,
+                    tileGrid.cellSize,
+                    itemId);
+              } 
+            }
+          }
+        }
+      }
+
+      final tg = new h2d.TileGroup(
+          spriteSheetTile,
+          Main.Global.rootScene);
+
+      final refreshTileGroup = (dt) -> {
+        final width = Std.int(Main.nativePixelResolution.x 
+            / Main.Global.resolutionScale);
+        final height = Std.int(Main.nativePixelResolution.y 
+            / Main.Global.resolutionScale);
+        final idsRendered = new Map();
+
+        tg.clear();
+
+        for (layerId in orderedLayers) {
+          final tileGrid = tileGridByLayerId.get(layerId);
+          final addTileToTileGroup = (
+              gridX, gridY, cellData: Grid.GridItems) -> {
+            if (cellData != null) {
+              for (itemId in cellData) {
+                if (!idsRendered.exists(itemId)) {
+                  idsRendered.set(itemId, true);
+
+                  final objectType = mapData.itemTypeById.get(itemId);
+                  final spriteKey = Editor.config.objectMetaByType
+                    .get(objectType).spriteKey;
                   final spriteData = Reflect.field(
                       spriteSheetData,
                       spriteKey);
-                  final radius = Std.int(
-                      spriteData.sourceSize.w / 2);
-                  new MapObstacle({
-                    id: 'mapObstacle_${itemId}',
-                    x: x + centerOffset,
-                    y: y + centerOffset,
-                    radius: radius,
-                    avoidanceRadius: radius + 3
-                  }, objectMeta);
-                }
-
-                case 'player': {
-                  final playerRef = new Player(
-                      x + centerOffset,
-                      y + centerOffset,
-                      Main.Global.rootScene);
-                  Main.Global.rootScene.addChild(playerRef);
-                  Camera.follow(
-                      Main.Global.mainCamera, 
-                      playerRef);
-                }
-
-                case 
-                    'teleporter_pillar_left'
-                  | 'teleporter_pillar_right': {
-                    final ref = new Entity({
-                      x: x + centerOffset,
-                      y: y + centerOffset,
-                    });
-
-                    ref.renderFn = (_, _) -> {
-                      Main.Global.sb.emitSprite(
-                          x + centerOffset,
-                          y + centerOffset,
-                          objectMeta.spriteKey); 
-                    };
-                }
-
-                // everything else is treated as a tile 
-                default: {
-                  final tileGrid = tileGridByLayerId.get(layerId); 
-                  final gridRow = y;
-
-                  if (!objectMeta.ignoreRender) {
-                    Grid.setItemRect(
-                        tileGrid,
-                        x + centerOffset, 
-                        y + centerOffset,
-                        tileGrid.cellSize,
-                        tileGrid.cellSize,
-                        itemId);
-                    truePositionByItemId.set(
-                        itemId, 
-                        { x: x + centerOffset, 
-                          y: y + centerOffset });
-                  }
-
-                  if (objectMeta.type == 'traversableSpace') {
-                    Grid.setItemRect(
-                        traversableGrid,
-                        x + centerOffset, 
-                        y + centerOffset, 
-                        tileGrid.cellSize,
-                        tileGrid.cellSize,
-                        itemId);
-                  } 
+                  final tile = spriteSheetTile.sub(
+                      spriteData.frame.x,
+                      spriteData.frame.y,
+                      spriteData.frame.w,
+                      spriteData.frame.h);
+                  tile.setCenterRatio(
+                      spriteData.pivot.x,
+                      spriteData.pivot.y);
+                  final pos = truePositionByItemId.get(itemId);
+                  tg.add(
+                      pos.x,
+                      pos.y,
+                      tile);
                 }
               }
             }
-          }
+          };
+          final mc = Main.Global.mainCamera;
+          // Pretty large overdraw right now because some 
+          // objects are really large can get clipped too
+          // early. We can fix this by splitting large
+          // objects into multiple sprites 
+          final threshold = 200;
 
-          final tg = new h2d.TileGroup(
-              spriteSheetTile,
-              Main.Global.rootScene);
+          Grid.eachCellInRect(
+              tileGrid,
+              mc.x, 
+              mc.y,
+              mc.w + threshold,
+              mc.h + threshold,
+              addTileToTileGroup);
+        }
 
-          final refreshTileGroup = (dt) -> {
-            final width = Std.int(Main.nativePixelResolution.x 
-              / Main.Global.resolutionScale);
-            final height = Std.int(Main.nativePixelResolution.y 
-              / Main.Global.resolutionScale);
-            final idsRendered = new Map();
-
-            tg.clear();
-
-            for (layerId in orderedLayers) {
-              final tileGrid = tileGridByLayerId.get(layerId);
-              final addTileToTileGroup = (
-                  gridX, gridY, cellData: Grid.GridItems) -> {
-                if (cellData != null) {
-                  for (itemId in cellData) {
-                    if (!idsRendered.exists(itemId)) {
-                      idsRendered.set(itemId, true);
-
-                      final objectType = mapData.itemTypeById.get(itemId);
-                      final spriteKey = Editor.config.objectMetaByType
-                        .get(objectType).spriteKey;
-                      final spriteData = Reflect.field(
-                          spriteSheetData,
-                          spriteKey);
-                      final tile = spriteSheetTile.sub(
-                          spriteData.frame.x,
-                          spriteData.frame.y,
-                          spriteData.frame.w,
-                          spriteData.frame.h);
-                      tile.setCenterRatio(
-                          spriteData.pivot.x,
-                          spriteData.pivot.y);
-                      final pos = truePositionByItemId.get(itemId);
-                      tg.add(
-                          pos.x,
-                          pos.y,
-                          tile);
-                    }
-                  }
-                }
-              };
-              final mc = Main.Global.mainCamera;
-              // Pretty large overdraw right now because some 
-              // objects are really largs and can get clipped too
-              // early. We can fix this by splitting large
-              // objects into multiple sprites 
-              final threshold = 200;
-
-              Grid.eachCellInRect(
-                  tileGrid,
-                  mc.x, 
-                  mc.y,
-                  mc.w + threshold,
-                  mc.h + threshold,
-                  addTileToTileGroup);
+        final debugTraversablePositions = false;
+        if (debugTraversablePositions) {
+          final renderedIds = new Map();
+          for (itemId => bounds in traversableGrid.itemCache) {
+            if (renderedIds.exists(itemId)) {
+              continue;
             }
 
-            final debugTraversablePositions = false;
-            if (debugTraversablePositions) {
-              final renderedIds = new Map();
-              for (itemId => bounds in traversableGrid.itemCache) {
-                if (renderedIds.exists(itemId)) {
-                  continue;
-                }
-
-                final spriteKey = 'ui/square_map_traversable_indicator';
-                final spriteData = Reflect.field(
-                    spriteSheetData,
-                    spriteKey);
-                final tile = spriteSheetTile.sub(
-                    spriteData.frame.x,
-                    spriteData.frame.y,
-                    spriteData.frame.w,
-                    spriteData.frame.h);
-                tile.setCenterRatio(
-                    spriteData.pivot.x,
-                    spriteData.pivot.y);
-                final cellSize = traversableGrid.cellSize;
-                tg.add(
-                    bounds[0] * cellSize + spriteData.sourceSize.w / 2,
-                    bounds[2] * cellSize + spriteData.sourceSize.h / 2,
-                    tile);
-              }
-            }
-
-            return true;
+            final spriteKey = 'ui/square_map_traversable_indicator';
+            final spriteData = Reflect.field(
+                spriteSheetData,
+                spriteKey);
+            final tile = spriteSheetTile.sub(
+                spriteData.frame.x,
+                spriteData.frame.y,
+                spriteData.frame.w,
+                spriteData.frame.h);
+            tile.setCenterRatio(
+                spriteData.pivot.x,
+                spriteData.pivot.y);
+            final cellSize = traversableGrid.cellSize;
+            tg.add(
+                bounds[0] * cellSize + spriteData.sourceSize.w / 2,
+                bounds[2] * cellSize + spriteData.sourceSize.h / 2,
+                tile);
           }
-          Main.Global.updateHooks.push(refreshTileGroup);
+        }
 
-        }, (err) -> {
+        return true;
+      }
+      Main.Global.updateHooks.push(refreshTileGroup);
+
+    }
+    SaveState.load(
+        'editor-data/level_1.eds',
+        false,
+        processMap, 
+        (err) -> {
           trace('[load level failure]', err.stack);
         });
   }
@@ -1847,76 +1849,6 @@ class Game extends h2d.Object {
       .batchManager.spriteSheetData;
 
     Main.Global.rootScene = s2d;
-
-    // setup traversible grid
-    // {
-    //   var traversableRects: Array<Dynamic> = 
-    //     layersByName.get('traversable').objects;
-    //   var updateTraversableGrid = (item: TiledObject) -> {
-    //     Grid.setItemRect(
-    //       Main.Global.traversableGrid,
-    //       (item.x + item.width / 2),
-    //       (item.y + item.height / 2),
-    //       item.width,
-    //       item.height,
-    //       Std.string(item.id)
-    //     );
-    //     return true;
-    //   }
-    //   Lambda.foreach(traversableRects, updateTraversableGrid);
-
-    //   var debugTraversalGrid = false;
-    //   if (debugTraversalGrid) {
-    //     // debug traversable positions
-    //     var traversableGridItems = Main.Global
-    //       .traversableGrid.itemCache;
-    //     var g = new h2d.Graphics(Main.Global.debugScene);
-    //     g.beginFill(Game.Colors.yellow, 0.3);
-    //     var cellSize = Main.Global.traversableGrid.cellSize;
-    //     for (key => item in traversableGridItems) {
-    //       var xMin = item[0] * cellSize;
-    //       var xMax = item[1] * cellSize;
-    //       var yMin = item[2] * cellSize;
-    //       var yMax = item[3] * cellSize;
-    //       var width = xMax - xMin;
-    //       var height = yMax - yMin;
-
-    //       g.drawRect(xMin, yMin, width, height);
-    //     }
-    //   }
-    // }
-
-    // AGENDA: setup map pillars
-    // setup environment obstacle colliders
-    // {
-    //   final objectsRects: Array<core.Types.TiledObject> = 
-    //     layersByName.get('objects').objects;
-    //   final pillarObjects = Lambda
-    //     .filter(objectsRects, (item) -> {
-    //       return item.type == 'mapObject';
-    //     });
-    //   Lambda.foreach(pillarObjects, (item) -> {
-    //     final spriteKey = item.name;
-    //     final spriteData: SpriteBatchSystem.SpriteData = 
-    //       Reflect.field(
-    //           spriteSheetData, 
-    //           spriteKey);
-    //     final cx = item.x + item.width / 2;
-    //     final pivotYOffset = Math.round(
-    //         spriteData.pivot.y * spriteData.sourceSize.h);
-    //     final cy = item.y - item.height
-    //       + pivotYOffset;
-    //     final radius = Std.int((item.width - 2) / 2);
-    //     new MapObstacle({
-    //       id: 'mapObstacle_${item.id}',
-    //       x: cx,
-    //       y: cy,
-    //       radius: radius,
-    //       avoidanceRadius: radius + 3
-    //     }, item);
-    //     return true;
-    //   });
-    // }
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
