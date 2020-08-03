@@ -141,6 +141,9 @@ class Editor {
         // fixed id
         sharedId: 'playerStartPos'
       },
+      'intro_level_boss' => {
+        spriteKey: 'intro_boss_animation/idle-0'
+      },
       'enemySpawnPoint' => {
         spriteKey: 'ui/enemy_spawn_point'
       },

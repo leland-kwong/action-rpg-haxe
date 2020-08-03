@@ -1559,6 +1559,19 @@ class Game extends h2d.Object {
                       spawnerFindTargetFn);
                 } 
 
+                case 'intro_level_boss': {
+                  final size = 3;
+                  final e = new Ai({
+                    x: x + centerOffset,
+                    y: y + centerOffset,
+                    radius: 30,
+                    sightRange: 150,
+                    aiType: 'introLevelBoss',
+                    weight: 1.0,
+                  }, size, (_) -> Entity.getById('PLAYER'));
+                  Main.Global.rootScene.addChildAt(e, 0);
+                }
+
                 case 'pillar': {
                   final spriteKey = objectMeta.spriteKey;
                   final spriteData = Reflect.field(
@@ -1727,30 +1740,6 @@ class Game extends h2d.Object {
         }, (err) -> {
           trace('[load level failure]', err.stack);
         });
-
-
-    // intro_boss
-    // {
-    //   var parsedTiledMap = MapData.create(
-    //       hxd.Res.level_intro_json);
-    //   var layersByName = parsedTiledMap.layersByName;
-    //   var mapObjects: Array<Dynamic> = 
-    //     layersByName.get('objects').objects;
-    //   var miniBossPos: Dynamic = Lambda.find(
-    //       mapObjects, 
-    //       (item) -> item.name == 'mini_boss_position');
-    //   var size = 3;
-
-    //   var e = new Ai({
-    //     x: miniBossPos.x,
-    //     y: miniBossPos.y,
-    //     radius: 30,
-    //     sightRange: 150,
-    //     aiType: 'introLevelBoss',
-    //     weight: 1.0,
-    //   }, size, (_) -> Entity.getById('PLAYER'));
-    //   Main.Global.rootScene.addChildAt(e, 0);
-    // }
   }
 
   // triggers a side-effect to change `canSeeTarget`
