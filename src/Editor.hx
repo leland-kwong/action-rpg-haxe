@@ -163,6 +163,9 @@ class Editor {
         spriteKey: 'ui/level_1_tile',
         type: 'traversableSpace'
       },
+      'bridge_vertical' => {
+        spriteKey: 'ui/bridge_vertical',
+      }
     ]
   }
 
