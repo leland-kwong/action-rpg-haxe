@@ -1531,13 +1531,29 @@ class Game extends h2d.Object {
       };
       // used for adding an offset value for the center tile position
       // since items bounds[0] and bounds[2] are xMin and yMin
-      final centerOffset = Std.int(cellSize / 2);
+      final centerOffset = 0;
       final traversableGrid = Grid.create(cellSize);
       Main.Global.traversableGrid = traversableGrid;
       final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
 
+      final addToTileGrid = (tileGrid, x, y, itemId) -> {
+        Grid.setItemRect(
+            tileGrid,
+            x + centerOffset, 
+            y + centerOffset,
+            tileGrid.cellSize,
+            tileGrid.cellSize,
+            itemId);
+        truePositionByItemId.set(
+            itemId, 
+            { x: x + centerOffset, 
+              y: y + centerOffset });
+      }
+
+
       for (layerId in orderedLayers) {
         final grid = mapData.gridByLayerId.get(layerId);
+        final tileGrid = tileGridByLayerId.get(layerId); 
 
         for (itemId => bounds in grid.itemCache) {
           final objectType = mapData.itemTypeById.get(itemId);
@@ -1596,41 +1612,63 @@ class Game extends h2d.Object {
                   playerRef);
             }
 
-                           case 
-                             'teleporter_pillar_left'
-                             | 'teleporter_pillar_right': {
-                               final ref = new Entity({
-                                 x: x + centerOffset,
-                                 y: y + centerOffset,
-                               });
+            case 'teleporter': {
+              addToTileGrid(tileGrid, x, y, itemId);
 
-                               ref.renderFn = (_, _) -> {
-                                 Main.Global.sb.emitSprite(
-                                     x + centerOffset,
-                                     y + centerOffset,
-                                     objectMeta.spriteKey); 
-                               };
-                             }
+              // add traversable areas
+              Grid.setItemRect(
+                  traversableGrid,
+                  x,
+                  y,
+                  tileGrid.cellSize * 2,
+                  tileGrid.cellSize * 3,
+                  'teleporter_traversable_rect_${itemId}_1');
 
-                           // everything else is treated as a tile 
-            default: {
-              final tileGrid = tileGridByLayerId.get(layerId); 
-              final gridRow = y;
-
-              if (!objectMeta.ignoreRender) {
+              {
+                final width = 9;
+                final height = 2;
                 Grid.setItemRect(
-                    tileGrid,
-                    x + centerOffset, 
-                    y + centerOffset,
-                    tileGrid.cellSize,
-                    tileGrid.cellSize,
-                    itemId);
-                truePositionByItemId.set(
-                    itemId, 
-                    { x: x + centerOffset, 
-                      y: y + centerOffset });
+                    traversableGrid,
+                    x + (3 * cellSize),
+                    y + (cellSize / 2),
+                    tileGrid.cellSize * width,
+                    tileGrid.cellSize * 2,
+                    'teleporter_traversable_rect_${itemId}_2');
               }
 
+              {
+                // add teleporter pillars for layering
+                final ref = new Entity({
+                  x: x - 29,
+                  y: y + 33,
+                });
+
+                ref.renderFn = (ref, _) -> {
+                  Main.Global.sb.emitSprite(
+                      ref.x,
+                      ref.y,
+                      'ui/teleporter_pillar_left'); 
+                };
+
+                final ref = new Entity({
+                  x: x + 26,
+                  y: y + 33,
+                });
+
+                ref.renderFn = (ref, _) -> {
+                  Main.Global.sb.emitSprite(
+                      ref.x,
+                      ref.y,
+                      'ui/teleporter_pillar_right'); 
+                };
+              }
+            }
+
+            // everything else is treated as a tile 
+            default: {
+              final gridRow = y;
+
+              addToTileGrid(tileGrid, x, y, itemId);
               if (objectMeta.type == 'traversableSpace') {
                 Grid.setItemRect(
                     traversableGrid,
@@ -1660,6 +1698,8 @@ class Game extends h2d.Object {
 
         for (layerId in orderedLayers) {
           final tileGrid = tileGridByLayerId.get(layerId);
+          final hasTile = (cellData) -> 
+            cellData != null; 
           final addTileToTileGroup = (
               gridX, gridY, cellData: Grid.GridItems) -> {
             if (cellData != null) {
@@ -1668,8 +1708,21 @@ class Game extends h2d.Object {
                   idsRendered.set(itemId, true);
 
                   final objectType = mapData.itemTypeById.get(itemId);
-                  final spriteKey = Editor.config.objectMetaByType
-                    .get(objectType).spriteKey;
+                  final spriteKey = {
+                    final objectMeta = Editor.config.objectMetaByType
+                      .get(objectType);
+
+                    final shouldAutoTile = objectMeta.type == 'traversableSpace';
+                    if (shouldAutoTile) {
+                      final tileValue = AutoTile.getValue(
+                          tileGrid, gridX, gridY, hasTile, 1);
+
+                      final sprite = 'ui/${objectType}_${tileValue}';
+                      sprite;
+                    } else {
+                      objectMeta.spriteKey;
+                    }
+                  }
                   final spriteData = Reflect.field(
                       spriteSheetData,
                       spriteKey);
@@ -1706,41 +1759,49 @@ class Game extends h2d.Object {
               addTileToTileGroup);
         }
 
-        final debugTraversablePositions = false;
-        if (debugTraversablePositions) {
-          final renderedIds = new Map();
-          for (itemId => bounds in traversableGrid.itemCache) {
-            if (renderedIds.exists(itemId)) {
-              continue;
-            }
-
-            final spriteKey = 'ui/square_map_traversable_indicator';
-            final spriteData = Reflect.field(
-                spriteSheetData,
-                spriteKey);
-            final tile = spriteSheetTile.sub(
-                spriteData.frame.x,
-                spriteData.frame.y,
-                spriteData.frame.w,
-                spriteData.frame.h);
-            tile.setCenterRatio(
-                spriteData.pivot.x,
-                spriteData.pivot.y);
-            final cellSize = traversableGrid.cellSize;
-            tg.add(
-                bounds[0] * cellSize + spriteData.sourceSize.w / 2,
-                bounds[2] * cellSize + spriteData.sourceSize.h / 2,
-                tile);
+        // debug traversable areas
+#if true
+        final renderedIds = new Map();
+        for (itemId => bounds in traversableGrid.itemCache) {
+          if (renderedIds.exists(itemId)) {
+            continue;
           }
-        }
 
-        return true;
+          final spriteKey = 'ui/square_white';
+          final spriteData = Reflect.field(
+              spriteSheetData,
+              spriteKey);
+          final tile = spriteSheetTile.sub(
+              spriteData.frame.x,
+              spriteData.frame.y,
+              spriteData.frame.w,
+              spriteData.frame.h);
+          final cellSize = traversableGrid.cellSize;
+          final w = (bounds[1] - bounds[0]) * cellSize;
+          final h = (bounds[3] - bounds[2]) * cellSize;
+          tile.scaleToSize(w, h);
+          if (Main.Global.logData.boundsInfo == null) {
+            Main.Global.logData.boundsInfo = true;
+            trace('traversable rect', w, h);
+          }
+          tg.addColor(
+              bounds[0] * cellSize,
+              bounds[2] * cellSize,
+              0.8,
+              0.2,
+              0.3,
+              0.3,
+              tile);
+        }
+#end
+
+          return true;
       }
       Main.Global.updateHooks.push(refreshTileGroup);
 
     }
     SaveState.load(
-        'editor-data/level_1.eds',
+        'editor-data/temp.eds',
         false,
         processMap, 
         (err) -> {
