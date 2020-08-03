@@ -63,6 +63,14 @@ typedef EditorState = {
   itemTypeById: Map<String, String>
 };
 
+typedef ConfigObjectMeta = {
+  spriteKey: String,
+  ?type: String,
+  ?sharedId: String,
+  ?ignoreRender: Bool,
+  ?isAutoTile: Bool,
+}
+
 class Profiler {
   public static function create(): ProfilerRef {
     final timesByLabel = new Map();
@@ -115,52 +123,84 @@ class EditorTileGroup extends h2d.TileGroup {
 }
 
 class Editor {
+  static final defaultObjectMeta = {
+    spriteKey: 'ui/square_white',
+    type: 'NONE',
+    sharedId: null,
+    ignoreRender: false,
+    isAutoTile: false,
+  };
+
+  static function createObjectMeta(
+      props: ConfigObjectMeta): ConfigObjectMeta {
+    final newProps: ConfigObjectMeta = Reflect.copy(defaultObjectMeta);
+
+    for (field in Reflect.fields(defaultObjectMeta)) {
+      final defaultValue = Reflect.field(
+          defaultObjectMeta, field);
+      final propValue = Reflect.field(props, field);
+
+      Reflect.setField(
+          newProps, 
+          field, 
+          Utils.withDefault(
+            propValue, defaultValue));
+    }
+
+    return newProps;
+  }
+
   // all configuration stuff lives here
   public static final config: {
     activeFile: String,
     autoSave: Bool,
-    objectMetaByType: Map<String, {
-      spriteKey: String,
-      ?type: String,
-      ?sharedId: String,
-      ?ignoreRender: Bool,
-      ?isAutoTile: Bool,
-    }>,
+    objectMetaByType: Map<String, ConfigObjectMeta>,
     snapGridSizes: Array<Int>
   } = {
-    activeFile: 'editor-data/temp.eds',
-    // activeFile: 'editor-data/level_1.eds',
+    // activeFile: 'editor-data/temp.eds',
+    activeFile: 'editor-data/level_1.eds',
     autoSave: true,
-    objectMetaByType: [
-      'pillar' => {
-        spriteKey: 'ui/pillar',
-      },
-      'player' => {
-        spriteKey: 'player_animation/idle-0',
-        // fixed id
-        sharedId: 'playerStartPos'
-      },
-      'intro_level_boss' => {
-        spriteKey: 'intro_boss_animation/idle-0'
-      },
-      'enemySpawnPoint' => {
-        spriteKey: 'ui/enemy_spawn_point'
-      },
-      'teleporter' => {
-        spriteKey: 'ui/teleporter_base',
-      },
-      'enemy_1' => {
-        spriteKey: 'enemy-2_animation/idle-0',
-      },
-      'tile_1' => {
-        spriteKey: 'ui/tile_1_1',
-        type: 'traversableSpace',
-        isAutoTile: true
-      },
-      'bridge_vertical' => {
-        spriteKey: 'ui/bridge_vertical',
+    objectMetaByType: {
+      final configList: Map<String, ConfigObjectMeta> = [
+        'pillar' => {
+          spriteKey: 'ui/pillar',
+        },
+        'player' => {
+          spriteKey: 'player_animation/idle-0',
+          // fixed id
+          sharedId: 'playerStartPos'
+        },
+        'intro_level_boss' => {
+          spriteKey: 'intro_boss_animation/idle-0'
+        },
+        'enemySpawnPoint' => {
+          spriteKey: 'ui/enemy_spawn_point'
+        },
+        'teleporter' => {
+          spriteKey: 'ui/teleporter_base',
+        },
+        'enemy_1' => {
+          spriteKey: 'enemy-2_animation/idle-0',
+        },
+        'tile_1' => {
+          spriteKey: 'ui/tile_1_1',
+          type: 'traversableSpace',
+          isAutoTile: true
+        },
+        'bridge_vertical' => {
+          spriteKey: 'ui/bridge_vertical',
+        }
+      ];
+
+      final metaByType = new Map<String, ConfigObjectMeta>();
+
+      // add defaults
+      for (key => config in configList) {
+        metaByType.set(key, createObjectMeta(config));
       }
-    ],
+
+      metaByType;
+    },
     snapGridSizes: [1, 8, 16]
   }
 
@@ -411,7 +451,7 @@ class Editor {
             key);
         final objectType = editorState.itemTypeById.get(key);
         final objectMeta = config.objectMetaByType.get(objectType); 
-        isAutoTile = objectMeta.isAutoTile == true;
+        isAutoTile = objectMeta.isAutoTile;
         editorState.itemTypeById.remove(key);
       }
 
