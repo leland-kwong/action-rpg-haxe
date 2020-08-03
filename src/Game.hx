@@ -1694,6 +1694,10 @@ class Game extends h2d.Object {
                 }
               };
               final mc = Main.Global.mainCamera;
+              // Pretty large overdraw right now because some 
+              // objects are really largs and can get clipped too
+              // early. We can fix this by splitting large
+              // objects into multiple sprites 
               final threshold = 200;
 
               Grid.eachCellInRect(
