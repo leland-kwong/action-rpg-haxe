@@ -1502,6 +1502,7 @@ class Game extends h2d.Object {
         'editor-data/level_1.eds',
         false,
         (mapData: Editor.EditorState) -> {
+          final cellSize = 16;
           final spawnerFindTargetFn = (_) -> {
             return Entity.getById('PLAYER');
           }
@@ -1524,11 +1525,16 @@ class Game extends h2d.Object {
             final tileGrids = new Map();
 
             for (layerId in orderedLayers) {
-              tileGrids.set(layerId, Grid.create(16));
+              tileGrids.set(layerId, Grid.create(cellSize));
             }
 
             tileGrids;
           };
+          final traversableGrid = Grid.create(cellSize);
+          // used for adding an offset value for the center tile position
+          // since items bounds[0] and bounds[2] are xMin and yMin
+          final centerOffset = Std.int(cellSize / 2);
+          Main.Global.traversableGrid = traversableGrid;
           final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
 
           for (layerId in orderedLayers) {
@@ -1542,8 +1548,8 @@ class Game extends h2d.Object {
               switch(objectType) {
                 case 'enemySpawnPoint': {
                   new EnemySpawner(
-                      x,
-                      y,
+                      x + centerOffset,
+                      y + centerOffset,
                       5,
                       Main.Global.rootScene,
                       spawnerFindTargetFn);
@@ -1551,8 +1557,8 @@ class Game extends h2d.Object {
 
                 case 'player': {
                   final playerRef = new Player(
-                      x,
-                      y,
+                      x + centerOffset,
+                      y + centerOffset,
                       Main.Global.rootScene);
                   Main.Global.rootScene.addChild(playerRef);
                   Camera.follow(
@@ -1566,11 +1572,26 @@ class Game extends h2d.Object {
                   final gridRow = y;
                   Grid.setItemRect(
                       tileGrid,
-                      x, y,
+                      x + centerOffset, y + centerOffset,
                       tileGrid.cellSize,
                       tileGrid.cellSize,
                       itemId);
-                  truePositionByItemId.set(itemId, {x: x, y : y});
+                  truePositionByItemId.set(itemId, 
+                      {
+                        x: x + centerOffset, 
+                        y: y + centerOffset});
+
+                  final objectMeta = Editor.config.objectMetaByType
+                    .get(objectType);
+                  if (objectMeta.type == 'floorTile') {
+                    Grid.setItemRect(
+                        traversableGrid,
+                        x + centerOffset, 
+                        y + centerOffset, 
+                        tileGrid.cellSize,
+                        tileGrid.cellSize,
+                        itemId);
+                  } 
                 }
               }
             }
@@ -1580,7 +1601,7 @@ class Game extends h2d.Object {
               spriteSheetTile,
               Main.Global.rootScene);
 
-          Main.Global.updateHooks.push((dt) -> {
+          final refreshTileGroup = (dt) -> {
             final width = Std.int(Main.nativePixelResolution.x 
               / Main.Global.resolutionScale);
             final height = Std.int(Main.nativePixelResolution.y 
@@ -1591,6 +1612,36 @@ class Game extends h2d.Object {
 
             for (layerId in orderedLayers) {
               final tileGrid = tileGridByLayerId.get(layerId);
+              final addTileToTileGroup = (
+                  gridX, gridY, cellData: Grid.GridItems) -> {
+                if (cellData != null) {
+                  for (itemId in cellData) {
+                    if (!idsRendered.exists(itemId)) {
+                      idsRendered.set(itemId, true);
+
+                      final objectType = mapData.itemTypeById.get(itemId);
+                      final spriteKey = Editor.config.objectMetaByType
+                        .get(objectType).spriteKey;
+                      final spriteData = Reflect.field(
+                          spriteSheetData,
+                          spriteKey);
+                      final tile = spriteSheetTile.sub(
+                          spriteData.frame.x,
+                          spriteData.frame.y,
+                          spriteData.frame.w,
+                          spriteData.frame.h);
+                      tile.setCenterRatio(
+                          spriteData.pivot.x,
+                          spriteData.pivot.y);
+                      final pos = truePositionByItemId.get(itemId);
+                      tg.add(
+                          pos.x,
+                          pos.y,
+                          tile);
+                    }
+                  }
+                }
+              };
 
               Grid.eachCellInRect(
                   tileGrid,
@@ -1598,39 +1649,37 @@ class Game extends h2d.Object {
                   height / 2,
                   width,
                   height,
-                  (gridX, gridY, cellData) -> {
-                    if (cellData != null) {
-                      for (itemId in cellData) {
-                        if (!idsRendered.exists(itemId)) {
-                          idsRendered.set(itemId, true);
+                  addTileToTileGroup);
+            }
 
-                          final objectType = mapData.itemTypeById.get(itemId);
-                          final spriteKey = Editor.config.objectMetaByType
-                            .get(objectType).spriteKey;
-                          final spriteData = Reflect.field(
-                              spriteSheetData,
-                              spriteKey);
-                          final tile = spriteSheetTile.sub(
-                              spriteData.frame.x,
-                              spriteData.frame.y,
-                              spriteData.frame.w,
-                              spriteData.frame.h);
-                          tile.setCenterRatio(
-                              spriteData.pivot.x,
-                              spriteData.pivot.y);
-                          final pos = truePositionByItemId.get(itemId);
-                          tg.add(
-                              pos.x,
-                              pos.y,
-                              tile);
-                        }
-                      }
-                    }
-                  });
+            final renderedIds = new Map();
+            for (itemId => bounds in traversableGrid.itemCache) {
+              if (renderedIds.exists(itemId)) {
+                continue;
+              }
+
+              final spriteKey = 'ui/square_map_traversable_indicator';
+              final spriteData = Reflect.field(
+                  spriteSheetData,
+                  spriteKey);
+              final tile = spriteSheetTile.sub(
+                  spriteData.frame.x,
+                  spriteData.frame.y,
+                  spriteData.frame.w,
+                  spriteData.frame.h);
+              tile.setCenterRatio(
+                  spriteData.pivot.x,
+                  spriteData.pivot.y);
+              final cellSize = traversableGrid.cellSize;
+              tg.add(
+                  bounds[0] * cellSize + spriteData.sourceSize.w / 2,
+                  bounds[2] * cellSize + spriteData.sourceSize.h / 2,
+                  tile);
             }
 
             return true;
-          });
+          }
+          Main.Global.updateHooks.push(refreshTileGroup);
 
         }, (err) -> {
           trace('[load level failure]', err.stack);
