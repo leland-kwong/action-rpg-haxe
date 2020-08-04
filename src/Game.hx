@@ -1706,11 +1706,11 @@ class Game extends h2d.Object {
                   idsRendered.set(itemId, true);
 
                   final objectType = mapData.itemTypeById.get(itemId);
-                  final spriteKey = {
-                    final objectMeta = Editor.config.objectMetaByType
-                      .get(objectType);
+                  final objectMeta = Editor.config.objectMetaByType
+                    .get(objectType);
 
-                    final shouldAutoTile = objectMeta.type == 'traversableSpace';
+                  final shouldAutoTile = objectMeta.isAutoTile;
+                  final spriteKey = {
                     if (shouldAutoTile) {
                       final tileValue = AutoTile.getValue(
                           tileGrid, gridX, gridY, hasTile, 1);
@@ -1757,40 +1757,12 @@ class Game extends h2d.Object {
               addTileToTileGroup);
         }
 
-        // debug traversable areas
-#if true
-        final renderedIds = new Map();
-        for (itemId => bounds in traversableGrid.itemCache) {
-          if (renderedIds.exists(itemId)) {
-            continue;
-          }
-
-          final spriteKey = 'ui/square_white';
-          final spriteData = Reflect.field(
-              spriteSheetData,
-              spriteKey);
-          final tile = spriteSheetTile.sub(
-              spriteData.frame.x,
-              spriteData.frame.y,
-              spriteData.frame.w,
-              spriteData.frame.h);
-          final cellSize = traversableGrid.cellSize;
-          final w = (bounds[1] - bounds[0]) * cellSize;
-          final h = (bounds[3] - bounds[2]) * cellSize;
-          tile.scaleToSize(w, h);
-          if (Main.Global.logData.boundsInfo == null) {
-            Main.Global.logData.boundsInfo = true;
-            trace('traversable rect', w, h);
-          }
-          tg.addColor(
-              bounds[0] * cellSize,
-              bounds[2] * cellSize,
-              0.8,
-              0.2,
-              0.3,
-              0.3,
-              tile);
-        }
+#if false
+        Debug.traversableAreas(
+            traversableGrid,
+            spriteSheetTile,
+            spriteSheetData,
+            tg);
 #end
 
           return true;
@@ -1799,7 +1771,7 @@ class Game extends h2d.Object {
 
     }
     SaveState.load(
-        'editor-data/temp.eds',
+        'editor-data/level_1.eds',
         false,
         processMap, 
         (err) -> {
