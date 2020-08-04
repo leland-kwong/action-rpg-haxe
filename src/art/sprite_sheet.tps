@@ -216,8 +216,8 @@
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-2.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-3.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-4.png</key>
+            <key type="filename">aseprite_exports/ui/enemy_spawn_point.png</key>
             <key type="filename">aseprite_exports/ui/placeholder.png</key>
-            <key type="filename">aseprite_exports/ui/square_map_traversable_indicator.png</key>
             <key type="filename">aseprite_exports/ui/square_tile_test.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -347,6 +347,21 @@
                 <rect>4,4,7,7</rect>
                 <key>scale9Paddings</key>
                 <rect>4,4,7,7</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/bridge_vertical.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>43,56,86,112</rect>
+                <key>scale9Paddings</key>
+                <rect>43,56,86,112</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -486,36 +501,6 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/level_1_tile.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.125</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>4,4,8,8</rect>
-                <key>scale9Paddings</key>
-                <rect>4,4,8,8</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/level_intro.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>380,296,760,592</rect>
-                <key>scale9Paddings</key>
-                <rect>380,296,760,592</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
@@ -581,7 +566,7 @@
             <key type="filename">aseprite_exports/ui/teleporter_base.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.4375,0.34104</point_f>
+                <point_f>0.317708,0.352601</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
@@ -606,6 +591,36 @@
                 <rect>4,12,9,24</rect>
                 <key>scale9Paddings</key>
                 <rect>4,12,9,24</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/tile_1_0.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_1.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_10.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_11.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_12.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_13.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_14.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_15.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_2.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_3.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_4.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_5.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_6.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_7.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_8.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_9.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.138462</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>5,16,9,33</rect>
+                <key>scale9Paddings</key>
+                <rect>5,16,9,33</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
