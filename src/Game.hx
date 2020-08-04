@@ -1,3 +1,30 @@
+/*
+   * [ ] TODO: Add debugging of the ai's collision shape so we can quickly
+         tell if things are working properly.
+   * [ ] TODO: Enemies should go after player when they take a hit and are 
+         in line of sight.
+   * [ ] TODO: Make pets follow player if they are 
+         too far away from player. If they are a screen's distance
+         away from player, teleport them nearby to player. This will
+         also help prevent them from getting stuck in certain situations.
+   * [ ] TODO: Make map parser autotiling ignore tiles
+         that are on the same layer but not the same
+         object type. This way, if we place detail-oriented
+         tiles on the layer that don't lie on the grid, we 
+         don't run into issues where the autotiling thinks it 
+         is a tile and does the wrong autotile calculation.
+   * [ ] TODO: Add some basic pathfinding for ai (maybe flowfield?) so they're
+         not getting stuck when trying to walk towards player even though
+         they're clearly within vision. This can happen if there is a 
+         long island in between the player and ai but the ai can clearly walk
+         around that island. This will also improve their ability to
+         maneuver around corners.
+   * [ ] TODO: Adjust level_1 start point so that theres more open space at the
+               teleportation point to give player freedom of movement. This is
+               a ux thing so that player doesn't get frustrated early because
+               they couldn't move around at the beginning.
+*/
+
 using core.Types;
 
 import h2d.Bitmap;
@@ -1628,7 +1655,7 @@ class Game extends h2d.Object {
                 Grid.setItemRect(
                     traversableGrid,
                     x + (3 * cellSize),
-                    y + (cellSize / 2),
+                    y + 2,
                     tileGrid.cellSize * width,
                     tileGrid.cellSize * 2,
                     'teleporter_traversable_rect_${itemId}_2');
@@ -1636,24 +1663,24 @@ class Game extends h2d.Object {
 
               {
                 // add teleporter pillars for layering
-                final ref = new Entity({
-                  x: x - 29,
-                  y: y + 33,
+                final refLeft = new Entity({
+                  x: x - 30,
+                  y: y + 27,
                 });
 
-                ref.renderFn = (ref, _) -> {
+                refLeft.renderFn = (ref, _) -> {
                   Main.Global.sb.emitSprite(
                       ref.x,
                       ref.y,
                       'ui/teleporter_pillar_left'); 
                 };
 
-                final ref = new Entity({
-                  x: x + 26,
-                  y: y + 33,
+                final refRight = new Entity({
+                  x: refLeft.x + 55,
+                  y: refLeft.y,
                 });
 
-                ref.renderFn = (ref, _) -> {
+                refRight.renderFn = (ref, _) -> {
                   Main.Global.sb.emitSprite(
                       ref.x,
                       ref.y,
@@ -1733,9 +1760,18 @@ class Game extends h2d.Object {
                       spriteData.pivot.x,
                       spriteData.pivot.y);
                   final pos = truePositionByItemId.get(itemId);
+
+                  final y = {
+                    if (objectMeta.alias == 'alien_propulsion_booster') {
+                      pos.y + Math.sin(Main.Global.time / 1) * 3;
+                    } else {
+                      pos.y;
+                    }
+                  }
+
                   tg.add(
                       pos.x,
-                      pos.y,
+                      y,
                       tile);
                 }
               }
@@ -1755,6 +1791,10 @@ class Game extends h2d.Object {
               mc.w + threshold,
               mc.h + threshold,
               addTileToTileGroup);
+
+#if debugMode
+          Main.Global.logData.numTilesRendered = tg.count();
+#end
         }
 
 #if false
