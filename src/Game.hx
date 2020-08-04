@@ -1460,32 +1460,6 @@ class EnemySpawner extends Entity {
   }
 }
 
-class MapData {
-  static var cache: MapDataRef;
-  static var previousTiledRes: hxd.res.Resource;
-
-  static public function create(tiledRes: hxd.res.Resource) {
-    if (previousTiledRes == tiledRes) {
-      return cache;
-    }
-
-    // parse Tiled json file
-    var mapData:TiledMapData = haxe.Json.parse(
-        hxd.Res.level_intro_json.entry.getText());
-    var layersByName: Map<String, Dynamic> = new Map();
-    var mapLayers: Array<Dynamic> = mapData.layers;
-
-    for (l in mapLayers) {
-      layersByName.set(l.name, l);
-    }
-
-    return {
-      data: mapData,
-      layersByName: layersByName
-    };
-  }
-}
-
 class Game extends h2d.Object {
   public var level = 1;
   var mousePointer: h2d.Object;
