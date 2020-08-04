@@ -1,9 +1,9 @@
 class Debug {
   public static function traversableAreas(
-      traversableGrid: GridRef,
-      spriteSheetTile,
+      traversableGrid: Grid.GridRef,
+      spriteSheetTile: h2d.Tile,
       spriteSheetData,
-      tileGroup: h2d.TileGroup) {
+      tg: h2d.TileGroup) {
     for (itemId => bounds in traversableGrid.itemCache) {
       final spriteKey = 'ui/square_white';
       final spriteData = Reflect.field(
