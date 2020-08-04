@@ -5,15 +5,28 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
- * [ ] [WIP] migrate `level_1.eds` map data to shift each object by a half cell
-       in the north and west direction so things line up properly. Right now
-       when we load up the map in game, we have to shift everything by a half
-       cell so everything lines up.
+ * [ ] Ctrl-click to switch to layer that is under cursor.
+       (This functions exactly like how Aseprite does it.)
+ * [ ] Hold `s` and scroll wheel should cycle between the grid snapping options.
+ * [ ] Show map object metadata when mouse cursor is near that object.
+       This will be useful for those situations where you're trying
+       to figure out exactly what that object was from, especially
+       in cases where autotiling renders it differently.
+       We can determine the bounding box of the object based on its
+       sprite data. (source size, pivot, etc).
+ * [ ] Add support for additional properties for an object. We can store this
+       data on `editorState.itemPropertiesById`.  
+   * [ ] Press `f` to flip brush horizontally, and `shift + f` to 
+         flip brush vertically.
+   * [ ] When copying/cutting/pasting, we need to also copy all other properties
+         associated with that object.
+   * [ ] Press `r` to rotate brush 45 degrees clockwise, 
+         and `shift + r` to rotate brush 45 degrees counter-clockwise.
+ * [ ] [BUG] Fix issue with cursor brush in paint mode not properly snapping
+       to the fine pixel grid. We can refer to the selected marquee 
+       selection api since it doesn't appear to exhibit the same issues.
+       to have this problem, so we can loo
  * [ ] undo/redo system
- * [ ] Put brush selection onto marquee layer. This way we can
-       consolidate the brush and marquee selection into the same
-       api. We'll also need to allow left-click to paint the
-       current marquee selection.
  * [ ] [BUG] Serializing state can sometimes crash.
        One possible cause is that we're mutating state while the
        thread is in mid-serialization. We need a better way of mutating
@@ -69,6 +82,7 @@ typedef ConfigObjectMeta = {
   ?sharedId: String,
   ?ignoreRender: Bool,
   ?isAutoTile: Bool,
+  ?alias: String,
 }
 
 class Profiler {
@@ -125,10 +139,11 @@ class EditorTileGroup extends h2d.TileGroup {
 class Editor {
   static final defaultObjectMeta = {
     spriteKey: 'ui/square_white',
-    type: 'NONE',
+    type: 'UNKNOWN_TYPE',
     sharedId: null,
     ignoreRender: false,
     isAutoTile: false,
+    alias: 'UNKNOWN_ALIAS',
   };
 
   static function createObjectMeta(
@@ -159,7 +174,7 @@ class Editor {
   } = {
     // activeFile: 'editor-data/temp.eds',
     activeFile: 'editor-data/level_1.eds',
-    autoSave: true,
+    autoSave: false,
     objectMetaByType: {
       final configList: Map<String, ConfigObjectMeta> = [
         'pillar' => {
@@ -186,6 +201,13 @@ class Editor {
           spriteKey: 'ui/tile_1_1',
           type: 'traversableSpace',
           isAutoTile: true
+        },
+        'tile_1_detail_1' => {
+          spriteKey: 'ui/tile_1_detail_1',
+        },
+        'tile_1_detail_2' => {
+          spriteKey: 'ui/tile_1_detail_2',
+          alias: 'alien_propulsion_booster'
         },
         'bridge_vertical' => {
           spriteKey: 'ui/bridge_vertical',
@@ -494,14 +516,17 @@ class Editor {
       // remove item that shares same id
       if (hasSharedId) {
         final bounds = gridRef.itemCache.get(id); 
-        final x = bounds[0];
-        final y = bounds[2];
 
-        removeSquare(
-            gridRef,
-            x, y,
-            1, 1,
-            layerId);
+        if (bounds != null) {
+          final x = bounds[0];
+          final y = bounds[2];
+
+          removeSquare(
+              gridRef,
+              x, y,
+              1, 1,
+              layerId);
+        }
       }
 
       // we want to replace the current cell value
@@ -665,7 +690,7 @@ class Editor {
       return [gridX, gridY];
     }
 
-    function updateObjectTypeList() {
+    function updateObjectMetaList() {
       final win = hxd.Window.getInstance();
       final itemSize = 100;
       final sidePadding = 20;
@@ -710,10 +735,14 @@ class Editor {
     }
 
     function update(dt) {
+      if (!hxd.Window.getInstance().isFocused) {
+        return true;
+      }
+
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
 
-      updateObjectTypeList();
+      updateObjectMetaList();
       localState.editorUiRegion = {
         final p = new h2d.col.Point(mx, my);
         var activeRegion = EditorUiRegion.MainMap; 
@@ -1293,6 +1322,10 @@ class Editor {
     }
 
     function render(time) {
+      if (!hxd.Window.getInstance().isFocused) {
+        return true;
+      }
+
       final activeGrid = editorState.gridByLayerId
         .get(localState.activeLayerId);
       final cellSize = activeGrid.cellSize;
@@ -1320,8 +1353,10 @@ class Editor {
               config.objectMetaByType.get(menuItem.type)
               .spriteKey);
           final scale = {
-            final spriteHeight = spriteData.sourceSize.h;
-            menuItem.height / spriteHeight;
+            final spriteMaxDimension = Math.max(
+                spriteData.sourceSize.w,
+                spriteData.sourceSize.h);
+            Math.min(2, menuItem.height / spriteMaxDimension);
           }
           final spriteEffect = (p) -> {
             final b: h2d.SpriteBatch.BatchElement = p.batchElement;
