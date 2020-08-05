@@ -847,7 +847,7 @@ class Editor {
                       final objectMeta = config.objectMetaByType
                         .get(objectType);
                       final spriteKey = {
-                        if (objectType == 'tile_1') {
+                        if (objectMeta.isAutoTile) {
                           final gridRef = editorState.gridByLayerId
                             .get(action.layerId);
                           final tileValue = AutoTile.getValue(
