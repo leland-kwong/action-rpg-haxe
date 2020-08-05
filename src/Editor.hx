@@ -22,6 +22,9 @@
          associated with that object.
    * [ ] Press `r` to rotate brush 45 degrees clockwise, 
          and `shift + r` to rotate brush 45 degrees counter-clockwise.
+ * [ ] Minimap functionality. This will be useful for seeing a preview of the
+       entire map while also surfacing any stray objects that we might not
+       otherwise see because we forgot to clean them up.
  * [ ] [BUG] Fix issue with cursor brush in paint mode not properly snapping
        to the fine pixel grid. We can refer to the selected marquee 
        selection api since it doesn't appear to exhibit the same issues.
