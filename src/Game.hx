@@ -1714,7 +1714,7 @@ class Game extends h2d.Object {
                   final spriteKey = {
                     if (shouldAutoTile) {
                       final tileValue = AutoTile.getValue(
-                          tileGrid, gridX, gridY, hasTile, 1);
+                          tileGrid, gridX, gridY, hasTile, 1, true);
 
                       final sprite = 'ui/${objectType}_${tileValue}';
                       sprite;

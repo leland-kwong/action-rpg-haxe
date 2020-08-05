@@ -82,6 +82,7 @@ typedef ConfigObjectMeta = {
   ?sharedId: String,
   ?ignoreRender: Bool,
   ?isAutoTile: Bool,
+  ?autoTileCorner: Bool,
   ?alias: String,
 }
 
@@ -143,6 +144,7 @@ class Editor {
     sharedId: null,
     ignoreRender: false,
     isAutoTile: false,
+    autoTileCorner: false,
     alias: 'UNKNOWN_ALIAS',
   };
 
@@ -200,7 +202,8 @@ class Editor {
         'tile_1' => {
           spriteKey: 'ui/tile_1_1',
           type: 'traversableSpace',
-          isAutoTile: true
+          isAutoTile: true,
+          autoTileCorner: true
         },
         'tile_1_detail_1' => {
           spriteKey: 'ui/tile_1_detail_1',
@@ -838,6 +841,8 @@ class Editor {
                     for (itemId in cellData) {
                       final objectType = editorState.itemTypeById
                         .get(itemId);
+                      final objectMeta = config.objectMetaByType
+                        .get(objectType);
                       final spriteKey = {
                         if (objectType == 'tile_1') {
                           final gridRef = editorState.gridByLayerId
@@ -846,13 +851,14 @@ class Editor {
                               gridRef,
                               colIndex,
                               rowIndex,
-                              isTileItem);
+                              isTileItem,
+                              16,
+                              objectMeta.autoTileCorner);
 
                           'ui/tile_1_${tileValue}';
                         } else {
 
-                          config.objectMetaByType
-                            .get(objectType).spriteKey;
+                          objectMeta.spriteKey;
                         }
                       }
                       final spriteData = Reflect.field(
