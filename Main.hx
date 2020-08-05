@@ -234,7 +234,7 @@ class Main extends hxd.App {
   var debugText: h2d.Text;
   var acc = 0.0;
   var game: Game;
-  var background: h2d.Bitmap;
+  var background: h2d.Graphics;
   var sceneCleanupFn: () -> Void;
   public static final nativePixelResolution = {
     // TODO this should be based on
@@ -244,9 +244,58 @@ class Main extends hxd.App {
   };
 
   function addBackground(s2d: h2d.Scene, color) {
-    // background
-    var overlayTile = h2d.Tile.fromColor(color, s2d.width, s2d.height);
-    return new h2d.Bitmap(overlayTile, s2d);
+    final g = new h2d.Graphics(s2d);
+    final scale = Global.resolutionScale;
+    
+    g.blendMode = h2d.BlendMode.Add;
+    g.beginFill(color);
+    g.drawRect(
+        0, 0, 
+        s2d.width * scale, 
+        s2d.height * scale);
+
+    final colorA = 0xd10a7e;
+    final colorB = 0x0095e9;
+    final p = new hxd.Perlin();
+
+    // make stars
+    final divisor = 6;
+    final xMax = Std.int((1920 + 20) / scale / divisor);
+    final yMax = Std.int((1080 + 20) / scale / divisor);
+    final seed = Utils.irnd(0, 100);
+    final starSizes = [0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 3];
+    for (x in 0...xMax) {
+      for (y in 0...yMax) {
+        final v = p.perlin(seed, x / yMax, y / xMax, 10);
+        final color = 0xffffff;
+        g.beginFill(color, Math.abs(v) * 3);
+        g.drawCircle(
+            x * divisor + Utils.irnd(-5, 5, true), 
+            y * divisor + Utils.irnd(-5, 5, true), 
+            Utils.rollValues(starSizes) / 6,
+            4);
+      }
+    }
+
+    // make nebula "clouds"
+    final divisor = 1.5;
+    final xMax = Std.int((1920 + 20) / scale / divisor);
+    final yMax = Std.int((1080 + 20) / scale / divisor);
+    final seed = Utils.irnd(0, 100);
+    for (x in 0...xMax) {
+      for (y in 0...yMax) {
+        final v = p.perlin(seed, x / yMax, y / xMax, 15, 0.25);
+        final color = v > 0 ? colorA : colorB;
+        g.beginFill(color, Math.abs(v) / 12);
+        g.drawCircle(
+            x * divisor, 
+            y * divisor, 
+            2,
+            4);
+      }
+    }
+
+    return g;
   }
 
   function setupDebugInfo(font) {
@@ -316,7 +365,9 @@ class Main extends hxd.App {
 
   override function init() {
     try {
+      // final sceneToLoad = 'editor';
       final sceneToLoad = 'game';
+
       final scenes = [
         'editor' => () -> {
           Editor.init();
@@ -371,7 +422,7 @@ class Main extends hxd.App {
         sevents.addScene(Global.staticScene);
 
         background = addBackground(
-            Global.mainBackground, 0x333333);
+            Global.mainBackground, 0x222222);
       }
 
 #if !production
@@ -543,9 +594,6 @@ class Main extends hxd.App {
           game.update(s2d, frameTime);
         }
       }
-
-      background.width = s2d.width;
-      background.height = s2d.height;
 
       final nextHooks = [];
       for (update in Main.Global.updateHooks) {
