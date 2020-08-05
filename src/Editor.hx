@@ -5,6 +5,9 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
+ * [ ] Optimize tile rendering so that it only renders what is in the viewport.
+       We can do this for both the x and y axis, which should significantly
+       cut down on the performance cost of rendering.
  * [ ] Ctrl-click to switch to layer that is under cursor.
        (This functions exactly like how Aseprite does it.)
  * [ ] Hold `s` and scroll wheel should cycle between the grid snapping options.
