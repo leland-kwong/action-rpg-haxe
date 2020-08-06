@@ -304,12 +304,20 @@ class Ai extends Entity {
         'enemy-1_animation/idle-8',
         'enemy-1_animation/idle-9',
       ];
+
+      final timeOffset = Utils.irnd(0, 100) / 100;
+ 
       idleAnim = {
         frames: idleFrames,
         duration: 1,
-        startTime: Main.Global.time,
+        startTime: Main.Global.time + timeOffset,
       }
-      runAnim = idleAnim;
+
+      runAnim = {
+        frames: idleFrames,
+        duration: 0.5,
+        startTime: Main.Global.time + timeOffset,
+      };
     }
 
     if (size == 2) {
