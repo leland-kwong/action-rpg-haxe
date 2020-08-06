@@ -365,6 +365,22 @@ class Main extends hxd.App {
         rootInteract.onRelease = (event : hxd.Event) -> {
           Global.worldMouse.buttonDown = -1;
         };
+        
+        function handleCursorStyle(dt) {
+          final Cursor = hxd.Cursor;
+          final hoverState = Global.worldMouse.hoverState;
+
+          rootInteract.cursor = switch(hoverState) {
+            case 
+              HoverState.LootHovered
+              | HoverState.LootHoveredCanPickup: Cursor.Button;
+            default: Cursor.Default;
+          }
+
+          return true;
+        }
+
+        Global.updateHooks.push(handleCursorStyle);
       }
 
       // setup viewport
