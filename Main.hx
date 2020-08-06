@@ -165,72 +165,6 @@ class Main extends hxd.App {
     y: 1080
   };
 
-  function addBackground(s2d: h2d.Scene, color) {
-    final g = new h2d.Graphics(s2d);
-    final scale = Global.resolutionScale;
-    
-    g.beginFill(color);
-    g.drawRect(
-        0, 0, 
-        s2d.width * scale, 
-        s2d.height * scale);
-
-    final p = new hxd.Perlin();
-    final makeStars = () -> {
-      final divisor = 6;
-      final xMax = Std.int((1920 + 20) / scale / divisor);
-      final yMax = Std.int((1080 + 20) / scale / divisor);
-      final seed = Utils.irnd(0, 100);
-      final starSizes = [0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 3];
-      for (x in 0...xMax) {
-        for (y in 0...yMax) {
-          final v = p.perlin(seed, x / yMax, y / xMax, 10);
-          final color = 0xffffff;
-          g.beginFill(color, Math.abs(v) * 1.5);
-          g.drawCircle(
-              x * divisor + Utils.irnd(-10, 10, true), 
-              y * divisor + Utils.irnd(-10, 10, true), 
-              Utils.rollValues(starSizes) / 6,
-              4);
-        }
-      }
-    }
-
-    final makeNebulaClouds = () -> {
-      final colorOptions = [
-        0xd10a7e,
-        0xe43b44,
-        0x1543c1
-      ];
-      final colorA = Utils.rollValues(colorOptions);
-      final colorB = Utils.rollValues(
-          Lambda.filter(
-            colorOptions,
-            (c) -> c != colorA));
-      final divisor = 1.5;
-      final xMax = Std.int((1920 + 20) / scale / divisor);
-      final yMax = Std.int((1080 + 20) / scale / divisor);
-      final seed = Utils.irnd(0, 100);
-      for (x in 0...xMax) {
-        for (y in 0...yMax) {
-          final v = p.perlin(seed, x / yMax, y / xMax, 15, 0.25);
-          final color = v > 0 ? colorA : colorB;
-          g.beginFill(color, Math.abs(v) / 12);
-          g.drawCircle(
-              x * divisor, 
-              y * divisor, 
-              2,
-              4);
-        }
-      }
-    }
-
-    makeStars();
-    makeNebulaClouds();
-
-    return g;
-  }
-
   function setupDebugInfo(font) {
     debugText = new h2d.Text(font);
     // debugText.textAlign = Right;
@@ -316,9 +250,6 @@ class Main extends hxd.App {
         // used for experimental projects
         Global.staticScene = new h2d.Scene();
         sevents.addScene(Global.staticScene);
-
-        background = addBackground(
-            Global.mainBackground, 0x222222);
       }
 
 #if !production
@@ -419,7 +350,7 @@ class Main extends hxd.App {
         Hud.InventoryDragAndDropPrototype
           .addTestItems();
 
-        return () -> gameRef.cleanupLevel();
+        return () -> gameRef.remove();
       }
 
       function onHomeMenuSelect(value) {

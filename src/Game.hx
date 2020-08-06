@@ -1494,7 +1494,7 @@ class Game extends h2d.Object {
     return numEnemies == 0;
   }
 
-  public function cleanupLevel() {
+  override function onRemove() {
     // reset game state
     for (entityRef in Entity.ALL_BY_ID) {
       entityRef.health = 0;
@@ -1502,10 +1502,6 @@ class Game extends h2d.Object {
 
     mousePointer.remove();
     finished = true;
-  }
-
-  override function onRemove() {
-    cleanupLevel();
   }
 
   public function newLevel(s2d: h2d.Scene) {
@@ -1897,10 +1893,80 @@ class Game extends h2d.Object {
     };
   }
 
+  public static function makeBackground() {
+    final Global = Main.Global;
+    final s2d = Global.mainBackground;
+    final g = new h2d.Graphics(s2d);
+    final scale = Global.resolutionScale;
+    final bgBaseColor = 0x1f1f1f;
+    
+    g.beginFill(bgBaseColor);
+    g.drawRect(
+        0, 0, 
+        s2d.width * scale, 
+        s2d.height * scale);
+
+    final p = new hxd.Perlin();
+
+    final makeStars = () -> {
+      final divisor = 6;
+      final xMax = Std.int((1920 + 20) / scale / divisor);
+      final yMax = Std.int((1080 + 20) / scale / divisor);
+      final seed = Utils.irnd(0, 100);
+      final starSizes = [0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 3];
+      for (x in 0...xMax) {
+        for (y in 0...yMax) {
+          final v = p.perlin(seed, x / yMax, y / xMax, 10);
+          final color = 0xffffff;
+          g.beginFill(color, Math.abs(v) * 1.5);
+          g.drawCircle(
+              x * divisor + Utils.irnd(-10, 10, true), 
+              y * divisor + Utils.irnd(-10, 10, true), 
+              Utils.rollValues(starSizes) / 6,
+              4);
+        }
+      }
+    }
+
+    final makeNebulaClouds = () -> {
+      final colorOptions = [
+        0xd10a7e,
+        0xe43b44,
+        0x1543c1
+      ];
+      final colorA = Utils.rollValues(colorOptions);
+      final colorB = Utils.rollValues(
+          Lambda.filter(
+            colorOptions,
+            (c) -> c != colorA));
+      final divisor = 2;
+      final xMax = Std.int((1920 + 20) / scale / divisor);
+      final yMax = Std.int((1080 + 20) / scale / divisor);
+      final seed = Utils.irnd(0, 100);
+      for (x in 0...xMax) {
+        for (y in 0...yMax) {
+          final v = p.perlin(seed, x / yMax, y / xMax, 15, 0.25);
+          final color = v > 0 ? colorA : colorB;
+          g.beginFill(color, Math.abs(v) / 12);
+          g.drawCircle(
+              x * divisor, 
+              y * divisor, 
+              2,
+              4);
+        }
+      }
+    }
+
+    makeStars();
+    makeNebulaClouds();
+
+    return g;
+  } 
+
   public function new(
     s2d: h2d.Scene
   ) {
-    super();
+    super(s2d);
 
     mapRef = Main.Global.obstacleGrid;
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
@@ -1917,6 +1983,17 @@ class Game extends h2d.Object {
     mousePointerSprite = new h2d.Graphics(mousePointer);
     mousePointerSprite.beginFill(0xffda3d, 0.3);
     mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
+
+    final background = makeBackground();
+    final cleanupWhenFinished = (dt) -> {
+      if (finished) {
+        background.remove();
+      }
+
+      return !finished;
+    }
+    Main.Global.updateHooks
+      .push(cleanupWhenFinished);
 
     newLevel(Main.Global.rootScene);
 

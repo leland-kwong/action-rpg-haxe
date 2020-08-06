@@ -1530,6 +1530,9 @@ class Editor {
       return !finished;
     }
 
+    final backgroundRef = Game.makeBackground();
+    cleanupFns.push(() -> backgroundRef.remove());
+
     Main.Global.updateHooks.push(update);
     Main.Global.renderHooks.push(render);
 
