@@ -398,39 +398,7 @@ class Main extends hxd.App {
       function initGame() {
         final gameRef = new Game(s2d); 
 
-        Global.escapeStack = [];
         Global.uiState.hud.enabled = true;
-
-        function homeScreenOnEscape() {
-          Stack.push(Global.escapeStack, 'goto home screen', () -> {
-            Global.uiState.hud.enabled = false;
-
-            final cleanup = Gui.homeMenu((value) -> {
-              if (value != 'backToGame') {
-                sceneCleanupFn();
-              }
-
-              sceneCleanupFn = switch(value) {
-                case 'editor': Editor.init();
-                case 'exit': onGameExit();
-                case 'newGame': initGame();
-                default: {
-                  throw 'home screen menu case not handled';
-                };
-              }
-
-              return true;
-            });
-
-            Stack.push(Global.escapeStack, 'back to game', () -> {
-              cleanup();
-              homeScreenOnEscape();
-              Global.uiState.hud.enabled = true;
-            });
-          });
-        }
-
-        homeScreenOnEscape();
 
         Hud.InventoryDragAndDropPrototype
           .addTestItems();
@@ -438,7 +406,41 @@ class Main extends hxd.App {
         return () -> gameRef.cleanupLevel();
       }
 
-      sceneCleanupFn = initGame();
+      function onHomeMenuSelect(value) {
+        if (value != 'backToGame') {
+          sceneCleanupFn();
+        }
+
+        sceneCleanupFn = switch(value) {
+          case 'editor': Editor.init();
+          case 'exit': onGameExit();
+          case 'newGame': initGame();
+          default: {
+            throw 'home screen menu case not handled';
+          };
+        }
+
+        Global.escapeStack = [];
+
+        function homeScreenOnEscape() {
+          Stack.push(Global.escapeStack, 'goto home screen', () -> {
+            Global.uiState.hud.enabled = false;
+            Gui.homeMenu(onHomeMenuSelect);
+
+            Stack.push(Global.escapeStack, 'back to game', () -> {
+              sceneCleanupFn();
+              Global.uiState.hud.enabled = true;
+            });
+          });
+        }
+
+        homeScreenOnEscape();
+
+        return true;
+      }
+
+      sceneCleanupFn = Gui.homeMenu(onHomeMenuSelect);
+
 
     } catch (error: Dynamic) {
 

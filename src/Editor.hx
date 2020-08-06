@@ -280,6 +280,8 @@ class Editor {
   }
 
   public static function init() {
+    var finished = false;
+
     editorState = {
       final winCenter = windowCenterPos();
       final cellSize = 1;
@@ -749,7 +751,7 @@ class Editor {
 
     function update(dt) {
       if (!hxd.Window.getInstance().isFocused) {
-        return true;
+        return !finished;
       }
 
       final mx = Main.Global.uiRoot.mouseX;
@@ -827,7 +829,10 @@ class Editor {
                               isVisibleLayer) != null;
                         });
                     activeTileRows.set(rowIndex, newTg);
-                    cleanupFns.push(() -> tg.remove());
+                    cleanupFns.push(() -> {
+                      newTg.remove();
+                      newTg.clear();
+                    });
                     newTg;
                   } else {
                     tg;
@@ -1335,12 +1340,12 @@ class Editor {
       localState.isDragStart = initialLocalState().isDragStart;
       localState.isDragEnd = initialLocalState().isDragEnd;
 
-      return true;
+      return !finished;
     }
 
     function render(time) {
       if (!hxd.Window.getInstance().isFocused) {
-        return true;
+        return !finished;
       }
 
       final activeGrid = editorState.gridByLayerId
@@ -1522,7 +1527,7 @@ class Editor {
             });
       }
 
-      return true;
+      return !finished;
     }
 
     Main.Global.updateHooks.push(update);
@@ -1532,6 +1537,8 @@ class Editor {
       for (fn in cleanupFns) {
         fn();
       }
+
+      finished = true;
     };
   }
 }
