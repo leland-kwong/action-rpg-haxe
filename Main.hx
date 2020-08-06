@@ -407,7 +407,8 @@ class Main extends hxd.App {
       }
 
       function onHomeMenuSelect(value) {
-        if (value != 'backToGame') {
+        if (sceneCleanupFn != null && 
+            value != 'backToGame') {
           sceneCleanupFn();
         }
 
@@ -425,10 +426,11 @@ class Main extends hxd.App {
         function homeScreenOnEscape() {
           Stack.push(Global.escapeStack, 'goto home screen', () -> {
             Global.uiState.hud.enabled = false;
-            Gui.homeMenu(onHomeMenuSelect);
+            final closeHomeMenu = Gui.homeMenu(onHomeMenuSelect);
 
             Stack.push(Global.escapeStack, 'back to game', () -> {
-              sceneCleanupFn();
+              closeHomeMenu();
+              homeScreenOnEscape();
               Global.uiState.hud.enabled = true;
             });
           });
@@ -439,8 +441,7 @@ class Main extends hxd.App {
         return true;
       }
 
-      sceneCleanupFn = Gui.homeMenu(onHomeMenuSelect);
-
+      Gui.homeMenu(onHomeMenuSelect);
 
     } catch (error: Dynamic) {
 
