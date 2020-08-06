@@ -1884,8 +1884,7 @@ class Game extends h2d.Object {
   }
 
   public function new(
-    s2d: h2d.Scene,
-    oldGame: Game
+    s2d: h2d.Scene
   ) {
     super();
 

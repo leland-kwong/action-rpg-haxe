@@ -146,85 +146,6 @@ class UiButton extends h2d.Object {
   }
 }
 
-class HomeScreen extends h2d.Object {
-  var uiButtonsList = [];
-
-  public function new(
-      onGameStart,
-      onGameExit
-      ) {
-    super();
-
-    var leftMargin = 100;
-    var titleFont = Main.Global.fonts.title;
-    var titleText = new h2d.Text(titleFont, this);
-    titleText.text = 'Astral Cowboy';
-    titleText.textColor = Game.Colors.pureWhite;
-    titleText.x = leftMargin;
-    titleText.y = 300;
-
-    var btnFont = Main.Global.fonts.primary.clone();
-    var buttons: Array<Dynamic> = [
-      ['Start Game', btnFont, () -> {
-        this.remove();
-        onGameStart();
-      }],
-      ['Exit Game', btnFont, onGameExit],
-    ];
-    var btnGroup = {
-      x: leftMargin,
-      y: titleText.y + titleText.textHeight + 50
-    }
-    for (i in 0...buttons.length) {
-      var config: Array<Dynamic> = buttons[i];
-      var prevBtn = uiButtonsList[i - 1];
-      var btn = new UiButton(config[0], config[1], config[2]);
-      addChild(btn);
-      uiButtonsList.push(btn);
-
-      if (prevBtn != null) {
-        btnGroup.y += prevBtn.button.height + 10;
-      }
-
-      btn.x = btnGroup.x;
-      btn.y = btnGroup.y;
-    }
-    
-    Global.updateHooks.push((dt: Float) -> {
-      for (o in uiButtonsList) {
-        var btn = (o: UiButton);
-        btn.update(dt);
-      }
-
-      final isActive = parent != null;
-
-      Global.uiState.hud.enabled = !isActive;
-
-      return isActive;
-    });
-
-    Global.renderHooks.push((time) -> {
-      Global.uiSpriteBatch.emitSprite(
-          0, 0,
-          'ui/square_white',
-          null,
-          (p) -> {
-            final win = hxd.Window.getInstance();
-
-            p.batchElement.r = 0;
-            p.batchElement.g = 0;
-            p.batchElement.b = 0;
-            p.batchElement.a = 0.7;
-
-            p.batchElement.scaleX = win.width;
-            p.batchElement.scaleY = win.height;
-          });
-
-      return parent != null;
-    });
-  }
-}
-
 enum abstract MainSceneType(String) {
   var PlayGame;
 }
@@ -321,15 +242,6 @@ class Main extends hxd.App {
     hxd.System.exit();
   }
 
-  function showHomeScreen() {
-    function onGameStart() {
-      game = new Game(s2d, game);
-    }
-
-    return new HomeScreen(
-      onGameStart, onGameExit);
-  }
-
   public override function render(e: h3d.Engine) {
     try {
 
@@ -376,31 +288,6 @@ class Main extends hxd.App {
 
   override function init() {
     try {
-      // final sceneToLoad = 'editor';
-      final sceneToLoad = 'game';
-
-      final scenes = [
-        'editor' => () -> {
-          Editor.init();
-
-          return () -> {};
-        },
-        'game' => () -> {
-          game = new Game(s2d, game);
-          Stack.push(Global.escapeStack, 'goto home screen', () -> {
-            var hs = showHomeScreen();
-            Global.uiRoot.addChild(hs);
-
-            Stack.push(Global.escapeStack, 'back to game', () -> {
-              hs.remove();
-            });
-          });
-          Hud.InventoryDragAndDropPrototype
-            .addTestItems();
-
-          return () -> {};
-        }
-      ];
 
       hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
@@ -410,7 +297,7 @@ class Main extends hxd.App {
         title: Fonts.title()
       };
 
-      // setup scenes
+      // setup global scene objects
       {
         Global.rootScene = s2d;
         s2d.scaleMode = ScaleMode.Zoom(
@@ -444,6 +331,7 @@ class Main extends hxd.App {
 
       final win = hxd.Window.getInstance();
 
+      // setup global mouse interactions
       {
         final rootInteract = new h2d.Interactive(
             nativePixelResolution.x,
@@ -506,8 +394,51 @@ class Main extends hxd.App {
       setupDebugInfo(font);
 #end
 
-      sceneCleanupFn = scenes.get(sceneToLoad)();
+      Gui.init();
       Hud.init();
+
+      function initGame() {
+        game = new Game(s2d);
+
+        Global.escapeStack = [];
+        Global.uiState.hud.enabled = true;
+
+        function homeScreenOnEscape() {
+          Stack.push(Global.escapeStack, 'goto home screen', () -> {
+            Global.uiState.hud.enabled = false;
+
+            final cleanup = Gui.homeMenu((value) -> {
+              if (game != null && value != 'backToGame') {
+                game.cleanupLevel();
+              }
+
+              switch(value) {
+                case 'editor': Editor.init();
+                case 'exit': onGameExit();
+                case 'newGame': initGame();
+                default: {
+                  throw 'home screen menu case not handled';
+                };
+              }
+
+              return true;
+            });
+
+            Stack.push(Global.escapeStack, 'back to game', () -> {
+              cleanup();
+              homeScreenOnEscape();
+              Global.uiState.hud.enabled = true;
+            });
+          });
+        }
+
+        homeScreenOnEscape();
+
+        Hud.InventoryDragAndDropPrototype
+          .addTestItems();
+      }
+
+      initGame();
 
     } catch (error: Dynamic) {
 

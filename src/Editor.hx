@@ -350,7 +350,7 @@ class Editor {
       editorMode: EditorMode.Paint,
       previousEditorMode: EditorMode.Paint,
 
-      zoom: 1.0,
+      zoom: 4.0,
       actions: new Array<EditorStateAction>(),
       stateToSave: null,
       showAllLayers: true,
