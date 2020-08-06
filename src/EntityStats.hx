@@ -53,6 +53,10 @@ class EntityStats {
   public static function update(
       sr: StatsRef, dt: Float) {
 
+    if (sr == null) {
+      return;
+    }
+
     final events = sr.recentEvents;
     var i = 0;
 

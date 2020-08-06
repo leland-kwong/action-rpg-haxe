@@ -1466,6 +1466,7 @@ class Game extends h2d.Object {
   var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
   var MOUSE_POINTER_RADIUS = 5.0;
+  var finished = false;
 
   function calcNumEnemies(level: Int) {
     return level * Math.round(level /2);
@@ -1492,6 +1493,7 @@ class Game extends h2d.Object {
     }
 
     mousePointer.remove();
+    finished = true;
   }
 
   override function onRemove() {
@@ -1780,7 +1782,11 @@ class Game extends h2d.Object {
             tg);
 #end
 
-          return true;
+        if (finished) {
+          tg.remove();
+        }
+
+        return !finished;
       }
       Main.Global.updateHooks.push(refreshTileGroup);
 
