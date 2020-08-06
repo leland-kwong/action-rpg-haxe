@@ -1911,13 +1911,23 @@ class Game extends h2d.Object {
     mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
 
     newLevel(Main.Global.rootScene);
+
+    Main.Global.updateHooks.push(this.update);
+    Main.Global.renderHooks.push(this.render);
   }
 
-  public function update(s2d: h2d.Scene, dt: Float) {
+  public function update(dt: Float) {
+
+    final s2d = Main.Global.rootScene;
+
+    if (!Main.Global.isNextFrame) {
+      return !finished;
+    }
+
     var isReady = mapRef != null;
 
     if (!isReady) {
-      return;
+      return !finished;
     }
 
     // reset list before next loop
@@ -2069,6 +2079,8 @@ class Game extends h2d.Object {
     mousePointer.y = s2d.mouseY;
 
     Hud.update(dt);
+
+    return !finished;
   }
 
   public function render(time: Float) {
@@ -2077,5 +2089,7 @@ class Game extends h2d.Object {
     }
 
     Hud.render(time);
+
+    return !finished;
   }
 }

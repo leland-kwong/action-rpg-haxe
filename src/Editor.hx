@@ -363,7 +363,7 @@ class Editor {
         >()
     };
 
-
+    final cleanupFns = [];
     final profiler = Profiler.create();
     final spriteSheetTile =
       hxd.Res.sprite_sheet_png.toTile();
@@ -686,6 +686,10 @@ class Editor {
     };
 
     s2d.addEventListener(listener);
+    cleanupFns.push(() -> {
+      s2d.removeEventListener(listener);
+      return;
+    });
 
     function toGridPos(gridSize: Int, gridRef, screenX: Float, screenY: Float) {
       final tx = editorState.translate.x * localState.zoom;
@@ -823,6 +827,7 @@ class Editor {
                               isVisibleLayer) != null;
                         });
                     activeTileRows.set(rowIndex, newTg);
+                    cleanupFns.push(() -> tg.remove());
                     newTg;
                   } else {
                     tg;
@@ -1522,5 +1527,11 @@ class Editor {
 
     Main.Global.updateHooks.push(update);
     Main.Global.renderHooks.push(render);
+
+    return () -> {
+      for (fn in cleanupFns) {
+        fn();
+      }
+    };
   }
 }

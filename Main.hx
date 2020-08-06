@@ -50,6 +50,8 @@ class Global {
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
   public static var dt = 0.0;
+  public static var isNextFrame = true;
+
   public static var tickCount = 0;
   public static var resolutionScale = 4;
 
@@ -154,7 +156,6 @@ class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
   var acc = 0.0;
-  var game: Game;
   var background: h2d.Graphics;
   var sceneCleanupFn: () -> Void;
   public static final nativePixelResolution = {
@@ -240,17 +241,14 @@ class Main extends hxd.App {
 
   function onGameExit() {
     hxd.System.exit();
+
+    return () -> {};
   }
 
   public override function render(e: h3d.Engine) {
     try {
 
       Main.Global.mainPhase = MainPhase.Render;
-
-      // prepare all sprite batches 
-      if (game != null) {
-        game.render(Global.time);
-      }
 
       {
         final nextRenderHooks = [];
@@ -398,7 +396,7 @@ class Main extends hxd.App {
       Hud.init();
 
       function initGame() {
-        game = new Game(s2d);
+        final gameRef = new Game(s2d); 
 
         Global.escapeStack = [];
         Global.uiState.hud.enabled = true;
@@ -408,11 +406,11 @@ class Main extends hxd.App {
             Global.uiState.hud.enabled = false;
 
             final cleanup = Gui.homeMenu((value) -> {
-              if (game != null && value != 'backToGame') {
-                game.cleanupLevel();
+              if (value != 'backToGame') {
+                sceneCleanupFn();
               }
 
-              switch(value) {
+              sceneCleanupFn = switch(value) {
                 case 'editor': Editor.init();
                 case 'exit': onGameExit();
                 case 'newGame': initGame();
@@ -436,9 +434,11 @@ class Main extends hxd.App {
 
         Hud.InventoryDragAndDropPrototype
           .addTestItems();
+
+        return () -> gameRef.cleanupLevel();
       }
 
-      initGame();
+      sceneCleanupFn = initGame();
 
     } catch (error: Dynamic) {
 
@@ -476,6 +476,8 @@ class Main extends hxd.App {
   // on each frame
   override function update(dt:Float) {
     try {
+      Global.isNextFrame = false;
+
       {
         // reset scene data each update
         Global.staticScene.x = 0;
@@ -485,10 +487,21 @@ class Main extends hxd.App {
 
       Global.logData.escapeStack = Global.escapeStack;
       Global.mainPhase = MainPhase.Update;
+      Global.dt = dt;
+      Global.time += dt;
+      acc += dt;
 
-      // set to 1/60 for a fixed 60fps
-      var frameTime = dt;
       var fps = Math.round(1/dt);
+      // set to 1/60 for a fixed 60fps
+      final frameTime = Global.dt;
+
+      // update dt accumulator
+      var isNextFrame = acc >= frameTime;
+      if (isNextFrame) {
+        acc -= frameTime;
+        Global.isNextFrame = true;
+      }
+
 
       if (debugText != null) {
         final formattedStats = Json.stringify({
@@ -519,23 +532,8 @@ class Main extends hxd.App {
         debugText.y = debugUiMargin;
         debugText.text = text;
       }
-        
-      Global.dt = dt;
-      Global.time += dt;
 
       handleGlobalHotkeys();
-
-      acc += dt;
-
-      var isNextFrame = acc >= frameTime;
-      // handle fixed dt here
-      if (isNextFrame) {
-        acc -= frameTime;
-
-        if (game != null) {
-          game.update(s2d, frameTime);
-        }
-      }
 
       final nextHooks = [];
       for (update in Main.Global.updateHooks) {
