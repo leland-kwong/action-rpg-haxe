@@ -2093,9 +2093,9 @@ class Game extends h2d.Object {
           Lambda.filter(
             colorOptions,
             (c) -> c != colorA));
-      final divisor = 2;
+      final divisor = 10;
       final xMax = Std.int((1920 + 20) / scale / divisor);
-      final yMax = Std.int((1080 + 20) / scale / divisor);
+      final yMax = Std.int((1080 + 40) / scale / divisor);
       final seed = Utils.irnd(0, 100);
       for (x in 0...xMax) {
         for (y in 0...yMax) {
@@ -2105,7 +2105,7 @@ class Game extends h2d.Object {
           g.drawCircle(
               x * divisor, 
               y * divisor, 
-              2,
+              10,
               4);
         }
       }
