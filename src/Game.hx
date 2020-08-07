@@ -806,11 +806,16 @@ class Ai extends Entity {
         ]);
 
         for (_ in 0...numItemsToDrop) {
-          final lootInstance = Loot.createInstance([
-              Loot.lootDefinitions[0].type, 
-              Loot.lootDefinitions[1].type, 
-              Loot.lootDefinitions[2].type, 
-          ]);
+          final lootPool = Lambda.map(
+              Lambda.filter(
+                Loot.lootDefinitions,
+                (def) -> {
+                  return def.category == 'ability';
+                }),
+              (def) -> {
+                return def.type;
+              });
+          final lootInstance = Loot.createInstance(lootPool);
           Game.createLootEntity(
               x + Utils.irnd(5, 10, true), 
               y + Utils.irnd(5, 10, true), 

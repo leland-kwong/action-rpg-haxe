@@ -515,31 +515,38 @@ class InventoryDragAndDropPrototype {
   }
 
   static public function addTestItems() {
+    final createLootInstanceByType = type -> {
+      return Loot.createInstance(
+          Lambda.fold(
+            Loot.lootDefinitions,
+            (def, lootPool: Array<Loot.LootDefType>) -> {
+              if (def.type == type) {
+                lootPool.push(type); 
+              }
+              return lootPool;
+            },
+            [])
+      );
+    };
     {
       final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
-      final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[3].type
-      ]);
-      equipItemToSlot(lootInstance, 0); 
+      equipItemToSlot(
+          createLootInstanceByType('energyBomb'), 0); 
     }
 
     {
       final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
-      final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[1].type
-      ]);
-      equipItemToSlot(lootInstance, 1); 
+      equipItemToSlot(
+          createLootInstanceByType('spiderBots'), 1); 
     }
 
     {
       final slotX = 1 * slotSize;
       final slotY = 8 * slotSize;
-      final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[2].type
-      ]);
-      equipItemToSlot(lootInstance, 2); 
+      equipItemToSlot(
+          createLootInstanceByType('channelBeam'), 2); 
     }
   }
 
