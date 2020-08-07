@@ -52,6 +52,16 @@ class Loot {
     spriteKey: 'ui/loot__ability_channel_beam'
   },
   {
+    name: 'Energy Bomb',
+    type: 'energyBomb',
+    category: 'ability',
+    cooldown: 0.3,
+    energyCost: 4,
+    minDamage: 3,
+    maxDamage: 5,
+    spriteKey: 'ui/loot__ability_energy_bomb'
+  },
+  {
     name: 'Green Arrow Socketable',
     type: 'greenArrowSocketable',
     category: 'socketable',

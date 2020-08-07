@@ -519,7 +519,7 @@ class InventoryDragAndDropPrototype {
       final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
       final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[0].type
+          Loot.lootDefinitions[3].type
       ]);
       equipItemToSlot(lootInstance, 0); 
     }

@@ -27,6 +27,10 @@ class Easing {
     return x * x * x * x * x;
   }
 
+  public static function easeOutExpo(x: Float): Float {
+    return x == 1 ? 1 : 1 - pow(2, -10 * x);
+  }
+
   public static function easeOutQuint(x: Float): Float {
     return 1 - pow(1 - x, 5);
   }

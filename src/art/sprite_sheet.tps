@@ -411,6 +411,22 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/energy_bomb_projectile.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.428571,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>2,2,3,3</rect>
+                <key>scale9Paddings</key>
+                <rect>2,2,3,3</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/energy_bomb_ring.png</key>
             <key type="filename">aseprite_exports/ui/hud_inventory_button.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -503,6 +519,7 @@
             </struct>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -649,6 +666,24 @@
                 <rect>5,16,9,33</rect>
                 <key>scale9Paddings</key>
                 <rect>5,16,9,33</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/tile_1_16.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_17.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_18.png</key>
+            <key type="filename">aseprite_exports/ui/tile_1_19.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>5,5,9,9</rect>
+                <key>scale9Paddings</key>
+                <rect>5,5,9,9</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

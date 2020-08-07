@@ -36,6 +36,10 @@ class Cooldown {
     ref.cds[key] = value;
   }
 
+  public static function get(ref: Cooldown, key) {
+    return ref.cds.get(key);
+  }
+
   public static function update(ref: Cooldown, dt: Float) {
     final cds = ref.cds;
 

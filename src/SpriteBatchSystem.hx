@@ -145,11 +145,10 @@ class SpriteBatchSystem {
       g.rotation = angle;
     }
     g.x = x;
-    g.y = y - z;
-    final zRange = 100;
+    g.y = y;
     final spriteRef: SpriteRef = {
       batchElement: g,
-      sortOrder: y * zRange + z,
+      sortOrder: y + z,
     }
     if (effectCallback != null) {
       effectCallback(spriteRef);

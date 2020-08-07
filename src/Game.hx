@@ -76,6 +76,8 @@ class Projectile extends Entity {
   var lifeTime = 5.0;
   var collidedWith: Entity;
   var cFilter: EntityFilter;
+  var maxNumHits = 1;
+  var numHits = 0;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
@@ -126,7 +128,12 @@ class Projectile extends Entity {
         var conflict = d < min;
         if (conflict) {
           collidedWith = a;
-          break;
+
+          numHits += 1;
+
+          if (numHits >= maxNumHits) {
+            break;
+          }
         }
       }
     }
@@ -147,6 +154,8 @@ class Bullet extends Projectile {
   ];
   var launchSoundPlayed = false;
   var spriteKey: String;
+  public var playSound = true;
+  public var explosionScale = 1.;
 
   public function new(
     x1, y1, x2, y2, speed, 
@@ -157,20 +166,22 @@ class Bullet extends Projectile {
     spriteKey = _spriteKey;
   }
 
-  public override function onRemove() {
+  override function onRemove() {
     core.Anim.AnimEffect.add({
       frames: onHitFrames,
       startTime: Main.Global.time,
       duration: 0.15,
       x: x,
-      y: y
+      y: y,
+      z: 10,
+      scale: explosionScale
     }); 
   }
 
   public override function update(dt: Float) {
     super.update(dt);
 
-    if (!launchSoundPlayed) {
+    if (playSound && !launchSoundPlayed) {
       launchSoundPlayed = true;
 
       SoundFx.bulletBasic();
@@ -191,6 +202,128 @@ class Bullet extends Projectile {
   }
 }
 
+class EnergyBomb extends Projectile {
+  static final onHitFrames = [
+    'projectile_hit_animation/burst-0',
+    'projectile_hit_animation/burst-1',
+    'projectile_hit_animation/burst-2', 
+    'projectile_hit_animation/burst-3', 
+    'projectile_hit_animation/burst-4', 
+    'projectile_hit_animation/burst-5', 
+    'projectile_hit_animation/burst-6', 
+    'projectile_hit_animation/burst-7', 
+  ];
+  final initialSpeed = 250.;
+  final collisionFilter = (ent) -> (
+      ent.type == 'ENEMY' || 
+      ent.type == 'OBSTACLE');
+  var launchSoundPlayed = false;
+
+  public function new(
+    x1, y1, x2, y2
+  ) {
+    super(x1, y1, x2, y2, 
+        initialSpeed, 8, collisionFilter);
+    radius = 14;
+    lifeTime = 1.5;
+    cds = new Cooldown();
+  }
+
+  public override function onRemove() {
+    core.Anim.AnimEffect.add({
+      frames: onHitFrames,
+      startTime: Main.Global.time,
+      duration: 0.15,
+      x: x,
+      y: y,
+    }); 
+  }
+
+  public override function update(dt: Float) {
+    super.update(dt);
+    Cooldown.update(cds, dt);
+
+    final moveDuration = 2.;
+    final progress = Easing.easeOutExpo(
+        (Main.Global.time - createdAt) / moveDuration);
+    speed = (1 - progress) * initialSpeed;
+
+    if (!launchSoundPlayed) {
+      launchSoundPlayed = true;
+
+      // TODO: add sound
+    }
+
+    if (collidedWith != null) {
+      health = 0;
+    }
+
+    // trigger cluster explosion
+    if (isDone()) {
+      for (i in 0...5) {
+        final explosionStart = Main.Global.time + i * 0.05;
+        Main.Global.updateHooks.push((dt) -> {
+          if (Main.Global.time < explosionStart) {
+            return true;
+          }
+
+          final x2 = x + Utils.irnd(-10, 10, true);
+          final y2 = y + Utils.irnd(-10, 10, true);
+          final ref = new Bullet(
+              x2, y2, 
+              x2, y2,
+              0, 
+              'ui/placeholder',
+              // 'explosion_animation/default-0',
+              collisionFilter);
+          ref.maxNumHits = 999999;
+          ref.explosionScale = 1.8;
+          ref.playSound = false;
+          ref.radius = 30;
+          ref.lifeTime = 0.;
+          ref.damage = 4;
+          Main.Global.rootScene
+            .addChild(ref);
+          return false;
+        });
+      } 
+    }
+  }
+
+  public override function render(time: Float) {
+
+    {
+      final ringBurstDuration = 0.4;
+
+      if (!Cooldown.has(cds, 'ringBurst')) {
+        Cooldown.set(cds, 'ringBurst', ringBurstDuration);
+      }
+
+      Main.Global.sb.emitSprite(
+          x, y, 
+          'ui/energy_bomb_ring', 
+          null, (p) -> {
+            final b = p.batchElement;
+            final ringBurstCd = Cooldown.get(cds, 'ringBurst');
+            // reduce alpha over time
+            b.alpha = ringBurstCd / ringBurstDuration ;
+            // increase scale over time
+            b.scale = (ringBurstDuration - ringBurstCd) * 5;
+          }, 1);
+    }
+
+    final angle = time * Math.PI * 8;
+    Main.Global.sb.emitSprite(
+        x, y, 
+        'ui/energy_bomb_projectile', 
+        angle, (p) -> {
+          final b = p.batchElement;
+          final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
+          b.g = v;
+          b.b = v / 2;
+        }, 1);
+  }
+}
 
 typedef EntityFilter = (ent: Entity) -> Bool;
 
@@ -949,14 +1082,14 @@ class Player extends Entity {
       return;
     }
 
+    attackAnim.startTime = Main.Global.time;
+
     // TODO: add `actionSpeed` prop which is different from ability cooldown
     Cooldown.set(cds, 'recoveringFromAbility', lootDef.cooldown);
     Cooldown.set(cds, cooldownKey, lootDef.cooldown);
 
     switch lootDef.type {
       case 'basicBlaster': {
-        attackAnim.startTime = Main.Global.time;
-
         var angle = Math.atan2(y2 - startY, x2 - x);
         var x1 = x + Math.cos(angle) * launchOffset;
         var y1 = startY + Math.sin(angle) * launchOffset;
@@ -1262,6 +1395,22 @@ class Player extends Entity {
           botRef.type = 'FRIENDLY_AI';
           botRef.deathAnimationStyle = 'none';
         }
+      }
+
+      case 'energyBomb': {
+        var angle = Math.atan2(y2 - startY, x2 - x);
+        var x1 = x + Math.cos(angle) * launchOffset;
+        var y1 = startY + Math.sin(angle) * launchOffset;
+        var b = new EnergyBomb(
+            x1,
+            y1,
+            x2,
+            y2);
+        EntityStats.addEvent(
+            Entity.getById('PLAYER').stats, 
+            { type: 'ENERGY_SPEND',
+              value: energyCost });
+        Main.Global.rootScene.addChild(b);
       }
     }
   }
@@ -1859,7 +2008,7 @@ class Game extends h2d.Object {
           'ui/square_white',
           null,
           (p) -> {
-            p.sortOrder = ref.y - 1;
+            p.sortOrder = (ref.y / 2) - 1;
             p.batchElement.scaleX = ref.radius * 2;
             p.batchElement.r = 0;
             p.batchElement.g = 0;
@@ -1869,7 +2018,7 @@ class Game extends h2d.Object {
           });
 
       final lootRenderFn = (p: SpriteRef) -> {
-        p.sortOrder = ref.y - 1;
+        p.sortOrder = ref.y / 2;
 
         if (Main.Global.hoveredEntity.id == 
             ref.id) {
