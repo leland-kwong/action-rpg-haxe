@@ -1734,14 +1734,104 @@ class Game extends h2d.Object {
             }
 
             case 'player': {
-              final playerRef = new Player(
-                  x,
-                  y,
-                  Main.Global.rootScene);
-              Main.Global.rootScene.addChild(playerRef);
-              Camera.follow(
-                  Main.Global.mainCamera, 
-                  playerRef);
+              final cameraPanDuration = 0.9;
+              final animDuration = 1.0;
+              final cameraStartTime = Main.Global.time;
+              final startedAt = Main.Global.time + cameraPanDuration * 0.3;
+
+              function panCameraToPlayer(dt) {
+                final progress = (Main.Global.time - cameraStartTime) 
+                  / cameraPanDuration;
+                final v = Easing.easeOutExpo(progress);
+                final initialX = x - 30;
+                final dx = x - initialX;
+                final initialY = y - 10;
+                final dy = y - initialY;
+
+                Camera.follow(
+                    Main.Global.mainCamera, {
+                      x: initialX + (dx * v),
+                      y: initialY + (dy * v),
+                    });
+
+                return progress < 1;
+              }
+              Main.Global.updateHooks
+                .push(panCameraToPlayer);
+
+              // materializing animation
+              {
+                final sb = Main.Global.sb;
+                final spriteData: SpriteBatchSystem.SpriteData = Reflect.field(
+                    sb.batchManager.spriteSheetData,
+                    'player_animation/idle-0');
+
+                Main.Global.renderHooks.push((time) -> {
+                  final progress = (time - startedAt) / animDuration;
+                  final yOffset = spriteData.frame.h * (1 - progress);
+                  final spriteRef = sb.emitSprite(
+                      x,
+                      y + (1 - spriteData.pivot.y) * yOffset,
+                      'ui/placeholder'); 
+                  final playerTile = sb.batchManager.spriteSheet
+                    .sub(spriteData.frame.x
+                        ,spriteData.frame.y + yOffset
+                        ,spriteData.frame.w
+                        ,spriteData.frame.h * progress);
+                  playerTile.setCenterRatio(
+                      spriteData.pivot.x,
+                      spriteData.pivot.y);
+                  final b = spriteRef.batchElement;
+                  b.t = playerTile;
+
+                  return progress < 1;
+                });
+
+                Main.Global.renderHooks.push((time) -> {
+                  final progress = (time - startedAt) / animDuration;
+                  final yOffset = spriteData.frame.h * (1 - progress);
+                  final spriteRef = sb.emitSprite(
+                      x,
+                      y + (1 - spriteData.pivot.y) * yOffset,
+                      'ui/placeholder'); 
+                  final playerTile = sb.batchManager.spriteSheet
+                    .sub(spriteData.frame.x
+                        ,spriteData.frame.y + yOffset
+                        ,spriteData.frame.w
+                        ,3);
+                  playerTile.dx = -spriteData.pivot.x * spriteData.sourceSize.w;
+                  playerTile.dy = -spriteData.pivot.y * spriteData.sourceSize.h * progress;
+                  final b = spriteRef.batchElement;
+                  b.t = playerTile;
+                  b.r = 999.0;
+                  b.g = 999.0;
+                  b.b = 999.0;
+
+                  return progress < 1;
+                });
+              }
+
+              final makePlayerAfterAnimation = (dt: Float) -> {
+                final progress = (Main.Global.time - startedAt) 
+                  / animDuration;
+
+                if (progress > 1) {
+                  final playerRef = new Player(
+                      x,
+                      y,
+                      Main.Global.rootScene);
+                  Main.Global.rootScene.addChild(playerRef);
+                  Camera.follow(
+                      Main.Global.mainCamera, 
+                      playerRef);
+
+                  return false;
+                }
+
+                return true;
+              };
+              Main.Global.updateHooks
+                .push(makePlayerAfterAnimation);
             }
 
             case 'teleporter': {
@@ -1880,20 +1970,6 @@ class Game extends h2d.Object {
               } 
             }
           }
-        }
-      }
-
-      final stressTest = true;
-      if (stressTest) {
-        for (_ in 0...6000) {
-          final ref = new Entity({
-            x: 0,
-            y: 0,
-          });
-          ref.type = 'INTERACTABLE_PROP';
-          ref.renderFn = (ref, time) -> {
-          }
-          Main.Global.rootScene.addChild(ref);
         }
       }
 
@@ -2117,7 +2193,7 @@ class Game extends h2d.Object {
 
     final p = new hxd.Perlin();
     final width = 1920;
-    final height = 1080;
+    final height = 1080 + 40;
 
     final makeStars = () -> {
       final divisor = 6;
