@@ -93,6 +93,7 @@ class Entity extends h2d.Object {
   public var neighborCheckInterval: Int = 2; // after X ticks
   public final createdAt = Main.Global.time;
   public var renderFn: (ref: Entity, time: Float) -> Void;
+  public var onDone: (ref: Entity) -> Void;
  
   public function new(
       props: EntityProps, 
@@ -188,6 +189,43 @@ class Entity extends h2d.Object {
 
   public function isDone() {
     return health <= 0;
+  }
+
+  override function onRemove() {
+    final numItemsToDrop = switch(type) {
+      case 'INTERACTABLE_PROP': 
+        Utils.rollValues([
+            0, 0, 0, 0, 0, 1
+        ]);
+      case 'ENEMY': 
+        Utils.rollValues([
+            0, 0, 0, 0, 1, 1, 2
+        ]);
+      default: 0;
+    }
+
+    if (numItemsToDrop > 0) {
+      for (_ in 0...numItemsToDrop) {
+        final lootPool = Lambda.map(
+            Lambda.filter(
+              Loot.lootDefinitions,
+              (def) -> {
+                return def.category == 'ability';
+              }),
+            (def) -> {
+              return def.type;
+            });
+        final lootInstance = Loot.createInstance(lootPool);
+        Game.createLootEntity(
+            x + Utils.irnd(5, 10, true), 
+            y + Utils.irnd(5, 10, true), 
+            lootInstance);
+      }
+    }
+
+    if (onDone != null) {
+      onDone(this);
+    }
   }
 
   public static function destroy(id: EntityId) {

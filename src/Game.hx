@@ -523,6 +523,17 @@ class Ai extends Entity {
   }
 
   public override function update(dt) {
+    // damage render effect
+    {
+      var c = activeAnim;
+
+      if (damageTaken > 0) {
+        Cooldown.set(cds, 'hitFlash', 0.02);
+      }
+    }
+
+    super.update(dt);
+
     dx = 0.0;
     dy = 0.0;
 
@@ -745,15 +756,6 @@ class Ai extends Entity {
       }
     }
 
-    // damage render effect
-    {
-      var c = activeAnim;
-
-      if (damageTaken > 0) {
-        Cooldown.set(cds, 'hitFlash', 0.02);
-      }
-    }
-
     attackTarget = null;
 
     if (isDone()) {
@@ -794,30 +796,6 @@ class Ai extends Entity {
         default: {}
       }
 
-      final canDropLoot = type == 'ENEMY';
-      if (canDropLoot) {
-        final numItemsToDrop = Utils.rollValues([
-            0, 0, 0, 0, 1, 1, 2
-        ]);
-
-        for (_ in 0...numItemsToDrop) {
-          final lootPool = Lambda.map(
-              Lambda.filter(
-                Loot.lootDefinitions,
-                (def) -> {
-                  return def.category == 'ability';
-                }),
-              (def) -> {
-                return def.type;
-              });
-          final lootInstance = Loot.createInstance(lootPool);
-          Game.createLootEntity(
-              x + Utils.irnd(5, 10, true), 
-              y + Utils.irnd(5, 10, true), 
-              lootInstance);
-        }
-      }
-
       // log enemy kill action
       if (type == 'ENEMY') {
         final enemyType = Entity.getComponent(
@@ -829,8 +807,6 @@ class Ai extends Entity {
               { enemyType: enemyType }));
       }
     }
-
-    super.update(dt);
   }
 
   public override function render(time: Float) {
@@ -1641,18 +1617,13 @@ class Game extends h2d.Object {
     return playerRef.health <= 0;
   }
 
-  public function isLevelComplete() {
-    final numEnemies = Lambda.count(
-        Entity.ALL_BY_ID, 
-        (e) -> e.type == 'ENEMY');
-
-    return numEnemies == 0;
-  }
-
   override function onRemove() {
     // reset game state
     for (entityRef in Entity.ALL_BY_ID) {
       entityRef.health = 0;
+      entityRef.renderFn = null;
+      entityRef.onDone = null;
+      entityRef.type = 'ENTITY_CLEANUP';
     }
 
     mousePointer.remove();
@@ -1752,13 +1723,14 @@ class Game extends h2d.Object {
                   spriteKey);
               final radius = Std.int(
                   spriteData.sourceSize.w / 2);
-              new MapObstacle({
+              final ref = new MapObstacle({
                 id: 'mapObstacle_${itemId}',
                 x: x,
                 y: y,
                 radius: radius,
                 avoidanceRadius: radius + 3
               }, objectMeta);
+              ref.health = 10000 * 10000;
             }
 
             case 'player': {
@@ -1835,6 +1807,58 @@ class Game extends h2d.Object {
                     ref.x,
                     ref.y,
                     objectMeta.spriteKey);
+              }
+              ref.onDone = (ref) -> {
+                final startedAt = Main.Global.time;
+                final duration = 0.6;
+                final angle1 = -Math.PI / 2.5 + Utils.rnd(-1, 1, true);
+                final angle2 = Math.PI + Utils.rnd(-1, 1, true);
+                final angle3 = Math.PI * 2 + Utils.rnd(-1, 1, true);
+                Main.Global.renderHooks.push((time) -> {
+                  final progress = (time - startedAt) / duration;
+
+                  {
+                    final dist = 40;
+                    final dx = Math.cos(angle1) * dist;
+                    final dy = Math.sin(angle1) * dist;
+                    final spriteRef = Main.Global.sb.emitSprite(
+                        ref.x + dx * progress,
+                        ref.y + dy * progress,
+                        'ui/prop_1_1_shard_1',
+                        (time - startedAt) * 14);
+                    spriteRef.batchElement.alpha = 
+                      1 - Easing.easeInQuint(progress);
+                  }
+
+                  {
+                    final dist = 40;
+                    final dx = Math.cos(angle2) * dist;
+                    final dy = Math.sin(angle2) * dist;
+                    final spriteRef = Main.Global.sb.emitSprite(
+                        ref.x + dx * progress,
+                        ref.y + dy * progress,
+                        'ui/prop_1_1_shard_2',
+                        (time - startedAt) * 14);
+                    spriteRef.batchElement.alpha = 
+                      1 - Easing.easeInQuint(progress);
+                  }
+
+                  {
+                    final dist = 40;
+                    final dx = Math.cos(angle3) * dist;
+                    final dy = Math.sin(angle3) * dist;
+                    final spriteRef = Main.Global.sb.emitSprite(
+                        ref.x + dx * progress,
+                        ref.y + dy * progress,
+                        'ui/prop_1_1_shard_3',
+                        (time - startedAt) * 14);
+                    spriteRef.batchElement.alpha = 
+                      1 - Easing.easeInQuint(progress);
+                  }
+
+                  return progress < 1;
+                });
+
               }
               ref.type = 'INTERACTABLE_PROP';
               ref.health = 1;
