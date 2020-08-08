@@ -1808,17 +1808,17 @@ class Game extends h2d.Object {
                     ref.y,
                     objectMeta.spriteKey);
               }
-              ref.onDone = (ref) -> {
+              final shatterAnimation = (ref) -> {
                 final startedAt = Main.Global.time;
-                final duration = 0.6;
+                final duration = 0.5;
                 final angle1 = -Math.PI / 2.5 + Utils.rnd(-1, 1, true);
                 final angle2 = Math.PI + Utils.rnd(-1, 1, true);
                 final angle3 = Math.PI * 2 + Utils.rnd(-1, 1, true);
+                final dist = 30;
                 Main.Global.renderHooks.push((time) -> {
                   final progress = (time - startedAt) / duration;
 
                   {
-                    final dist = 40;
                     final dx = Math.cos(angle1) * dist;
                     final dy = Math.sin(angle1) * dist;
                     final spriteRef = Main.Global.sb.emitSprite(
@@ -1831,7 +1831,6 @@ class Game extends h2d.Object {
                   }
 
                   {
-                    final dist = 40;
                     final dx = Math.cos(angle2) * dist;
                     final dy = Math.sin(angle2) * dist;
                     final spriteRef = Main.Global.sb.emitSprite(
@@ -1844,7 +1843,6 @@ class Game extends h2d.Object {
                   }
 
                   {
-                    final dist = 40;
                     final dx = Math.cos(angle3) * dist;
                     final dy = Math.sin(angle3) * dist;
                     final spriteRef = Main.Global.sb.emitSprite(
@@ -1859,7 +1857,8 @@ class Game extends h2d.Object {
                   return progress < 1;
                 });
 
-              }
+              };
+              ref.onDone = shatterAnimation;
               ref.type = 'INTERACTABLE_PROP';
               ref.health = 1;
               Main.Global.rootScene.addChild(ref);
@@ -1881,6 +1880,20 @@ class Game extends h2d.Object {
               } 
             }
           }
+        }
+      }
+
+      final stressTest = true;
+      if (stressTest) {
+        for (_ in 0...6000) {
+          final ref = new Entity({
+            x: 0,
+            y: 0,
+          });
+          ref.type = 'INTERACTABLE_PROP';
+          ref.renderFn = (ref, time) -> {
+          }
+          Main.Global.rootScene.addChild(ref);
         }
       }
 
@@ -2103,13 +2116,15 @@ class Game extends h2d.Object {
         s2d.height * scale);
 
     final p = new hxd.Perlin();
+    final width = 1920;
+    final height = 1080;
 
     final makeStars = () -> {
       final divisor = 6;
-      final xMax = Std.int((1920 + 20) / scale / divisor);
-      final yMax = Std.int((1080 + 20) / scale / divisor);
+      final xMax = Std.int((width) / scale / divisor);
+      final yMax = Std.int((height) / scale / divisor);
       final seed = Utils.irnd(0, 100);
-      final starSizes = [0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 3];
+      final starSizes = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2];
       for (x in 0...xMax) {
         for (y in 0...yMax) {
           final v = p.perlin(seed, x / yMax, y / xMax, 10);
@@ -2118,8 +2133,8 @@ class Game extends h2d.Object {
           g.drawCircle(
               x * divisor + Utils.irnd(-10, 10, true), 
               y * divisor + Utils.irnd(-10, 10, true), 
-              Utils.rollValues(starSizes) / 6,
-              4);
+              Utils.rollValues(starSizes) / 4,
+              6);
         }
       }
     }
@@ -2136,8 +2151,8 @@ class Game extends h2d.Object {
             colorOptions,
             (c) -> c != colorA));
       final divisor = 10;
-      final xMax = Std.int((1920 + 20) / scale / divisor);
-      final yMax = Std.int((1080 + 40) / scale / divisor);
+      final xMax = Std.int((width) / scale / divisor);
+      final yMax = Std.int((height) / scale / divisor);
       final seed = Utils.irnd(0, 100);
       for (x in 0...xMax) {
         for (y in 0...yMax) {
@@ -2239,10 +2254,17 @@ class Game extends h2d.Object {
         groupIndex = 0;
       }
 
-      final isDynamic = a.type == 'ENEMY'
-        || a.type == 'FRIENDLY_AI'
-        || a.type == 'PROJECTILE'
-        || a.type == 'PLAYER';
+      final isDynamic = switch(a.type) {
+        case 
+          'ENEMY'
+        | 'FRIENDLY_AI'
+        | 'PROJECTILE'
+        | 'PLAYER': {
+          true;
+        };
+
+        default: false;
+      }
       final isMoving = a.dx != 0 || a.dy != 0;
       final hasTakenDamage = a.damageTaken > 0;
       final isCheckTick = (Main.Global.tickCount + groupIndex) % 
