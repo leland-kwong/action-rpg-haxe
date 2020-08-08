@@ -214,6 +214,9 @@ class Editor {
         'tile_1_detail_1' => {
           spriteKey: 'ui/tile_1_detail_1',
         },
+        'prop_1_1' => {
+          spriteKey: 'ui/prop_1_1',
+        },
         'tile_1_detail_2' => {
           spriteKey: 'ui/tile_1_detail_2',
           alias: 'alien_propulsion_booster'
