@@ -214,16 +214,13 @@ class EnergyBomb extends Projectile {
     'projectile_hit_animation/burst-7', 
   ];
   final initialSpeed = 250.;
-  final collisionFilter = (ent) -> (
-      ent.type == 'ENEMY' || 
-      ent.type == 'OBSTACLE');
   var launchSoundPlayed = false;
 
   public function new(
-    x1, y1, x2, y2
+    x1, y1, x2, y2, cFilter
   ) {
     super(x1, y1, x2, y2, 
-        initialSpeed, 8, collisionFilter);
+        initialSpeed, 8, cFilter);
     radius = 14;
     lifeTime = 1.5;
     cds = new Cooldown();
@@ -275,7 +272,7 @@ class EnergyBomb extends Projectile {
               0, 
               'ui/placeholder',
               // 'explosion_animation/default-0',
-              collisionFilter);
+              cFilter);
           ref.maxNumHits = 999999;
           ref.explosionScale = 1.8;
           ref.playSound = false;
@@ -754,8 +751,6 @@ class Ai extends Entity {
 
       if (damageTaken > 0) {
         Cooldown.set(cds, 'hitFlash', 0.02);
-        health -= damageTaken;
-        damageTaken = 0;
       }
     }
 
@@ -1107,7 +1102,8 @@ class Player extends Entity {
             'ui/bullet_player_basic',
             (ent) -> (
               ent.type == 'ENEMY' || 
-              ent.type == 'OBSTACLE')
+              ent.type == 'OBSTACLE' ||
+              ent.type == 'INTERACTABLE_PROP')
             );
         Main.Global.rootScene.addChild(b);
 
@@ -1406,11 +1402,16 @@ class Player extends Entity {
         var angle = Math.atan2(y2 - startY, x2 - x);
         var x1 = x + Math.cos(angle) * launchOffset;
         var y1 = startY + Math.sin(angle) * launchOffset;
+        final collisionFilter = (ent) -> (
+            ent.type == 'ENEMY' || 
+            ent.type == 'OBSTACLE' ||
+            ent.type == 'INTERACTABLE_PROP');
         var b = new EnergyBomb(
             x1,
             y1,
             x2,
-            y2);
+            y2,
+            collisionFilter);
         EntityStats.addEvent(
             Entity.getById('PLAYER').stats, 
             { type: 'ENERGY_SPEND',
@@ -1821,6 +1822,23 @@ class Game extends h2d.Object {
                       'ui/teleporter_pillar_right'); 
                 };
               }
+            }
+
+            case 'prop_1_1': {
+              final ref = new Entity({
+                x: x,
+                y: y,
+                radius: 5,
+              });
+              ref.renderFn = (ref, time) -> {
+                Main.Global.sb.emitSprite(
+                    ref.x,
+                    ref.y,
+                    objectMeta.spriteKey);
+              }
+              ref.type = 'INTERACTABLE_PROP';
+              ref.health = 1;
+              Main.Global.rootScene.addChild(ref);
             }
 
             // everything else is treated as a tile 
@@ -2262,11 +2280,13 @@ class Game extends h2d.Object {
         }
       }
 
+      // update collision worlds
       switch (a) {
         case 
           { type: 'PLAYER' } 
         | { type: 'ENEMY' } 
-        | { type: 'FRIENDLY_AI' }: {
+        | { type: 'FRIENDLY_AI' }
+        | { type: 'INTERACTABLE_PROP' }: {
           Grid.setItemRect(
               Main.Global.dynamicWorldGrid,
               a.x,
@@ -2275,7 +2295,8 @@ class Game extends h2d.Object {
               a.radius * 2,
               a.id);
         }
-        case { type: 'OBSTACLE' }: {
+        case 
+          { type: 'OBSTACLE' }: {
           Grid.setItemRect(
               Main.Global.obstacleGrid,
               a.x,

@@ -137,8 +137,10 @@ class Entity extends h2d.Object {
   }
 
   public function update(dt: Float) {
-    final max = 1;
+    health -= damageTaken;
+    damageTaken = 0;
 
+    final max = 1;
     if (dx != 0) {
       final nextPos = x + Utils.clamp(dx, -max, max) 
         * speed * dt;
