@@ -350,6 +350,13 @@ class Main extends hxd.App {
       Gui.init();
       Hud.init();
 
+      final homeMenuOptions = [
+        ['newGame', 'New Game'],
+        ['editor', 'Editor'],
+        ['experiment', 'Experiment'],
+        ['exit', 'Exit']
+      ];
+
       function initGame() {
         final gameRef = new Game(s2d); 
 
@@ -367,7 +374,9 @@ class Main extends hxd.App {
           sceneCleanupFn();
         }
 
+        // execute selection
         sceneCleanupFn = switch(value) {
+          case 'experiment': Experiment.init();
           case 'editor': Editor.init();
           case 'exit': onGameExit();
           case 'newGame': initGame();
@@ -381,7 +390,8 @@ class Main extends hxd.App {
         function homeScreenOnEscape() {
           Stack.push(Global.escapeStack, 'goto home screen', () -> {
             Global.uiState.hud.enabled = false;
-            final closeHomeMenu = Gui.homeMenu(onHomeMenuSelect);
+            final closeHomeMenu = Gui.homeMenu(
+                onHomeMenuSelect, homeMenuOptions);
 
             Stack.push(Global.escapeStack, 'back to game', () -> {
               closeHomeMenu();
@@ -396,7 +406,8 @@ class Main extends hxd.App {
         return true;
       }
 
-      Gui.homeMenu(onHomeMenuSelect);
+      Gui.homeMenu(
+          onHomeMenuSelect, homeMenuOptions);
 
     } catch (error: Dynamic) {
 
