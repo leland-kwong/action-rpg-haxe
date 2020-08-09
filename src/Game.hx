@@ -946,19 +946,20 @@ class Player extends Entity {
 
       Main.Global.updateHooks.push((dt) -> {
         final py = this.y + yOffset;
+        final pSpeed = this.speed;
         final distFromPlayer = Utils.distance(
             ref.x, ref.y,
             this.x, py);
-        final speedDistThreshold = 30;
+        final speedDistThreshold = 20;
         final accel = distFromPlayer < speedDistThreshold
-          ? -ref.speed * 0.1
-          : 3.;
+          ? -ref.speed * 0.2
+          : pSpeed * 0.1;
 
         ref.speed = {
           Utils.clamp(
               ref.speed + accel,
               0,
-              200);
+              pSpeed);
         }
 
         final shouldUpdateDirection = 
@@ -980,19 +981,6 @@ class Player extends Entity {
       });
 
       ref.renderFn = (ref, time) -> {
-        final vanishDuration = 0.2;
-        final reappearDuration = 0.4;
-
-        if (Cooldown.has(cds, 'recoveringFromAbility')) {
-          if (!Cooldown.has(cds, 'petOrbVanish')) {
-            Cooldown.set(cds, 'petOrbVanish', vanishDuration);
-          }
-        }
-
-        final vanishProgress = Easing.easeOutExpo(
-            Cooldown.get(cds, 'petOrbVanish') 
-            / vanishDuration);
-
         Main.Global.sb.emitSprite(
             ref.x,
             ref.y,
@@ -1002,7 +990,6 @@ class Player extends Entity {
               final b = p.batchElement;
               final facingX = ref.dx > 0 ? 1 : -1;
               b.scaleX = facingX;
-              b.alpha = 1 - vanishProgress;
             });
       };
 
