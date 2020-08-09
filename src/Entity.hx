@@ -58,6 +58,12 @@ class Cooldown {
   }
 }
 
+/*
+   TODO: Dissasociate Entity from h2d.Object.
+   Instead, the Entity class should just be standalone so
+   we don't inherit all the unecessary fields from h2d.Object
+   which also will make serialization easier.
+ */
 class Entity extends h2d.Object {
   public static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
