@@ -280,7 +280,7 @@ class EnergyBomb extends Projectile {
               'ui/placeholder',
               cFilter);
           ref.maxNumHits = 999999;
-          ref.explosionScale = 1.8;
+          ref.explosionScale = 1.6;
           ref.playSound = false;
           ref.radius = 20;
           ref.lifeTime = 0.;
