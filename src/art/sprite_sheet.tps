@@ -322,7 +322,7 @@
             <key type="filename">aseprite_exports/player_animation/run-7.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.68387</point_f>
+                <point_f>0.357143,0.68387</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
