@@ -1078,8 +1078,7 @@ class Player extends Entity {
 
     attackAnim.startTime = Main.Global.time;
 
-    // TODO: add `actionSpeed` prop which is different from ability cooldown
-    Cooldown.set(cds, 'recoveringFromAbility', lootDef.cooldown);
+    Cooldown.set(cds, 'recoveringFromAbility', lootDef.actionSpeed);
     Cooldown.set(cds, cooldownKey, lootDef.cooldown);
 
     switch lootDef.type {
