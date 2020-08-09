@@ -1954,6 +1954,79 @@ class Game extends h2d.Object {
               Main.Global.rootScene.addChild(ref);
             }
 
+            case 'tile_2': {
+              final wallRef = new Entity({
+                x: x,
+                y: y + 32,
+                radius: 8,
+              });
+              wallRef.health = 100000 * 10000;
+              wallRef.type = 'OBSTACLE';
+              wallRef.forceMultiplier = 3.0;
+              addToTileGrid(tileGrid, x, y, itemId);
+              final gridX = Std.int((x - (tileGrid.cellSize / 2)) 
+                  / tileGrid.cellSize);
+              final gridY = Std.int((y - (tileGrid.cellSize / 2)) 
+                  / tileGrid.cellSize);
+              final hasTile = (cellData: Grid.GridItems) -> {
+                if (cellData == null) {
+                  return false;
+                }
+
+                for (itemId in cellData) {
+                  final oType2 = mapData.itemTypeById.get(itemId);
+                  if (oType2 == objectType) {
+                    return true;
+                  }
+                }
+
+                return false;
+              };
+              final spriteEffect = (p) -> {
+                p.sortOrder = p.batchElement.y + 32.;
+              };
+              wallRef.renderFn = (ref, time) -> {
+                final shouldAutoTile = objectMeta.isAutoTile;
+                final spriteKey = {
+                  if (shouldAutoTile) {
+                    final tileValue = AutoTile.getValue(
+                        tileGrid, gridX, gridY, 
+                        hasTile, 1, objectMeta.autoTileCorner);
+
+                    final sprite = 'ui/${objectType}_${tileValue}';
+                    sprite;
+                  } else {
+                    objectMeta.spriteKey;
+                  }
+                }
+                Main.Global.sb.emitSprite(
+                    x,
+                    y,
+                    spriteKey,
+                    null,
+                    spriteEffect);
+
+                final debugWallCollision = false;
+                if (debugWallCollision) {
+                  final grid = Main.Global.obstacleGrid;
+                  final bounds = grid.itemCache
+                    .get(wallRef.id);
+                  Main.Global.sb.emitSprite(
+                      bounds[0] * grid.cellSize,
+                      bounds[2] * grid.cellSize,
+                      'ui/square_white',
+                      null,
+                      (p) -> {
+                        final b = p.batchElement;
+                        p.sortOrder = 100000 * 1000000;
+                        b.alpha = 0.5;
+                        b.scale = wallRef.radius * 2;
+                        b.b = 0.;
+                      });
+                }
+              };
+            }
+
             // everything else is treated as a tile 
             default: {
               final gridRow = y;
@@ -2417,8 +2490,7 @@ class Game extends h2d.Object {
               a.radius * 2,
               a.id);
         }
-        case 
-          { type: 'OBSTACLE' }: {
+        case { type: 'OBSTACLE' }: {
           Grid.setItemRect(
               Main.Global.obstacleGrid,
               a.x,

@@ -211,6 +211,11 @@ class Editor {
           isAutoTile: true,
           autoTileCorner: true
         },
+        'tile_2' => {
+          spriteKey: 'ui/tile_2_4',
+          type: 'obstacleWall',
+          isAutoTile: true,
+        },
         'tile_1_detail_1' => {
           spriteKey: 'ui/tile_1_detail_1',
         },
@@ -874,7 +879,7 @@ class Editor {
                               16,
                               objectMeta.autoTileCorner);
 
-                          'ui/tile_1_${tileValue}';
+                          'ui/${objectType}_${tileValue}';
                         } else {
 
                           objectMeta.spriteKey;
