@@ -2265,7 +2265,7 @@ class Game extends h2d.Object {
         s2d.height * scale);
 
     final p = new hxd.Perlin();
-    final width = 1920;
+    final width = 1920 + 40;
     final height = 1080 + 40;
 
     final makeStars = () -> {
