@@ -56,7 +56,7 @@
 },
 "destroy_animation/default-5":
 {
-	"frame": {"x":45,"y":237,"w":8,"h":8},
+	"frame": {"x":54,"y":237,"w":8,"h":8},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":4,"y":3,"w":8,"h":8},
@@ -101,7 +101,7 @@
 },
 "destroy_animation/default-10":
 {
-	"frame": {"x":800,"y":242,"w":4,"h":4},
+	"frame": {"x":809,"y":242,"w":4,"h":4},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":6,"y":6,"w":4,"h":4},
@@ -110,7 +110,7 @@
 },
 "destroy_animation/default-11":
 {
-	"frame": {"x":800,"y":242,"w":4,"h":4},
+	"frame": {"x":809,"y":242,"w":4,"h":4},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":6,"y":6,"w":4,"h":4},
@@ -632,7 +632,7 @@
 },
 "ui/cockpit_resource_bar_health":
 {
-	"frame": {"x":1005,"y":228,"w":6,"h":4},
+	"frame": {"x":800,"y":242,"w":6,"h":4},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":6,"h":4},
@@ -792,6 +792,15 @@
 	"sourceSize": {"w":3,"h":3},
 	"pivot": {"x":2.66667,"y":2.66667}
 },
+"ui/player_pet_orb":
+{
+	"frame": {"x":1005,"y":216,"w":5,"h":26},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":5,"h":26},
+	"sourceSize": {"w":5,"h":26},
+	"pivot": {"x":0.5,"y":0.923077}
+},
 "ui/prop_1_1":
 {
 	"frame": {"x":450,"y":208,"w":11,"h":14},
@@ -812,7 +821,7 @@
 },
 "ui/prop_1_1_shard_2":
 {
-	"frame": {"x":1005,"y":216,"w":6,"h":9},
+	"frame": {"x":37,"y":237,"w":6,"h":9},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":6,"h":9},
@@ -821,7 +830,7 @@
 },
 "ui/prop_1_1_shard_3":
 {
-	"frame": {"x":37,"y":237,"w":5,"h":9},
+	"frame": {"x":46,"y":237,"w":5,"h":9},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":5,"h":9},
@@ -1078,7 +1087,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":18,"h":49},
 	"sourceSize": {"w":18,"h":49},
-	"pivot": {"x":0.5,"y":0.5}
+	"pivot": {"x":0.5,"y":0.183673}
 },
 "ui/tile_2_0":
 {
@@ -1240,6 +1249,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1012,"h":247},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:c6d4b949c625fc7f131118eb40313796:7f256bba328da1e851318ebb71ff5bda:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:3da6e43a9fb2a8eb18d727faa7a4b3c9:97940c0a01bbfe512b82a6af8e527689:6cc8953523e0367402f95f3c9a630665$"
 }
 }
