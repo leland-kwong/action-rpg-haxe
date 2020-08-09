@@ -933,8 +933,9 @@ class Player extends Entity {
     };
 
     final petOrbRef = {
+      final initialOffsetX = 5;
       final ref = new Entity({
-        x: x,
+        x: x - initialOffsetX,
         y: y,
         radius: 5,
       });
