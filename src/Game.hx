@@ -2373,6 +2373,9 @@ class Game extends h2d.Object {
   }
 
   public function update(dt: Float) {
+    // IMPORTANT: This must update before the player
+    // so that we can intercept certain click states
+    Hud.update(dt);
 
     final s2d = Main.Global.rootScene;
 
@@ -2542,8 +2545,6 @@ class Game extends h2d.Object {
 
     mousePointer.x = s2d.mouseX;
     mousePointer.y = s2d.mouseY;
-
-    Hud.update(dt);
 
     return !finished;
   }
