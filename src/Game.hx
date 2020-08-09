@@ -1026,15 +1026,23 @@ class Player extends Entity {
       Main.Global.worldMouse.buttonDown];
     final x2 = Main.Global.rootScene.mouseX;
     final y2 = Main.Global.rootScene.mouseY;
+    // player's pivot is at their feet, this adjusts the
+    // ability launch point to be roughly at player's torso
+    final yCenterOffset = -8;
+    final startY = y + yCenterOffset;
+    final launchOffset = 12;
+    final angle = Math.atan2(y2 - startY, x2 - x);
+    final x1 = x + Math.cos(angle) * launchOffset;
+    final y1 = startY + Math.sin(angle) * launchOffset;
+    final x1_1 = x + Math.cos(angle) * launchOffset * 2.;
+    final y1_1 = startY + Math.sin(angle) * launchOffset * 2.;
+
     final actionDx = Math.cos(Math.atan2(y2 - y, x2 - x));
 
     if (actionDx != 0) {
       facingX = actionDx > 0 ? 1 : -1;
     }
 
-    var yCenterOffset = -8;
-    var startY = y + yCenterOffset;
-    var launchOffset = 12;
     final equippedAbilities = Hud.InventoryDragAndDropPrototype
       .getEquippedAbilities();
 
@@ -1066,14 +1074,11 @@ class Player extends Entity {
 
     switch lootDef.type {
       case 'basicBlaster': {
-        var angle = Math.atan2(y2 - startY, x2 - x);
-        var x1 = x + Math.cos(angle) * launchOffset;
-        var y1 = startY + Math.sin(angle) * launchOffset;
         var b = new Bullet(
             x1,
             y1,
-            x2,
-            y2,
+            x1_1,
+            y1_1,
             250.0,
             'ui/bullet_player_basic',
             (ent) -> (
@@ -1375,9 +1380,6 @@ class Player extends Entity {
       }
 
       case 'energyBomb': {
-        var angle = Math.atan2(y2 - startY, x2 - x);
-        var x1 = x + Math.cos(angle) * launchOffset;
-        var y1 = startY + Math.sin(angle) * launchOffset;
         final collisionFilter = (ent) -> (
             ent.type == 'ENEMY' || 
             ent.type == 'OBSTACLE' ||
@@ -1385,8 +1387,8 @@ class Player extends Entity {
         var b = new EnergyBomb(
             x1,
             y1,
-            x2,
-            y2,
+            x1_1,
+            y1_1,
             collisionFilter);
         EntityStats.addEvent(
             Entity.getById('PLAYER').stats, 
