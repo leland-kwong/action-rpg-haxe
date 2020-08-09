@@ -980,6 +980,19 @@ class Player extends Entity {
       });
 
       ref.renderFn = (ref, time) -> {
+        final vanishDuration = 0.2;
+        final reappearDuration = 0.4;
+
+        if (Cooldown.has(cds, 'recoveringFromAbility')) {
+          if (!Cooldown.has(cds, 'petOrbVanish')) {
+            Cooldown.set(cds, 'petOrbVanish', vanishDuration);
+          }
+        }
+
+        final vanishProgress = Easing.easeOutExpo(
+            Cooldown.get(cds, 'petOrbVanish') 
+            / vanishDuration);
+
         Main.Global.sb.emitSprite(
             ref.x,
             ref.y,
@@ -989,6 +1002,7 @@ class Player extends Entity {
               final b = p.batchElement;
               final facingX = ref.dx > 0 ? 1 : -1;
               b.scaleX = facingX;
+              b.alpha = 1 - vanishProgress;
             });
       };
 
