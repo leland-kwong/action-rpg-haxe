@@ -74,7 +74,7 @@ class Colors {
 class Projectile extends Entity {
   var damage = 1;
   var lifeTime = 5.0;
-  var collidedWith: Entity;
+  var collidedWith: Array<Entity>;
   var cFilter: EntityFilter;
   var maxNumHits = 1;
   var numHits = 0;
@@ -114,7 +114,7 @@ class Projectile extends Entity {
     super.update(dt);
 
     lifeTime -= dt;
-    collidedWith = null;
+    collidedWith = [];
 
     if (lifeTime <= 0) {
       health = 0;
@@ -127,7 +127,7 @@ class Projectile extends Entity {
         var min = radius + a.radius * 1.0;
         var conflict = d < min;
         if (conflict) {
-          collidedWith = a;
+          collidedWith.push(a);
 
           numHits += 1;
 
@@ -187,9 +187,12 @@ class Bullet extends Projectile {
       SoundFx.bulletBasic();
     }
 
-    if (collidedWith != null) {
+    if (collidedWith.length > 0) {
       health = 0;
-      collidedWith.damageTaken += damage;
+
+      for (ent in collidedWith) {
+        ent.damageTaken += damage;
+      }
     }
   }
 
@@ -221,7 +224,7 @@ class EnergyBomb extends Projectile {
   ) {
     super(x1, y1, x2, y2, 
         initialSpeed, 8, cFilter);
-    radius = 14;
+    radius = 4;
     lifeTime = 1.5;
     cds = new Cooldown();
   }
@@ -251,7 +254,7 @@ class EnergyBomb extends Projectile {
       // TODO: add sound
     }
 
-    if (collidedWith != null) {
+    if (collidedWith.length > 0) {
       health = 0;
     }
 
@@ -287,6 +290,7 @@ class EnergyBomb extends Projectile {
           ref.damage = 3;
           Main.Global.rootScene
             .addChild(ref);
+
           return false;
         });
       } 
