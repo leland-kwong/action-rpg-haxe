@@ -941,19 +941,40 @@ class Player extends Entity {
       });
 
       final yOffset = 0;
+      final MODE_FOLLOW = 'follow';
+      final MODE_WANDER = 'wander';
+      final state = {
+        mode: MODE_WANDER,
+        idleDuration: 0.,
+        prevMove: {
+          x: 0.,
+          y: 0.
+        },
+      };
       var prevPlayerX = -1.;
       var prevPlayerY = -1.;
 
       Main.Global.updateHooks.push((dt) -> {
+        state.mode = MODE_WANDER;
+
         final py = this.y + yOffset;
         final pSpeed = this.speed;
-        final distFromPlayer = Utils.distance(
+        final distFromPos = Utils.distance(
             ref.x, ref.y,
-            this.x, py);
+            state.prevMove.x, state.prevMove.y);
         final speedDistThreshold = 20;
-        final accel = distFromPlayer < speedDistThreshold
+        final accel = distFromPos < speedDistThreshold
           ? -ref.speed * 0.2
           : pSpeed * 0.1;
+        final hasPlayerChangedPosition = 
+          prevPlayerX != this.x
+            || prevPlayerY != py;
+
+        if (hasPlayerChangedPosition 
+            || Cooldown.has(this.cds, 'recoveringFromAbility')) {
+          state.mode = MODE_FOLLOW;
+          state.idleDuration = 0;
+        }
 
         ref.speed = {
           Utils.clamp(
@@ -962,28 +983,46 @@ class Player extends Entity {
               pSpeed);
         }
 
-        final shouldUpdateDirection = 
-          prevPlayerX != this.x
-            || prevPlayerY != py;
-        if (shouldUpdateDirection) {
-
+        if (state.mode == MODE_FOLLOW) {
           prevPlayerX = this.x;
           prevPlayerY = py;
-
-          final angleToPlayer = Math.atan2(
-              py - ref.y,
-              this.x - ref.x);
-          ref.dx = Math.cos(angleToPlayer);
-          ref.dy = Math.sin(angleToPlayer);
+          state.prevMove.x = prevPlayerX;
+          state.prevMove.y = prevPlayerY;
         }
+
+        if (state.mode == MODE_WANDER) {
+          state.idleDuration += dt;
+        } 
+
+        if (state.mode == MODE_WANDER 
+            && state.idleDuration > 1
+            && !Cooldown.has(cds, 'petOrbWander')) {
+          Cooldown.set(cds, 'petOrbWander', Utils.irnd(2, 3));
+          final wanderDist = 50;
+          final randX = this.x + Utils.irnd(-wanderDist, wanderDist, true);
+          final randY = py + Utils.irnd(-wanderDist, wanderDist, true);
+
+          state.prevMove.x = randX;
+          state.prevMove.y = randY;
+        }
+
+        final angleToPos = Math.atan2(
+            state.prevMove.y - ref.y,
+            state.prevMove.x - ref.x);
+
+        ref.dx = Math.cos(angleToPos);
+        ref.dy = Math.sin(angleToPos);
 
         return !this.isDone();
       });
 
       ref.renderFn = (ref, time) -> {
+        final timeOffset = 1.5;
+        final yOffset = Math.sin(time + timeOffset) * 2;
+
         Main.Global.sb.emitSprite(
             ref.x,
-            ref.y,
+            ref.y + yOffset,
             'ui/player_pet_orb',
             null,
             (p) -> {
@@ -991,6 +1030,11 @@ class Player extends Entity {
               final facingX = ref.dx > 0 ? 1 : -1;
               b.scaleX = facingX;
             });
+
+        Main.Global.sb.emitSprite(
+            ref.x,
+            ref.y,
+            'ui/player_pet_orb_shadow');
       };
 
       ref;
