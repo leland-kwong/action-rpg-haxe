@@ -391,7 +391,8 @@ class Ai extends Entity {
 
   public function new(
       props: AiProps, size, 
-      findTargetFn, ?attackTargetFilterFn) {
+      ?findTargetFn, 
+      ?attackTargetFilterFn) {
     super(props);
     neighborCheckInterval = 10;
     traversableGrid = Main.Global.traversableGrid;
@@ -855,6 +856,7 @@ class Player extends Entity {
     endPoint: h2d.col.Point
   }>;
   var facingX = 1;
+  var facingY = 1;
 
   public function new(x, y, s2d: h2d.Scene) {
     super({
@@ -929,6 +931,68 @@ class Player extends Entity {
       duration: 0.3,
       startTime: Main.Global.time
     };
+
+    final petOrbRef = {
+      final ref = new Entity({
+        x: x,
+        y: y,
+        radius: 5,
+      });
+
+      final yOffset = 0;
+      var prevPlayerX = -1.;
+      var prevPlayerY = -1.;
+
+      Main.Global.updateHooks.push((dt) -> {
+        final py = this.y + yOffset;
+        final distFromPlayer = Utils.distance(
+            ref.x, ref.y,
+            this.x, py);
+        final speedDistThreshold = 30;
+        final accel = distFromPlayer < speedDistThreshold
+          ? -ref.speed * 0.1
+          : 3.;
+
+        ref.speed = {
+          Utils.clamp(
+              ref.speed + accel,
+              0,
+              200);
+        }
+
+        final shouldUpdateDirection = 
+          prevPlayerX != this.x
+            || prevPlayerY != py;
+        if (shouldUpdateDirection) {
+
+          prevPlayerX = this.x;
+          prevPlayerY = py;
+
+          final angleToPlayer = Math.atan2(
+              py - ref.y,
+              this.x - ref.x);
+          ref.dx = Math.cos(angleToPlayer);
+          ref.dy = Math.sin(angleToPlayer);
+        }
+
+        return !this.isDone();
+      });
+
+      ref.renderFn = (ref, time) -> {
+        Main.Global.sb.emitSprite(
+            ref.x,
+            ref.y,
+            'ui/player_pet_orb',
+            null,
+            (p) -> {
+              final b = p.batchElement;
+              final facingX = ref.dx > 0 ? 1 : -1;
+              b.scaleX = facingX;
+            });
+      };
+
+      ref;
+    }
   }
 
   function movePlayer() {
@@ -953,6 +1017,10 @@ class Player extends Entity {
 
     if (dx != 0) {
       facingX = dx > 0 ? 1 : -1;
+    }
+
+    if (dy != 0) {
+      facingY = dy > 0 ? 1 : -1;
     }
 
     var magnitude = Math.sqrt(dx * dx + dy * dy);
