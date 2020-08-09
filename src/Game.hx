@@ -1016,6 +1016,10 @@ class Player extends Entity {
         return !this.isDone();
       });
 
+      function shadowSpriteEffect(p) {
+        p.sortOrder = 1.;
+      }
+
       ref.renderFn = (ref, time) -> {
         final timeOffset = 1.5;
         final yOffset = Math.sin(time + timeOffset) * 2;
@@ -1034,7 +1038,9 @@ class Player extends Entity {
         Main.Global.sb.emitSprite(
             ref.x,
             ref.y,
-            'ui/player_pet_orb_shadow');
+            'ui/player_pet_orb_shadow',
+            null,
+            shadowSpriteEffect);
       };
 
       ref;
