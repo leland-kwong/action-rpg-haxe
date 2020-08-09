@@ -255,7 +255,10 @@ class EnergyBomb extends Projectile {
       health = 0;
     }
 
-    // trigger cluster explosion
+    // Trigger cluster explosion
+    // Launches an explosion at the point of impact,
+    // and several more in random locations near point
+    // of impact 
     if (isDone()) {
       for (i in 0...5) {
         final explosionStart = Main.Global.time + i * 0.05;
@@ -264,21 +267,24 @@ class EnergyBomb extends Projectile {
             return true;
           }
 
-          final x2 = x + Utils.irnd(-10, 10, true);
-          final y2 = y + Utils.irnd(-10, 10, true);
+          final x2 = x + (i == 0 
+            ? 0 
+            : Utils.irnd(-10, 10, true));
+          final y2 = y + (i == 0 
+            ? 0 
+            : Utils.irnd(-10, 10, true));
           final ref = new Bullet(
               x2, y2, 
               x2, y2,
               0, 
               'ui/placeholder',
-              // 'explosion_animation/default-0',
               cFilter);
           ref.maxNumHits = 999999;
           ref.explosionScale = 1.8;
           ref.playSound = false;
-          ref.radius = 30;
+          ref.radius = 20;
           ref.lifeTime = 0.;
-          ref.damage = 4;
+          ref.damage = 3;
           Main.Global.rootScene
             .addChild(ref);
           return false;
