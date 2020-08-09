@@ -61,7 +61,9 @@ class Gui {
     return tempTf; 
   }
 
-  public static function homeMenu(onSelect) {
+  public static function homeMenu(
+      onSelect, 
+      options: Array<Array<String>>) {
     final font = Main.Global.fonts.primary;
     final itemPadding = 10;
     final itemSpacing = 10;
@@ -72,11 +74,9 @@ class Gui {
     };
     final textAlign = Center;
     final win = hxd.Window.getInstance();
-    final options = Lambda.mapi([
-      ['newGame', 'New Game'],
-      ['editor', 'Editor'],
-      ['exit', 'Exit']
-    ], (index, option) -> {
+    final options = Lambda.mapi(
+        options, 
+        (index, option) -> {
       return {
         value: option[0],
         label: option[1],

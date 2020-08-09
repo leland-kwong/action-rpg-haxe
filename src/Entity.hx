@@ -37,7 +37,9 @@ class Cooldown {
   }
 
   public static function get(ref: Cooldown, key) {
-    return ref.cds.get(key);
+    final v = ref.cds.get(key);
+
+    return v == null ? 0 : v;
   }
 
   public static function update(ref: Cooldown, dt: Float) {

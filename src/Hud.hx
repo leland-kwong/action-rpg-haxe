@@ -1072,6 +1072,8 @@ class Hud {
   static var hoveredEntityId: Entity.EntityId;
   static var tooltipTf: h2d.Text;
   static var questDisplay: h2d.Text;
+  static var inactiveAbilitiesSb: SpriteBatchSystem;
+  static var inactiveAbilitiesCooldownGraphics: h2d.Graphics;
 
   public static function init() {
     aiHealthBar = new h2d.Graphics(
@@ -1088,6 +1090,11 @@ class Hud {
 
     questDisplay = new h2d.Text(
         Main.Global.fonts.primary,
+        Main.Global.uiRoot);
+
+    inactiveAbilitiesSb = new SpriteBatchSystem(
+        Main.Global.inactiveAbilitiesRoot);
+    inactiveAbilitiesCooldownGraphics = new h2d.Graphics(
         Main.Global.uiRoot);
   }
 
@@ -1301,6 +1308,8 @@ class Hud {
       final inventoryEquippedSlots = InventoryDragAndDropPrototype
           .getEquippedAbilities();
 
+      inactiveAbilitiesCooldownGraphics.clear();
+
       for (i in 0...inventoryEquippedSlots.length) {
         final lootId = inventoryEquippedSlots[i];
 
@@ -1311,12 +1320,41 @@ class Hud {
           final lootInst = InventoryDragAndDropPrototype
             .getItemById(lootId); 
           final lootDef = Loot.getDef(lootInst.type);
+          final playerRef = Entity.getById('PLAYER');
+          final cooldownLeft = Cooldown.get(
+              playerRef.cds,
+              'ability__${lootDef.type}');
+          final isCoolingDown = cooldownLeft > 0;
 
-          Main.Global.uiSpriteBatch.emitSprite(
-              cx, cy,
-              lootDef.spriteKey,
-              null,
-              spriteEffect);
+          if (isCoolingDown) {
+            // draw pie chart for cooldown
+            {
+              final angleStart = 0 + 3 * Math.PI / 2;
+              final progress = 1 - (cooldownLeft / lootDef.cooldown);
+              final angleLength = Math.PI * 2 * progress;
+              final g = inactiveAbilitiesCooldownGraphics;
+
+              g.beginFill(0xfffffff, 0.6);
+              g.drawPie(
+                  cx,
+                  cy,
+                  20,
+                  angleStart,
+                  angleLength);
+            }
+
+            inactiveAbilitiesSb.emitSprite(
+                cx, cy,
+                lootDef.spriteKey,
+                null,
+                spriteEffect);
+          } else {
+            Main.Global.uiSpriteBatch.emitSprite(
+                cx, cy,
+                lootDef.spriteKey,
+                null,
+                spriteEffect);
+          }
         }
       }
     }

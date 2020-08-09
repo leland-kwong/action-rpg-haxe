@@ -28,6 +28,7 @@ class Global {
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
   public static var particleScene: h2d.Scene;
+  public static var inactiveAbilitiesRoot: h2d.Scene;
   public static var uiRoot: h2d.Scene;
   public static var debugScene: h2d.Scene;
   public static var staticScene: h2d.Scene;
@@ -205,6 +206,7 @@ class Main extends hxd.App {
       super.render(e);
       Global.particleScene.render(e);
       Global.staticScene.render(e);
+      Global.inactiveAbilitiesRoot.render(e);
       Global.uiRoot.render(e);
       Global.debugScene.render(e);
 
@@ -237,6 +239,12 @@ class Main extends hxd.App {
 
         Global.uiRoot = new h2d.Scene();
         sevents.addScene(Global.uiRoot);
+
+        Global.inactiveAbilitiesRoot = {
+          final s2d = new h2d.Scene();
+          s2d.filter = h2d.filter.ColorMatrix.grayed();
+          s2d;
+        }
 
         Global.particleScene = new h2d.Scene();
         Global.particleScene.scaleMode = ScaleMode.Zoom(
