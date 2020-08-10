@@ -879,7 +879,7 @@ class Player extends Entity {
       maxHealth: 100,
       maxEnergy: 100,
       currentHealth: 100.0,
-      currentEnergy: 100.0,
+      currentEnergy: 40.0,
       energyRegeneration: 10,
       pickupRadius: 40 // per second
     });
