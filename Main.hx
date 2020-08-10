@@ -451,7 +451,7 @@ class Main extends hxd.App {
         // reset scene data each update
         Global.staticScene.x = 0;
         Global.staticScene.y = 0;
-        Global.staticScene.scaleMode = ScaleMode.Zoom(1);
+        Global.staticScene.scaleMode = ScaleMode.Zoom(4);
       }
 
       Global.logData.escapeStack = Global.escapeStack;
