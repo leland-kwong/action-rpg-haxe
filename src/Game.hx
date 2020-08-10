@@ -932,12 +932,14 @@ class Player extends Entity {
       startTime: Main.Global.time
     };
 
-    final petOrbRef = {
+    // create orb companion
+    {
       final initialOffsetX = 5;
       final ref = new Entity({
         x: x - initialOffsetX,
         y: y,
         radius: 5,
+        id: 'PLAYER_PET_ORB'
       });
 
       final yOffset = 0;
@@ -1540,14 +1542,92 @@ class Player extends Entity {
         activeAnim = idleAnim;
       }
     }
+    final currentSprite = core.Anim.getFrame(activeAnim, time);
     Main.Global.sb.emitSprite(
       x, y,
-      core.Anim.getFrame(activeAnim, time),
+      currentSprite,
       null,
       (p) -> {
         p.batchElement.scaleX = facingX;
       }
     );
+
+    // render heal animation
+    final isPlayerHealing = true;
+
+    if (isPlayerHealing) {
+      function setSpriteColors(
+          p, r = 1., g = 1., b = 1., a = 1.) {
+        final e: h2d.SpriteBatch.BatchElement = p.batchElement;
+
+        e.r = r;
+        e.g = g;
+        e.b = b;
+        e.a = a;
+      };
+
+      final sb = Main.Global.sb;
+      final spriteData: SpriteBatchSystem.SpriteData = Reflect.field(
+          sb.batchManager.spriteSheetData,
+          currentSprite);
+      final orbSpriteData: SpriteBatchSystem.SpriteData = Reflect.field(
+          sb.batchManager.spriteSheetData,
+          'ui/player_pet_orb');
+      final animDuration = 1.;
+      final orbSpriteRef = Entity.getById('PLAYER_PET_ORB');
+
+      // draw scan lines
+      final numLines = 3;
+      for (i in 0...numLines) {
+        final tOffset = animDuration / numLines * i;
+        final progress = ((time + tOffset) % animDuration) / animDuration;
+        final yOffset = spriteData.pivot.y * spriteData.frame.h * (1 - progress);
+        final orbSpriteY = orbSpriteRef.y
+          - orbSpriteData.sourceSize.h 
+          * orbSpriteData.pivot.y
+          + (orbSpriteData.sourceSize.h / 2);
+        final orbSpriteX = orbSpriteRef.x;
+        final y2 = y + (1 - spriteData.pivot.y);
+        final dy = -spriteData.pivot.y 
+          * spriteData.sourceSize.h 
+          * progress;
+        final lineLength = Utils.distance(
+            orbSpriteX,
+            orbSpriteY,
+            x,
+            y2 + dy);
+        final orbLineAngle = Math.atan2(
+          (y2 + dy) - orbSpriteY,
+          x - orbSpriteX);
+        sb.emitSprite(
+            orbSpriteX,
+            orbSpriteY,
+            'ui/square_white',
+            orbLineAngle,
+            (p) -> {
+              p.sortOrder += 50.;
+              final b = p.batchElement;
+              b.scaleX = lineLength;
+              setSpriteColors(p, 0.6, 4., 0.8, 0.4);
+            });
+
+        final spriteRef = sb.emitSprite(
+            x,
+            y2,
+            'ui/placeholder'); 
+        final playerTile = sb.batchManager.spriteSheet
+          .sub(spriteData.frame.x
+              ,spriteData.frame.y + yOffset
+              ,spriteData.frame.w
+              ,1.5);
+        playerTile.dx = -spriteData.pivot.x * spriteData.sourceSize.w;
+        playerTile.dy = dy;
+        final b = spriteRef.batchElement;
+        b.t = playerTile;
+        b.scaleX = this.facingX;
+        setSpriteColors(spriteRef, 0.7, 4., 0.8, 0.9);
+      }
+    }
 
     for (e in abilityEvents) {
       switch(e) {
