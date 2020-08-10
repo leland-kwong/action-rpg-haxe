@@ -75,10 +75,21 @@ class Loot {
       category: 'ability',
       cooldown: 0.3,
       actionSpeed: 0,
-      energyCost: 1,
+      energyCost: 0,
       minDamage: 0,
       maxDamage: 0,
       spriteKey: 'ui/loot__ability_heal_1'
+    },
+    {
+      name: 'Basic Energy Restore',
+      type: 'energy1',
+      category: 'ability',
+      cooldown: 0.3,
+      actionSpeed: 0,
+      energyCost: 0,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_energy_1'
     },
     {
       name: 'Green Arrow Socketable',

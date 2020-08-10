@@ -100,6 +100,20 @@ class EntityStats {
             aliveTime > dur; 
           }
 
+        case {
+          type: 'ENERGY_RESTORE',
+          value: v,
+          createdAt: ca,
+          duration: dur }: {
+
+            final newEnergy = sr.currentEnergy + v * dt;
+            sr.currentEnergy = Utils.clamp(
+                newEnergy, 0, sr.maxEnergy);
+            final aliveTime = Main.Global.time - ca;
+
+            aliveTime > dur; 
+          }
+
         case _:
           false;
       }

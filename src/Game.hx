@@ -1536,6 +1536,15 @@ class Player extends Entity {
               duration: 4,
               createdAt: Main.Global.time });
       }
+
+      case 'energy1': {
+        EntityStats.addEvent(
+            Entity.getById('PLAYER').stats,
+            { type: 'ENERGY_RESTORE',
+              value: 30,
+              duration: 4,
+              createdAt: Main.Global.time });
+      }
     }
   }
 
@@ -1562,21 +1571,26 @@ class Player extends Entity {
     );
 
     // render heal animation
-    final isPlayerHealing = Lambda.exists(
+    final isPlayerRestoringHealth = Lambda.exists(
         stats.recentEvents,
         (ev) -> ev.type == 'LIFE_RESTORE');
+    final isPlayerRestoringEnergy = Lambda.exists(
+        stats.recentEvents,
+        (ev) -> ev.type == 'ENERGY_RESTORE');
+    final isPlayerHealing = isPlayerRestoringHealth
+      || isPlayerRestoringEnergy;
 
-    if (isPlayerHealing) {
-      function setSpriteColors(
-          p, r = 1., g = 1., b = 1., a = 1.) {
-        final e: h2d.SpriteBatch.BatchElement = p.batchElement;
+    function setSpriteColors(
+        p, r = 1., g = 1., b = 1., a = 1.) {
+      final e: h2d.SpriteBatch.BatchElement = p.batchElement;
 
-        e.r = r;
-        e.g = g;
-        e.b = b;
-        e.a = a;
-      };
+      e.r = r;
+      e.g = g;
+      e.b = b;
+      e.a = a;
+    };
 
+    function healAnimation(healType, timeOffset) {
       final sb = Main.Global.sb;
       final spriteData: SpriteBatchSystem.SpriteData = Reflect.field(
           sb.batchManager.spriteSheetData,
@@ -1590,7 +1604,7 @@ class Player extends Entity {
       // draw scan lines
       final numLines = 3;
       for (i in 0...numLines) {
-        final tOffset = animDuration / numLines * i;
+        final tOffset = animDuration / numLines * i + timeOffset;
         final progress = ((time + tOffset) % animDuration) / animDuration;
         final yOffset = spriteData.pivot.y * spriteData.frame.h * (1 - progress);
         final orbSpriteY = orbSpriteRef.y
@@ -1619,7 +1633,14 @@ class Player extends Entity {
               p.sortOrder += 50.;
               final b = p.batchElement;
               b.scaleX = lineLength;
-              setSpriteColors(p, 0.6, 4., 0.8, 0.4);
+
+              if (healType == 'LIFE_RESTORE') {
+                setSpriteColors(p, 0.6, 4., 0.8, 0.4);
+              }
+
+              if (healType == 'ENERGY_RESTORE') {
+                setSpriteColors(p, 0.6, 0.8, 4., 0.4);
+              }
             });
 
         final spriteRef = sb.emitSprite(
@@ -1636,8 +1657,24 @@ class Player extends Entity {
         final b = spriteRef.batchElement;
         b.t = playerTile;
         b.scaleX = this.facingX;
-        setSpriteColors(spriteRef, 0.7, 4., 0.8, 0.9);
+
+
+        if (healType == 'LIFE_RESTORE') {
+          setSpriteColors(spriteRef, 0.7, 4., 0.8, 0.9);
+        }
+
+        if (healType == 'ENERGY_RESTORE') {
+          setSpriteColors(spriteRef, 1.3, 1.7, 2., 0.9);
+        }
       }
+    }
+
+    if (isPlayerRestoringHealth) {
+      healAnimation('LIFE_RESTORE', 0);
+    }
+
+    if (isPlayerRestoringEnergy) {
+      healAnimation('ENERGY_RESTORE', 0.25);
     }
 
     for (e in abilityEvents) {

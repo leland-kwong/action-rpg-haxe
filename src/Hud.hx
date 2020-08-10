@@ -539,14 +539,14 @@ class InventoryDragAndDropPrototype {
       final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('spiderBots'), 1); 
+          createLootInstanceByType('heal1'), 1); 
     }
 
     {
       final slotX = 1 * slotSize;
       final slotY = 8 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('heal1'), 2); 
+          createLootInstanceByType('energy1'), 2); 
     }
   }
 
