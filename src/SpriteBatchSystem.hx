@@ -17,7 +17,8 @@ typedef SpriteRef = {
 };
 
 typedef BatchManagerRef = {
-  var particles: Array<SpriteRef>;
+  var particlesByRow: Map<Int, Array<SpriteRef>>;
+  var rowIndices: Array<Int>;
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
   var spriteSheetData: Dynamic;
@@ -27,7 +28,8 @@ class BatchManager {
   static public function init(scene: h2d.Scene) {
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     var system: BatchManagerRef = {
-      particles: [],
+      particlesByRow: new Map(),
+      rowIndices: [],
       spriteSheetData: Utils.loadJsonFile(
           hxd.Res.sprite_sheet_json).frames,
       spriteSheet: spriteSheet,
@@ -46,7 +48,22 @@ class BatchManager {
       trace('rendering must be done inside the render phase');
     }
 
-    s.particles.push(config);
+    final rowIndex = Std.int(config.sortOrder);
+    final row = {
+      final fromCache = s.particlesByRow.get(rowIndex);
+      
+      if (fromCache != null) {
+        fromCache;
+      } else {
+        final newRow = [];
+
+        s.particlesByRow.set(rowIndex, newRow);
+        s.rowIndices.push(rowIndex);
+        newRow; 
+      }
+    };
+
+    row.push(config);
   }
 
   static public function update(
@@ -55,20 +72,20 @@ class BatchManager {
 
     // reset for next cycle
     s.batch.clear();
-    s.particles = [];
+    s.particlesByRow = new Map();
+    s.rowIndices = [];
   }
 
   static public function render(
       s: BatchManagerRef, 
       time: Float) {
 
-    final particles = s.particles;
-
     // sort by y-position or custom sort value
     // draw order is lowest -> highest
-    particles.sort((a, b) -> {
-      var sortA = a.sortOrder;
-      var sortB = b.sortOrder;
+
+    s.rowIndices.sort((a, b) -> {
+      var sortA = a;
+      var sortB = b;
 
       if (sortA < sortB) {
         return -1;
@@ -81,8 +98,12 @@ class BatchManager {
       return 0;
     });
 
-    for (p in particles) {
-      s.batch.add(p.batchElement);
+    for (rowIndex in s.rowIndices) {
+      final particles = s.particlesByRow.get(rowIndex);
+
+      for (p in particles) {
+        s.batch.add(p.batchElement);
+      }
     }
   }
 }
