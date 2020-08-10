@@ -66,6 +66,20 @@ class Loot {
       maxDamage: 5,
       spriteKey: 'ui/loot__ability_energy_bomb'
     },
+    // TODO: Add support for charges
+    // where the ability builds charges as you
+    // kill enemies.
+    {
+      name: 'Basic Heal',
+      type: 'heal1',
+      category: 'ability',
+      cooldown: 0.3,
+      actionSpeed: 0,
+      energyCost: 1,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_heal_1'
+    },
     {
       name: 'Green Arrow Socketable',
       type: 'greenArrowSocketable',

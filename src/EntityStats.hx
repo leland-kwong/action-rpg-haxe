@@ -87,17 +87,16 @@ class EntityStats {
           }
 
         case {
-          type: 'DOT_DAMAGE',
+          type: 'LIFE_RESTORE',
           value: v,
           createdAt: ca,
           duration: dur }: {
 
-            final newHealth = sr.currentHealth 
-              - v * dt;
+            final newHealth = sr.currentHealth + v * dt;
             sr.currentHealth = Utils.clamp(
                 newHealth, 0, sr.maxHealth);
-
             final aliveTime = Main.Global.time - ca;
+
             aliveTime > dur; 
           }
 

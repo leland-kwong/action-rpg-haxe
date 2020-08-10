@@ -1527,6 +1527,15 @@ class Player extends Entity {
               value: energyCost });
         Main.Global.rootScene.addChild(b);
       }
+
+      case 'heal1': {
+        EntityStats.addEvent(
+            Entity.getById('PLAYER').stats,
+            { type: 'LIFE_RESTORE',
+              value: 30,
+              duration: 4,
+              createdAt: Main.Global.time });
+      }
     }
   }
 
@@ -1553,7 +1562,9 @@ class Player extends Entity {
     );
 
     // render heal animation
-    final isPlayerHealing = true;
+    final isPlayerHealing = Lambda.exists(
+        stats.recentEvents,
+        (ev) -> ev.type == 'LIFE_RESTORE');
 
     if (isPlayerHealing) {
       function setSpriteColors(

@@ -546,7 +546,7 @@ class InventoryDragAndDropPrototype {
       final slotX = 1 * slotSize;
       final slotY = 8 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('channelBeam'), 2); 
+          createLootInstanceByType('heal1'), 2); 
     }
   }
 
