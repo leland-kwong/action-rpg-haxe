@@ -877,10 +877,10 @@ class Player extends Entity {
     rootScene = s2d;
     stats = EntityStats.create({
       maxHealth: 100,
-      maxEnergy: 100,
+      maxEnergy: 40,
       currentHealth: 100.0,
       currentEnergy: 40.0,
-      energyRegeneration: 10,
+      energyRegeneration: 3,
       pickupRadius: 40 // per second
     });
 
@@ -966,7 +966,7 @@ class Player extends Entity {
             state.prevMove.x, state.prevMove.y);
         final speedDistThreshold = 20;
         final accel = distFromPos < speedDistThreshold
-          ? -ref.speed * 0.2
+          ? -ref.speed * 0.1
           : pSpeed * 0.1;
         final hasPlayerChangedPosition = 
           prevPlayerX != this.x
@@ -1532,7 +1532,7 @@ class Player extends Entity {
         EntityStats.addEvent(
             Entity.getById('PLAYER').stats,
             { type: 'LIFE_RESTORE',
-              value: 30,
+              value: 15,
               duration: 4,
               createdAt: Main.Global.time });
       }
@@ -1541,8 +1541,8 @@ class Player extends Entity {
         EntityStats.addEvent(
             Entity.getById('PLAYER').stats,
             { type: 'ENERGY_RESTORE',
-              value: 30,
-              duration: 4,
+              value: 8,
+              duration: 3,
               createdAt: Main.Global.time });
       }
     }
