@@ -166,18 +166,6 @@ class Bullet extends Projectile {
     spriteKey = _spriteKey;
   }
 
-  override function onRemove() {
-    core.Anim.AnimEffect.add({
-      frames: onHitFrames,
-      startTime: Main.Global.time,
-      duration: 0.15,
-      x: x,
-      y: y,
-      z: 10,
-      scale: explosionScale
-    }); 
-  }
-
   public override function update(dt: Float) {
     super.update(dt);
 
@@ -193,6 +181,18 @@ class Bullet extends Projectile {
       for (ent in collidedWith) {
         ent.damageTaken += damage;
       }
+    }
+
+    if (isDone()) {
+      core.Anim.AnimEffect.add({
+        frames: onHitFrames,
+        startTime: Main.Global.time,
+        duration: 0.15,
+        x: x,
+        y: y,
+        z: 10,
+        scale: explosionScale
+      }); 
     }
   }
 
@@ -1217,7 +1217,6 @@ class Player extends Entity {
               ent.type == 'OBSTACLE' ||
               ent.type == 'INTERACTABLE_PROP')
             );
-        Main.Global.rootScene.addChild(b);
 
         EntityStats.addEvent(
             Entity.getById('PLAYER').stats, 
