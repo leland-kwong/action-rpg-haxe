@@ -532,14 +532,14 @@ class InventoryDragAndDropPrototype {
       final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('energyBomb'), 0); 
+          createLootInstanceByType('basicBlaster'), 0); 
     }
 
     {
       final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('heal1'), 1); 
+          createLootInstanceByType('energyBomb'), 1); 
     }
 
     {
@@ -1338,7 +1338,7 @@ class Hud {
               g.drawPie(
                   cx,
                   cy,
-                  20,
+                  30,
                   angleStart,
                   angleLength);
             }
