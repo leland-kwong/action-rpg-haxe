@@ -483,11 +483,7 @@ class Main extends hxd.App {
           numSprites: Lambda.fold(
               SpriteBatchSystem.instances, 
               (ref, count) -> {
-                var c = 0;
-                for (particles in ref.particlesByRow) {
-                  c += particles.length;
-                } 
-                return count + c;
+                return count + ref.particles.length;
               }, 0),
           numActiveEntitiesToRender: 
             Main.Global.entitiesToRender.length,
