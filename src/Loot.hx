@@ -70,9 +70,9 @@ class Loot {
       name: 'Burst Charge',
       type: 'burstCharge',
       category: 'ability',
-      cooldown: 0,
+      cooldown: 0.3,
       actionSpeed: 0.15,
-      energyCost: 4,
+      energyCost: 3,
       minDamage: 3,
       maxDamage: 5,
       spriteKey: 'ui/loot__ability_burst_charge'

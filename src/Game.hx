@@ -540,7 +540,7 @@ class Ai extends Entity {
       var c = activeAnim;
 
       if (damageTaken > 0) {
-        Cooldown.set(cds, 'hitFlash', 0.1);
+        Cooldown.set(cds, 'hitFlash', 0.06);
       }
     }
 
@@ -1203,6 +1203,10 @@ class Player extends Entity {
 
     Cooldown.set(cds, 'recoveringFromAbility', lootDef.actionSpeed);
     Cooldown.set(cds, cooldownKey, lootDef.cooldown);
+    EntityStats.addEvent(
+        Entity.getById('PLAYER').stats, 
+        { type: 'ENERGY_SPEND',
+          value: energyCost });
 
     switch lootDef.type {
       case 'basicBlaster': {
@@ -1218,11 +1222,6 @@ class Player extends Entity {
               ent.type == 'OBSTACLE' ||
               ent.type == 'INTERACTABLE_PROP')
             );
-
-        EntityStats.addEvent(
-            Entity.getById('PLAYER').stats, 
-            { type: 'ENERGY_SPEND',
-              value: energyCost });
       }
 
       case 'channelBeam': {
@@ -1521,10 +1520,6 @@ class Player extends Entity {
             x1_1,
             y1_1,
             collisionFilter);
-        EntityStats.addEvent(
-            Entity.getById('PLAYER').stats, 
-            { type: 'ENERGY_SPEND',
-              value: energyCost });
         Main.Global.rootScene.addChild(b);
       }
 
@@ -1550,8 +1545,6 @@ class Player extends Entity {
       // we need to do some collision detection to clamp the
       // charge's end position to the collision point
       case 'burstCharge': {
-        final endX = x2;
-        final endY = y2;
         final oldPos = {
           x: this.x,
           y: this.y
@@ -1560,103 +1553,57 @@ class Player extends Entity {
         final startTime = Main.Global.time;
         final duration = 0.4;
         final startedAt = Main.Global.time;
-        final x = endX;
-        final y = endY;
         final angle = Math.atan2(
-            y - this.y,
-            x - this.x);
+            y2 - this.y,
+            x2 - this.x);
         final dx = Math.cos(angle);
         final dy = Math.sin(angle);
-        final dist = Utils.distance(
-            this.x,
-            this.y,
-            endX,
-            endY);
+        final dist = Utils.clamp(
+            Utils.distance(
+              this.x,
+              this.y,
+              x2,
+              y2),
+            0,
+            50);
+        final endX = this.x + dx * dist;
+        final endY = this.y + dy * dist;
         final randOffset = Utils.irnd(0, 10);
+        final trailFacingX = this.facingX;
 
         {
-          function renderOldPosition(time: Float) {
-            final duration = 0.4; 
-            final aliveTime = time - startTime;
-            final progress = aliveTime / duration;
-            final ref = Main.Global.sb.emitSprite(
-                oldPos.x,
-                oldPos.y,
-                'player_animation/idle-0');
-            final elem = ref.batchElement;
+          final trailDuration = 0.4;
 
-            elem.r = 0;
-            elem.g = 0;
-            elem.b = 0;
-            elem.alpha = 0.5 - Easing.easeInCirc(progress);
-            elem.scaleX = this.facingX;
-
-            return progress < 1; 
-          }
-
-          Main.Global.renderHooks.push(
-              renderOldPosition);
-
-          // render trail
-          {
-            final randOffset = Utils.irnd(0, 10);
-            var isFirstFrame = true;
-
+          function renderTrail(
+              percentDist: Float, 
+              initialAlpha: Float,
+              spriteKey) {
             core.Anim.AnimEffect.add({
-              x: oldPos.x + dist * 0.2 * dx,
-              y: oldPos.y + dist * 0.2 * dy,
+              x: oldPos.x + dist * percentDist * dx,
+              y: oldPos.y + dist * percentDist * dy,
               startTime: startTime,
-              duration: duration,
+              duration: trailDuration,
               frames: [
-                'player_animation/idle-0'
+                spriteKey
               ],
               effectCallback: (p) -> {
-                final progress = (Main.Global.time - startTime) / duration;
-                p.batchElement.alpha = 0.5 * (1 - progress);
-                p.batchElement.scaleX = this.facingX;
+                final progress = (Main.Global.time - startTime) 
+                  / trailDuration;
+                final elem = p.batchElement;
+                elem.alpha = initialAlpha * (1 - progress);
+                elem.scaleX = trailFacingX;
+                elem.r = 1.;
+                elem.g = 20.;
+                elem.b = 20.;
               }
             });
           }
 
-          {
-            final startTime = Main.Global.time;
-            final duration = 0.2;
-
-            core.Anim.AnimEffect.add({
-              x: oldPos.x + dist * 0.4 * dx,
-              y: oldPos.y + dist * 0.4 * dy,
-              startTime: startTime,
-              duration: duration,
-              frames: [
-                'player_animation/idle-0'
-              ],
-              effectCallback: (p) -> {
-                final progress = (Main.Global.time - startTime) / duration;
-                p.batchElement.alpha = 0.3 * (1 - progress);
-                p.batchElement.scaleX = this.facingX;
-              }
-            });
-          }
-
-          {
-            final startTime = Main.Global.time;
-            final duration = 0.2;
-
-            core.Anim.AnimEffect.add({
-              x: oldPos.x + dist * 0.7 * dx,
-              y: oldPos.y + dist * 0.7 * dy,
-              startTime: startTime,
-              duration: duration,
-              frames: [
-                'player_animation/idle-0'
-              ],
-              effectCallback: (p) -> {
-                final progress = (Main.Global.time - startTime) / duration;
-                p.batchElement.alpha = 0.1 * (1 - progress);
-                p.batchElement.scaleX = this.facingX;
-              }
-            });
-          }
+          renderTrail(0.0, 0.1, 'player_animation/run-0');
+          renderTrail(0.2, 0.4, 'player_animation/run-1');
+          renderTrail(0.3, 0.7, 'player_animation/run-2');
+          renderTrail(0.5, 0.9, 'player_animation/run-3');
+          renderTrail(0.8, 1., 'player_animation/run-4');
         }
 
         final duration = .1;
@@ -1718,7 +1665,7 @@ class Player extends Entity {
         }
 
         Main.Global.renderHooks.push((time) -> {
-          final duration = 0.5;
+          final duration = 0.35;
           final aliveTime = Main.Global.time - startedAt;
           final progress = (aliveTime) 
             / duration;
@@ -1730,19 +1677,19 @@ class Player extends Entity {
           final posV = Easing.easeInCirc(progress);
           final facingX = dx > 0 ? 1 : -1;
           final spriteRef = Main.Global.sb.emitSprite(
-              x + xOffset * facingX + dx * randOffset * posV, 
-              y + yOffset + dy * randOffset * posV,
+              endX + xOffset * facingX + dx * randOffset * posV, 
+              endY + yOffset + dy * randOffset * posV,
               'ui/melee_burst');
           spriteRef.sortOrder = y + 10;
 
-          if (progress < 0.2) {
+          if (aliveTime < 0.2) {
             final ref = Main.Global.sb.emitSprite(
-              x + xOffset * facingX + dx * randOffset * posV * 0.1, 
-              y + yOffset + dy * randOffset * posV * 0.1,
+              endX + xOffset * facingX + dx * randOffset * posV * 0.3, 
+              endY + yOffset + dy * randOffset * posV * 0.3,
               'ui/melee_burst');
 
             ref.sortOrder = spriteRef.sortOrder + 1;
-            setColor(ref, 0, 0, 0);
+            setColor(ref, 10, 10, 10);
           } else {
             final b = spriteRef.batchElement;
             b.scale = 1 + Easing.easeInCirc(progress) * 0.3;
@@ -2776,7 +2723,7 @@ class Game extends h2d.Object {
       final seed = Utils.irnd(0, 100);
       for (x in 0...xMax) {
         for (y in 0...yMax) {
-          final v = p.perlin(seed, x / yMax, y / xMax, 15, 0.25);
+          final v = p.perlin(seed, x / xMax, y / yMax, 15, 0.25);
           final color = v > 0 ? colorA : colorB;
           g.beginFill(color, Math.abs(v) / 12);
           g.drawCircle(
