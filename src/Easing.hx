@@ -3,6 +3,7 @@ import Game.Colors;
 
 class Easing {
   static var pow = Math.pow;
+  static var cos = Math.cos;
   static var sin = Math.sin;
   static var sqrt = Math.sqrt;
   static var PI = Math.PI;
@@ -11,8 +12,16 @@ class Easing {
     return x;
   }
 
+  public static function easeInSine(x: Float): Float {
+      return 1 - cos((x * PI) / 2);
+  }
+
   public static function easeInCirc(x: Float): Float {
     return 1 - sqrt(1 - pow(x, 2));
+  }
+
+  public static function easeInExpo(x: Float): Float {
+    return x == 0 ? 0 : pow(2, 10 * x - 10);
   }
 
   public static function easeInOut(x: Float): Float {

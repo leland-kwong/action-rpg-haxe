@@ -66,6 +66,17 @@ class Loot {
       maxDamage: 5,
       spriteKey: 'ui/loot__ability_energy_bomb'
     },
+    {
+      name: 'Burst Charge',
+      type: 'burstCharge',
+      category: 'ability',
+      cooldown: 0,
+      actionSpeed: 0.15,
+      energyCost: 4,
+      minDamage: 3,
+      maxDamage: 5,
+      spriteKey: 'ui/loot__ability_burst_charge'
+    },
     // TODO: Add support for charges
     // where the ability builds charges as you
     // kill enemies.

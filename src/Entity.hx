@@ -139,8 +139,8 @@ class Entity extends h2d.Object {
     ref.components.set(type, value);
   }
 
-  public static function getComponent<T>(
-      ref: Entity, type: String): T {
+  public static function getComponent(
+      ref: Entity, type: String) {
 
     return ref.components.get(type);
   }

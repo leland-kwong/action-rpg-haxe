@@ -532,7 +532,7 @@ class InventoryDragAndDropPrototype {
       final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('basicBlaster'), 0); 
+          createLootInstanceByType('burstCharge'), 0); 
     }
 
     {
