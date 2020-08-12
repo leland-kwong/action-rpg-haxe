@@ -966,7 +966,7 @@ class Player extends Entity {
             state.prevMove.x, state.prevMove.y);
         final speedDistThreshold = 20;
         final accel = distFromPos < speedDistThreshold
-          ? -ref.speed * 0.1
+          ? -ref.speed * 0.2
           : pSpeed * 0.1;
         final hasPlayerChangedPosition = 
           prevPlayerX != this.x
