@@ -1562,73 +1562,80 @@ class Player extends Entity {
             x2 - this.x);
         final dx = Math.cos(angle);
         final dy = Math.sin(angle);
-        final dist = Utils.clamp(
-            Utils.distance(
-              this.x,
-              this.y,
-              x2,
-              y2),
-            0,
-            50);
-        final endX = this.x + dx * dist;
-        final endY = this.y + dy * dist;
         final randOffset = Utils.irnd(0, 10);
         final trailFacingX = this.facingX;
+        final trailDuration = 0.4;
 
-        {
-          final trailDuration = 0.4;
-
-          function renderTrail(
-              percentDist: Float, 
-              initialAlpha: Float,
-              spriteKey) {
-            core.Anim.AnimEffect.add({
-              x: oldPos.x + dist * percentDist * dx,
-              y: oldPos.y + dist * percentDist * dy,
-              startTime: startTime,
-              duration: trailDuration,
-              frames: [
-                spriteKey
-              ],
-              effectCallback: (p) -> {
-                final progress = (Main.Global.time - startTime) 
-                  / trailDuration;
-                final elem = p.batchElement;
-                elem.alpha = initialAlpha * (1 - progress);
-                elem.scaleX = trailFacingX;
-                elem.r = 1.;
-                elem.g = 20.;
-                elem.b = 20.;
-              }
-            });
-          }
-
-          renderTrail(0.0, 0.1, 'player_animation/run-0');
-          renderTrail(0.2, 0.4, 'player_animation/run-1');
-          renderTrail(0.3, 0.7, 'player_animation/run-2');
-          renderTrail(0.5, 0.9, 'player_animation/run-3');
-          renderTrail(0.8, 1., 'player_animation/run-4');
+        function renderTrail(
+            percentDist: Float, 
+            initialAlpha: Float,
+            spriteKey) {
+          core.Anim.AnimEffect.add({
+            x: this.x,
+            y: this.y,
+            startTime: startTime,
+            duration: trailDuration,
+            frames: [
+              spriteKey
+            ],
+            effectCallback: (p) -> {
+              final progress = (Main.Global.time - startTime) 
+                / trailDuration;
+              final elem = p.batchElement;
+              elem.alpha = initialAlpha * (1 - progress);
+              elem.scaleX = trailFacingX;
+              elem.r = 1.;
+              elem.g = 20.;
+              elem.b = 20.;
+            }
+          });
         }
 
         final duration = .1;
+        final trailFns = [
+            () -> renderTrail(0.0, 0.1, 'player_animation/run-0'),
+            () -> renderTrail(0.2, 0.4, 'player_animation/run-1'),
+            () -> renderTrail(0.3, 0.7, 'player_animation/run-2'),
+            () -> renderTrail(0.5, 0.9, 'player_animation/run-3'),
+            () -> renderTrail(0.8, 1., 'player_animation/run-4')
+        ];
+        for (trailIndex in 0...trailFns.length) {
+          final startedAt = Main.Global.time; 
+
+          Main.Global.updateHooks.push((dt) -> {
+            final timeElapsed = Main.Global.time - startedAt;
+            final triggerAnimationAt = trailIndex * duration / trailFns.length;
+
+            if (timeElapsed >= triggerAnimationAt) {
+              trailFns[trailIndex]();
+              return false;
+            }
+
+            return true;
+          }); 
+        }
+
         final lungeStartAt = 0.1;
         final lungeDuration = 0.0;
         final animLungeDist = 0;
         // burst hit offset position
         final xOffset = 10;
         final yOffset = -8;
+        final originalSpeed = this.speed;
 
         // handle lunge effect
         Main.Global.updateHooks.push((dt) -> {
           final aliveTime = Main.Global.time - startedAt;
           final progress = aliveTime / duration;
 
-          this.x = oldPos.x + dx * dist * progress;
-          this.y = oldPos.y + dy * dist * progress;
+          this.dx = dx;
+          this.dy = dy;
+          this.speed = 500;
           Entity.setComponent(this, 'alpha', 0.2);
 
           final done = progress >= 1;
           if (done) {
+            this.speed = originalSpeed;
             Entity.setComponent(this, 'alpha', 1);
 
             final ref = new Bullet(
@@ -1673,6 +1680,8 @@ class Player extends Entity {
           final aliveTime = Main.Global.time - startedAt;
           final progress = (aliveTime) 
             / duration;
+          final endX = this.x;
+          final endY = this.y;
 
           if (aliveTime < lungeStartAt) {
             return true;
