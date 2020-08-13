@@ -1362,14 +1362,18 @@ class Player extends Entity {
 
                   var laserHitCdKey = 'kamehamehaHit';
                   if (!Cooldown.has(item.cds, laserHitCdKey)) {
-                    final cooldownReduction = -tempState.get(tickKey) * 0.1;
+                    final tickPercent = tempState.get(tickKey);
+                    final cooldownReduction = -tickPercent * 0.1;
                     Cooldown.set(
                         item.cds, 
                         laserHitCdKey, 
                         0.2 + cooldownReduction);
-                    item.damageTaken += Utils.irnd(
-                        lootDef.minDamage, 
-                        lootDef.maxDamage);
+                    final damage = Math.round(
+                        Utils.irnd(
+                          lootDef.minDamage, 
+                          lootDef.maxDamage) 
+                        * tickPercent);
+                    item.damageTaken += damage;
                   }
 
                   adjustedEndPt = p;

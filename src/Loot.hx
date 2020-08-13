@@ -5,7 +5,7 @@ typedef LootDefCat = String;
 typedef LootDef = {
   name: String,
   type: LootDefType,
-  energyCost: Int,
+  energyCost: Float,
   cooldown: Float,
   actionSpeed: Float,
   category: LootDefCat,
@@ -44,13 +44,18 @@ class Loot {
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_spider_bots'
     },
+    // TODO: Make beam have both an initial energy cost at
+    // initial use and then a lower channeling cost. This
+    // way you can still burst with the ability while
+    // still gaining the benefits of a channeling when
+    // desired.
     {
       name: 'Laser Beam',
       type: 'channelBeam',
       category: 'ability',
       cooldown: 0,
       actionSpeed: 1/200,
-      energyCost: 2,
+      energyCost: .25,
       minDamage: 1,
       maxDamage: 3,
       spriteKey: 'ui/loot__ability_channel_beam'
