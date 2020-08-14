@@ -1568,10 +1568,11 @@ class Player extends Entity {
               createdAt: Main.Global.time });
       }
 
-      // TODO: to prevent player from charging through walls
-      // we need to do some collision detection to clamp the
-      // charge's end position to the collision point
       case 'burstCharge': {
+        final state = {
+          isDashComplete: false,
+          distanceTraveled: 0.
+        };
         final oldPos = {
           x: this.x,
           y: this.y
@@ -1583,6 +1584,11 @@ class Player extends Entity {
         final angle = Math.atan2(
             y2 - this.y,
             x2 - this.x);
+        final maxDist = Utils.clamp(
+            Utils.distance(
+              this.x, this.y, x2, y2),
+            0,
+            100);
         final dx = Math.cos(angle);
         final dy = Math.sin(angle);
         final randOffset = Utils.irnd(0, 10);
@@ -1654,10 +1660,12 @@ class Player extends Entity {
           this.dx = dx;
           this.dy = dy;
           this.speed = 500;
+          state.distanceTraveled += dt * this.speed;
           Entity.setComponent(this, 'alpha', 0.2);
 
-          final done = progress >= 1;
-          if (done) {
+          state.isDashComplete = state.distanceTraveled >= maxDist;
+
+          if (state.isDashComplete) {
             this.speed = originalSpeed;
             Entity.setComponent(this, 'alpha', 1);
 
@@ -1680,9 +1688,11 @@ class Player extends Entity {
             ref.radius = 40;
             ref.lifeTime = 0.1;
             ref.damage = 3;
+
+            return false;
           }
 
-          return progress < 1;
+          return true;
         });
 
 
@@ -1706,7 +1716,7 @@ class Player extends Entity {
           final endX = this.x;
           final endY = this.y;
 
-          if (aliveTime < lungeStartAt) {
+          if (!state.isDashComplete) {
             return true;
           }
 
