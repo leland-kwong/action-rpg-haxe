@@ -72,6 +72,17 @@ class Loot {
       spriteKey: 'ui/loot__ability_energy_bomb'
     },
     {
+      name: 'Flame Torch',
+      type: 'flameTorch',
+      category: 'ability',
+      cooldown: 0,
+      actionSpeed: 0.25,
+      energyCost: 0,
+      minDamage: 3,
+      maxDamage: 5,
+      spriteKey: 'ui/loot__ability_flame_torch'
+    },
+    {
       name: 'Burst Charge',
       type: 'burstCharge',
       category: 'ability',

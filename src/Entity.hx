@@ -65,6 +65,7 @@ class Cooldown {
    which also will make serialization easier.
  */
 class Entity extends h2d.Object {
+  public final showHitNumbers = true;
   public static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
       x: 0, 
@@ -146,6 +147,45 @@ class Entity extends h2d.Object {
   }
 
   public function update(dt: Float) {
+    if (showHitNumbers 
+        && damageTaken > 0) {
+      final font = Main.Global.fonts.primary.clone();
+      font.resizeTo(8);
+      final tf = new h2d.Text(
+          font,
+          Main.Global.rootScene);
+      final initialX = x;
+      final initialY = y;
+      final endX = x + Utils.irnd(-10, 10, true);
+      final endY = y + Utils.irnd(5, 15) * -1;
+      final angle = Math.atan2(
+          endY - y,
+          endX - x);
+      tf.textAlign = Center;
+      tf.text = Std.string(damageTaken);
+
+      final startTime = Main.Global.time;
+      final duration = 0.3;
+      Main.Global.updateHooks.push((dt) -> {
+        final aliveTime = Main.Global.time - startTime;
+        final progress = aliveTime / duration;
+        final dx = Math.cos(angle) * 5;
+        final dy = Math.sin(angle) * 5;
+
+        tf.x = initialX + dx * Easing.easeOutExpo(progress);
+        tf.y = initialY
+          - 25
+          + dy * Easing.easeOutExpo(progress); 
+        tf.alpha = 1 - Easing.easeInExpo(progress); 
+        
+        if (aliveTime > duration) {
+          tf.remove();
+          return false;
+        }
+        return true;
+      });
+    }
+
     health -= damageTaken;
     damageTaken = 0;
 

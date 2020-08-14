@@ -75,7 +75,7 @@ class Colors {
 class Projectile extends Entity {
   public var damage = 1;
   public var lifeTime = 5.0;
-  var collidedWith: Array<Entity>;
+  var collidedWith: Array<Entity> = [];
   var cFilter: EntityFilter;
   public var maxNumHits = 1;
   var numHits = 0;
@@ -84,8 +84,7 @@ class Projectile extends Entity {
     x1: Float, y1: Float, x2: Float, y2: Float,
     speed = 0.0,
     radius = 10,
-    collisionFilter,
-    nSegments: Int = null
+    collisionFilter
   ) {
     super({
       x: x1,
@@ -141,6 +140,16 @@ class Projectile extends Entity {
   }
 }
 
+// query all entities within the area of effect (aoe)
+class LineProjectile extends Projectile {
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    for (ent in collidedWith) {
+      ent.damageTaken += damage;
+    }
+  } 
+}
 
 class Bullet extends Projectile {
   static var onHitFrames = [
@@ -1190,8 +1199,8 @@ class Player extends Entity {
     final angle = Math.atan2(y2 - startY, x2 - x);
     final x1 = x + Math.cos(angle) * launchOffset;
     final y1 = startY + Math.sin(angle) * launchOffset;
-    final x1_1 = x + Math.cos(angle) * launchOffset * 2.;
-    final y1_1 = startY + Math.sin(angle) * launchOffset * 2.;
+    final x1_1 = x + Math.cos(angle) * launchOffset * 1.1;
+    final y1_1 = startY + Math.sin(angle) * launchOffset * 1.1;
 
     final actionDx = Math.cos(Math.atan2(y2 - y, x2 - x));
 
@@ -1644,9 +1653,6 @@ class Player extends Entity {
           }); 
         }
 
-        final lungeStartAt = 0.1;
-        final lungeDuration = 0.0;
-        final animLungeDist = 0;
         // burst hit offset position
         final xOffset = 10;
         final yOffset = -8;
@@ -1746,6 +1752,47 @@ class Player extends Entity {
 
           return isAlive;
         });
+      }
+
+      case 'flameTorch': {
+        final angle = Math.atan2(
+            y1_1 - y1,
+            x1_1 - x1);
+
+        Experiment.triggerAbility(
+            x1_1,
+            y1_1,
+            yCenterOffset * -1,
+            angle);
+
+        // final hitList = new Map();
+
+        final collisionFilter = (e: Entity) -> {
+          return switch (e.type) {
+            case 
+                'ENEMY'
+              | 'INTERACTABLE_PROP'
+              | 'OBSTACLE': {
+                true;
+              }
+
+            default: false;
+          }
+        };
+
+        for (_ in 0...1) {
+          final hitRef = new LineProjectile(
+              x1,
+              y1,
+              x1_1,
+              y1_1,
+              400,
+              10,
+              collisionFilter);
+
+          hitRef.maxNumHits = 9999;
+          hitRef.lifeTime = 0.05;
+        }
       }
     }
   }
