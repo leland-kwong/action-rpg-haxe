@@ -181,7 +181,7 @@ class Editor {
     snapGridSizes: Array<Int>
   } = {
     // activeFile: 'editor-data/temp.eds',
-    activeFile: 'editor-data/level_1.eds',
+    activeFile: 'editor-data/dummy_level.eds',
     autoSave: false,
     objectMetaByType: {
       final configList: Map<String, ConfigObjectMeta> = [
@@ -201,6 +201,9 @@ class Editor {
         },
         'teleporter' => {
           spriteKey: 'ui/teleporter_base',
+        },
+        'npc_test_dummy' => {
+          spriteKey: 'ui/npc_test_dummy',
         },
         'enemy_1' => {
           spriteKey: 'enemy-2_animation/idle-0',
