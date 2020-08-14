@@ -547,6 +547,7 @@
             <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_energy_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_flame_torch.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
             <struct type="IndividualSpriteSettings">
@@ -560,6 +561,21 @@
                 <rect>6,6,11,11</rect>
                 <key>scale9Paddings</key>
                 <rect>6,6,11,11</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/npc_test_dummy.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>3,6,6,12</rect>
+                <key>scale9Paddings</key>
+                <rect>3,6,6,12</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -668,25 +684,25 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/square_white.png</key>
+            <key type="filename">aseprite_exports/ui/square_glow.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0,0</point_f>
+                <point_f>0.5,0.5</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>0,0,1,1</rect>
+                <rect>1,1,1,1</rect>
                 <key>scale9Paddings</key>
-                <rect>0,0,1,1</rect>
+                <rect>1,1,1,1</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/square_white_centered_pivot.png</key>
+            <key type="filename">aseprite_exports/ui/square_white.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
+                <point_f>0,0</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
