@@ -216,6 +216,7 @@
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-2.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-3.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-4.png</key>
+            <key type="filename">aseprite_exports/ui/circle_gradient.png</key>
             <key type="filename">aseprite_exports/ui/enemy_spawn_point.png</key>
             <key type="filename">aseprite_exports/ui/placeholder.png</key>
             <key type="filename">aseprite_exports/ui/square_tile_test.png</key>
@@ -251,6 +252,7 @@
             <key type="filename">aseprite_exports/enemy-1_animation/idle-7.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-8.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-9.png</key>
+            <key type="filename">aseprite_exports/ui/melee_burst.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -450,6 +452,21 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/flame_torch.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.117647,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>7,2,14,5</rect>
+                <key>scale9Paddings</key>
+                <rect>7,2,14,5</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/kamehameha_center_width_1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -526,8 +543,11 @@
                 <false/>
             </struct>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_burst_charge.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_energy_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -663,6 +683,21 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/square_white_centered_pivot.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>0,0,1,1</rect>
+                <key>scale9Paddings</key>
+                <rect>0,0,1,1</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/stylized_border_1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -759,7 +794,7 @@
             <key type="filename">aseprite_exports/ui/tile_1_9.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
+                <point_f>0.5,0.138462</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
