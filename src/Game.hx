@@ -342,29 +342,37 @@ typedef AiProps = {
 
 class Ai extends Entity {
   static var healthBySize = [
+    // test dummy 
+    0 => 99999999 * 99999999,
     1 => 5,
     2 => 10,
     3 => 30,
     4 => 50,
   ];
   static var speedBySize = [
+    0 => 0.,
     1 => 90.0,
     2 => 60.0,
     3 => 40.0,
     4 => 100.0,
   ];
   static var attackRangeByType = [
+    0 => 0,
     1 => 30,
     2 => 120,
     3 => 80,
     4 => 13,
   ];
+  static final defaultFindTargetFn = (ent: Entity) -> {
+    return Entity.NULL_ENTITY;
+  };
   static final defaultAttackTargetFilterFn: EntityFilter = 
     (ent) -> {
       return ent.type == 'PLAYER' 
         || ent.type == 'OBSTACLE';
     };
   final attackTypeBySpecies = [
+    0 => 'no_attack',
     1 => 'attack_bullet',
     2 => 'attack_bullet',
     3 => 'attack_bullet',
@@ -419,7 +427,8 @@ class Ai extends Entity {
       energyRegeneration: 0
     });
     avoidOthers = true;
-    this.findTargetFn = findTargetFn;
+    this.findTargetFn = Utils.withDefault(
+        findTargetFn, defaultFindTargetFn);
     if (attackTargetFilterFn != null) {
       this.attackTargetFilterFn = attackTargetFilterFn;
     }
@@ -432,6 +441,18 @@ class Ai extends Entity {
     this.size = size;
 
     Cooldown.set(cds, 'recentlySummoned', spawnDuration);
+
+    if (size == 0) {
+      idleAnim = {
+        frames: [
+          'ui/npc_test_dummy'
+        ],
+        duration: 1,
+        startTime: Main.Global.time
+      };
+
+      runAnim = idleAnim;
+    }
 
     if (size == 1) {
       var idleFrames = [
@@ -758,6 +779,8 @@ class Ai extends Entity {
               }
             }
           }
+
+          case 'no_attack': {}
 
           default: {
 #if !production
@@ -2147,6 +2170,15 @@ class Game extends h2d.Object {
               Main.Global.rootScene.addChildAt(e, 0);
             }
 
+            case 'npc_test_dummy': {
+              new Ai({
+                x: x,
+                y: y,
+                aiType: 'NPC_TEST_DUMMY',
+                radius: 10
+              }, 0);
+            }
+
             case 'pillar': {
               final spriteKey = objectMeta.spriteKey;
               final spriteData = Reflect.field(
@@ -2585,7 +2617,7 @@ class Game extends h2d.Object {
 
     }
     SaveState.load(
-        'editor-data/level_1.eds',
+        'editor-data/dummy_level.eds',
         false,
         processMap, 
         (err) -> {
