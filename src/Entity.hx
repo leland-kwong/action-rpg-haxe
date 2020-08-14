@@ -98,7 +98,9 @@ class Entity extends h2d.Object {
   public var obstacleGrid: GridRef;
   public var stats: EntityStats.StatsRef;
   var deathAnimationStyle = 'default';
-  public var components: Map<String, Dynamic> = new Map();
+  public var components: Map<String, Dynamic> = [
+    'neighborQueryThreshold' => 0
+  ];
   public var neighborCheckInterval: Int = 2; // after X ticks
   public final createdAt = Main.Global.time;
   public var renderFn: (ref: Entity, time: Float) -> Void;
@@ -146,6 +148,34 @@ class Entity extends h2d.Object {
     return ref.components.get(type);
   }
 
+  public static function getCollisions(
+      sourceEntity: EntityId,
+      entities: Array<EntityId>,
+      ?collisionFilter) {
+  
+    final s = getById(sourceEntity);
+    final collisions = [];
+
+    for (id in entities) {
+      final a = getById(id);
+      final shouldCheck = collisionFilter != null
+        ? collisionFilter(a)
+        : true;
+
+      if (shouldCheck) {
+        final d = Utils.distance(s.x, s.y, a.x, a.y);
+        final min = s.radius + a.radius * 1.0;
+        final conflict = d < min;
+
+        if (conflict) {
+          collisions.push(conflict);
+        }
+      }
+    }
+
+    return collisions;
+  }
+
   public function update(dt: Float) {
     if (showHitNumbers 
         && damageTaken > 0) {
@@ -153,7 +183,7 @@ class Entity extends h2d.Object {
       font.resizeTo(8);
       final tf = new h2d.Text(
           font,
-          Main.Global.rootScene);
+          Main.Global.particleScene);
       final initialX = x;
       final initialY = y;
       final endX = x + Utils.irnd(-10, 10, true);
@@ -163,6 +193,12 @@ class Entity extends h2d.Object {
           endX - x);
       tf.textAlign = Center;
       tf.text = Std.string(damageTaken);
+      tf.dropShadow = {
+        dx: 0.,
+        dy: 1.,
+        color: 0x000000,
+        alpha: 1.
+      };
 
       final startTime = Main.Global.time;
       final duration = 0.3;

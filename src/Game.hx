@@ -1,7 +1,11 @@
 /*
    * [ ] TODO: [HIGH PRIORITY]: Add an api for triggering damage to each entity within a given area. Right now we're using a bullet with a low lifetime to do this which is very hacky.
+   * [ ] TODO: Add small amount of squash/stretch when an entity takes a hit
    * [ ] TODO: Add debugging of the ai's collision shape so we can quickly
          tell if things are working properly.
+   * [ ] TODO: Add support for rectangular collisions on entities. This is
+         especially important for walls but also useful for npcs that don't
+         exactly fit within the shape of a circle.
    * [ ] TODO: Enemies should go after player when they take a hit and are 
          in line of sight.
    * [ ] TODO: Make pets follow player if they are 
@@ -417,6 +421,7 @@ class Ai extends Entity {
 
     cds = new Cooldown();
     Entity.setComponent(this, 'aiType', props.aiType);
+    Entity.setComponent(this, 'neighborQueryThreshold', 10);
 
     if (spriteSheet == null) {
       spriteSheet = hxd.Res.sprite_sheet_png.toTile();
@@ -865,10 +870,11 @@ class Ai extends Entity {
           final b: h2d.SpriteBatch.BatchElement = 
             p.batchElement;
 
+          // flash enemy white
           if (Cooldown.has(cds, 'hitFlash')) {
-            b.r = 99.75;
-            b.g = 99.75;
-            b.b = 99.5;
+            b.r = 150;
+            b.g = 150;
+            b.b = 150;
           }
 
           b.scaleX = facingDir * 1;
@@ -1658,6 +1664,11 @@ class Player extends Entity {
         final yOffset = -8;
         final originalSpeed = this.speed;
 
+        function isSameSign(a: Float, b: Float) {
+          return (a < 0 && b < 0) ||
+            (a > 0 && b > 0);
+        }
+
         // handle lunge effect
         Main.Global.updateHooks.push((dt) -> {
           final aliveTime = Main.Global.time - startedAt;
@@ -1668,18 +1679,34 @@ class Player extends Entity {
           this.speed = 500;
           state.distanceTraveled += dt * this.speed;
           Entity.setComponent(this, 'alpha', 0.2);
+          
+          final hasCollisions = Entity.getCollisions(
+              this.id, 
+              this.neighbors,
+              (ref) -> {
+                final angle = Math.atan2(
+                    ref.y - oldPos.y,
+                    ref.x - oldPos.x);
+                final isWithinPath = isSameSign(dx, Math.cos(angle)) &&
+                  isSameSign(dy, Math.sin(angle));
 
-          state.isDashComplete = state.distanceTraveled >= maxDist;
+                return isWithinPath;
+              }).length > 0;
+
+          state.isDashComplete = hasCollisions 
+            || state.distanceTraveled >= maxDist;
 
           if (state.isDashComplete) {
             this.speed = originalSpeed;
             Entity.setComponent(this, 'alpha', 1);
 
+            final hitX = this.x + dx * launchOffset;
+            final hitY = this.y + dy * launchOffset;
             final ref = new Bullet(
-              this.x,
-              this.y,
-              this.x,
-              this.y,
+              hitX,
+              hitY,
+              hitX,
+              hitY,
               0,
               'ui/placeholder',
               (ent) -> {
@@ -1691,7 +1718,7 @@ class Player extends Entity {
             ref.maxNumHits = 999999;
             // ref.explosionScale = 1.6;
             ref.playSound = false;
-            ref.radius = 40;
+            ref.radius = 20;
             ref.lifeTime = 0.1;
             ref.damage = 3;
 
@@ -1771,8 +1798,7 @@ class Player extends Entity {
           return switch (e.type) {
             case 
                 'ENEMY'
-              | 'INTERACTABLE_PROP'
-              | 'OBSTACLE': {
+              | 'INTERACTABLE_PROP': {
                 true;
               }
 
@@ -2587,12 +2613,13 @@ class Game extends h2d.Object {
               gridX, gridY, cellData: Grid.GridItems) -> {
             if (cellData != null) {
               for (itemId in cellData) {
-                if (!idsRendered.exists(itemId)) {
-                  idsRendered.set(itemId, true);
+                final objectType = mapData.itemTypeById.get(itemId);
+                final objectMeta = Editor.config.objectMetaByType
+                  .get(objectType);
 
-                  final objectType = mapData.itemTypeById.get(itemId);
-                  final objectMeta = Editor.config.objectMetaByType
-                    .get(objectType);
+                if (!idsRendered.exists(itemId) 
+                    && objectMeta.type != 'obstacleWall') {
+                  idsRendered.set(itemId, true);
 
                   final shouldAutoTile = objectMeta.isAutoTile;
                   final spriteKey = {
@@ -2674,7 +2701,7 @@ class Game extends h2d.Object {
 
     }
     SaveState.load(
-        'editor-data/dummy_level.eds',
+        'editor-data/level_1.eds',
         false,
         processMap, 
         (err) -> {
@@ -2953,9 +2980,10 @@ class Game extends h2d.Object {
 
       if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];
-        var nRange = 10;
-        var height = a.radius * 2 + nRange;
-        var width = height;
+        final queryThreshold = Entity.getComponent(
+            a, 'neighborQueryThreshold');
+        var height = a.radius * 2 + queryThreshold;
+        var width = height + queryThreshold;
         var dynamicNeighbors = Grid.getItemsInRect(
             Main.Global.dynamicWorldGrid, a.x, a.y, width, height
             );
