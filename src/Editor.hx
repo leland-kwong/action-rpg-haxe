@@ -173,77 +173,176 @@ class Editor {
     return newProps;
   }
 
+  static var configCache = null;
+
   // all configuration stuff lives here
-  public static final config: {
+  public static function getConfig(): {
     activeFile: String,
     autoSave: Bool,
     objectMetaByType: Map<String, ConfigObjectMeta>,
     snapGridSizes: Array<Int>
-  } = {
-    // activeFile: 'editor-data/temp.eds',
-    activeFile: 'editor-data/dummy_level.eds',
-    autoSave: false,
-    objectMetaByType: {
-      final configList: Map<String, ConfigObjectMeta> = [
-        'pillar' => {
-          spriteKey: 'ui/pillar',
-        },
-        'player' => {
-          spriteKey: 'player_animation/idle-0',
-          // fixed id
-          sharedId: 'playerStartPos'
-        },
-        'intro_level_boss' => {
-          spriteKey: 'intro_boss_animation/idle-0'
-        },
-        'enemySpawnPoint' => {
-          spriteKey: 'ui/enemy_spawn_point'
-        },
-        'teleporter' => {
-          spriteKey: 'ui/teleporter_base',
-        },
-        'npc_test_dummy' => {
-          spriteKey: 'ui/npc_test_dummy',
-        },
-        'enemy_1' => {
-          spriteKey: 'enemy-2_animation/idle-0',
-        },
-        'tile_1' => {
-          spriteKey: 'ui/tile_1_1',
-          type: 'traversableSpace',
-          isAutoTile: true,
-          autoTileCorner: true
-        },
-        'tile_2' => {
-          spriteKey: 'ui/tile_2_4',
-          type: 'obstacleWall',
-          isAutoTile: true,
-        },
-        'tile_1_detail_1' => {
-          spriteKey: 'ui/tile_1_detail_1',
-        },
-        'prop_1_1' => {
-          spriteKey: 'ui/prop_1_1',
-        },
-        'tile_1_detail_2' => {
-          spriteKey: 'ui/tile_1_detail_2',
-          alias: 'alien_propulsion_booster'
-        },
-        'bridge_vertical' => {
-          spriteKey: 'ui/bridge_vertical',
+  } {
+    if (configCache != null) {
+      return configCache;
+    }
+
+    final activeFile = 'editor-data/level_1.eds';
+    final  config = {
+      // activeFile: 'editor-data/temp.eds',
+      activeFile: activeFile,
+      autoSave: false,
+      objectMetaByType: {
+
+        final metaByType = new Map<String, ConfigObjectMeta>();
+
+        // final configList: Map<String, ConfigObjectMeta> = 
+        //   switch (activeFile) {
+        //     // case 
+        //     //   'editor-data/dummy_level.eds'
+        //     //   | 'editor-data/level_1.eds': {
+        //     //     return [
+        //     //       'pillar' => {
+        //     //         spriteKey: 'ui/pillar',
+        //     //       },
+        //     //       'player' => {
+        //     //         spriteKey: 'player_animation/idle-0',
+        //     //         // fixed id
+        //     //         sharedId: 'playerStartPos'
+        //     //       },
+        //     //       'intro_level_boss' => {
+        //     //         spriteKey: 'intro_boss_animation/idle-0'
+        //     //       },
+        //     //       'enemySpawnPoint' => {
+        //     //         spriteKey: 'ui/enemy_spawn_point'
+        //     //       },
+        //     //       'teleporter' => {
+        //     //         spriteKey: 'ui/teleporter_base',
+        //     //       },
+        //     //       'npc_test_dummy' => {
+        //     //         spriteKey: 'ui/npc_test_dummy',
+        //     //       },
+        //     //       'enemy_1' => {
+        //     //         spriteKey: 'enemy-2_animation/idle-0',
+        //     //       },
+        //     //       'tile_1' => {
+        //     //         spriteKey: 'ui/tile_1_1',
+        //     //         type: 'traversableSpace',
+        //     //         isAutoTile: true,
+        //     //         autoTileCorner: true
+        //     //       },
+        //     //       'tile_2' => {
+        //     //         spriteKey: 'ui/tile_2_4',
+        //     //         type: 'obstacleWall',
+        //     //         isAutoTile: true,
+        //     //       },
+        //     //       'tile_1_detail_1' => {
+        //     //         spriteKey: 'ui/tile_1_detail_1',
+        //     //       },
+        //     //       'prop_1_1' => {
+        //     //         spriteKey: 'ui/prop_1_1',
+        //     //       },
+        //     //       'tile_1_detail_2' => {
+        //     //         spriteKey: 'ui/tile_1_detail_2',
+        //     //         alias: 'alien_propulsion_booster'
+        //     //       },
+        //     //       'bridge_vertical' => {
+        //     //         spriteKey: 'ui/bridge_vertical',
+        //     //       }
+        //     //     ];
+        //     //   };
+        //     case 'editor-data/passive_skill_tree.eds': {
+
+        //       final passiveTreeNodeSpriteKeys = Lambda.filter(
+        //           Reflect.fields(
+        //             Main.Global.sb.batchManager.spriteSheetData),
+        //           (key) -> {
+        //             return key.indexOf('ui/passive_skill_tree_node') 
+        //               != - 1;
+        //           });
+
+        //       final configList: Map<String, ConfigObjectMeta> = 
+        //         new Map();
+
+        //       for (spriteKey in passiveTreeNodeSpriteKeys) {
+        //         final objectMeta = createObjectMeta({
+        //           spriteKey: spriteKey,
+        //         });
+
+        //         configList.set(spriteKey, objectMeta);
+        //       }
+
+        //       return configList;
+        //     };
+
+        //     default: {
+        //       return new Map();
+        //     };
+        //   }
+
+        final configList: Map<String, ConfigObjectMeta> = [
+          'pillar' => {
+            spriteKey: 'ui/pillar',
+          },
+          'player' => {
+            spriteKey: 'player_animation/idle-0',
+            // fixed id
+            sharedId: 'playerStartPos'
+          },
+          'intro_level_boss' => {
+            spriteKey: 'intro_boss_animation/idle-0'
+          },
+          'enemySpawnPoint' => {
+            spriteKey: 'ui/enemy_spawn_point'
+          },
+          'teleporter' => {
+            spriteKey: 'ui/teleporter_base',
+          },
+          'npc_test_dummy' => {
+            spriteKey: 'ui/npc_test_dummy',
+          },
+          'enemy_1' => {
+            spriteKey: 'enemy-2_animation/idle-0',
+          },
+          'tile_1' => {
+            spriteKey: 'ui/tile_1_1',
+            type: 'traversableSpace',
+            isAutoTile: true,
+            autoTileCorner: true
+          },
+          'tile_2' => {
+            spriteKey: 'ui/tile_2_4',
+            type: 'obstacleWall',
+            isAutoTile: true,
+          },
+          'tile_1_detail_1' => {
+            spriteKey: 'ui/tile_1_detail_1',
+          },
+          'prop_1_1' => {
+            spriteKey: 'ui/prop_1_1',
+          },
+          'tile_1_detail_2' => {
+            spriteKey: 'ui/tile_1_detail_2',
+            alias: 'alien_propulsion_booster'
+          },
+          'bridge_vertical' => {
+            spriteKey: 'ui/bridge_vertical',
+          }
+        ];
+
+        // with defaults
+        for (key => config in configList) {
+          metaByType.set(key, createObjectMeta(config));
         }
-      ];
 
-      final metaByType = new Map<String, ConfigObjectMeta>();
 
-      // add defaults
-      for (key => config in configList) {
-        metaByType.set(key, createObjectMeta(config));
-      }
+        metaByType;
+      },
+      snapGridSizes: [1, 8, 16]
+    };
 
-      metaByType;
-    },
-    snapGridSizes: [1, 8, 16]
+    configCache = config;
+
+    return config;
   }
 
   static var objectTypeMenu: Array<{
@@ -347,7 +446,7 @@ class Editor {
       isDragStart: initialLocalState().isDragStart,
       isDragging: initialLocalState().isDragging,
       isDragEnd: initialLocalState().isDragEnd,
-      snapGridSize: config.snapGridSizes[2],
+      snapGridSize: getConfig().snapGridSizes[2],
 
       dragStartPos: {
         x: 0,
@@ -384,7 +483,7 @@ class Editor {
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot);
-    final loadPath = config.activeFile;
+    final loadPath = getConfig().activeFile;
     final s2d = Main.Global.staticScene;
     // custom transformation function to
     // modify the saved data.
@@ -440,7 +539,7 @@ class Editor {
           Sys.sleep(interval);
 
           final stateToSave = localState.stateToSave;
-          final filePath = config.activeFile;
+          final filePath = getConfig().activeFile;
           if (!savePending && stateToSave != null) {
             // prevent another save from happening
             // until this is complete
@@ -494,7 +593,7 @@ class Editor {
             gridRef,
             key);
         final objectType = editorState.itemTypeById.get(key);
-        final objectMeta = config.objectMetaByType.get(objectType); 
+        final objectMeta = getConfig().objectMetaByType.get(objectType); 
         isAutoTile = objectMeta.isAutoTile;
         editorState.itemTypeById.remove(key);
       }
@@ -579,7 +678,7 @@ class Editor {
       });
 
       final objectType = editorState.itemTypeById.get(id);
-      final objectMeta = config.objectMetaByType.get(objectType); 
+      final objectMeta = getConfig().objectMetaByType.get(objectType); 
 
       if (objectMeta.isAutoTile) {
         // refresh row above
@@ -737,7 +836,7 @@ class Editor {
           uiRect);
       objectTypeMenu = [];
 
-      for (type => meta in config.objectMetaByType) {
+      for (type => meta in getConfig().objectMetaByType) {
         objectTypeMenu.push({
           x: x,
           y: oy,
@@ -751,7 +850,7 @@ class Editor {
     }
 
     function createId(objectType) {
-      final objectMeta = config.objectMetaByType.get(
+      final objectMeta = getConfig().objectMetaByType.get(
           localState.selectedObjectType);
 
       final sharedId = objectMeta.sharedId;
@@ -868,7 +967,7 @@ class Editor {
                     for (itemId in cellData) {
                       final objectType = editorState.itemTypeById
                         .get(itemId);
-                      final objectMeta = config.objectMetaByType
+                      final objectMeta = getConfig().objectMetaByType
                         .get(objectType);
                       final spriteKey = {
                         if (objectMeta.isAutoTile) {
@@ -911,7 +1010,7 @@ class Editor {
             default: {}
           }
 
-          if (config.autoSave && 
+          if (getConfig().autoSave && 
               action.type != 'PAINT_CELL_FROM_LOADING_STATE') {
             localState.stateToSave = editorState;
           }
@@ -1042,7 +1141,7 @@ class Editor {
 
         // toggle grid snap size
         if (Key.isPressed(Key.S)) {
-          final snapOpts = config.snapGridSizes;
+          final snapOpts = getConfig().snapGridSizes;
           final curSettingIndex = Lambda.findIndex(
               snapOpts,
               (gs) -> gs == localState.snapGridSize);
@@ -1383,7 +1482,7 @@ class Editor {
         for (menuItem in objectTypeMenu) {
           final spriteData = Reflect.field(
               spriteSheetData,
-              config.objectMetaByType.get(menuItem.type)
+              getConfig().objectMetaByType.get(menuItem.type)
               .spriteKey);
           final scale = {
             final spriteMaxDimension = Math.max(
@@ -1396,7 +1495,7 @@ class Editor {
             b.scale = scale;
           };
 
-          final spriteKey = config.objectMetaByType
+          final spriteKey = getConfig().objectMetaByType
             .get(menuItem.type)
             .spriteKey;
           sbs.emitSprite(
@@ -1425,7 +1524,7 @@ class Editor {
 
         // show active brush at cursor
         if (localState.editorMode == EditorMode.Paint) {
-          final spriteKey = config.objectMetaByType
+          final spriteKey = getConfig().objectMetaByType
             .get(localState.selectedObjectType).spriteKey;
           sbs.emitSprite(
               cx, cy,

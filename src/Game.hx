@@ -2216,7 +2216,7 @@ class Game extends h2d.Object {
 
         for (itemId => bounds in grid.itemCache) {
           final objectType = mapData.itemTypeById.get(itemId);
-          final objectMeta = Editor.config.objectMetaByType
+          final objectMeta = Editor.getConfig().objectMetaByType
             .get(objectType);
           final x = bounds[0];
           final y = bounds[2];
@@ -2605,7 +2605,7 @@ class Game extends h2d.Object {
             if (cellData != null) {
               for (itemId in cellData) {
                 final objectType = mapData.itemTypeById.get(itemId);
-                final objectMeta = Editor.config.objectMetaByType
+                final objectMeta = Editor.getConfig().objectMetaByType
                   .get(objectType);
 
                 if (!idsRendered.exists(itemId) 
