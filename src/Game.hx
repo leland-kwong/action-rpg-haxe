@@ -391,8 +391,6 @@ class Ai extends Entity {
     3 => 'attack_bullet',
     4 => 'attack_self_detonate',
   ];
-  static var spriteSheet: h2d.Tile;
-  static var spriteSheetData: Dynamic;
 
   var font: h2d.Font = Main.Global.fonts.primary;
   var damage = 0;
@@ -422,12 +420,6 @@ class Ai extends Entity {
     cds = new Cooldown();
     Entity.setComponent(this, 'aiType', props.aiType);
     Entity.setComponent(this, 'neighborQueryThreshold', 10);
-
-    if (spriteSheet == null) {
-      spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-      spriteSheetData = Utils.loadJsonFile(
-          hxd.Res.sprite_sheet_json).frames;
-    }
 
     type = 'ENEMY';
     status = 'UNTARGETABLE';
