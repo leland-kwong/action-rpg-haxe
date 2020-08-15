@@ -173,161 +173,89 @@ class Editor {
     return newProps;
   }
 
-  static var configCache = null;
+  static var configByFileName = new Map();
 
   // all configuration stuff lives here
-  public static function getConfig(): {
+  public static function getConfig(
+      activeFile = 'editor-data/dummy_level.eds'): {
     activeFile: String,
     autoSave: Bool,
     objectMetaByType: Map<String, ConfigObjectMeta>,
     snapGridSizes: Array<Int>
   } {
-    if (configCache != null) {
-      return configCache;
+    final fromCache = configByFileName.get(activeFile);
+
+    if (fromCache != null) {
+      return fromCache;
     }
 
-    final activeFile = 'editor-data/level_1.eds';
-    final  config = {
-      // activeFile: 'editor-data/temp.eds',
+    final config = {
       activeFile: activeFile,
       autoSave: false,
       objectMetaByType: {
 
         final metaByType = new Map<String, ConfigObjectMeta>();
 
-        // final configList: Map<String, ConfigObjectMeta> = 
-        //   switch (activeFile) {
-        //     // case 
-        //     //   'editor-data/dummy_level.eds'
-        //     //   | 'editor-data/level_1.eds': {
-        //     //     return [
-        //     //       'pillar' => {
-        //     //         spriteKey: 'ui/pillar',
-        //     //       },
-        //     //       'player' => {
-        //     //         spriteKey: 'player_animation/idle-0',
-        //     //         // fixed id
-        //     //         sharedId: 'playerStartPos'
-        //     //       },
-        //     //       'intro_level_boss' => {
-        //     //         spriteKey: 'intro_boss_animation/idle-0'
-        //     //       },
-        //     //       'enemySpawnPoint' => {
-        //     //         spriteKey: 'ui/enemy_spawn_point'
-        //     //       },
-        //     //       'teleporter' => {
-        //     //         spriteKey: 'ui/teleporter_base',
-        //     //       },
-        //     //       'npc_test_dummy' => {
-        //     //         spriteKey: 'ui/npc_test_dummy',
-        //     //       },
-        //     //       'enemy_1' => {
-        //     //         spriteKey: 'enemy-2_animation/idle-0',
-        //     //       },
-        //     //       'tile_1' => {
-        //     //         spriteKey: 'ui/tile_1_1',
-        //     //         type: 'traversableSpace',
-        //     //         isAutoTile: true,
-        //     //         autoTileCorner: true
-        //     //       },
-        //     //       'tile_2' => {
-        //     //         spriteKey: 'ui/tile_2_4',
-        //     //         type: 'obstacleWall',
-        //     //         isAutoTile: true,
-        //     //       },
-        //     //       'tile_1_detail_1' => {
-        //     //         spriteKey: 'ui/tile_1_detail_1',
-        //     //       },
-        //     //       'prop_1_1' => {
-        //     //         spriteKey: 'ui/prop_1_1',
-        //     //       },
-        //     //       'tile_1_detail_2' => {
-        //     //         spriteKey: 'ui/tile_1_detail_2',
-        //     //         alias: 'alien_propulsion_booster'
-        //     //       },
-        //     //       'bridge_vertical' => {
-        //     //         spriteKey: 'ui/bridge_vertical',
-        //     //       }
-        //     //     ];
-        //     //   };
-        //     case 'editor-data/passive_skill_tree.eds': {
+        final configList: Map<String, ConfigObjectMeta> = 
+          switch (activeFile) {
+            case 
+              'editor-data/dummy_level.eds'
+              | 'editor-data/level_1.eds': {
+                [
+                  'pillar' => {
+                    spriteKey: 'ui/pillar',
+                  },
+                  'player' => {
+                    spriteKey: 'player_animation/idle-0',
+                    // fixed id
+                    sharedId: 'playerStartPos'
+                  },
+                  'intro_level_boss' => {
+                    spriteKey: 'intro_boss_animation/idle-0'
+                  },
+                  'enemySpawnPoint' => {
+                    spriteKey: 'ui/enemy_spawn_point'
+                  },
+                  'teleporter' => {
+                    spriteKey: 'ui/teleporter_base',
+                  },
+                  'npc_test_dummy' => {
+                    spriteKey: 'ui/npc_test_dummy',
+                  },
+                  'enemy_1' => {
+                    spriteKey: 'enemy-2_animation/idle-0',
+                  },
+                  'tile_1' => {
+                    spriteKey: 'ui/tile_1_1',
+                    type: 'traversableSpace',
+                    isAutoTile: true,
+                    autoTileCorner: true
+                  },
+                  'tile_2' => {
+                    spriteKey: 'ui/tile_2_4',
+                    type: 'obstacleWall',
+                    isAutoTile: true,
+                  },
+                  'tile_1_detail_1' => {
+                    spriteKey: 'ui/tile_1_detail_1',
+                  },
+                  'prop_1_1' => {
+                    spriteKey: 'ui/prop_1_1',
+                  },
+                  'tile_1_detail_2' => {
+                    spriteKey: 'ui/tile_1_detail_2',
+                    alias: 'alien_propulsion_booster'
+                  },
+                  'bridge_vertical' => {
+                    spriteKey: 'ui/bridge_vertical',
+                  }
+                ];
+              };
 
-        //       final passiveTreeNodeSpriteKeys = Lambda.filter(
-        //           Reflect.fields(
-        //             Main.Global.sb.batchManager.spriteSheetData),
-        //           (key) -> {
-        //             return key.indexOf('ui/passive_skill_tree_node') 
-        //               != - 1;
-        //           });
-
-        //       final configList: Map<String, ConfigObjectMeta> = 
-        //         new Map();
-
-        //       for (spriteKey in passiveTreeNodeSpriteKeys) {
-        //         final objectMeta = createObjectMeta({
-        //           spriteKey: spriteKey,
-        //         });
-
-        //         configList.set(spriteKey, objectMeta);
-        //       }
-
-        //       return configList;
-        //     };
-
-        //     default: {
-        //       return new Map();
-        //     };
-        //   }
-
-        final configList: Map<String, ConfigObjectMeta> = [
-          'pillar' => {
-            spriteKey: 'ui/pillar',
-          },
-          'player' => {
-            spriteKey: 'player_animation/idle-0',
-            // fixed id
-            sharedId: 'playerStartPos'
-          },
-          'intro_level_boss' => {
-            spriteKey: 'intro_boss_animation/idle-0'
-          },
-          'enemySpawnPoint' => {
-            spriteKey: 'ui/enemy_spawn_point'
-          },
-          'teleporter' => {
-            spriteKey: 'ui/teleporter_base',
-          },
-          'npc_test_dummy' => {
-            spriteKey: 'ui/npc_test_dummy',
-          },
-          'enemy_1' => {
-            spriteKey: 'enemy-2_animation/idle-0',
-          },
-          'tile_1' => {
-            spriteKey: 'ui/tile_1_1',
-            type: 'traversableSpace',
-            isAutoTile: true,
-            autoTileCorner: true
-          },
-          'tile_2' => {
-            spriteKey: 'ui/tile_2_4',
-            type: 'obstacleWall',
-            isAutoTile: true,
-          },
-          'tile_1_detail_1' => {
-            spriteKey: 'ui/tile_1_detail_1',
-          },
-          'prop_1_1' => {
-            spriteKey: 'ui/prop_1_1',
-          },
-          'tile_1_detail_2' => {
-            spriteKey: 'ui/tile_1_detail_2',
-            alias: 'alien_propulsion_booster'
-          },
-          'bridge_vertical' => {
-            spriteKey: 'ui/bridge_vertical',
-          }
-        ];
+          default: {
+            new Map();
+          };
+        }
 
         // with defaults
         for (key => config in configList) {
@@ -340,7 +268,7 @@ class Editor {
       snapGridSizes: [1, 8, 16]
     };
 
-    configCache = config;
+    configByFileName.set(activeFile, config);
 
     return config;
   }
@@ -1524,19 +1452,24 @@ class Editor {
 
         // show active brush at cursor
         if (localState.editorMode == EditorMode.Paint) {
-          final spriteKey = getConfig().objectMetaByType
-            .get(localState.selectedObjectType).spriteKey;
-          sbs.emitSprite(
-              cx, cy,
-              spriteKey,
-              null,
-              (p) -> {
-                final b: h2d.SpriteBatch.BatchElement =
-                  p.batchElement;
-                b.alpha = 0.3;
-                p.sortOrder = drawSortSelection;
-                spriteEffectZoom(p);
-              });
+          final objectMeta = getConfig().objectMetaByType
+            .get(localState.selectedObjectType);
+
+          if (objectMeta != null) {
+            final spriteKey = objectMeta.spriteKey;
+
+            sbs.emitSprite(
+                cx, cy,
+                spriteKey,
+                null,
+                (p) -> {
+                  final b: h2d.SpriteBatch.BatchElement =
+                    p.batchElement;
+                  b.alpha = 0.3;
+                  p.sortOrder = drawSortSelection;
+                  spriteEffectZoom(p);
+                });
+          }
         }
 
         // show hovered cell (rectangle) at cursor

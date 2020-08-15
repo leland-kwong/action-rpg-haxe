@@ -2261,7 +2261,10 @@ class Game extends h2d.Object {
 
   public function newLevel(s2d: h2d.Scene) {
 
-    final processMap = (mapData: Editor.EditorState) -> {
+    final processMap = (
+        fileName, 
+        mapData: Editor.EditorState) -> {
+
       final cellSize = 16;
       final spawnerFindTargetFn = (_) -> {
         return Entity.getById('PLAYER');
@@ -2316,7 +2319,7 @@ class Game extends h2d.Object {
 
         for (itemId => bounds in grid.itemCache) {
           final objectType = mapData.itemTypeById.get(itemId);
-          final objectMeta = Editor.getConfig().objectMetaByType
+          final objectMeta = Editor.getConfig(fileName).objectMetaByType
             .get(objectType);
           final x = bounds[0];
           final y = bounds[2];
@@ -2705,7 +2708,8 @@ class Game extends h2d.Object {
             if (cellData != null) {
               for (itemId in cellData) {
                 final objectType = mapData.itemTypeById.get(itemId);
-                final objectMeta = Editor.getConfig().objectMetaByType
+                final objectMeta = Editor.getConfig(fileName)
+                  .objectMetaByType
                   .get(objectType);
 
                 if (!idsRendered.exists(itemId) 
@@ -2791,10 +2795,16 @@ class Game extends h2d.Object {
       Main.Global.updateHooks.push(refreshTileGroup);
 
     }
+
+    final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
-        'editor-data/level_1.eds',
+        levelFile,
         false,
-        processMap, 
+        (mapData) -> {
+          processMap(levelFile, mapData);
+
+          return;
+        }, 
         (err) -> {
           trace('[load level failure]', err.stack);
         });
