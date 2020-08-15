@@ -1,0 +1,21 @@
+{"frames": {
+
+"default-0":
+{
+	"frame": {"x":1,"y":1,"w":54,"h":54},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":7,"y":7,"w":54,"h":54},
+	"sourceSize": {"w":54,"h":54},
+	"pivot": {"x":0.5,"y":0.5}
+}},
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.0",
+	"image": "sprite_sheet_ui_cursor.png",
+	"format": "RGBA8888",
+	"size": {"w":56,"h":56},
+	"scale": "4",
+	"smartupdate": "$TexturePacker:SmartUpdate:18ec51bd36f79b80c0a57e094f5301fd:7878383bf9591d041f32fa506dff655e:deec9f0918169ee5b5dde66465b4a332$"
+}
+}

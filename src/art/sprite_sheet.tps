@@ -217,6 +217,7 @@
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-3.png</key>
             <key type="filename">aseprite_exports/spider_bot_animation/walk_run-4.png</key>
             <key type="filename">aseprite_exports/ui/circle_gradient.png</key>
+            <key type="filename">aseprite_exports/ui/cursor_default.png</key>
             <key type="filename">aseprite_exports/ui/enemy_spawn_point.png</key>
             <key type="filename">aseprite_exports/ui/placeholder.png</key>
             <key type="filename">aseprite_exports/ui/square_tile_test.png</key>
