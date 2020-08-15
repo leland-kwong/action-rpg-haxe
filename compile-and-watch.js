@@ -329,3 +329,7 @@ startTexturePackerWatcher({
   sourceFile: './src/art/sprite_sheet.tps',
   destination: './src/res/sprite_sheet.png'
 });
+startTexturePackerWatcher({
+  sourceFile: './src/art/sprite_sheet_ui_cursor.tps',
+  destination: './src/res/sprite_sheet_ui_cursor.png'
+});

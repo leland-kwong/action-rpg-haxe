@@ -2137,16 +2137,9 @@ class EnemySpawner extends Entity {
 }
 
 class Game extends h2d.Object {
-  public var level = 1;
-  var mousePointer: h2d.Object;
-  var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
   var MOUSE_POINTER_RADIUS = 5.0;
   var finished = false;
-
-  function calcNumEnemies(level: Int) {
-    return level * Math.round(level /2);
-  }
 
   public function isGameOver() {
     final playerRef = Entity.getById('player');
@@ -2163,12 +2156,10 @@ class Game extends h2d.Object {
       entityRef.type = 'ENTITY_CLEANUP';
     }
 
-    mousePointer.remove();
     finished = true;
   }
 
   public function newLevel(s2d: h2d.Scene) {
-    level += 1;
 
     final processMap = (mapData: Editor.EditorState) -> {
       final cellSize = 16;
@@ -2885,12 +2876,6 @@ class Game extends h2d.Object {
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
 
-    // mouse pointer
-    mousePointer = new h2d.Object(this);
-    mousePointerSprite = new h2d.Graphics(mousePointer);
-    mousePointerSprite.beginFill(0xffda3d, 0.3);
-    mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
-
     final background = makeBackground();
     final cleanupWhenFinished = (dt) -> {
       if (finished) {
@@ -3079,9 +3064,6 @@ class Game extends h2d.Object {
         Main.Global.entitiesToRender.push(a);
       }
     }
-
-    mousePointer.x = s2d.mouseX;
-    mousePointer.y = s2d.mouseY;
 
     return !finished;
   }

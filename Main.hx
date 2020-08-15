@@ -258,6 +258,13 @@ class Main extends hxd.App {
         // used for experimental projects
         Global.staticScene = new h2d.Scene();
         sevents.addScene(Global.staticScene);
+
+        // setup sprite batch systems
+        Global.sb = new SpriteBatchSystem(
+            Global.particleScene);
+        Global.uiSpriteBatch = new SpriteBatchSystem(
+            Global.uiRoot);
+
       }
 
 #if !production
@@ -305,21 +312,61 @@ class Main extends hxd.App {
           Global.worldMouse.buttonDown = -1;
         };
         
-        function handleCursorStyle(dt) {
-          final Cursor = hxd.Cursor;
-          final hoverState = Global.worldMouse.hoverState;
+        {
+          final spriteSheetRes = hxd.Res.sprite_sheet_ui_cursor_png;
+          final spriteSheetData = Utils.loadJsonFile(
+              hxd.Res.sprite_sheet_ui_cursor_json).frames;
+          final cursorSpriteData: SpriteBatchSystem.SpriteData = 
+            Reflect.field(
+                spriteSheetData, 'default-0');
+          final f = cursorSpriteData.frame;
+          final targetCursorFrames = {
+            final pixels = spriteSheetRes.getPixels(RGBA);
+            final colorTeal = 0x2ce8f5;
+            final bmp = new hxd.BitmapData(f.w, f.h);
+            final dst = haxe.io.Bytes.alloc(f.w * f.h * 4);
+            final subSpritePixels = new hxd.Pixels(
+                f.w, f.h, dst, RGBA); 
 
-          rootInteract.cursor = switch(hoverState) {
-            case 
-              HoverState.LootHovered
-              | HoverState.LootHoveredCanPickup: Cursor.Button;
-            default: Cursor.Default;
+            // draw the pixels from the sprite
+            // to generate a custom cursor
+            for (y in f.y...(f.y + f.h)) {
+              for (x in f.x...(f.x + f.w)) {
+                final px = pixels.getPixel(x, y);
+                subSpritePixels.setPixel(
+                    x - f.x, y - f.y, px);
+              }
+            }
+            bmp.setPixels(subSpritePixels);
+
+            [bmp];
           }
 
-          return true;
-        }
+          final Cursor = hxd.Cursor;
+          final targetCursor = Cursor.Custom(
+              new hxd.Cursor.CustomCursor(
+                targetCursorFrames, 
+                0, 
+                Std.int(f.w / 2), 
+                Std.int(f.h / 2)));
 
-        Global.updateHooks.push(handleCursorStyle);
+          function handleCursorStyle(dt) {
+            final hoverState = Global.worldMouse.hoverState;
+
+            rootInteract.cursor = switch(hoverState) {
+              case 
+                HoverState.LootHovered
+                | HoverState.LootHoveredCanPickup
+                | HoverState.Enemy: targetCursor;
+
+              default: Cursor.Default;
+            }
+
+            return true;
+          }
+
+          Global.updateHooks.push(handleCursorStyle);
+        }
       }
 
       // setup viewport
@@ -334,13 +381,7 @@ class Main extends hxd.App {
       }
 #end
 
-      Global.mainCamera = Camera.create();
-      
-      Global.sb = new SpriteBatchSystem(
-          Global.particleScene);
-      Global.uiSpriteBatch = new SpriteBatchSystem(
-          Global.uiRoot);
-
+      Global.mainCamera = Camera.create();      
 
 #if debugMode
       var font = hxd.res.DefaultFont.get();
