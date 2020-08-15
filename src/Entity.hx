@@ -201,18 +201,19 @@ class Entity extends h2d.Object {
       };
 
       final startTime = Main.Global.time;
-      final duration = 0.3;
+      final duration = 0.5;
       Main.Global.updateHooks.push((dt) -> {
         final aliveTime = Main.Global.time - startTime;
         final progress = aliveTime / duration;
         final dx = Math.cos(angle) * 5;
-        final dy = Math.sin(angle) * 5;
+        final dy = -Math.sin(angle) * 5;
 
         tf.x = initialX + dx * Easing.easeOutExpo(progress);
         tf.y = initialY
-          - 25
-          + dy * Easing.easeOutExpo(progress); 
+          - 25 * Easing.easeOutExpo(progress)
+          + dy * Easing.easeInExpo(progress); 
         tf.alpha = 1 - Easing.easeInExpo(progress); 
+        tf.setScale(1 - Easing.easeInExpo(progress));
         
         if (aliveTime > duration) {
           tf.remove();
