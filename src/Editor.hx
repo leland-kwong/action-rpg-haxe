@@ -410,7 +410,9 @@ class Editor {
     final spriteSheetData = Utils.loadJsonFile(
         hxd.Res.sprite_sheet_json).frames;
     final sbs = new SpriteBatchSystem(
-        Main.Global.uiRoot);
+        Main.Global.uiRoot,
+        hxd.Res.sprite_sheet_png,
+        hxd.Res.sprite_sheet_json);
     final loadPath = getConfig().activeFile;
     final s2d = Main.Global.staticScene;
     // custom transformation function to

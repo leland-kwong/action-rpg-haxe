@@ -261,9 +261,13 @@ class Main extends hxd.App {
 
         // setup sprite batch systems
         Global.sb = new SpriteBatchSystem(
-            Global.particleScene);
+            Global.particleScene,
+            hxd.Res.sprite_sheet_png,
+            hxd.Res.sprite_sheet_json);
         Global.uiSpriteBatch = new SpriteBatchSystem(
-            Global.uiRoot);
+            Global.uiRoot,
+            hxd.Res.sprite_sheet_png,
+            hxd.Res.sprite_sheet_json);
 
       }
 

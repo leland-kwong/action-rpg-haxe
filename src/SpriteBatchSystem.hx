@@ -24,12 +24,15 @@ typedef BatchManagerRef = {
 };
 
 class BatchManager {
-  static public function init(scene: h2d.Scene) {
-    var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+  static public function init(
+      scene: h2d.Scene,
+      spriteSheetPng: hxd.res.Image,
+      spriteSheetJson: hxd.res.Resource) {
+    var spriteSheet = spriteSheetPng.toTile();
     var system: BatchManagerRef = {
       particles: [],
       spriteSheetData: Utils.loadJsonFile(
-          hxd.Res.sprite_sheet_json).frames,
+          spriteSheetJson).frames,
       spriteSheet: spriteSheet,
       batch: new h2d.SpriteBatch(spriteSheet, scene),
     };
@@ -91,8 +94,14 @@ class SpriteBatchSystem {
   public static final tileCache: Map<String, h2d.Tile> = new Map();
   public var batchManager: BatchManagerRef;
 
-  public function new(scene: h2d.Scene) {
-    batchManager = BatchManager.init(scene);
+  public function new(
+      scene: h2d.Scene,
+      spriteSheetPng: hxd.res.Image,
+      spriteSheetJson: hxd.res.Resource) {
+    batchManager = BatchManager.init(
+        scene,
+        spriteSheetPng,
+        spriteSheetJson);
     instances.push(batchManager);
   }
 
