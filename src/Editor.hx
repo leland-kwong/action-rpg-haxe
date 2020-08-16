@@ -181,7 +181,9 @@ class Editor {
 
   // all configuration stuff lives here
   public static function getConfig(
-      activeFile = 'editor-data/passive_skill_tree.eds'): {
+      activeFile = 'editor-data/passive_skill_tree.eds'
+      // activeFile = 'editor-data/dummy_level.eds'
+      ): {
     activeFile: String,
     autoSave: Bool,
     objectMetaByType: Map<String, ConfigObjectMeta>,
@@ -310,7 +312,7 @@ class Editor {
 
         metaByType;
       },
-      snapGridSizes: [1, 8, 16, 25],
+      snapGridSizes: [1, 3, 5, 8, 16, 25],
       // make sure the screen's resolution is divisible by
       // each level for accurate rendering.
       zoomSizes: [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24]
@@ -1415,8 +1417,6 @@ class Editor {
 
             // replaces the cell with new value
             case EditorMode.Paint: {
-              trace(gridX, gridY);
-
               insertSquare(
                   activeGrid,
                   gridX,
@@ -1575,7 +1575,8 @@ class Editor {
             activeGrid,
             mx,
             my);
-        final hc = snapGridSize / 2;
+        final hcFloor = Math.floor(snapGridSize / 2) * zoom;
+        final hcCeil = Math.ceil(snapGridSize / 2) * zoom;
         final cx = (((mouseGridPos[0])) * localState.zoom) +
           editorState.translate.x * localState.zoom;
         final cy = (((mouseGridPos[1])) * localState.zoom) +
@@ -1618,7 +1619,7 @@ class Editor {
           final sortOrder = drawSortSelection + 1;
           // north edge
           sbs.emitSprite(
-              cx - hc * zoom, cy - hc * zoom,
+              cx - hcFloor, cy - hcFloor,
               'ui/square_white',
               null,
               (p) -> {
@@ -1631,7 +1632,8 @@ class Editor {
 
           // east edge
           sbs.emitSprite(
-              cx + hc * zoom, cy - hc * zoom,
+              cx + hcCeil, 
+              cy - hcFloor,
               'ui/square_white',
               null,
               (p) -> {
@@ -1644,7 +1646,8 @@ class Editor {
 
           // south edge
           sbs.emitSprite(
-              cx - hc * zoom, cy + hc * zoom,
+              cx - hcFloor, 
+              cy + hcCeil,
               'ui/square_white',
               null,
               (p) -> {
@@ -1657,7 +1660,7 @@ class Editor {
 
           // west edge
           sbs.emitSprite(
-              cx - hc * zoom, cy - hc * zoom,
+              cx - hcFloor, cy - hcFloor,
               'ui/square_white',
               null,
               (p) -> {
