@@ -90,6 +90,8 @@ typedef ConfigObjectMeta = {
   ?isAutoTile: Bool,
   ?autoTileCorner: Bool,
   ?alias: String,
+  ?flipX: Bool,
+  ?flipY: Bool
 }
 
 class Profiler {
@@ -152,6 +154,8 @@ class Editor {
     isAutoTile: false,
     autoTileCorner: false,
     alias: 'UNKNOWN_ALIAS',
+    flipX: false,
+    flipY: false,
   };
 
   static function createObjectMeta(
@@ -177,7 +181,7 @@ class Editor {
 
   // all configuration stuff lives here
   public static function getConfig(
-      activeFile = 'editor-data/dummy_level.eds'): {
+      activeFile = 'editor-data/passive_tree.eds'): {
     activeFile: String,
     autoSave: Bool,
     objectMetaByType: Map<String, ConfigObjectMeta>,
@@ -252,6 +256,43 @@ class Editor {
                 ];
               };
 
+          case 'editor-data/passive_tree.eds': {
+            [
+              'passive_skill_tree__node' => {
+                spriteKey: 'ui/passive_skill_tree__node'
+              },
+              'passive_skill_tree__link_fork' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork',
+              },
+              'passive_skill_tree__link_fork_flip_x' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork',
+                flipX: true
+              },
+              'passive_skill_tree__link_fork_flip_y' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork',
+                flipY: true
+              },
+              'passive_skill_tree__link_fork_flip_x_y' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork',
+                flipX: true,
+                flipY: true
+              },
+              'passive_skill_tree__link_diagonal' => {
+                spriteKey: 'ui/passive_skill_tree__link_diagonal'
+              },
+              'passive_skill_tree__link_diagonal_flip_x' => {
+                spriteKey: 'ui/passive_skill_tree__link_diagonal',
+                flipX: true
+              },
+              'passive_skill_tree__link_horizontal' => {
+                spriteKey: 'ui/passive_skill_tree__link_horizontal'
+              },
+              'passive_skill_tree__link_vertical' => {
+                spriteKey: 'ui/passive_skill_tree__link_vertical'
+              }
+            ];
+          };
+
           default: {
             new Map();
           };
@@ -265,7 +306,7 @@ class Editor {
 
         metaByType;
       },
-      snapGridSizes: [1, 8, 16]
+      snapGridSizes: [1, 8, 16, 25]
     };
 
     configByFileName.set(activeFile, config);
@@ -278,7 +319,8 @@ class Editor {
     y: Int,
     width: Int,
     height: Int,
-    type: String
+    type: String,
+    meta: ConfigObjectMeta
   }> = [];
 
   static function initialLocalState() {
@@ -773,6 +815,7 @@ class Editor {
           width: itemSize,
           height: itemSize,
           type: type,
+          meta: meta
         });
 
         oy += (itemSize + itemSpacing);
@@ -928,6 +971,15 @@ class Editor {
                       tile.setCenterRatio(
                           spriteData.pivot.x,
                           spriteData.pivot.y);
+
+                      if (objectMeta.flipX) {
+                        tile.flipX();
+                      }
+
+                      if (objectMeta.flipY) {
+                        tile.flipY();
+                      }
+
                       tg.add(
                           colIndex,
                           rowIndex,
@@ -1070,7 +1122,7 @@ class Editor {
         }
 
         // toggle grid snap size
-        if (Key.isPressed(Key.S)) {
+        if (Key.isDown(Key.SHIFT) && Key.isPressed(Key.S)) {
           final snapOpts = getConfig().snapGridSizes;
           final curSettingIndex = Lambda.findIndex(
               snapOpts,
@@ -1410,6 +1462,7 @@ class Editor {
       // render object type menu options
       {
         for (menuItem in objectTypeMenu) {
+          final meta = menuItem.meta;
           final spriteData = Reflect.field(
               spriteSheetData,
               getConfig().objectMetaByType.get(menuItem.type)
@@ -1423,6 +1476,14 @@ class Editor {
           final spriteEffect = (p) -> {
             final b: h2d.SpriteBatch.BatchElement = p.batchElement;
             b.scale = scale;
+
+            if (meta.flipX) {
+              b.scaleX *= -1;
+            }
+
+            if (meta.flipY) {
+              b.scaleY *= -1;
+            }
           };
 
           final spriteKey = getConfig().objectMetaByType
@@ -1470,6 +1531,15 @@ class Editor {
                   b.alpha = 0.3;
                   p.sortOrder = drawSortSelection;
                   spriteEffectZoom(p);
+
+                  if (objectMeta.flipX) {
+                    b.scaleX *= -1;
+                  }
+
+                  if (objectMeta.flipY) {
+                    b.scaleY *= -1;
+                  }
+
                 });
           }
         }
