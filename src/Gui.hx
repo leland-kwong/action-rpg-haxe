@@ -19,7 +19,7 @@ class Gui {
     };
 
     tempTf = new h2d.Text(
-        Main.Global.fonts.primary, 
+        Fonts.primary(), 
         Main.Global.rootScene);
 
     Main.Global.renderHooks.push((time) -> {
@@ -64,7 +64,7 @@ class Gui {
   public static function homeMenu(
       onSelect, 
       options: Array<Array<String>>) {
-    final font = Main.Global.fonts.primary;
+    final font = Fonts.primary();
     final itemPadding = 10;
     final itemSpacing = 10;
     final itemWidth = 300;

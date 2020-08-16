@@ -179,7 +179,7 @@ class Entity extends h2d.Object {
   public function update(dt: Float) {
     if (showHitNumbers 
         && damageTaken > 0) {
-      final font = Main.Global.fonts.primary.clone();
+      final font = Fonts.primary().clone();
       font.resizeTo(8);
       final tf = new h2d.Text(
           font,

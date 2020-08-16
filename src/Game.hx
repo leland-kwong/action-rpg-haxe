@@ -392,7 +392,7 @@ class Ai extends Entity {
     4 => 'attack_self_detonate',
   ];
 
-  var font: h2d.Font = Main.Global.fonts.primary;
+  var font: h2d.Font = Fonts.primary();
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;

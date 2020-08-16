@@ -89,11 +89,6 @@ class Global {
     'kamehamehaTick' => 0.0
   ];
 
-  public static var fonts: {
-    primary: h2d.Font,
-    title: h2d.Font
-  };
-
   public static var escapeStack: Stack.StackRef = [];
   public static var questActions = [];
 
@@ -231,11 +226,6 @@ class Main extends hxd.App {
 
       hxd.Res.initEmbed();
       Main.Global.mainPhase = MainPhase.Init;
-
-      Main.Global.fonts = {
-        primary: Fonts.primary(),
-        title: Fonts.title()
-      };
 
       // setup global scene objects
       {

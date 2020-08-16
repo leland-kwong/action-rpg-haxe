@@ -405,7 +405,7 @@ class Tooltip {
     final initialized = tooltipTextRef != null;
 
     if (!initialized) {
-      final font = Main.Global.fonts.primary.clone();
+      final font = Fonts.primary().clone();
       tooltipTextRef = new h2d.Text(
           font);
     }
@@ -1078,7 +1078,7 @@ class Hud {
   public static function init() {
     aiHealthBar = new h2d.Graphics(
         Main.Global.uiRoot);
-    final font = Main.Global.fonts.primary;
+    final font = Fonts.primary();
     aiNameText = new h2d.Text(
         font, 
         Main.Global.uiRoot);
@@ -1089,7 +1089,7 @@ class Hud {
         hxd.Res.ui_hud_layout_json);
 
     questDisplay = new h2d.Text(
-        Main.Global.fonts.primary,
+        Fonts.primary(),
         Main.Global.uiRoot);
 
     inactiveAbilitiesSb = new SpriteBatchSystem(
