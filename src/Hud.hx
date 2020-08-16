@@ -111,7 +111,7 @@ class Inventory {
     // convert item dimensions to slot units 
     final lootDef = Loot.getDef(itemInstance.type);
     final spriteData = SpriteBatchSystem.getSpriteData(
-        Main.Global.uiSpriteBatch,
+        Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
         lootDef.spriteKey);
     final pixelWidth = spriteData.sourceSize.w;
     final pixelHeight = spriteData.sourceSize.h;
@@ -653,7 +653,7 @@ class InventoryDragAndDropPrototype {
       final lootInst = state.itemsById.get(pickedUpId);
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
-          Main.Global.uiSpriteBatch,
+          Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
           lootDef.spriteKey);
       final slotWidth = toSlotSize(spriteData.sourceSize.w);
       final slotHeight = toSlotSize(spriteData.sourceSize.h);
@@ -1043,7 +1043,7 @@ class InventoryDragAndDropPrototype {
       final lootInst = state.itemsById.get(state.pickedUpItemId);
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
-          Main.Global.uiSpriteBatch,
+          Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
           lootDef.spriteKey);
       final w = toSlotSize(spriteData.sourceSize.w);
       final h = toSlotSize(spriteData.sourceSize.h);

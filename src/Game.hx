@@ -1274,13 +1274,13 @@ class Player extends Entity {
         final additionalLength = 40 * Math.max(1, tempState.get(tickKey) * 2);
         final maxLength = 60 + additionalLength; 
         Main.Global.logData.laserMaxLength = maxLength;
-        final laserCenterSpriteData = Reflect.field(
+        final laserCenterSpriteData = SpriteBatchSystem.getSpriteData(
             Main.Global.sb.batchManager.spriteSheetData,
             'ui/kamehameha_center_width_1'
             );
         final beamThickness = 
           laserCenterSpriteData.frame.h;
-        final laserTailSpriteData = Reflect.field(
+        final laserTailSpriteData = SpriteBatchSystem.getSpriteData(
           Main.Global.sb.batchManager.spriteSheetData,
           'ui/kamehameha_tail');
         final angle = Math.atan2(y2 - startY, x2 - x);
@@ -1962,10 +1962,10 @@ class Player extends Entity {
 
     function healAnimation(healType, timeOffset) {
       final sb = Main.Global.sb;
-      final spriteData: SpriteBatchSystem.SpriteData = Reflect.field(
+      final spriteData = SpriteBatchSystem.getSpriteData(
           sb.batchManager.spriteSheetData,
           currentSprite);
-      final orbSpriteData: SpriteBatchSystem.SpriteData = Reflect.field(
+      final orbSpriteData = SpriteBatchSystem.getSpriteData(
           sb.batchManager.spriteSheetData,
           'ui/player_pet_orb');
       final animDuration = 1.;
@@ -2054,7 +2054,7 @@ class Player extends Entity {
           endPoint: endPt 
         }: {
 
-          final laserHeadSpriteData = Reflect.field(
+          final laserHeadSpriteData = SpriteBatchSystem.getSpriteData(
               Main.Global.sb.batchManager.spriteSheetData,
               'ui/kamehameha_head'
               );
@@ -2394,7 +2394,7 @@ class Game extends h2d.Object {
               // materializing animation
               {
                 final sb = Main.Global.sb;
-                final spriteData: SpriteBatchSystem.SpriteData = Reflect.field(
+                final spriteData = SpriteBatchSystem.getSpriteData(
                     sb.batchManager.spriteSheetData,
                     'player_animation/idle-0');
 

@@ -11,12 +11,9 @@ typedef SpriteData = {
 	pivot: {x:Float,y:Float}
 };
 
-
-// TODO: make type more strict
-typedef SpriteSheetData = Dynamic;
-// typedef SpriteSheetData = {
-//   frames: Array<SpriteData>
-// };
+typedef SpriteSheetData = {
+  frames: Dynamic
+};
 
 
 typedef SpriteRef = {
