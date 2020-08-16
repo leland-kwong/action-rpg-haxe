@@ -12,18 +12,22 @@ import sys.io.File;
 #end
 
 class SaveState {
-  static var saveDir = 'external-assets';
+  static final baseDir = 'external-assets';
 
   public static function save(
       data: Dynamic,
-      keyPath: String,
+      file: String,
       serializeFn = null,
       onSuccess: (res: Null<Dynamic>) -> Void,
       onError: (e: Dynamic) -> Void) {
 
     try {
-      if (!FileSystem.exists(saveDir)) {
-        FileSystem.createDirectory(saveDir);
+      final keypath = file.split('/');
+      final saveDir = keypath.slice(0, -1).join('/');
+      final fullSaveDir = '${baseDir}/${saveDir}';
+
+      if (!FileSystem.exists(fullSaveDir)) {
+        FileSystem.createDirectory(fullSaveDir);
       }
       final serialized = {
         if (serializeFn != null) {
@@ -32,7 +36,7 @@ class SaveState {
           haxe.Serializer.run(data);
         }
       };
-      File.saveContent('${saveDir}/${keyPath}', serialized);
+      File.saveContent('${baseDir}/${file}', serialized);
       onSuccess(null);
     }
     catch (err: Dynamic) {
@@ -49,7 +53,7 @@ class SaveState {
   ): Void {
     try {
 
-      var fullPath = '${saveDir}/${keyPath}';
+      var fullPath = '${baseDir}/${keyPath}';
 
       if (!FileSystem.exists(fullPath)) {
         onSuccess(null);
@@ -74,21 +78,7 @@ class SaveState {
   }
 
   public static function delete(keyPath: String) {
-    #if jsMode
-    {
-      var ls = Browser.getLocalStorage();
-      ls.removeItem(keyPath);
-
-      /**
-        TODO:
-        Add support for deleting via http request (dev-server)
-      **/
-    }
-    #else
-    {
-      FileSystem.deleteFile('${saveDir}/${keyPath}');
-    }
-    #end
+    FileSystem.deleteFile('${baseDir}/${keyPath}');
   }
 
   public static function tests() {
