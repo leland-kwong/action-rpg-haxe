@@ -32,7 +32,7 @@ class BatchManager {
     var system: BatchManagerRef = {
       particles: [],
       spriteSheetData: Utils.loadJsonFile(
-          spriteSheetJson).frames,
+          spriteSheetJson),
       spriteSheet: spriteSheet,
       batch: new h2d.SpriteBatch(spriteSheet, scene),
     };
@@ -128,9 +128,13 @@ class SpriteBatchSystem {
         spriteData.frame.w,
         spriteData.frame.h);
 
-    tile.setCenterRatio(
-        spriteData.pivot.x,
-        spriteData.pivot.y);
+    final pivot = Reflect.field(spriteData, 'pivot');
+
+    if (pivot != null) {
+      tile.setCenterRatio(
+          spriteData.pivot.x,
+          spriteData.pivot.y);
+    }
 
     tileCache.set(spriteKey, tile);
 
@@ -172,7 +176,7 @@ class SpriteBatchSystem {
       spriteKey): SpriteData {
 
     return Reflect.field(
-        s.batchManager.spriteSheetData, 
+        s.batchManager.spriteSheetData.frames, 
         spriteKey);
   }
 
