@@ -1,108 +1,14 @@
 class Experiment {
-  public static function triggerAbility(
-      x1: Float,
-      y1: Float,
-      sortOffset: Float,
-      angle) {
-
-    final startTime = Main.Global.time;
-    final numParticles = 10;
-
-    for (i in 
-        -Std.int(numParticles / 2)...Std.int(numParticles / 2)) {
-      final spreadAngle = Math.PI / 6;
-      final angle2 = angle + 
-        i * spreadAngle / numParticles
-        + (Utils.irnd(-4, 4) * Math.PI / 30);
-      final speed = 10 + Utils.irnd(-10, 10);
-      final rotation = Math.PI * (0.25 + Utils.rnd(0, .15));
-      final duration = 0.4 + Utils.rnd(-0.3, 0.3);
-
-      core.Anim.AnimEffect.add({
-        x: x1,
-        y: y1,
-        startTime: startTime,
-        frames: [
-          'ui/square_glow', 
-        ],
-        duration: duration,
-        effectCallback: (p) -> {
-          final progress = (Main.Global.time - startTime) 
-            / duration;
-          final elem = p.batchElement;
-          final dx = Math.cos(angle2);
-          final dy = Math.sin(angle2);
-          final v1 = Easing.easeOutQuint(progress);
-          final v2 = Easing.easeInQuint(progress);
-          final gravity = 9;
-
-          p.sortOrder = y1 + sortOffset + 2;
-          elem.alpha = 1 - Easing.easeInQuint(progress);
-          elem.scale = 2 * (1 - Easing.easeInQuint(progress));
-          elem.x += dx * -1 * speed * v1;
-          elem.y += dy * -1 * speed * v1 + (gravity * v2);
-          elem.rotation = rotation;
-
-          elem.g = Math.max(0.4, 1 - v2 / 1.5);
-          elem.b = 1 - v2 * 2;
-        }
-      });
-
-    }
-
-    // render torch
-    final torchDuration = 0.2;
-    core.Anim.AnimEffect.add({
-      x: x1,
-      y: y1,
-      startTime: startTime,
-      frames: [
-        'ui/flame_torch', 
-      ],
-      duration: torchDuration,
-      effectCallback: (p) -> {
-        final progress = (Main.Global.time - startTime) 
-          / torchDuration;
-        final v1 = Easing.easeOutQuint(progress);
-        final v2 = Easing.easeInQuint(progress);
-        final elem = p.batchElement;
-
-        p.sortOrder += sortOffset + 1;
-        elem.rotation = angle;
-        // elem.scaleY = 1 - v2;
-        elem.scaleX = 1 - v2;
-        elem.alpha = 1 - v2;
-      }
-    });
-
-    // muzzle flash
-    core.Anim.AnimEffect.add({
-      x: x1,
-      y: y1,
-      startTime: startTime,
-      frames: [
-        'ui/circle_gradient', 
-      ],
-      duration: torchDuration,
-      effectCallback: (p) -> {
-        final progress = (Main.Global.time - startTime) 
-          / torchDuration;
-        final v1 = Easing.easeInQuint(progress);
-        final elem = p.batchElement;
-
-        p.sortOrder += sortOffset + 2;
-        elem.rotation = angle;
-        elem.scaleY = 1 - v1;
-        elem.scaleX = 1 - v1;
-        elem.alpha = 1 - v1;
-      }
-    });
-  }
-
   public static function init() {
-    final s2d = Main.Global.rootScene;
+    final EMPTY_HOVERED_NODE = {
+      x: 0,
+      y: 0,
+      w: 0,
+      h: 0
+    };
+    final s2d = Main.Global.staticScene;
     final state = {
-      isAttacking: false,
+      hoveredNodeBounds: EMPTY_HOVERED_NODE,
     };
 
     // render background
@@ -123,40 +29,82 @@ class Experiment {
     }
     Main.Global.renderHooks.push(renderBackground);
 
-    function renderPlayer(time: Float) {
-      final spriteKey = state.isAttacking
-        ? 'player_animation/attack-0'
-        : 'player_animation/idle-0';
-      final ref = Main.Global.sb.emitSprite(
-          0,
-          0,
-          spriteKey);
+    // passive tree stuff
+    {
+      final sb = new SpriteBatchSystem(
+          s2d,
+          hxd.Res.ui_passive_tree_png,
+          hxd.Res.ui_passive_tree_json);
+      final treeNodeSlices: Array<{
+        name: String,
+        data: String,
+        keys: Array<{
+          frame: Int,
+          bounds: {
+            x: Int,
+            y: Int,
+            w: Int,
+            h: Int
+          }
+        }>
+      }> = sb.batchManager.spriteSheetData.meta.slices;
 
-      ref.sortOrder = 1;
+      // setup node interactions
+      for (slice in treeNodeSlices) {
+        final firstFrame = slice.keys[0];
+        final bounds = firstFrame.bounds;
+        final i = new h2d.Interactive(
+            bounds.w,
+            bounds.h,
+            s2d);
+        i.x = bounds.x;
+        i.y = bounds.y;
 
-      return true;
+        i.onOver = (e: hxd.Event) -> {
+          state.hoveredNodeBounds = bounds;
+        };
+
+        i.onOut = (e: hxd.Event) -> {
+          state.hoveredNodeBounds = EMPTY_HOVERED_NODE;
+        };
+      } 
+
+
+      function renderNodeLinks(time: Float) {
+
+      }
+
+      function renderTreeNodes(time: Float) {
+        {
+          final spriteData = SpriteBatchSystem.getSpriteData(
+              sb, 'node_tree');
+          final sourceSize = spriteData.spriteSourceSize;
+          sb.emitSprite(
+              0 + sourceSize.x, 
+              0 + sourceSize.y,
+              'node_tree');
+        }
+
+        final hoveredNodeBounds = state.hoveredNodeBounds;
+        if (hoveredNodeBounds != EMPTY_HOVERED_NODE) {
+          final spriteData = SpriteBatchSystem.getSpriteData(
+              sb, 'node_tree');
+          final sourceSize = spriteData.spriteSourceSize;
+
+          sb.emitSprite(
+              hoveredNodeBounds.x,
+              hoveredNodeBounds.y,
+              'node_state_hover');
+        }
+
+        return true;
+      }
+      Main.Global.renderHooks.push(renderTreeNodes);
+
     }
-    Main.Global.renderHooks.push(renderPlayer);
 
     Main.Global.updateHooks.push((dt) -> {
       if (Main.Global.worldMouse.clicked) {
-        final startTime = Main.Global.time;
-        final actionTime = 0.15;
-
-        Main.Global.updateHooks.push((dt) -> {
-          final aliveTime = Main.Global.time - startTime;
-
-          state.isAttacking = aliveTime < actionTime;
-
-          return aliveTime < actionTime;
-        });
-        
-
-        final angle = Math.atan2(
-            s2d.mouseY - 0,
-            s2d.mouseX - 0);
-        triggerAbility(
-            10, -8, 8, angle);
       }
 
       return true;
