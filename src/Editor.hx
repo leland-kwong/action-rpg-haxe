@@ -5,6 +5,10 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
+ * [ ] Add option to render using spriteBatchSystem. This will be useful
+       for the passive tree because we want the nodes and links to render
+       in a certain order, and the spriteBatchSystem gives us the
+       flexibility to choose the sortOrder and automatically handle it.
  * [ ] Optimize tile rendering so that it only renders what is in the viewport.
        We can do this for both the x and y axis, which should significantly
        cut down on the performance cost of rendering.
@@ -81,6 +85,7 @@ typedef EditorState = {
   gridByLayerId: Map<String, Grid.GridRef>,
   itemTypeById: Map<String, String>
 };
+typedef EditorRendererTileRow = Map<Int, h2d.TileGroup>;
 
 typedef ConfigObjectMeta = {
   spriteKey: String,
@@ -91,7 +96,7 @@ typedef ConfigObjectMeta = {
   ?autoTileCorner: Bool,
   ?alias: String,
   ?flipX: Bool,
-  ?flipY: Bool
+  ?flipY: Bool,
 }
 
 class Profiler {
@@ -188,6 +193,7 @@ class Editor {
     autoSave: Bool,
     objectMetaByType: Map<String, ConfigObjectMeta>,
     snapGridSizes: Array<Int>,
+    gridLineSizes: Array<Int>,
     zoomSizes: Array<Int>
   } {
     final fromCache = configByFileName.get(activeFile);
@@ -261,11 +267,14 @@ class Editor {
 
           case 'editor-data/passive_skill_tree.eds': {
             [
-              'square_white' => {
-                spriteKey: 'ui/square_white',
+              'passive_skill_tree__node_root' => {
+                spriteKey: 'ui/passive_skill_tree__node_root'
               },
               'passive_skill_tree__node' => {
                 spriteKey: 'ui/passive_skill_tree__node'
+              },
+              'passive_skill_tree__node_size_2' => {
+                spriteKey: 'ui/passive_skill_tree__node_size_2'
               },
               'passive_skill_tree__link_fork' => {
                 spriteKey: 'ui/passive_skill_tree__link_fork',
@@ -280,6 +289,22 @@ class Editor {
               },
               'passive_skill_tree__link_fork_flip_x_y' => {
                 spriteKey: 'ui/passive_skill_tree__link_fork',
+                flipX: true,
+                flipY: true
+              },
+              'passive_skill_tree__link_fork_vert' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork_vert',
+              },
+              'passive_skill_tree__link_fork_vert_flip_x' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork_vert',
+                flipX: true
+              },
+              'passive_skill_tree__link_fork_vert_flip_y' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork_vert',
+                flipY: true
+              },
+              'passive_skill_tree__link_fork_vert_flip_x_y' => {
+                spriteKey: 'ui/passive_skill_tree__link_fork_vert',
                 flipX: true,
                 flipY: true
               },
@@ -312,7 +337,8 @@ class Editor {
 
         metaByType;
       },
-      snapGridSizes: [1, 3, 5, 8, 16, 25],
+      snapGridSizes: [1, 8, 16, 25],
+      gridLineSizes: [0, 1, 8, 16, 25],
       // make sure the screen's resolution is divisible by
       // each level for accurate rendering.
       zoomSizes: [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24]
@@ -436,6 +462,7 @@ class Editor {
       isDragging: initialLocalState().isDragging,
       isDragEnd: initialLocalState().isDragEnd,
       snapGridSize: getConfig().snapGridSizes[2],
+      gridLineSize: getConfig().gridLineSizes[3],
       showGridLines: true,
 
       dragStartPos: {
@@ -459,10 +486,8 @@ class Editor {
       layersToShow: [],
       // set to first layer by default
       activeLayerId: editorState.layerOrderById[0],
-      tileRowsByLayerId: new Map<
-        String,
-      Map<Int, h2d.TileGroup>
-        >()
+      tileRowsByLayerId: 
+        new Map<String, EditorRendererTileRow>()
     };
 
     final cleanupFns = [];
@@ -1091,6 +1116,7 @@ class Editor {
         regionState: localState.uiRegionState.get(EditorUiRegion.PaletteSelector),
         showAllLayers: localState.showAllLayers,
         snapGridSize: localState.snapGridSize,
+        gridLineSize: localState.gridLineSize,
         editorMode: Std.string(localState.editorMode),
         zoom: localState.zoom,
         translate: editorState.translate,
@@ -1155,6 +1181,22 @@ class Editor {
           final shouldResetToStart = 
             nextSetting > (snapOpts.length - 1);
           localState.snapGridSize = snapOpts[
+            shouldResetToStart
+              ? 0
+              : nextSetting];
+        }
+
+        // toggle grid line size
+        if (Key.isDown(Key.SHIFT) && Key.isPressed(Key.G)) {
+          final gridLineOpts = getConfig().gridLineSizes;
+          final curSettingIndex = Lambda.findIndex(
+              gridLineOpts,
+              (gs) -> gs == localState.gridLineSize);
+          // cycle to next
+          final nextSetting = curSettingIndex + 1;
+          final shouldResetToStart = 
+            nextSetting > (gridLineOpts.length - 1);
+          localState.gridLineSize = gridLineOpts[
             shouldResetToStart
               ? 0
               : nextSetting];
@@ -1485,27 +1527,29 @@ class Editor {
       };
 
       // render grid lines
-      {
+      if (localState.gridLineSize > 0) {
+        final gridLineSize = localState.gridLineSize;
         final win = hxd.Window.getInstance();
-        final gridXOffset = (translate.x % snapGridSize) 
+        final gridXOffset = (translate.x % gridLineSize) 
           * localState.zoom;
-        final gridYOffset = (translate.y % snapGridSize) 
+        final gridYOffset = (translate.y % gridLineSize) 
           * localState.zoom;
         final numCols = Math.ceil(
-            win.width / snapGridSize / localState.zoom);
+            win.width / gridLineSize / localState.zoom);
         final numRows = Math.ceil(
-            win.height / snapGridSize / localState.zoom);
+            win.height / gridLineSize / localState.zoom);
 
         function colSpriteEffect(p) {
           final b: h2d.SpriteBatch.BatchElement = p.batchElement;
 
+          p.sortOrder = -1.;
           b.scaleY = Std.int(win.height);
-          b.alpha = 0.2;
+          b.alpha = 0.1;
         }
 
         for (x in -1...(numCols + 1)) {
           sbs.emitSprite(
-              x * snapGridSize * localState.zoom + gridXOffset,
+              x * gridLineSize * localState.zoom + gridXOffset,
               0,
               'ui/square_white',
               colSpriteEffect);
@@ -1514,14 +1558,15 @@ class Editor {
         function rowSpriteEffect(p) {
           final b: h2d.SpriteBatch.BatchElement = p.batchElement;
 
+          p.sortOrder = -1.;
           b.scaleX = Std.int(win.width);
-          b.alpha = 0.2;
+          b.alpha = 0.1;
         }
 
         for (y in -1...(numRows + 1)) {
           sbs.emitSprite(
               0,
-              y * snapGridSize * localState.zoom + gridYOffset,
+              y * gridLineSize * localState.zoom + gridYOffset,
               'ui/square_white',
               rowSpriteEffect);
         }
@@ -1683,7 +1728,7 @@ class Editor {
             (p) -> {
               final b: h2d.SpriteBatch.BatchElement =
                 p.batchElement;
-              b.scale = localState.zoom;
+              b.scale = 10;
               p.sortOrder = drawSortSelection + 1;
               b.b = 0.4;
               b.alpha = 0.6;
