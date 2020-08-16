@@ -15,41 +15,25 @@ class SaveState {
   static var saveDir = 'external-assets';
 
   public static function save(
-      serialized: String,
+      data: Dynamic,
       keyPath: String,
-      persistUrl: Null<String>,
+      serializeFn = null,
       onSuccess: (res: Null<Dynamic>) -> Void,
       onError: (e: Dynamic) -> Void) {
 
     try {
-#if jsMode
-      if (persistUrl != null) {
-        var fetch = js.Browser.window.fetch;
-
-        fetch(
-            new js.html.Request(persistUrl),
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: serialized          
-            })
-          .then(onSuccess)
-          .catchError(onError);
-      }
-      else {
-        var ls = Browser.getLocalStorage();
-        ls.setItem(keyPath, serialized);
-        onSuccess(null);
-      }
-#else
       if (!FileSystem.exists(saveDir)) {
         FileSystem.createDirectory(saveDir);
       }
+      final serialized = {
+        if (serializeFn != null) {
+          serializeFn(data);
+        } else {
+          haxe.Serializer.run(data);
+        }
+      };
       File.saveContent('${saveDir}/${keyPath}', serialized);
       onSuccess(null);
-#end
     }
     catch (err: Dynamic) {
       onError(err);
@@ -59,51 +43,12 @@ class SaveState {
   public static function load(
     keyPath: String,
     fromUrl = false,
+    deserializeFn = null,
     onSuccess: (data: Dynamic) -> Void,
     onError: (error: Dynamic) -> Void
   ): Void {
     try {
 
-    #if jsMode
-    if (fromUrl) {
-      var fetch = js.Browser.window.fetch;
-
-      fetch(new js.html.Request(keyPath))
-        .then(res -> res.json())
-        .then((res: {ok: Bool, data: Null<String>, error: Null<String>}) -> {
-          if (res.ok) {
-            return res.data;
-          }
-          else {
-            throw res.error;
-          }
-        })
-        .then((data) -> {
-          if (data == null) {
-            onSuccess(null);
-            return;
-          }
-
-          var unserializer = new Unserializer(data);
-          onSuccess(unserializer.unserialize());
-        })
-        .catchError(onError);
-    }
-    else {
-      var ls = Browser.getLocalStorage();
-      var s = ls.getItem(keyPath);
-
-      if (s == null) {
-        onSuccess(null);
-        return;
-      }
-
-      var unserializer = new Unserializer(s);
-
-      onSuccess(unserializer.unserialize());
-    }
-    #else
-    {
       var fullPath = '${saveDir}/${keyPath}';
 
       if (!FileSystem.exists(fullPath)) {
@@ -111,13 +56,17 @@ class SaveState {
         return;
       }
 
-      var s = File.getContent(fullPath);
-      var unserializer = new Unserializer(s);
+      final s = File.getContent(fullPath);
+      final deserialized = {
+        if (deserializeFn == null) {
+          final unserializer = new Unserializer(s);
+          unserializer.unserialize();
+        } else {
+          deserializeFn(s);
+        }
+      }
 
-      onSuccess(unserializer.unserialize());
-    }
-    #end
-
+      onSuccess(deserialized);
     }
     catch (error: Dynamic) {
       onError(error);

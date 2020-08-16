@@ -511,6 +511,7 @@ class Editor {
     SaveState.load(
         loadPath,
         false,
+        null,
         (unserialized) -> {
           final transformed = migrateState(unserialized);
 
@@ -563,13 +564,9 @@ class Editor {
             savePending = true;
             localState.stateToSave = null;
             Profiler.start(profiler, 'serializeJson');
-            final serialized = {
-              haxe.Serializer.run(
-                  stateToSave);
-            }
 
             SaveState.save(
-                serialized,
+                stateToSave,
                 filePath,
                 null,
                 (res) -> {

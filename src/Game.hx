@@ -2792,6 +2792,7 @@ class Game extends h2d.Object {
     SaveState.load(
         levelFile,
         false,
+        null,
         (mapData) -> {
           processMap(levelFile, mapData);
 
