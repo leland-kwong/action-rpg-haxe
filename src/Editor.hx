@@ -181,11 +181,12 @@ class Editor {
 
   // all configuration stuff lives here
   public static function getConfig(
-      activeFile = 'editor-data/passive_tree.eds'): {
+      activeFile = 'editor-data/passive_skill_tree.eds'): {
     activeFile: String,
     autoSave: Bool,
     objectMetaByType: Map<String, ConfigObjectMeta>,
-    snapGridSizes: Array<Int>
+    snapGridSizes: Array<Int>,
+    zoomSizes: Array<Int>
   } {
     final fromCache = configByFileName.get(activeFile);
 
@@ -256,8 +257,11 @@ class Editor {
                 ];
               };
 
-          case 'editor-data/passive_tree.eds': {
+          case 'editor-data/passive_skill_tree.eds': {
             [
+              'square_white' => {
+                spriteKey: 'ui/square_white',
+              },
               'passive_skill_tree__node' => {
                 spriteKey: 'ui/passive_skill_tree__node'
               },
@@ -294,7 +298,7 @@ class Editor {
           };
 
           default: {
-            new Map();
+            throw 'no config defined for file `${activeFile}`';
           };
         }
 
@@ -306,7 +310,10 @@ class Editor {
 
         metaByType;
       },
-      snapGridSizes: [1, 8, 16, 25]
+      snapGridSizes: [1, 8, 16, 25],
+      // make sure the screen's resolution is divisible by
+      // each level for accurate rendering.
+      zoomSizes: [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 24]
     };
 
     configByFileName.set(activeFile, config);
@@ -411,12 +418,23 @@ class Editor {
         }
       ],
 
-      selectedObjectType: 'tile_1',
+      selectedObjectType: {
+        var selection = null;
+
+        // use the first key as our default selected object
+        for (key in getConfig().objectMetaByType.keys()) {
+          selection = key;
+          break;
+        }
+
+        selection;
+      },
 
       isDragStart: initialLocalState().isDragStart,
       isDragging: initialLocalState().isDragging,
       isDragEnd: initialLocalState().isDragEnd,
       snapGridSize: getConfig().snapGridSizes[2],
+      showGridLines: true,
 
       dragStartPos: {
         x: 0,
@@ -432,7 +450,7 @@ class Editor {
       editorMode: EditorMode.Paint,
       previousEditorMode: EditorMode.Paint,
 
-      zoom: 4.0,
+      zoom: 4,
       actions: new Array<EditorStateAction>(),
       stateToSave: null,
       showAllLayers: true,
@@ -450,7 +468,7 @@ class Editor {
     final spriteSheetTile =
       hxd.Res.sprite_sheet_png.toTile();
     final spriteSheetData = Utils.loadJsonFile(
-        hxd.Res.sprite_sheet_json).frames;
+        hxd.Res.sprite_sheet_json);
     final sbs = new SpriteBatchSystem(
         Main.Global.uiRoot,
         hxd.Res.sprite_sheet_png,
@@ -701,8 +719,15 @@ class Editor {
 
       if (e.kind == hxd.Event.EventKind.EWheel) {
         final currentZoom = localState.zoom;
-        final nextZoom = Math.max(
-            1, currentZoom - Std.int(e.wheelDelta));
+        final currentZoomIndex = Lambda.findIndex(
+            getConfig().zoomSizes,
+            (size) -> size == currentZoom);
+        final nextZoomIndex = Std.int(
+            Utils.clamp(
+              currentZoomIndex - Std.int(e.wheelDelta),
+              0,
+              getConfig().zoomSizes.length - 1));
+        final nextZoom = getConfig().zoomSizes[nextZoomIndex];
 
         // translate so that it is zooming to cursor position
         {
@@ -778,10 +803,12 @@ class Editor {
     function toGridPos(gridSize: Int, gridRef, screenX: Float, screenY: Float) {
       final tx = editorState.translate.x * localState.zoom;
       final ty = editorState.translate.y * localState.zoom;
-      final hg = gridSize / 2;
-      final gridX = Math.floor((screenX - tx) / gridSize / localState.zoom)
+      final hg = Math.floor(gridSize / 2);
+      final gridX = 
+        Math.floor((screenX - tx) / gridSize / localState.zoom)
         * gridSize + hg;
-      final gridY = Math.floor((screenY - ty) / gridSize / localState.zoom)
+      final gridY = 
+        Math.floor((screenY - ty) / gridSize / localState.zoom)
         * gridSize + hg;
 
       return [gridX, gridY];
@@ -960,17 +987,11 @@ class Editor {
                           objectMeta.spriteKey;
                         }
                       }
-                      final spriteData = Reflect.field(
+                      final tile = SpriteBatchSystem.makeTile(
+                          spriteSheetTile,
                           spriteSheetData,
-                          spriteKey);
-                      final tile = spriteSheetTile.sub(
-                          spriteData.frame.x,
-                          spriteData.frame.y,
-                          spriteData.frame.w,
-                          spriteData.frame.h);
-                      tile.setCenterRatio(
-                          spriteData.pivot.x,
-                          spriteData.pivot.y);
+                          spriteKey,
+                          false);
 
                       if (objectMeta.flipX) {
                         tile.flipX();
@@ -1394,6 +1415,8 @@ class Editor {
 
             // replaces the cell with new value
             case EditorMode.Paint: {
+              trace(gridX, gridY);
+
               insertSquare(
                   activeGrid,
                   gridX,
@@ -1446,6 +1469,8 @@ class Editor {
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
       final zoom = localState.zoom;
+      final translate = editorState.translate;
+      final snapGridSize = localState.snapGridSize;
       final spriteEffectZoom = (p) -> {
         final b: h2d.SpriteBatch.BatchElement = p.batchElement;
         b.scale = localState.zoom;
@@ -1459,12 +1484,55 @@ class Editor {
         b.scale = centerCircleRadius * 2;
       };
 
+      // render grid lines
+      {
+        final win = hxd.Window.getInstance();
+        final gridXOffset = (translate.x % snapGridSize) 
+          * localState.zoom;
+        final gridYOffset = (translate.y % snapGridSize) 
+          * localState.zoom;
+        final numCols = Math.ceil(
+            win.width / snapGridSize / localState.zoom);
+        final numRows = Math.ceil(
+            win.height / snapGridSize / localState.zoom);
+
+        function colSpriteEffect(p) {
+          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+
+          b.scaleY = Std.int(win.height);
+          b.alpha = 0.2;
+        }
+
+        for (x in -1...(numCols + 1)) {
+          sbs.emitSprite(
+              x * snapGridSize * localState.zoom + gridXOffset,
+              0,
+              'ui/square_white',
+              colSpriteEffect);
+        }
+
+        function rowSpriteEffect(p) {
+          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+
+          b.scaleX = Std.int(win.width);
+          b.alpha = 0.2;
+        }
+
+        for (y in -1...(numRows + 1)) {
+          sbs.emitSprite(
+              0,
+              y * snapGridSize * localState.zoom + gridYOffset,
+              'ui/square_white',
+              rowSpriteEffect);
+        }
+      }
+
       // render object type menu options
       {
         for (menuItem in objectTypeMenu) {
           final meta = menuItem.meta;
           final spriteData = Reflect.field(
-              spriteSheetData,
+              spriteSheetData.frames,
               getConfig().objectMetaByType.get(menuItem.type)
               .spriteKey);
           final scale = {
@@ -1612,7 +1680,7 @@ class Editor {
             (p) -> {
               final b: h2d.SpriteBatch.BatchElement =
                 p.batchElement;
-              b.scale = 10;
+              b.scale = localState.zoom;
               p.sortOrder = drawSortSelection + 1;
               b.b = 0.4;
               b.alpha = 0.6;

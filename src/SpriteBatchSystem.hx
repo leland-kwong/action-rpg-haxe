@@ -11,6 +11,14 @@ typedef SpriteData = {
 	pivot: {x:Float,y:Float}
 };
 
+
+// TODO: make type more strict
+typedef SpriteSheetData = Dynamic;
+// typedef SpriteSheetData = {
+//   frames: Array<SpriteData>
+// };
+
+
 typedef SpriteRef = {
   var sortOrder: Float;
   var batchElement: BatchElement;
@@ -20,7 +28,7 @@ typedef BatchManagerRef = {
   var particles: Array<SpriteRef>;
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
-  var spriteSheetData: Dynamic;
+  var spriteSheetData: SpriteSheetData;
 };
 
 class BatchManager {
@@ -106,14 +114,21 @@ class SpriteBatchSystem {
   }
 
   public static function makeTile(
-      sbs: SpriteBatchSystem, spriteKey: String) {
-    final fromCache = tileCache.get(spriteKey);
+      spriteSheetTile: h2d.Tile,
+      spriteSheetData: SpriteSheetData, 
+      spriteKey: String,
+      useCache = true) {
+
+    final fromCache = useCache 
+      ? tileCache.get(spriteKey)
+      : null;
 
     if (fromCache != null) {
       return fromCache;
     }
 
-    final spriteData = getSpriteData(sbs, spriteKey);
+    final spriteData = getSpriteData(
+        spriteSheetData, spriteKey);
 
     // TODO: Consider using a placeholder sprite (pink box?) instead
     // of crashing so the game can gracefully continue even though
@@ -122,7 +137,7 @@ class SpriteBatchSystem {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    final tile = sbs.batchManager.spriteSheet.sub(
+    final tile = spriteSheetTile.sub(
         spriteData.frame.x,
         spriteData.frame.y,
         spriteData.frame.w,
@@ -134,9 +149,17 @@ class SpriteBatchSystem {
       tile.setCenterRatio(
           spriteData.pivot.x,
           spriteData.pivot.y);
+
+      // this accounts for pivots that generate fractional
+      // values which can happen when a sprite's size is
+      // an odd number
+      tile.dx = Math.round(tile.dx);
+      tile.dy = Math.round(tile.dy);
     }
 
-    tileCache.set(spriteKey, tile);
+    if (useCache) {
+      tileCache.set(spriteKey, tile);
+    }
 
     return tile;
   }
@@ -152,7 +175,10 @@ class SpriteBatchSystem {
     ?z: Float = 0) {
 
     final g = new BatchElement(
-        makeTile(this, spriteKey));
+        makeTile(
+          this.batchManager.spriteSheet,
+          this.batchManager.spriteSheetData, 
+          spriteKey));
     if (angle != null) {
       g.rotation = angle;
     }
@@ -172,11 +198,11 @@ class SpriteBatchSystem {
   }
 
   public static function getSpriteData(
-      s: SpriteBatchSystem,
+      spriteSheetData: SpriteSheetData,
       spriteKey): SpriteData {
 
     return Reflect.field(
-        s.batchManager.spriteSheetData.frames, 
+        spriteSheetData.frames, 
         spriteKey);
   }
 
