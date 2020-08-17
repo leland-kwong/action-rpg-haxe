@@ -6,10 +6,20 @@ class Experiment {
       w: 0,
       h: 0
     };
-    final s2d = Main.Global.staticScene;
-    final state = {
-      hoveredNodeBounds: EMPTY_HOVERED_NODE,
+    final renderScale = 3;
+    final treeScene = Main.Global.uiRoot;
+    final NULL_HOVERED_NODE = {
+      nodeId: 'NO_HOVERED_NODE',
+      startedAt: -1.
     };
+    final state = {
+      hoveredNode: NULL_HOVERED_NODE,
+      highlightedItem: null,
+      invalidLinks: new Map<String, String>(),
+      invalidNodes: new Map<String, String>(),
+      shouldCleanup: false
+    };
+    final s2d = Main.Global.staticScene;
 
     // render background
     function renderBackground(time: Float) {
@@ -25,7 +35,7 @@ class Experiment {
       elem.g = 0.2;
       elem.b = 0.2;
 
-      return true;
+      return !state.shouldCleanup;
     }
     Main.Global.renderHooks.push(renderBackground);
 
@@ -33,6 +43,9 @@ class Experiment {
 
     // test passive skill tree
     {
+      final debugOptions = {
+        renderTreeCollisions: true
+      };
       final passiveTreeLayoutFile = 
         'editor-data/passive_skill_tree.eds';
 
@@ -68,18 +81,6 @@ class Experiment {
           }
         }
 
-        final renderScale = 3;
-        final treeScene = Main.Global.uiRoot;
-        final NULL_HOVERED_NODE = {
-          nodeId: 'NO_HOVERED_NODE',
-          startedAt: -1.
-        } ;
-        final state = {
-          hoveredNode: NULL_HOVERED_NODE,
-          highlightedItem: null,
-          invalidLinks: new Map<String, String>(),
-          invalidNodes: new Map<String, String>()
-        };
         final colRect = new h2d.col.Bounds();
         final treeCollisionGrid = Grid.create(4);
 
@@ -392,7 +393,7 @@ class Experiment {
             return;
           });
 
-          return true;
+          return !state.shouldCleanup;
         });
 
         function handleTreeInteraction(dt: Float) {
@@ -433,30 +434,6 @@ class Experiment {
                 nextHoveredNode = state.hoveredNode;
               } 
             }
-
-            // debug link connections
-            if (isLinkType(objectType) && isFirstLink) {
-              isFirstLink = false;
-
-              final linkedNodes = Grid.getItemsInRect(
-                  layoutData.gridByLayerId.get('layer_2'),
-                  x - w / 2,
-                  y - h / 2,
-                  w,
-                  h);
-
-              for (nodeId in linkedNodes) {
-                final objectType = layoutData.itemTypeById.get(nodeId);
-                // Session.processEvent(
-                //     sessionRef,
-                //     {
-                //       type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-                //       data: { nodeId: nodeId }
-                //     });
-              }
-
-              Main.Global.logData.treeLinkData = linkedNodes;
-            }
           });
 
           state.hoveredNode = nextHoveredNode; 
@@ -480,7 +457,7 @@ class Experiment {
 
           Main.Global.logData.treeHoveredNode = state.hoveredNode; 
 
-          return true;
+          return !state.shouldCleanup;
         }
         Main.Global.updateHooks.push(handleTreeInteraction);
 
@@ -510,9 +487,12 @@ class Experiment {
             }
           } 
 
-          return true;
+          return !state.shouldCleanup;
         }
-        // Main.Global.renderHooks.push(renderTreeCollisions);
+
+        if (debugOptions.renderTreeCollisions) {
+          Main.Global.renderHooks.push(renderTreeCollisions);
+        }
       }
 
       SaveState.load(
@@ -525,6 +505,8 @@ class Experiment {
           });  
     }
 
-    return () -> {};
+    return () -> {
+      state.shouldCleanup = true;
+    };
   }
 }
