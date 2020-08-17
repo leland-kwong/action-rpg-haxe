@@ -76,6 +76,7 @@ class Experiment {
         } ;
         final state = {
           hoveredNode: NULL_HOVERED_NODE,
+          highlightedItem: null,
           invalidLinks: new Map<String, String>(),
           invalidNodes: new Map<String, String>()
         };
@@ -151,7 +152,8 @@ class Experiment {
             final objectType = layoutData.itemTypeById.get(itemId);
             
             // nodes can touch more than one link
-            if (isSkillNode(objectType)) {
+            if (isSkillNode(objectType) ||
+                itemId == 'SKILL_TREE_ROOT') {
               final linksTouching = Grid.getItemsInRect(
                   treeCollisionGrid,
                   x + w / 2, 
@@ -233,17 +235,77 @@ class Experiment {
           return false;
         }
 
-        function isDeselectableNode(nodeId) {
-          var numSelectedNodesTouched = 0;
+        function traverseBranch(
+            nodeId: String, 
+            visitedList: Map<String, String>,
+            predicate = null) {
+          final links = linkNodeTouches.linksByNodeId.get(nodeId);
 
+          if (links == null) {
+            return visitedList;
+          }
+
+          for (linkId in links) {
+            final nodesByLinkId = linkNodeTouches.nodesByLinkId;
+            for (nodeId in nodesByLinkId.get(linkId)) {
+              final shouldTraverse = predicate != null
+                ? predicate(nodeId)
+                : true;
+              if (!visitedList.exists(nodeId) && shouldTraverse) {
+                visitedList.set(nodeId, nodeId);
+                traverseBranch(nodeId, visitedList, predicate);
+              }
+            }  
+          }
+
+          return visitedList;
+        }
+
+        function getFirstSelectedSiblingNode(sourceNodeId) {
           for (linkId in 
-              linkNodeTouches.linksByNodeId.get(nodeId)) {
-            if (isLinkTouchingASelectedNode(linkId, nodeId)) {
-              numSelectedNodesTouched += 1;
+              linkNodeTouches.linksByNodeId.get(sourceNodeId)) {
+
+            for (nodeId in 
+                linkNodeTouches.nodesByLinkId.get(linkId)) {
+
+              if (nodeId != sourceNodeId
+                  && isNodeSelected(sessionRef, nodeId)) {
+                return nodeId;
+              }
             }
           }
 
-          return numSelectedNodesTouched < 2;
+          return null;
+        }
+
+        // traverse any sibling node's links and verify
+        // that the number of connected nodes is 
+        // the same as the number of selected nodes 
+        // excluding the one to be deselected
+        function isDeselectableNode(nodeIdToDeselect) {
+          final selectedSiblingNode = getFirstSelectedSiblingNode(
+              nodeIdToDeselect);
+
+          final visitedList = traverseBranch(
+              selectedSiblingNode, 
+              new Map(),
+              (nodeId) -> {
+                return nodeId != nodeIdToDeselect
+                  && isNodeSelected(sessionRef, nodeId);
+              });
+
+          final connectedCount = Lambda.count(
+              visitedList);
+          // selected count also includes the root node
+          final selectedCount = Lambda.count(
+              sessionRef.passiveSkillTreeState.nodeSelectionStateById,
+              (selected) -> selected);
+          final isOnlySelectedNode = connectedCount == 0 
+            && selectedCount == 2; 
+
+          return isOnlySelectedNode
+            // subtract 1 because current node is still selected
+            || connectedCount == selectedCount - 1;
         }
 
         final hoverEasing = Easing.easeOutElastic;
@@ -293,7 +355,8 @@ class Experiment {
                 b.scaleY *= -1;
               }
 
-              if (state.invalidLinks.exists(itemId)) {
+              if (state.highlightedItem == itemId
+                  || state.invalidLinks.exists(itemId)) {
                 b.g = 0.4;
                 b.b = 0;
               }
