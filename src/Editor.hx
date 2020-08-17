@@ -267,8 +267,9 @@ class Editor {
 
           case 'editor-data/passive_skill_tree.eds': {
             [
-              'passive_skill_tree__node_root' => {
-                spriteKey: 'ui/passive_skill_tree__node_root'
+              'passive_skill_tree__root' => {
+                spriteKey: 'ui/passive_skill_tree__node_root',
+                sharedId: 'SKILL_TREE_ROOT'
               },
               'passive_skill_tree__node' => {
                 spriteKey: 'ui/passive_skill_tree__node'
