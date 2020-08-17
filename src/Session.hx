@@ -35,7 +35,9 @@ class Session {
       questState: new Map(),
       inventoryState: 'UNKNOWN_INVENTOR_STATE',
       passiveSkillTreeState: {
-        nodeSelectionStateById: new Map()
+        nodeSelectionStateById: [
+          'SKILL_TREE_ROOT' => true
+        ]
       } 
     };
   }

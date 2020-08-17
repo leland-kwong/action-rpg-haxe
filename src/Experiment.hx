@@ -68,16 +68,138 @@ class Experiment {
           }
         }
 
-        final renderScale = 4;
+        final renderScale = 3;
         final treeScene = Main.Global.uiRoot;
         final NULL_HOVERED_NODE = {
           nodeId: 'NO_HOVERED_NODE',
           startedAt: -1.
         } ;
         final state = {
-          hoveredNode: NULL_HOVERED_NODE
+          hoveredNode: NULL_HOVERED_NODE,
+          invalidLinks: new Map<String, String>(),
+          invalidNodes: new Map<String, String>()
         };
         final colRect = new h2d.col.Bounds();
+        final treeCollisionGrid = Grid.create(4);
+
+        function isNodeSelected(
+            sessionRef: Session.SessionRef,
+            nodeId) {
+
+          return Utils.withDefault(
+              sessionRef
+              .passiveSkillTreeState
+              .nodeSelectionStateById
+              .get(nodeId),
+              false);
+        }
+
+        function isSkillNode(objectType: String) {
+          return objectType.indexOf(
+              'passive_skill_tree__node') != -1;
+        }
+
+        function isLinkType(objectType: String) {
+          return objectType
+            .indexOf('passive_skill_tree__link') != -1;
+        }
+
+        // finds all links and nodes that are touching
+        function getLinkNodeTouches(treeCollisionGrid) {
+          processTree((
+                x, y, itemId, objectType, objectMeta, layerIndex) -> {
+
+            final spriteData = SpriteBatchSystem.getSpriteData(
+                Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
+                objectMeta.spriteKey);
+            final threshold = 2;
+            final w = spriteData.sourceSize.w + threshold;
+            final h = spriteData.sourceSize.h + threshold;
+           
+            Grid.setItemRect(
+                treeCollisionGrid,
+                x,
+                y,
+                w,
+                h,
+                itemId);  
+          });
+
+          final linksByNodeId = new Map<String, Array<String>>();
+          final nodesByLinkId = new Map<String, Array<String>>();
+
+          function gridFilterLink(itemId) {
+            final objectType = layoutData.itemTypeById.get(itemId);
+
+            return isLinkType(objectType);
+          }
+
+          function gridFilterNode(itemId) {
+            final objectType = layoutData.itemTypeById.get(itemId);
+
+            return isSkillNode(objectType) 
+              || objectType == 'passive_skill_tree__root';
+          }
+
+          for (itemId => bounds in treeCollisionGrid.itemCache) {
+            final cellSize = treeCollisionGrid.cellSize;
+            final x = bounds[0] * cellSize;
+            final y = bounds[2] * cellSize;
+            final w = (bounds[1] - bounds[0]) * cellSize;
+            final h = (bounds[3] - bounds[2]) * cellSize;
+
+            final objectType = layoutData.itemTypeById.get(itemId);
+            
+            // nodes can touch more than one link
+            if (isSkillNode(objectType)) {
+              final linksTouching = Grid.getItemsInRect(
+                  treeCollisionGrid,
+                  x + w / 2, 
+                  y + h / 2,
+                  w, 
+                  h,
+                  gridFilterLink);
+              final list = []; 
+              for (linkId in linksTouching) {
+                list.push(linkId);
+              }
+              final isValidNode = list.length > 0;
+              if (!isValidNode) {
+                state.invalidNodes.set(itemId, itemId);
+              }
+              linksByNodeId.set(itemId, list);
+            }
+
+            if (isLinkType(objectType)) {
+              final nodesTouching = Grid.getItemsInRect(
+                  treeCollisionGrid,
+                  x + w / 2, 
+                  y + h / 2,
+                  w, 
+                  h,
+                  gridFilterNode);
+              final list = []; 
+              for (nodeId in nodesTouching) {
+                list.push(nodeId);
+              }
+              final isValidLink = list.length == 2;
+
+              if (!isValidLink) {
+                state.invalidLinks.set(itemId, itemId);
+              }
+
+              nodesByLinkId.set(itemId, list);
+            }
+          }
+
+          return {
+            linksByNodeId: linksByNodeId,
+            nodesByLinkId: nodesByLinkId
+          };
+        }
+
+        final linkNodeTouches = getLinkNodeTouches(
+           treeCollisionGrid);
 
         function isHoveredNode(
             x, y, width, height, point) {
@@ -85,6 +207,43 @@ class Experiment {
               x, y, width, height); 
 
           return colRect.contains(point);
+        }
+
+        function isLinkTouchingASelectedNode(
+            linkId, 
+            ignoreId = null) {
+          for (nodeId in linkNodeTouches.nodesByLinkId.get(linkId)) {
+            if (nodeId != ignoreId 
+                && isNodeSelected(sessionRef, nodeId)) {
+              return true;
+            }
+          }
+
+          return false;
+        }
+
+        function isSelectableNode(nodeId) {
+          for (linkId in 
+              linkNodeTouches.linksByNodeId.get(nodeId)) {
+            if (isLinkTouchingASelectedNode(linkId)) {
+              return true;
+            }
+          }
+
+          return false;
+        }
+
+        function isDeselectableNode(nodeId) {
+          var numSelectedNodesTouched = 0;
+
+          for (linkId in 
+              linkNodeTouches.linksByNodeId.get(nodeId)) {
+            if (isLinkTouchingASelectedNode(linkId, nodeId)) {
+              numSelectedNodesTouched += 1;
+            }
+          }
+
+          return numSelectedNodesTouched < 2;
         }
 
         final hoverEasing = Easing.easeOutElastic;
@@ -109,7 +268,7 @@ class Experiment {
             final sy = y * renderScale;
             final isHoveredNode = 
               state.hoveredNode.nodeId == itemId;
-            // render node base
+            // render object
             {
               final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
                   sx,
@@ -119,7 +278,7 @@ class Experiment {
 
               spriteRef.sortOrder = layerIndex;
 
-              // run hover animation
+              // run hover animation for skill node
               if (isHoveredNode) {
                 runHoverAnimation(b);
               } else {
@@ -133,13 +292,25 @@ class Experiment {
               if (objectMeta.flipY) {
                 b.scaleY *= -1;
               }
+
+              if (state.invalidLinks.exists(itemId)) {
+                b.g = 0.4;
+                b.b = 0;
+              }
+
+              // highlight link if touching a selected node
+              if (isLinkType(objectType) 
+                  && isLinkTouchingASelectedNode(itemId)) {
+                b.b = 0;
+              }
             }
 
             // render node selection state
-            final isSelected = Utils.withDefault(
-                sessionRef.passiveSkillTreeState
-                .nodeSelectionStateById.get(itemId),
-                false);
+            final isSelected = isSkillNode(objectType) 
+              && Utils.withDefault(
+                  sessionRef.passiveSkillTreeState
+                  .nodeSelectionStateById.get(itemId),
+                  false);
             if (isSelected) {
               final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
                   sx,
@@ -162,6 +333,7 @@ class Experiment {
         });
 
         function handleTreeInteraction(dt: Float) {
+          var isFirstLink = true;
           var nextHoveredNode = NULL_HOVERED_NODE;
 
           processTree((
@@ -174,12 +346,10 @@ class Experiment {
                 objectMeta.spriteKey);
             final w = spriteData.sourceSize.w * renderScale;
             final h = spriteData.sourceSize.h * renderScale;
-            final isSkillNode = objectType.indexOf(
-                'passive_skill_tree__node') != -1;
             final mx = treeScene.mouseX;
             final my = treeScene.mouseY;
             final cursorPoint = new h2d.col.Point(mx, my);
-            final isHovered = isSkillNode
+            final isHovered = isSkillNode(objectType)
               ? isHoveredNode(
                 sx - w/2, 
                 sy - h/2, 
@@ -200,26 +370,86 @@ class Experiment {
                 nextHoveredNode = state.hoveredNode;
               } 
             }
+
+            // debug link connections
+            if (isLinkType(objectType) && isFirstLink) {
+              isFirstLink = false;
+
+              final linkedNodes = Grid.getItemsInRect(
+                  layoutData.gridByLayerId.get('layer_2'),
+                  x - w / 2,
+                  y - h / 2,
+                  w,
+                  h);
+
+              for (nodeId in linkedNodes) {
+                final objectType = layoutData.itemTypeById.get(nodeId);
+                // Session.processEvent(
+                //     sessionRef,
+                //     {
+                //       type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
+                //       data: { nodeId: nodeId }
+                //     });
+              }
+
+              Main.Global.logData.treeLinkData = linkedNodes;
+            }
           });
 
           state.hoveredNode = nextHoveredNode; 
 
-          final isNodeSelectable = true;
+          final isHoveredNodeSelected = 
+            isNodeSelected(sessionRef, state.hoveredNode.nodeId);
           if (Main.Global.worldMouse.clicked
-              && isNodeSelectable) {
-            Session.logAndProcessEvent(sessionRef, {
-              type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-              data: {
-                nodeId: state.hoveredNode.nodeId
-              }
-            });
+              && state.hoveredNode != NULL_HOVERED_NODE) {
+            if ((!isHoveredNodeSelected 
+                  && isSelectableNode(state.hoveredNode.nodeId))
+                ||(isHoveredNodeSelected
+                  && isDeselectableNode(state.hoveredNode.nodeId))) {
+              Session.logAndProcessEvent(sessionRef, {
+                type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
+                data: {
+                  nodeId: state.hoveredNode.nodeId
+                }
+              });
+            }
           }
 
-          Main.Global.logData.treeHoveredNode = state.hoveredNode;
+          Main.Global.logData.treeHoveredNode = state.hoveredNode; 
+
           return true;
         }
         Main.Global.updateHooks.push(handleTreeInteraction);
 
+        function renderTreeCollisions(time: Float) {
+          for (itemId => bounds in treeCollisionGrid.itemCache) {
+            final cellSize = treeCollisionGrid.cellSize;
+            final x = bounds[0] * cellSize;
+            final y = bounds[2] * cellSize;
+            final w = (bounds[1] - bounds[0]) * cellSize;
+            final h = (bounds[3] - bounds[2]) * cellSize;
+            final ref = Main.Global.uiSpriteBatch.emitSprite(
+                x * renderScale,
+                y * renderScale,
+                'ui/square_white');
+            final b = ref.batchElement;
+
+            ref.sortOrder = 100;
+            b.scale = renderScale;
+            b.scaleX *= w;
+            b.scaleY *= h;
+            b.alpha = 0.1;
+
+            final objectType = layoutData.itemTypeById.get(itemId);
+
+            if (isSkillNode(objectType)) {
+              b.b = 0;
+            }
+          } 
+
+          return true;
+        }
+        // Main.Global.renderHooks.push(renderTreeCollisions);
       }
 
       SaveState.load(
@@ -228,46 +458,8 @@ class Experiment {
           null,
           loadPassiveSkillTree,
           (err) -> {
-            trace('error loading passive tree');
+            trace('error loading passive tree', err);
           });  
-    }
-
-    final testSessionApis = false;
-    if (testSessionApis) {
-      final sessionRef = Session.create();
-      final testFile = './temp/session_${sessionRef.sessionId}.txt';
-
-      Main.Global.updateHooks.push((dt) -> {
-        if (Main.Global.worldMouse.clicked) {
-          final event = {
-            type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-            data: {
-              nodeId: Utils.uid()
-            }
-          };
-          Session.logEvent(testFile, event);
-          Session.processEvent(sessionRef, event);
-          Session.saveGame(
-              sessionRef,
-              (_) -> {
-                trace('save game success');
-
-                Session.loadGame(
-                    sessionRef.gameId,
-                    (gameData) -> {
-                      trace('load game success', gameData);
-                    },
-                    (err) -> {
-                      trace('load game error', err);
-                    });
-              },
-              (err) -> {
-                trace('save game error', err);
-              });
-        }
-
-        return true;
-      });
     }
 
     return () -> {};
