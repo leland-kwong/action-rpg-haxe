@@ -114,7 +114,12 @@ class Grid {
   }
 
   public static function getItemsInRect(
-      ref: GridRef, cx: Float, cy: Float, w, h) {
+      ref: GridRef, 
+      cx: Float, 
+      cy: Float, 
+      w, 
+      h,
+      filterFn = null) {
     var xMin = Math.floor(
         Math.round(cx - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(
@@ -130,7 +135,13 @@ class Grid {
         var cellData = getCell(ref, x, y);
         if (cellData != null) {
           for (it in cellData) {
-            items[it] = it;
+            final shouldAdd = filterFn != null
+              ? filterFn(it)
+              : true;
+
+            if (shouldAdd) {
+              items[it] = it;
+            }
           }
         }
       }
