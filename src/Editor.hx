@@ -58,6 +58,7 @@ enum EditorMode {
   Paint;
   Erase;
   MarqueeSelect;
+  CommandBar;
 }
 
 enum EditorUiRegion {
@@ -488,7 +489,12 @@ class Editor {
       // set to first layer by default
       activeLayerId: editorState.layerOrderById[0],
       tileRowsByLayerId: 
-        new Map<String, EditorRendererTileRow>()
+        new Map<String, EditorRendererTileRow>(),
+      searchObjectMatchesById: 
+        new Array<{
+          objectId: String,
+          layerId: String
+        }>()
     };
 
     final cleanupFns = [];
@@ -908,7 +914,8 @@ class Editor {
       Main.Global.setState(
           Main.Global, 
           'uiHomeMenuEnabled',
-          localState.editorMode != MarqueeSelect);
+          localState.editorMode != MarqueeSelect
+          && localState.editorMode != CommandBar);
 
       final activeGrid = editorState.gridByLayerId.get(
           localState.activeLayerId);
@@ -1152,7 +1159,106 @@ class Editor {
       }
 
       // handle hotkeys
-      {
+      function handleHotkeys() {
+
+        if (Key.isPressed(Key.ESCAPE)) {
+          clearMarqueeSelection();
+        }
+
+        if (localState.editorMode == CommandBar) {
+          return;
+        }
+
+        final openCommandBar = Key.isDown(Key.CTRL) 
+          && Key.isPressed(Key.P);
+
+        if (openCommandBar) {
+          final previousEditorMode = localState.editorMode;
+          final input = new h2d.TextInput(
+              Fonts.primary(),
+              Main.Global.uiRoot);
+          final win = hxd.Window.getInstance();
+          final state = {
+            isDone: false
+          };
+
+          input.backgroundColor = 0x80808080;
+          input.text = 'type a command';
+          input.focus();
+          input.textColor = 0xAAAAAA;
+
+          input.onFocus = function(_) {
+            input.textColor = 0xFFFFFF;
+          }
+
+          input.onFocusLost = function(_) {
+            input.textColor = 0xAAAAAA;
+          }
+
+          function handleInputControls() {
+            if (Key.isPressed(Key.ESCAPE)) {
+              state.isDone = true;
+            }
+
+            // input submit command
+            if (Key.isPressed(Key.ENTER)) {
+              switch(input.text) {
+                // search objects
+                case _.indexOf(':so ') => 0: {
+                  final matches = [];
+                  final searchValue = input.text.substring(
+                      ':so '.length);
+
+                  for (layerId => grid in 
+                      editorState.gridByLayerId) {
+                    for (objectId in grid.itemCache.keys()) {
+                      final objectType = editorState
+                        .itemTypeById.get(objectId);
+                      final isMatch = objectType
+                        .indexOf(searchValue) != -1;
+
+                      if (isMatch) {
+                        matches.push({
+                          objectId: objectId,
+                          layerId: layerId
+                        });  
+                      }
+                    }
+                  }
+
+                  localState
+                    .searchObjectMatchesById = matches;
+                };
+
+                // clear searched objects list
+                case _.indexOf(':clso') => 0: {
+                  localState
+                    .searchObjectMatchesById = [];
+                };
+
+                default: {};
+              }
+
+              state.isDone = true;
+            }
+          }
+
+          Main.Global.updateHooks.push((dt) -> {
+            localState.editorMode = CommandBar;
+            input.x = win.width / 2;
+            input.y = 10;
+
+            handleInputControls();
+
+            if (state.isDone) {
+              input.remove();
+              localState.editorMode = previousEditorMode;
+            }
+
+            return !state.isDone;
+          });
+        }
+
         // toggle panning mode
         {
           if (Key.isDown(Key.SPACE) &&
@@ -1202,10 +1308,6 @@ class Editor {
             shouldResetToStart
               ? 0
               : nextSetting];
-        }
-
-        if (Key.isPressed(Key.ESCAPE)) {
-          clearMarqueeSelection();
         }
 
         if (Key.isPressed(Key.M)) {
@@ -1397,6 +1499,8 @@ class Editor {
           });
         }
       }
+
+      handleHotkeys();
 
       if (localState.isDragStart) {
         final dragStartX = Std.int(mx);
@@ -1758,6 +1862,26 @@ class Editor {
               b.b = 0.4;
               b.alpha = 0.3;
             });
+      }
+
+      for (match in localState.searchObjectMatchesById) {
+        final zoom = localState.zoom;
+        final tx = editorState.translate;
+        final gridRef = editorState
+          .gridByLayerId.get(match.layerId); 
+        final bounds = gridRef.itemCache.get(match.objectId);
+        final x = (bounds[0] + tx.x) * zoom;
+        final y = (bounds[2] + tx.y) * zoom;
+        final scale = 10;
+
+        final spriteRef = sbs.emitSprite(
+            x - scale / 2,
+            y - scale / 2,
+            'ui/square_white');
+
+        spriteRef.batchElement.scale = scale;
+        spriteRef.batchElement.alpha = 0.5 + 
+          Math.sin(Main.Global.time * 2) * 0.4;
       }
 
       return !finished;
