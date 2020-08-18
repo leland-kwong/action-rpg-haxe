@@ -355,8 +355,10 @@ class Experiment {
 
           processTree((
                 x, y, itemId, objectType, objectMeta, layerIndex) -> {
-            final sx = x * state.renderScale + state.translate.x;
-            final sy = y * state.renderScale + state.translate.y;
+            final sx = x * state.renderScale 
+              + state.translate.x * state.renderScale;
+            final sy = y * state.renderScale 
+              + state.translate.y * state.renderScale;
             final isHoveredNode = 
               state.hoveredNode.nodeId == itemId;
             // render object
@@ -431,8 +433,8 @@ class Experiment {
           processTree((
                 x, y, itemId, objectType, objectMeta, layerIndex) -> {
 
-            final sx = x * state.renderScale + state.translate.x;
-            final sy = y * state.renderScale + state.translate.y;
+            final sx = (x + state.translate.x) * state.renderScale;
+            final sy = (y + state.translate.y) * state.renderScale;
             final spriteData = SpriteBatchSystem.getSpriteData(
                 Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
                 objectMeta.spriteKey);
@@ -496,7 +498,26 @@ class Experiment {
           final isWheel = e.kind == hxd.Event.EventKind.EWheel;
 
           if (isWheel) {
-            state.renderScale += -Std.int(e.wheelDelta);
+            final currentZoom = state.renderScale;
+            final nextZoom = Std.int(
+                Utils.clamp(
+                  currentZoom - Std.int(e.wheelDelta),
+                  1,
+                  4));
+            final mouseDelta = {
+              x: Std.int(mx / nextZoom
+                - (mx / currentZoom)),
+              y: Std.int(my / nextZoom
+                - (my / currentZoom))
+            }
+            // translate so that it is zooming to cursor position
+            final newTranslate = {
+              x: state.translate.x + mouseDelta.x,
+              y: state.translate.y + mouseDelta.y,
+            };
+
+            state.translate = newTranslate;
+            state.renderScale = nextZoom;
           }
 
           // handle dragging
@@ -520,8 +541,8 @@ class Experiment {
           if (state.dragState.isDragging) {
             final ds = state.dragState;
             ds.delta = {
-              x: mx - ds.startPos.x,
-              y: my - ds.startPos.y
+              x: Std.int((mx - ds.startPos.x) / state.renderScale),
+              y: Std.int((my - ds.startPos.y) / state.renderScale)
             };
             // used to prevent accidental dragging
             // when you're selecting a tree node
