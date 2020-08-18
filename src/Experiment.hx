@@ -59,9 +59,9 @@ class Experiment {
       ref.sortOrder = 0;
       elem.scaleX = 480;
       elem.scaleY = 270;
-      elem.r = 0.2;
-      elem.g = 0.2;
-      elem.b = 0.2;
+      elem.r = 0.1;
+      elem.g = 0.1;
+      elem.b = 0.1;
 
       return !state.shouldCleanup;
     }
@@ -392,10 +392,17 @@ class Experiment {
                 b.b = 0;
               }
 
-              // highlight link if touching a selected node
-              if (isLinkType(objectType) 
-                  && isLinkTouchingASelectedNode(itemId)) {
-                b.b = 0;
+              // handle link styling
+              if (isLinkType(objectType)) {
+                if (isLinkTouchingASelectedNode(itemId)) {
+                  b.r = 0.15;
+                  b.g = 0.4;
+                  b.b = 0.6;
+                } else {
+                  b.r = 0.2;
+                  b.g = 0.3;
+                  b.b = 0.4;
+                }
               }
             }
 
@@ -405,7 +412,11 @@ class Experiment {
                   sessionRef.passiveSkillTreeState
                   .nodeSelectionStateById.get(itemId),
                   false);
-            if (isSelected) {
+            final shouldHighlightNode = isSelected || 
+                (isSkillNode(objectType) 
+                && isSelectableNode(itemId));
+
+            if (shouldHighlightNode) {
               final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
                   sx,
                   sy,
@@ -417,6 +428,17 @@ class Experiment {
                 runHoverAnimation(b);
               } else {
                 b.scale = state.renderScale;
+              }
+
+              if (isSelected) {
+                b.r = 0.3;
+                b.g = 0.7;
+                b.b = 0.8;
+              }
+
+              // animation to indicate that node is selectable
+              if (!isSelected) {
+                b.alpha = 0.5 + Math.sin(Main.Global.time * 4) * 0.5;
               }
             }
 
