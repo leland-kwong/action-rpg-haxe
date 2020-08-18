@@ -6,20 +6,48 @@ class Experiment {
       w: 0,
       h: 0
     };
-    final renderScale = 3;
     final treeScene = Main.Global.uiRoot;
     final NULL_HOVERED_NODE = {
       nodeId: 'NO_HOVERED_NODE',
       startedAt: -1.
     };
+
     final state = {
       hoveredNode: NULL_HOVERED_NODE,
       highlightedItem: null,
       invalidLinks: new Map<String, String>(),
       invalidNodes: new Map<String, String>(),
-      shouldCleanup: false
+      shouldCleanup: false,
+
+      translate: {
+        x: 0,
+        y: 0
+      },
+
+      dragState: {
+        isDragStart: false,
+        isDragging: false,
+        isDragEnd: false,
+
+        startPos: {
+          x: 0,
+          y: 0
+        },
+
+        delta: {
+          x: 0,
+          y: 0
+        },
+
+        originalTranslate: {
+          x: 0,
+          y: 0
+        }
+      },
+
+      renderScale: 2
     };
-    final s2d = Main.Global.staticScene;
+    final sbs = Main.Global.uiSpriteBatch;
 
     // render background
     function renderBackground(time: Float) {
@@ -44,7 +72,7 @@ class Experiment {
     // test passive skill tree
     {
       final debugOptions = {
-        renderTreeCollisions: true
+        renderTreeCollisions: false
       };
       final passiveTreeLayoutFile = 
         'editor-data/passive_skill_tree.eds';
@@ -320,20 +348,20 @@ class Experiment {
             final progress = Math.min(1, aliveTime / duration);
             final v = hoverEasing(progress);
             batchElement.scale = Utils.clamp(
-                renderScale * v, 
-                renderScale * 0.8, 
-                renderScale * 1.2);
+                state.renderScale * v, 
+                state.renderScale * 0.8, 
+                state.renderScale * 1.2);
           }
 
           processTree((
                 x, y, itemId, objectType, objectMeta, layerIndex) -> {
-            final sx = x * renderScale;
-            final sy = y * renderScale;
+            final sx = x * state.renderScale + state.translate.x;
+            final sy = y * state.renderScale + state.translate.y;
             final isHoveredNode = 
               state.hoveredNode.nodeId == itemId;
             // render object
             {
-              final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+              final spriteRef = sbs.emitSprite(
                   sx,
                   sy,
                   objectMeta.spriteKey);
@@ -345,7 +373,7 @@ class Experiment {
               if (isHoveredNode) {
                 runHoverAnimation(b);
               } else {
-                b.scale = renderScale;
+                b.scale = state.renderScale;
               }
 
               if (objectMeta.flipX) {
@@ -386,7 +414,7 @@ class Experiment {
               if (isHoveredNode) {
                 runHoverAnimation(b);
               } else {
-                b.scale = renderScale;
+                b.scale = state.renderScale;
               }
             }
 
@@ -403,13 +431,13 @@ class Experiment {
           processTree((
                 x, y, itemId, objectType, objectMeta, layerIndex) -> {
 
-            final sx = x * renderScale;
-            final sy = y * renderScale;
+            final sx = x * state.renderScale + state.translate.x;
+            final sy = y * state.renderScale + state.translate.y;
             final spriteData = SpriteBatchSystem.getSpriteData(
                 Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
                 objectMeta.spriteKey);
-            final w = spriteData.sourceSize.w * renderScale;
-            final h = spriteData.sourceSize.h * renderScale;
+            final w = spriteData.sourceSize.w * state.renderScale;
+            final h = spriteData.sourceSize.h * state.renderScale;
             final mx = treeScene.mouseX;
             final my = treeScene.mouseY;
             final cursorPoint = new h2d.col.Point(mx, my);
@@ -461,6 +489,66 @@ class Experiment {
         }
         Main.Global.updateHooks.push(handleTreeInteraction);
 
+        function handleMouseEvents(e: hxd.Event) {
+          final mx = Std.int(treeScene.mouseX);
+          final my = Std.int(treeScene.mouseY);
+
+          final isWheel = e.kind == hxd.Event.EventKind.EWheel;
+
+          if (isWheel) {
+            state.renderScale += -Std.int(e.wheelDelta);
+          }
+
+          // handle dragging
+          {
+            final isDragStart = e.kind == hxd.Event.EventKind.EPush;
+            if (isDragStart) {
+              state.dragState.startPos.x = mx;
+              state.dragState.startPos.y = my;
+              state.dragState.originalTranslate = state.translate;
+              state.dragState.isDragStart = true;
+              state.dragState.isDragging = true;
+            }
+
+            final isDragEnd = e.kind == hxd.Event.EventKind.ERelease;
+            if (isDragEnd) {
+              state.dragState.isDragEnd = true;
+              state.dragState.isDragging = false;
+            }
+          }
+
+          if (state.dragState.isDragging) {
+            final ds = state.dragState;
+            ds.delta = {
+              x: mx - ds.startPos.x,
+              y: my - ds.startPos.y
+            };
+            // used to prevent accidental dragging
+            // when you're selecting a tree node
+            final dragThreshold = 5;
+            state.translate = {
+              x: ds.originalTranslate.x 
+                + (Math.abs(ds.delta.x) > dragThreshold 
+                    ? ds.delta.x 
+                    : 0),
+              y: ds.originalTranslate.y 
+                + (Math.abs(ds.delta.y) > dragThreshold 
+                    ? ds.delta.y 
+                    : 0)
+            };
+          }
+        }
+        treeScene.addEventListener(handleMouseEvents);
+
+        function cleanupEventListeners(dt: Float) {
+          if (state.shouldCleanup) {
+            treeScene.removeEventListener(handleMouseEvents);
+          } 
+
+          return !state.shouldCleanup;          
+        }
+        Main.Global.updateHooks.push(cleanupEventListeners);
+
         function renderTreeCollisions(time: Float) {
           for (itemId => bounds in treeCollisionGrid.itemCache) {
             final cellSize = treeCollisionGrid.cellSize;
@@ -469,13 +557,13 @@ class Experiment {
             final w = (bounds[1] - bounds[0]) * cellSize;
             final h = (bounds[3] - bounds[2]) * cellSize;
             final ref = Main.Global.uiSpriteBatch.emitSprite(
-                x * renderScale,
-                y * renderScale,
+                x * state.renderScale,
+                y * state.renderScale,
                 'ui/square_white');
             final b = ref.batchElement;
 
             ref.sortOrder = 100;
-            b.scale = renderScale;
+            b.scale = state.renderScale;
             b.scaleX *= w;
             b.scaleY *= h;
             b.alpha = 0.1;
@@ -493,6 +581,16 @@ class Experiment {
         if (debugOptions.renderTreeCollisions) {
           Main.Global.renderHooks.push(renderTreeCollisions);
         }
+
+        Main.Global.updateHooks.push(function update(dt: Float) {
+          Main.Global.logData.skillTreeState = {
+            dragState: state.dragState,
+            translate: state.translate,
+            zoom: state.renderScale
+          };
+
+          return !state.shouldCleanup;
+        });
       }
 
       SaveState.load(
