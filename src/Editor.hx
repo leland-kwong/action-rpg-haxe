@@ -766,10 +766,10 @@ class Editor {
           final wmx = win.mouseX;
           final wmy = win.mouseY;
           final newTranslate = {
-            x: Std.int(wmx / nextZoom
-                   - (wmx / currentZoom - editorState.translate.x)),
-            y: Std.int(wmy / nextZoom
-                - (wmy / currentZoom - editorState.translate.y)),
+            x: editorState.translate.x + Std.int(wmx / nextZoom
+                   - (wmx / currentZoom)),
+            y: editorState.translate.y + Std.int(wmy / nextZoom
+                - (wmy / currentZoom)),
           };
 
           editorState.translate = newTranslate;
