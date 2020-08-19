@@ -260,23 +260,23 @@ class Experiment {
           return colRect.contains(point);
         }
 
-        function isLinkTouchingASelectedNode(
-            linkId, 
-            ignoreId = null) {
+        function calcNumSelectedNodesAtLink(
+            linkId) {
+          var numSelectedNodes = 0;
+
           for (nodeId in linkNodeTouches.nodesByLinkId.get(linkId)) {
-            if (nodeId != ignoreId 
-                && isNodeSelected(sessionRef, nodeId)) {
-              return true;
+            if (isNodeSelected(sessionRef, nodeId)) {
+              numSelectedNodes += 1;
             }
           }
 
-          return false;
+          return numSelectedNodes;
         }
 
         function isSelectableNode(nodeId) {
           for (linkId in 
               linkNodeTouches.linksByNodeId.get(nodeId)) {
-            if (isLinkTouchingASelectedNode(linkId)) {
+            if (calcNumSelectedNodesAtLink(linkId) > 0) {
               return true;
             }
           }
@@ -439,7 +439,13 @@ class Experiment {
 
               // handle link styling
               if (isLinkType(objectType)) {
-                if (isLinkTouchingASelectedNode(itemId)) {
+                final numSelected = calcNumSelectedNodesAtLink(itemId);
+                final isFullyLinked = numSelected > 1;
+                final isLeadingToNewSelectable = 
+                  (numSelected == 1 && hasUnusedPoints);
+
+                if (isFullyLinked
+                    || isLeadingToNewSelectable) {
                   setSelectedColor(spriteRef);
                 } else {
                   b.r = 0.25;
