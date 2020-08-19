@@ -98,6 +98,8 @@ typedef ConfigObjectMeta = {
   ?alias: String,
   ?flipX: Bool,
   ?flipY: Bool,
+  // store any arbitrary data
+  ?data: Dynamic,
 }
 
 class Profiler {
@@ -162,6 +164,7 @@ class Editor {
     alias: 'UNKNOWN_ALIAS',
     flipX: false,
     flipY: false,
+    data: {}
   };
 
   static function createObjectMeta(
@@ -272,11 +275,23 @@ class Editor {
                 spriteKey: 'ui/passive_skill_tree__node_root',
                 sharedId: 'SKILL_TREE_ROOT'
               },
-              'passive_skill_tree__node' => {
-                spriteKey: 'ui/passive_skill_tree__node'
+              'passive_skill_tree__node_fist' => {
+                spriteKey: 'ui/passive_skill_tree__node_fist',
+                data: {
+                  size: 2
+                }
               },
-              'passive_skill_tree__node_size_2' => {
-                spriteKey: 'ui/passive_skill_tree__node_size_2'
+              'passive_skill_tree__node_damage_1' => {
+                spriteKey: 'ui/passive_skill_tree__node_orange',
+              },
+              'passive_skill_tree__node_action_speed_1' => {
+                spriteKey: 'ui/passive_skill_tree__node_green',
+              },
+              'passive_skill_tree__node_action_cooldown_1' => {
+                spriteKey: 'ui/passive_skill_tree__node_blue',
+              },
+              'passive_skill_tree__node_action_life_1' => {
+                spriteKey: 'ui/passive_skill_tree__node_red',
               },
               'passive_skill_tree__link_fork' => {
                 spriteKey: 'ui/passive_skill_tree__link_fork',
@@ -1864,24 +1879,38 @@ class Editor {
             });
       }
 
+      // highlight all search matches
       for (match in localState.searchObjectMatchesById) {
-        final zoom = localState.zoom;
-        final tx = editorState.translate;
-        final gridRef = editorState
-          .gridByLayerId.get(match.layerId); 
-        final bounds = gridRef.itemCache.get(match.objectId);
-        final x = (bounds[0] + tx.x) * zoom;
-        final y = (bounds[2] + tx.y) * zoom;
-        final scale = 10;
+        final objectExists = editorState.itemTypeById
+          .exists(match.objectId);
 
-        final spriteRef = sbs.emitSprite(
-            x - scale / 2,
-            y - scale / 2,
-            'ui/square_white');
+        if (objectExists) {
+          final zoom = localState.zoom;
+          final tx = editorState.translate;
+          final gridRef = editorState
+            .gridByLayerId.get(match.layerId); 
+          final bounds = gridRef.itemCache.get(match.objectId);
+          final objectType = editorState.itemTypeById.get(match.objectId);
+          final objectMeta = getConfig().objectMetaByType.get(objectType);
+          final spriteData = SpriteBatchSystem.getSpriteData(
+              spriteSheetData,
+              objectMeta.spriteKey);
+          final x = (bounds[0] + tx.x) * zoom;
+          final y = (bounds[2] + tx.y) * zoom;
+          final sw = spriteData.sourceSize.w * zoom;
+          final sh = spriteData.sourceSize.h * zoom;
+          final scale = 10;
 
-        spriteRef.batchElement.scale = scale;
-        spriteRef.batchElement.alpha = 0.5 + 
-          Math.sin(Main.Global.time * 2) * 0.4;
+          final spriteRef = sbs.emitSprite(
+              x - sw / 2,
+              y - sh / 2,
+              'ui/square_white');
+
+          spriteRef.batchElement.scaleX = sw;
+          spriteRef.batchElement.scaleY = sh;
+          spriteRef.batchElement.alpha = 0.1 + 
+            Math.sin(Main.Global.time * 4) * 0.1;
+        }
       }
 
       return !finished;
