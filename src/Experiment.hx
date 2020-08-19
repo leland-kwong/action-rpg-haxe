@@ -112,6 +112,25 @@ class Experiment {
         final colRect = new h2d.col.Bounds();
         final treeCollisionGrid = Grid.create(4);
 
+        function getNumSelectedNodes(
+            sessionRef: Session.SessionRef) {
+          return Lambda.count(
+              sessionRef
+                .passiveSkillTreeState
+                .nodeSelectionStateById,
+              Utils.isTrue);
+        }
+
+        function getHasUnusedPoints(
+            sessionRef: Session.SessionRef) {
+          final pointsAvailable = sessionRef
+            .passiveSkillTreeState
+            .totalPointsAvailable;
+
+          return getNumSelectedNodes(sessionRef) 
+            < pointsAvailable;
+        }
+
         function isNodeSelected(
             sessionRef: Session.SessionRef,
             nodeId) {
@@ -326,9 +345,7 @@ class Experiment {
           final connectedCount = Lambda.count(
               visitedList);
           // selected count also includes the root node
-          final selectedCount = Lambda.count(
-              sessionRef.passiveSkillTreeState.nodeSelectionStateById,
-              (selected) -> selected);
+          final selectedCount = getNumSelectedNodes(sessionRef);
           final isOnlySelectedNode = connectedCount == 0 
             && selectedCount == 2; 
 
@@ -340,6 +357,8 @@ class Experiment {
         final hoverEasing = Easing.easeOutElastic;
 
         Main.Global.renderHooks.push(function renderTree(time: Float) {
+          final hasUnusedPoints = getHasUnusedPoints(sessionRef);
+
           function runHoverAnimation(
               batchElement: h2d.SpriteBatch.BatchElement) {
             final duration = 0.2;
@@ -414,7 +433,8 @@ class Experiment {
                   false);
             final shouldHighlightNode = isSelected || 
                 (isSkillNode(objectType) 
-                && isSelectableNode(itemId));
+                && isSelectableNode(itemId)
+                && hasUnusedPoints);
 
             if (shouldHighlightNode) {
               final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
@@ -449,6 +469,7 @@ class Experiment {
         });
 
         function handleTreeInteraction(dt: Float) {
+          final hasUnusedPoints = getHasUnusedPoints(sessionRef);
           var isFirstLink = true;
           var nextHoveredNode = NULL_HOVERED_NODE;
 
@@ -492,10 +513,12 @@ class Experiment {
 
           final isHoveredNodeSelected = 
             isNodeSelected(sessionRef, state.hoveredNode.nodeId);
-          if (Main.Global.worldMouse.clicked
-              && state.hoveredNode != NULL_HOVERED_NODE) {
-            if ((!isHoveredNodeSelected 
-                  && isSelectableNode(state.hoveredNode.nodeId))
+          final isSelectionRequest = Main.Global.worldMouse.clicked
+            && state.hoveredNode != NULL_HOVERED_NODE;
+          if (isSelectionRequest) {
+            if ((isSelectableNode(state.hoveredNode.nodeId)
+                    && hasUnusedPoints
+                    && !isHoveredNodeSelected)
                 ||(isHoveredNodeSelected
                   && isDeselectableNode(state.hoveredNode.nodeId))) {
               Session.logAndProcessEvent(sessionRef, {
@@ -583,14 +606,9 @@ class Experiment {
         }
         treeScene.addEventListener(handleMouseEvents);
 
-        function cleanupEventListeners(dt: Float) {
-          if (state.shouldCleanup) {
-            treeScene.removeEventListener(handleMouseEvents);
-          } 
-
-          return !state.shouldCleanup;          
+        function cleanupEventListeners() {
+          treeScene.removeEventListener(handleMouseEvents);
         }
-        Main.Global.updateHooks.push(cleanupEventListeners);
 
         function renderTreeCollisions(time: Float) {
           for (itemId => bounds in treeCollisionGrid.itemCache) {
@@ -631,6 +649,10 @@ class Experiment {
             translate: state.translate,
             zoom: state.renderScale
           };
+
+          if (state.shouldCleanup) {
+            cleanupEventListeners();
+          }
 
           return !state.shouldCleanup;
         });

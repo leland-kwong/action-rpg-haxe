@@ -134,4 +134,12 @@ class Utils {
 
     return value;
   }
+
+  public static function isTrue(value) {
+    return value == true;
+  }
+
+  public static function isFalse(value) {
+    return value == false;
+  }
 }

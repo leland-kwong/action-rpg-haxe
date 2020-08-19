@@ -15,6 +15,7 @@ typedef SessionRef = {
   questState: Quest.QuestStateByName,
   inventoryState: Dynamic,
   passiveSkillTreeState: {
+    totalPointsAvailable: Int,
     nodeSelectionStateById: 
       Map<String, Bool>
   }
@@ -33,8 +34,10 @@ class Session {
       gameId: 'game_${Std.int(Sys.time())}',
       experienceGained: 0,
       questState: new Map(),
-      inventoryState: 'UNKNOWN_INVENTOR_STATE',
+      inventoryState: 'UNKNOWN_INVENTORY_STATE',
       passiveSkillTreeState: {
+        // includes root node which is always selected
+        totalPointsAvailable: 10,
         nodeSelectionStateById: [
           'SKILL_TREE_ROOT' => true
         ]
