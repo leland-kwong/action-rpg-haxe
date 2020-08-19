@@ -7,6 +7,7 @@ class Experiment {
       h: 0
     };
     final treeScene = Main.Global.uiRoot;
+    final treeRootObj = new h2d.Object(treeScene);
     final NULL_HOVERED_NODE = {
       nodeId: 'NO_HOVERED_NODE',
       startedAt: -1.
@@ -48,6 +49,7 @@ class Experiment {
       renderScale: 2
     };
     final sbs = Main.Global.uiSpriteBatch;
+    final cleanupFns = [];
 
     // render background
     function renderBackground(time: Float) {
@@ -112,7 +114,7 @@ class Experiment {
         final colRect = new h2d.col.Bounds();
         final treeCollisionGrid = Grid.create(4);
 
-        function getNumSelectedNodes(
+        function calcNumSelectedNodes(
             sessionRef: Session.SessionRef) {
           return Lambda.count(
               sessionRef
@@ -121,14 +123,13 @@ class Experiment {
               Utils.isTrue);
         }
 
-        function getHasUnusedPoints(
-            sessionRef: Session.SessionRef) {
+        function calcNumUnusedPoints(sessionRef) {
           final pointsAvailable = sessionRef
             .passiveSkillTreeState
             .totalPointsAvailable;
 
-          return getNumSelectedNodes(sessionRef) 
-            < pointsAvailable;
+          return pointsAvailable 
+            - calcNumSelectedNodes(sessionRef);
         }
 
         function isNodeSelected(
@@ -345,7 +346,7 @@ class Experiment {
           final connectedCount = Lambda.count(
               visitedList);
           // selected count also includes the root node
-          final selectedCount = getNumSelectedNodes(sessionRef);
+          final selectedCount = calcNumSelectedNodes(sessionRef);
           final isOnlySelectedNode = connectedCount == 0 
             && selectedCount == 2; 
 
@@ -354,10 +355,35 @@ class Experiment {
             || connectedCount == selectedCount - 1;
         }
 
+        function setSelectedColor(
+            spriteRef: SpriteBatchSystem.SpriteRef) {
+          spriteRef.batchElement.r = 0.4;
+          spriteRef.batchElement.r = 0.5;
+          spriteRef.batchElement.r = 0.6;
+        }
+
+        final pointCounterTf = {
+          final tf = new h2d.Text(
+              Fonts.primary(),
+              treeRootObj);
+          tf.textAlign = Center;
+          tf.textColor = 0xffffff;
+
+          Main.Global.updateHooks.push((dt) -> {
+            final win = hxd.Window.getInstance();
+            final numUnusedPoints = calcNumUnusedPoints(sessionRef);
+
+            tf.x = win.width / 2;
+            tf.y = 10;
+            tf.text = 'unused skill points: ${numUnusedPoints}';
+
+            return !state.shouldCleanup;
+          });
+        }
         final hoverEasing = Easing.easeOutElastic;
 
         Main.Global.renderHooks.push(function renderTree(time: Float) {
-          final hasUnusedPoints = getHasUnusedPoints(sessionRef);
+          final hasUnusedPoints = calcNumUnusedPoints(sessionRef) > 0;
 
           function runHoverAnimation(
               batchElement: h2d.SpriteBatch.BatchElement) {
@@ -414,13 +440,21 @@ class Experiment {
               // handle link styling
               if (isLinkType(objectType)) {
                 if (isLinkTouchingASelectedNode(itemId)) {
-                  b.r = 0.15;
-                  b.g = 0.4;
-                  b.b = 0.6;
+                  setSelectedColor(spriteRef);
                 } else {
-                  b.r = 0.2;
-                  b.g = 0.3;
-                  b.b = 0.4;
+                  b.r = 0.25;
+                  b.g = 0.25;
+                  b.b = 0.25;
+                }
+              }
+
+              if (isSkillNode(objectType)) {
+                // dim icon inactive icon
+                if (!isNodeSelected(sessionRef, itemId)
+                    && !isHoveredNode) {
+                  b.r *= 0.7;
+                  b.g *= 0.7;
+                  b.b *= 0.7;
                 }
               }
             }
@@ -437,10 +471,13 @@ class Experiment {
                 && hasUnusedPoints);
 
             if (shouldHighlightNode) {
+              final nodeSize = Utils.withDefault(
+                  objectMeta.data.size, 
+                  1);
               final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
                   sx,
                   sy,
-                  '${objectMeta.spriteKey}_selected_state');
+                  'ui/passive_skill_tree__node_size_${nodeSize}_selected_state');
 
               final b = spriteRef.batchElement;
 
@@ -451,14 +488,12 @@ class Experiment {
               }
 
               if (isSelected) {
-                b.r = 0.3;
-                b.g = 0.7;
-                b.b = 0.8;
-              }
+                setSelectedColor(spriteRef);
+              } 
 
               // animation to indicate that node is selectable
               if (!isSelected) {
-                b.alpha = 0.5 + Math.sin(Main.Global.time * 4) * 0.5;
+                b.alpha *= 0.5 + Math.sin(Main.Global.time * 4) * 0.5;
               }
             }
 
@@ -469,7 +504,7 @@ class Experiment {
         });
 
         function handleTreeInteraction(dt: Float) {
-          final hasUnusedPoints = getHasUnusedPoints(sessionRef);
+          final hasUnusedPoints = calcNumUnusedPoints(sessionRef) > 0;
           var isFirstLink = true;
           var nextHoveredNode = NULL_HOVERED_NODE;
 
@@ -589,26 +624,18 @@ class Experiment {
               x: Std.int((mx - ds.startPos.x) / state.renderScale),
               y: Std.int((my - ds.startPos.y) / state.renderScale)
             };
-            // used to prevent accidental dragging
-            // when you're selecting a tree node
-            final dragThreshold = 5;
             state.translate = {
               x: ds.originalTranslate.x 
-                + (Math.abs(ds.delta.x) > dragThreshold 
-                    ? ds.delta.x 
-                    : 0),
+                + ds.delta.x,
               y: ds.originalTranslate.y 
-                + (Math.abs(ds.delta.y) > dragThreshold 
-                    ? ds.delta.y 
-                    : 0)
+                + ds.delta.y
             };
           }
         }
         treeScene.addEventListener(handleMouseEvents);
-
-        function cleanupEventListeners() {
+        cleanupFns.push(function cleanupEventListeners() {
           treeScene.removeEventListener(handleMouseEvents);
-        }
+        });
 
         function renderTreeCollisions(time: Float) {
           for (itemId => bounds in treeCollisionGrid.itemCache) {
@@ -618,8 +645,8 @@ class Experiment {
             final w = (bounds[1] - bounds[0]) * cellSize;
             final h = (bounds[3] - bounds[2]) * cellSize;
             final ref = Main.Global.uiSpriteBatch.emitSprite(
-                x * state.renderScale,
-                y * state.renderScale,
+                (x + state.translate.x) * state.renderScale,
+                (y + state.translate.y) * state.renderScale,
                 'ui/square_white');
             final b = ref.batchElement;
 
@@ -651,7 +678,10 @@ class Experiment {
           };
 
           if (state.shouldCleanup) {
-            cleanupEventListeners();
+            for (fn in cleanupFns) {
+              fn();
+            }
+            treeRootObj.remove();
           }
 
           return !state.shouldCleanup;
