@@ -409,7 +409,7 @@
             <key type="filename">aseprite_exports/ui/cockpit_underlay.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
+                <point_f>0.5,1</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
@@ -437,7 +437,6 @@
                 <false/>
             </struct>
             <key type="filename">aseprite_exports/ui/energy_bomb_ring.png</key>
-            <key type="filename">aseprite_exports/ui/hud_inventory_button.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -464,6 +463,22 @@
                 <rect>7,2,14,5</rect>
                 <key>scale9Paddings</key>
                 <rect>7,2,14,5</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/hud_inventory_button--hover.png</key>
+            <key type="filename">aseprite_exports/ui/hud_inventory_button.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0,0</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>2,2,5,5</rect>
+                <key>scale9Paddings</key>
+                <rect>2,2,5,5</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -609,6 +624,21 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__link_fork_vert.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>5,8,9,15</rect>
+                <key>scale9Paddings</key>
+                <rect>5,8,9,15</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/passive_skill_tree__link_horizontal.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -639,7 +669,11 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/passive_skill_tree__node.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_blue.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_green.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_orange.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_red.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_root.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -651,6 +685,37 @@
                 <rect>6,6,13,13</rect>
                 <key>scale9Paddings</key>
                 <rect>6,6,13,13</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_fist.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_size_2_selected_state.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>9,9,19,19</rect>
+                <key>scale9Paddings</key>
+                <rect>9,9,19,19</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_size_1_selected_state.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>8,8,15,15</rect>
+                <key>scale9Paddings</key>
+                <rect>8,8,15,15</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
