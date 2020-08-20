@@ -190,8 +190,9 @@ class Editor {
 
   // all configuration stuff lives here
   public static function getConfig(
-      activeFile = 'editor-data/passive_skill_tree.eds'
+      // activeFile = 'editor-data/passive_skill_tree.eds'
       // activeFile = 'editor-data/dummy_level.eds'
+      activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,
@@ -339,7 +340,41 @@ class Editor {
                 spriteKey: 'ui/passive_skill_tree__link_vertical'
               }
             ];
-          };
+          }
+
+          case _.indexOf('editor-data/hud.eds') != -1 => true: {
+            [
+              'cockpit_underlay' => {
+                spriteKey: 'ui/cockpit_underlay'
+              },
+              'cockpit_health_bar_node' => {
+                spriteKey: 'ui/cockpit_resource_bar_health'
+              },
+              'cockpit_energy_bar_node' => {
+                spriteKey: 'ui/cockpit_resource_bar_energy'
+              },
+              'hud_inventory_button' => {
+                spriteKey: 'ui/hud_inventory_button',
+                type: 'UI_ELEMENT',
+                data: {
+                  onClick: 'INVENTORY_TOGGLE',
+                  hoverSprite: 'ui/hud_inventory_button--hover'
+                }
+              },
+              'hud_ability_slot__1' => {
+                spriteKey: 'ui/hud_ability_slot_1',
+                sharedId: 'hud_ability_slot__1'
+              },
+              'hud_ability_slot__2' => {
+                spriteKey: 'ui/hud_ability_slot_2',
+                sharedId: 'hud_ability_slot__2'
+              },
+              'hud_ability_slot__3' => {
+                spriteKey: 'ui/hud_ability_slot_3',
+                sharedId: 'hud_ability_slot__3'
+              },
+            ];
+          }
 
           default: {
             throw 'no config defined for file `${activeFile}`';
@@ -606,6 +641,18 @@ class Editor {
     };
 
     sys.thread.Thread.create(saveAsync);
+
+    final snapToGrid = (x, y, cellSize) -> {
+      final gridX = Math.round(x / cellSize);
+      final gridY = Math.round(y / cellSize);
+      final x = Std.int(gridX * cellSize);
+      final y = Std.int(gridY * cellSize);
+
+      return {
+        x: x,
+        y: y
+      };
+    }
 
     final removeSquare = (
         gridRef, gridX, gridY, width, height, layerId) -> {
@@ -896,8 +943,12 @@ class Editor {
     }
 
     function createId(objectType) {
+      if (objectType == null) {
+        return Utils.uid();
+      }
+
       final objectMeta = getConfig().objectMetaByType.get(
-          localState.selectedObjectType);
+          objectType);
 
       final sharedId = objectMeta.sharedId;
 
@@ -1145,6 +1196,10 @@ class Editor {
         zoom: localState.zoom,
         translate: editorState.translate,
         updatedAt: editorState.updatedAt,
+        snappedMousePos: {
+          x: (mx/ localState.zoom) - editorState.translate.x,
+          y: (my / localState.zoom) - editorState.translate.y
+        }
       };
 
       final Key = hxd.Key;
@@ -1399,18 +1454,6 @@ class Editor {
                     final objectType = editorState.itemTypeById.get(
                         itemId);
 
-                    // copy selection to 'clipboard'
-                    if (action == 'CUT' || action == 'COPY') {
-                      insertSquare(
-                          marqueeGrid,
-                          // insert relative to 0,0 of marqueeGrid
-                          gridX - gridXMin,
-                          gridY - gridYMin,
-                          createId(objectType),
-                          objectType,
-                          marqueeLayerId);
-                    }
-
                     if (action == 'CUT' || action == 'DELETE') {
                       removeSquare(
                           activeGrid,
@@ -1420,6 +1463,19 @@ class Editor {
                           activeGrid.cellSize,
                           localState.activeLayerId);
                     }
+
+                    // copy selection to 'clipboard'
+                    if (action == 'CUT' || action == 'COPY') {
+                      insertSquare(
+                          marqueeGrid,
+                          // insert relative to 0,0 of marqueeGrid
+                          gridX - gridXMin,
+                          gridY - gridYMin,
+                          createId(null),
+                          objectType,
+                          marqueeLayerId);
+                    }
+
                   }
                 }
               }
@@ -1428,18 +1484,6 @@ class Editor {
 
           // paste selection
           if (action == 'PASTE') {
-            final snapToGrid = (x, y, cellSize) -> {
-              final gridX = Math.round(x / cellSize);
-              final gridY = Math.round(y / cellSize);
-              final x = Std.int(gridX * cellSize);
-              final y = Std.int(gridY * cellSize);
-
-              return {
-                x: x,
-                y: y
-              };
-            }
-
             for (itemId => bounds in marqueeGrid.itemCache) {
               final width = bounds[1] - bounds[0];
               final cx = Math.floor(bounds[0] + width / 2);
