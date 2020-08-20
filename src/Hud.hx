@@ -15,6 +15,7 @@ typedef TiledUiProp = {
   type: String,
   value: Dynamic,
 };
+typedef SortedHudResourceBars = Array<String>;
 private typedef EquippableSlotMeta = {
   equippedItemId: String,
   allowedCategory: Loot.LootDefCat,
@@ -298,102 +299,228 @@ class Inventory {
   }
 }
 
+// handles interaction elements
 class UiGrid {
   static var colGrid = Grid.create(1);
   static final iList: Array<h2d.Interactive> = [];
+  static final NULL_HOVERED_ID = 'NULL_HOVERED_ID';
+  static var state = {
+    hoveredId: NULL_HOVERED_ID,
+  };
+  static final hudLayoutFile = 'external-assets/editor-data/hud.eds';
+  static var hudLayoutCache: Editor.EditorState;
 
-  public static function update(dt: Float) {
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'hud');
-    final interactLayer = TiledParser
-      .findLayer(inventoryLayerRef, 'interactable');
-    final objects = interactLayer.objects;
-    final isInteractInitialized = iList.length != 0;
-
-    for (ref in objects) {
-      final cx = (ref.x + ref.width / 2) * Hud.rScale;
-      final cy = (ref.y - ref.height / 2) * Hud.rScale;
-      final width = ref.width * Hud.rScale;
-      final height = ref.height * Hud.rScale;
-
-      if (Main.Global.uiState.hud.enabled 
-          && !isInteractInitialized) {
-        final iRef = new h2d.Interactive(
-            width,
-            height,
-            Main.Global.uiRoot);
-        iRef.x = ref.x * Hud.rScale;
-        iRef.y = (ref.y - ref.height) * Hud.rScale;
-
-        final props = Utils.withDefault(ref.properties, []);
-        for (p in props) {
-          switch(p: TiledUiProp) {
-            case { name: 'onClick' }: {
-              iRef.onClick = (e: hxd.Event) -> {
-                UiStateManager.send({
-                  type: p.value
-                });
-              }
-            }
-            default: {}
-          }
-        }
-        
-        iList.push(iRef); 
-      }
-
-      Grid.setItemRect(
-          colGrid,
-          cx, 
-          cy, 
-          width,
-          height,
-          Std.string(ref.id));
+  public static function loadHudLayout() {
+    if (hudLayoutCache != null) {
+      return hudLayoutCache;
     }
+
+    final s = sys.io.File.getContent(
+        hudLayoutFile);
+    final unserializer = new haxe.Unserializer(s);
+
+    hudLayoutCache = unserializer.unserialize();
+
+    return hudLayoutCache;
   }
 
-  public static function render(time: Float) {
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'hud');
-    final interactLayer = TiledParser
-      .findLayer(inventoryLayerRef, 'interactable');
-    final objects = interactLayer.objects;
-    final hoveredId = Lambda.find(
-        Grid.getItemsInRect(
-          colGrid,
-          Main.Global.uiRoot.mouseX,
-          Main.Global.uiRoot.mouseY,
-          1, 1),
-        (_) -> true);
+  public static function update(dt: Float) {
+    if (!Main.Global.uiState.hud.enabled) {
+      hudLayoutCache = null;
+      return;
+    }
 
-    for (ref in objects) {
-      final cx = ref.x + ref.width / 2;
-      final cy = ref.y - ref.height / 2;
-      Main.Global.uiSpriteBatch.emitSprite(
-          cx * Hud.rScale,
-          cy * Hud.rScale,
-          ref.name, 
-          null,
-          (p) -> {
-            p.batchElement.scale = Hud.rScale;
+    final hudLayoutRef = loadHudLayout();
+    final isInteractInitialized = iList.length != 0;
 
-            switch(ref.name) {
-              case 'ui/hud_inventory_button': {
-                final isHovered = hoveredId == 
-                  Std.string(ref.id);
-                if (isHovered) {
-                  p.batchElement.r = 0.0;
-                  p.batchElement.g = 0.9;
-                  p.batchElement.b = 1;
+    if (isInteractInitialized) {
+      return;
+    }
+
+    for (grid in hudLayoutRef.gridByLayerId) {
+      for (objectId => bounds in grid.itemCache) {
+        final editorConfig = Editor.getConfig(hudLayoutFile);
+        final objectType = hudLayoutRef.itemTypeById.get(objectId);
+        final objectMeta = editorConfig.objectMetaByType.get(objectType);
+        final bm = Main.Global.uiSpriteBatch.batchManager;
+        final spriteData = SpriteBatchSystem.getSpriteData(
+            bm.spriteSheetData,
+            objectMeta.spriteKey);
+        final ss = spriteData.sourceSize;
+        final width  = ss.w * Hud.rScale;
+        final height = ss.h * Hud.rScale;
+        final x = bounds[0] * Hud.rScale;
+        final y = bounds[2] * Hud.rScale;
+
+        if (Main.Global.uiState.hud.enabled 
+            && objectMeta.type == 'UI_ELEMENT') {
+          trace(x, y, width, height);
+          final iRef = new h2d.Interactive(
+              width,
+              height,
+              Main.Global.uiRoot);
+          iRef.x = x;
+          iRef.y = y;
+
+          iRef.onOver = (e: hxd.Event) -> {
+            state.hoveredId = objectId;
+          };
+
+          iRef.onOut = (e: hxd.Event) -> {
+            state.hoveredId = NULL_HOVERED_ID;
+          };
+
+          for (p in Reflect.fields(objectMeta.data)) {
+            final value = Reflect.field(objectMeta.data, p);
+            switch(p) {
+              case 'onClick': {
+                iRef.onClick = (e: hxd.Event) -> {
+                  UiStateManager.send({
+                    type: value
+                  });
                 }
               }
               default: {}
             }
-          });
+          }
+
+          iList.push(iRef); 
+        }
+      }
+    }
+  }
+
+  public static function render(time: Float) {
+    final ps = Entity.getById('PLAYER').stats;
+
+    if (ps == null || !Main.Global.uiState.hud.enabled) {
+      return;
+    }
+
+    final hudLayoutRef = loadHudLayout();
+    final orderedLayers = hudLayoutRef.layerOrderById;
+
+    {
+      final cockpitLayer = 'layer_1';
+      final grid = hudLayoutRef.gridByLayerId.get(cockpitLayer);
+
+      for (objectId => bounds in grid.itemCache) {
+        final editorConfig = Editor.getConfig(hudLayoutFile);
+        final objectType = hudLayoutRef.itemTypeById.get(objectId);
+        final objectMeta = editorConfig.objectMetaByType.get(objectType);
+        final x = bounds[0] * Hud.rScale;
+        final y = bounds[2] * Hud.rScale;
+        final hoverSprite = objectMeta.data.hoverSprite;
+        final spriteKey = (state.hoveredId == objectId
+            && hoverSprite != null)
+          ? hoverSprite
+          : objectMeta.spriteKey;
+        final ref = Main.Global.uiSpriteBatch.emitSprite(
+            x,
+            y,
+            spriteKey);
+        ref.sortOrder = 1;
+        ref.batchElement.scale = Hud.rScale;
+      }
+    }
+
+    // render resource bars
+    {
+      final resourceBarsLayer = 'layer_2';
+      final grid = 
+        hudLayoutRef.gridByLayerId.get(resourceBarsLayer);
+      final sortedHealthBars: 
+        SortedHudResourceBars = [];
+      final sortedEnergyBars: 
+        SortedHudResourceBars = [];
+
+      for (objectId in grid.itemCache.keys()) {
+        final editorConfig = Editor.getConfig(hudLayoutFile);
+        final objectType = hudLayoutRef.itemTypeById.get(objectId);
+        final isHealthBarNode = objectType == 'cockpit_health_bar_node';
+        final isEnergyBarNode = objectType == 'cockpit_energy_bar_node';
+
+        if (isHealthBarNode || isEnergyBarNode) {
+          if (isHealthBarNode) {
+            sortedHealthBars.push(objectId);
+          }
+
+          if (isEnergyBarNode) {
+            sortedEnergyBars.push(objectId);
+          }
+        }
+      }
+
+      function sortByX(idA, idB, flip = false) {
+        final boundsA = grid.itemCache.get(idA);
+        final xA = boundsA[0];
+        final boundsB = grid.itemCache.get(idB);
+        final xB = boundsB[0];
+
+        if (flip) {
+          if (xA > xB) {
+            return -1;
+          }
+
+          if (xA < xB) {
+            return 1;
+          }
+        } else {
+          if (xA < xB) {
+            return -1;
+          }
+
+          if (xA > xB) {
+            return 1;
+          }
+        }
+
+        return 0;
+      }
+
+      function renderResourceBar(
+          numSegments,
+          resourceBars: SortedHudResourceBars) {
+        for (i in 0...numSegments) {
+          final objectId = resourceBars[i];
+          final editorConfig = Editor.getConfig(hudLayoutFile);
+          final objectType = hudLayoutRef.itemTypeById.get(objectId);
+          final objectMeta = editorConfig
+            .objectMetaByType
+            .get(objectType);
+          final bounds = grid.itemCache.get(objectId);
+          final x = bounds[0] * Hud.rScale;
+          final y = bounds[2] * Hud.rScale;
+          final ref = Main.Global.uiSpriteBatch.emitSprite(
+              x,
+              y,
+              objectMeta.spriteKey);
+          ref.sortOrder = 2;
+          ref.batchElement.scale = Hud.rScale;
+        }
+      }
+
+      {
+        final healthRemaining =
+          ps.currentHealth / ps.maxHealth;
+        final numSegments = Math.ceil(
+            healthRemaining * sortedHealthBars.length);
+
+        sortedHealthBars.sort(
+            (a, b) -> sortByX(a, b, true));
+        renderResourceBar(numSegments, sortedHealthBars);
+      }
+
+      {
+        final energyRemaining =
+          ps.currentEnergy / ps.maxEnergy;
+        final numSegments = Math.ceil(
+            energyRemaining * sortedEnergyBars.length);
+
+        sortedEnergyBars.sort(
+            (a, b) -> sortByX(a, b));
+        renderResourceBar(numSegments, sortedEnergyBars);
+      }
     }
   }
 }
@@ -539,7 +666,7 @@ class InventoryDragAndDropPrototype {
       final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('burstCharge'), 1); 
+          createLootInstanceByType('heal1'), 1); 
     }
 
     {
@@ -1228,78 +1355,9 @@ class Hud {
 
     final hudLayer = TiledParser
       .findLayer(uiLayoutRef, 'hud');
-    final cockpitUnderlay = TiledParser
-      .findLayer(hudLayer, 'cockpit_underlay')
-      .objects[0];
-    final healthBars = TiledParser
-      .findLayer(hudLayer, 'health_bars')
-      .objects;
-    final energyBars = TiledParser
-      .findLayer(hudLayer, 'energy_bars')
-      .objects;
-    final inventoryLayerRef = TiledParser
-      .findLayer(uiLayoutRef, 'inventory');
     final hudEquippedAbilitySlots = TiledParser
       .findLayer(hudLayer, 'equipped_ability_slots')
       .objects;
-    final barsCallback = (p) -> {
-      p.sortOrder = 1.0;
-      p.batchElement.scaleX = rScale * 1.0;
-      p.batchElement.scaleY = rScale * 1.0;
-    }
-
-    {
-      Main.Global.uiSpriteBatch.emitSprite(
-          (cockpitUnderlay.x + 
-           cockpitUnderlay.width / 2) * rScale,
-          (cockpitUnderlay.y - 
-           cockpitUnderlay.height / 2) * rScale,
-          'ui/cockpit_underlay',
-          null,
-          (p) -> {
-            p.sortOrder = 0.0;
-            p.batchElement.scaleX = rScale * 1.0;
-            p.batchElement.scaleY = rScale * 1.0;
-          });
-    }
-
-    {
-      var healthRemaining = 
-        ps.currentHealth / ps.maxHealth;
-      var numSegments = Math.ceil(
-          healthRemaining * healthBars.length);
-      var indexAdjust = 
-        healthBars.length - numSegments;
-
-      for (i in 0...numSegments) {
-        var item = healthBars[i + indexAdjust];
-
-        Main.Global.uiSpriteBatch.emitSprite(
-            (item.x + item.width / 2) * rScale,
-            (item.y - item.height / 2) * rScale,
-            'ui/cockpit_resource_bar_health',
-            null, 
-            barsCallback);
-      }
-    }
-
-    {
-      var energyRemaining = 
-        ps.currentEnergy / ps.maxEnergy;
-      var numSegments = Math.ceil(
-          energyRemaining * energyBars.length);
-
-      for (i in 0...numSegments) {
-        var item = energyBars[i];
-
-        Main.Global.uiSpriteBatch.emitSprite(
-            (item.x + item.width / 2) * rScale,
-            (item.y - item.height / 2) * rScale,
-            'ui/cockpit_resource_bar_energy',
-            null,
-            barsCallback);
-      }
-    }
 
     // render equipped abilities
     {
@@ -1312,13 +1370,24 @@ class Hud {
 
       inactiveAbilitiesCooldownGraphics.clear();
 
+      final editorHudSlotObjectIds = [
+        'hud_ability_slot__1',
+        'hud_ability_slot__2',
+        'hud_ability_slot__3',
+      ];
+      final hudAbilityLayerId = 'layer_2';
+
       for (i in 0...inventoryEquippedSlots.length) {
         final lootId = inventoryEquippedSlots[i];
 
         if (lootId != null) {
           final hudSlot = hudEquippedAbilitySlots[i];
-          final cx = (hudSlot.x + hudSlot.width / 2) * Hud.rScale;
-          final cy = (hudSlot.y + hudSlot.height / 2) * Hud.rScale;
+          final editorState = UiGrid.loadHudLayout();
+          final grid = editorState.gridByLayerId.get(hudAbilityLayerId);
+          final slotObjectId = editorHudSlotObjectIds[i];
+          final bounds = grid.itemCache.get(slotObjectId);
+          final cx = (bounds[0]) * Hud.rScale;
+          final cy = (bounds[2]) * Hud.rScale;
           final lootInst = InventoryDragAndDropPrototype
             .getItemById(lootId); 
           final lootDef = Loot.getDef(lootInst.type);
