@@ -99,7 +99,7 @@ class Entity extends h2d.Object {
   public var stats: EntityStats.StatsRef;
   var deathAnimationStyle = 'default';
   public var components: Map<String, Dynamic> = [
-    'neighborQueryThreshold' => 0
+    'neighborQueryThreshold' => 10
   ];
   public var neighborCheckInterval: Int = 2; // after X ticks
   public final createdAt = Main.Global.time;
