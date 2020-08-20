@@ -911,8 +911,8 @@ class Player extends Entity {
       maxEnergy: 40,
       currentHealth: 100.0,
       currentEnergy: 40.0,
-      energyRegeneration: 3,
-      pickupRadius: 40 // per second
+      energyRegeneration: 3, // per second
+      pickupRadius: 40 
     });
 
     var runFrames = [
