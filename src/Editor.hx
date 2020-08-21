@@ -5,10 +5,6 @@
  * not having to deal with varying issues around objects
  * changing their size because their position remains static.
  *
- * [ ] Add option to render using spriteBatchSystem. This will be useful
-       for the passive tree because we want the nodes and links to render
-       in a certain order, and the spriteBatchSystem gives us the
-       flexibility to choose the sortOrder and automatically handle it.
  * [ ] Optimize tile rendering so that it only renders what is in the viewport.
        We can do this for both the x and y axis, which should significantly
        cut down on the performance cost of rendering.
