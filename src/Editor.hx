@@ -973,11 +973,10 @@ class Editor {
 
         activeRegion;
       };
-      Main.Global.setState(
-          Main.Global, 
-          'uiHomeMenuEnabled',
-          localState.editorMode != MarqueeSelect
-          && localState.editorMode != CommandBar);
+
+      Main.Global.uiHomeMenuEnabled = 
+        localState.editorMode != MarqueeSelect
+        && localState.editorMode != CommandBar;
 
       final activeGrid = editorState.gridByLayerId.get(
           localState.activeLayerId);

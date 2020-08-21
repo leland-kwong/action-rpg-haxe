@@ -25,11 +25,6 @@ enum HoverState {
 }
 
 class Global {
-  public static function setState(
-      state, field, value) {
-    Reflect.setField(state, field, value);
-  }
-
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
   public static var particleScene: h2d.Scene;
