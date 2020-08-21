@@ -612,7 +612,12 @@ class InventoryDragAndDropPrototype {
     invGrid: Grid.create(16 * Hud.rScale),
     debugGrid: Grid.create(16 * Hud.rScale),
     pickedUpItemId: NULL_PICKUP_ID,
-    interactSlots: new Array<h2d.Interactive>()
+    interactSlots: new Array<h2d.Interactive>(),
+    nearestAbilitySlot: {
+      slotDefinition: null,
+      slotIndex: -1,
+      distance: Math.POSITIVE_INFINITY
+    }
   };
 
   static public function getEquippedAbilities() {
@@ -659,14 +664,14 @@ class InventoryDragAndDropPrototype {
       final slotX = 0 * slotSize;
       final slotY = 4 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('flameTorch'), 0); 
+          createLootInstanceByType('energyBomb'), 0); 
     }
 
     {
       final slotX = 3 * slotSize;
       final slotY = 5 * slotSize;
       equipItemToSlot(
-          createLootInstanceByType('heal1'), 1); 
+          createLootInstanceByType('flameTorch'), 1); 
     }
 
     {
@@ -879,38 +884,6 @@ class InventoryDragAndDropPrototype {
           final canEquip = lootDef.category == 
             nearestAbilitySlot.slotDefinition.allowedCategory ||
             state.pickedUpItemId == NULL_PICKUP_ID;
-
-          final highlightSlotToEquip = (time) -> {
-            Main.Global.uiSpriteBatch.emitSprite(
-                nearestAbilitySlot.slotDefinition.x, 
-                nearestAbilitySlot.slotDefinition.y,
-                'ui/square_white',
-                null,
-                (p) -> {
-                  p.sortOrder = 3;
-                  final b = p.batchElement;
-                  b.scaleX = nearestAbilitySlot.slotDefinition.width;
-                  b.scaleY = nearestAbilitySlot.slotDefinition.height;
-                  b.a = 0.6;
-
-                  if (canEquip) {
-                    b.b = 0;
-                    // show red to indicate not-allowed
-                  } else {
-                    b.r = 214 / 255;
-                    b.g = 0;
-                    b.b = 0;
-                  }
-                });
-
-            return false;
-          };
-
-          if (hasPickedUp) {
-            Main.Global.renderHooks.push(
-                highlightSlotToEquip);
-          }
-
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
@@ -922,6 +895,8 @@ class InventoryDragAndDropPrototype {
                 NULL_PICKUP_ID);
           }
         }
+
+        state.nearestAbilitySlot = nearestAbilitySlot;
       };
 
       handleEquipmentSlots();
@@ -1185,6 +1160,39 @@ class InventoryDragAndDropPrototype {
 
             final b = p.batchElement;
             b.scale = Hud.rScale;
+          });
+    }
+
+    final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
+    final nearestAbilitySlot = state.nearestAbilitySlot;
+    if (nearestAbilitySlot.slotDefinition != null
+        && hasPickedUp) {
+      final lootInst = state.itemsById.get(state.pickedUpItemId);
+      final lootDef = Loot.getDef(lootInst.type);
+      final canEquip = lootDef.category == 
+        nearestAbilitySlot.slotDefinition.allowedCategory ||
+        state.pickedUpItemId == NULL_PICKUP_ID;
+
+      Main.Global.uiSpriteBatch.emitSprite(
+          nearestAbilitySlot.slotDefinition.x, 
+          nearestAbilitySlot.slotDefinition.y,
+          'ui/square_white',
+          null,
+          (p) -> {
+            p.sortOrder = 3;
+            final b = p.batchElement;
+            b.scaleX = nearestAbilitySlot.slotDefinition.width;
+            b.scaleY = nearestAbilitySlot.slotDefinition.height;
+            b.a = 0.6;
+
+            if (canEquip) {
+              b.b = 0;
+              // show red to indicate not-allowed
+            } else {
+              b.r = 214 / 255;
+              b.g = 0;
+              b.b = 0;
+            }
           });
     }
   }
