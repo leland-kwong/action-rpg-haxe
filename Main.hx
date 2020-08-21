@@ -55,7 +55,6 @@ class Global {
   public static var sb: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
   public static var time = 0.0;
-  public static var dt = 0.0;
   public static var isNextFrame = true;
 
   public static var tickCount = 0;
@@ -486,6 +485,11 @@ class Main extends hxd.App {
     }
   }
 
+  function hasRemainingUpdateFrames(
+      acc: Float, frameTime: Float) {
+    return acc >= frameTime;
+  }
+
   // on each frame
   override function update(dt:Float) {
     try {
@@ -500,98 +504,111 @@ class Main extends hxd.App {
 
       Global.logData.escapeStack = Global.escapeStack;
       Global.mainPhase = MainPhase.Update;
-      Global.dt = dt;
-      Global.time += dt;
       acc += dt;
 
-      var fps = Math.round(1/dt);
-      // set to 1/60 for a fixed 60fps
-      final frameTime = Global.dt;
+      final trueFps = Math.round(1/dt);
+      
+      // Set to fixed dt otherwise we can get inconsistent
+      // results with the game physics.
+      // https://gafferongames.com/post/fix_your_timestep/
+      final frameTime = 1/100;
+      // prevent updates from cascading into infinite
+      final maxNumUpdatesPerFrame = 4;
+      var frameDt = 0.;
+      var numUpdates = 0;
 
-      // update dt accumulator
-      var isNextFrame = acc >= frameTime;
-      if (isNextFrame) {
+      // run while there is remaining frames to simulate
+      while (hasRemainingUpdateFrames(acc, frameTime)
+          && numUpdates < maxNumUpdatesPerFrame) {
+        numUpdates += 1;
+
         acc -= frameTime;
         Global.isNextFrame = true;
+
+        Global.time += frameTime;
+        frameDt += frameTime;
+
+        if (debugText != null) {
+          final formattedStats = Json.stringify({
+            time: Global.time,
+            tickCount: Global.tickCount,
+            fpsTrue: trueFps,
+            fps: Math.round(1/frameTime),
+            drawCalls: engine.drawCalls,
+            numEntities: Lambda.count(Entity.ALL_BY_ID),
+            numSprites: Lambda.fold(
+                SpriteBatchSystem.instances, 
+                (ref, count) -> {
+                  return count + ref.particles.length;
+                }, 0),
+            numActiveEntitiesToRender: 
+              Main.Global.entitiesToRender.length,
+            numAnimations: core.Anim.AnimEffect
+              .nextAnimations.length,
+            numUpdateHooks: Main.Global.updateHooks.length,
+            numRenderHooks: Main.Global.renderHooks.length,
+          }, null, '  ');
+          var text = [
+            'stats: ${formattedStats}',
+            'log: ${Json.stringify(Global.logData, null, '  ')}'
+          ].join('\n');
+          var debugUiMargin = 10;
+          debugText.x = debugUiMargin;
+          debugText.y = debugUiMargin;
+          debugText.text = text;
+        }
+
+        final nextHooks = [];
+        for (update in Main.Global.updateHooks) {
+          final shouldKeepAlive = update(frameTime);
+
+          if (shouldKeepAlive) {
+            nextHooks.push(update); 
+          }
+        }
+        Main.Global.updateHooks = nextHooks;
+
+        // sync up scenes with the camera
+        {
+          // IMPORTANT: update the camera position first
+          // before updating the scenes otherwise they
+          // will be lagging behind
+          Camera.update(Global.mainCamera, frameTime);
+          Camera.setSize(
+              Global.mainCamera,
+              Global.rootScene.width,
+              Global.rootScene.height);
+
+          // update scenes to move relative to camera
+          final cam_center_x = -Global.mainCamera.x 
+            + Math.fround(Global.rootScene.width / 2);
+          final cam_center_y = -Global.mainCamera.y 
+            + Math.fround(Global.rootScene.height / 2);
+          for (scene in [
+              Global.rootScene,
+              Global.particleScene,
+              Global.debugScene
+          ]) {
+            scene.x = cam_center_x;
+            scene.y = cam_center_y;
+          }
+        }
+
+        Global.tickCount = Std.int(
+            Global.time / frameTime);
+
+        // we want to set this to false as soon as
+        // a single update is run to prevent a situation
+        // where we'll get a double click due to the game
+        // loop updating more than once per frame on systems
+        // that don't support high frame rates
+        Global.worldMouse.clicked = false;
       }
-
-
-      if (debugText != null) {
-        final formattedStats = Json.stringify({
-          time: Global.time,
-          tickCount: Global.tickCount,
-          fpsTrue: fps,
-          fps: Math.round(1/frameTime),
-          drawCalls: engine.drawCalls,
-          numEntities: Lambda.count(Entity.ALL_BY_ID),
-          numSprites: Lambda.fold(
-              SpriteBatchSystem.instances, 
-              (ref, count) -> {
-                return count + ref.particles.length;
-              }, 0),
-          numActiveEntitiesToRender: 
-            Main.Global.entitiesToRender.length,
-          numAnimations: core.Anim.AnimEffect
-            .nextAnimations.length,
-          numUpdateHooks: Main.Global.updateHooks.length,
-          numRenderHooks: Main.Global.renderHooks.length,
-        }, null, '  ');
-        var text = [
-          'stats: ${formattedStats}',
-          'log: ${Json.stringify(Global.logData, null, '  ')}'
-        ].join('\n');
-        var debugUiMargin = 10;
-        debugText.x = debugUiMargin;
-        debugText.y = debugUiMargin;
-        debugText.text = text;
-      }
-
+      
       handleGlobalHotkeys();
-
-      final nextHooks = [];
-      for (update in Main.Global.updateHooks) {
-        final shouldKeepAlive = update(dt);
-
-        if (shouldKeepAlive) {
-          nextHooks.push(update); 
-        }
-      }
-      Main.Global.updateHooks = nextHooks;
-
       core.Anim.AnimEffect
-        .update(dt);
-      SpriteBatchSystem.updateAll(dt);
-      // sync up scenes with the camera
-      {
-        // IMPORTANT: update the camera position first
-        // before updating the scenes otherwise they
-        // will be lagging behind
-        Camera.update(Main.Global.mainCamera, dt);
-        Camera.setSize(
-            Main.Global.mainCamera,
-            Main.Global.rootScene.width,
-            Main.Global.rootScene.height);
-
-        // update scenes to move relative to camera
-        var cam_center_x = -Main.Global.mainCamera.x 
-          + Math.fround(Main.Global.rootScene.width / 2);
-        var cam_center_y = -Main.Global.mainCamera.y 
-          + Math.fround(Main.Global.rootScene.height / 2);
-        for (scene in [
-            Main.Global.rootScene,
-            Main.Global.particleScene,
-            Main.Global.debugScene
-        ]) {
-          scene.x = cam_center_x;
-          scene.y = cam_center_y;
-        }
-      }
-
-      final tickFrequency = 144;
-      Main.Global.tickCount = Std.int(
-          Main.Global.time / (1 / tickFrequency));
-
-      Global.worldMouse.clicked = false;
+        .update(frameDt);
+      SpriteBatchSystem.updateAll(frameDt);
     } catch (error: Dynamic) {
 
       final stack = haxe.CallStack.exceptionStack();
