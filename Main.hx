@@ -473,7 +473,8 @@ class Main extends hxd.App {
     }
 #end
 
-    if (Key.isPressed(Key.I)) {
+    if (Key.isPressed(Key.I)
+        && Global.uiState.hud.enabled) {
       Hud.UiStateManager.send({
         type: 'INVENTORY_TOGGLE'
       });
