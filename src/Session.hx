@@ -106,7 +106,7 @@ class Session {
     thread.sendMessage({
       file: file,
       payload: payload,
-      timestamp: Sys.cpuTime()
+      timestamp: Sys.time()
     });
   }
 
@@ -132,11 +132,16 @@ class Session {
     }
   }
 
+  public static function sessionPath(
+      ref: SessionRef) {
+    return 'sessions/${ref.sessionId}.log';
+  }
+
   public static function logAndProcessEvent(
       ref, 
       event: SessionEvent,
       ?onSuccess) {
-    final file = 'sessions/${ref.sessionId}.log';
+    final file = sessionPath(ref);
     
     logEvent(file, event, onSuccess);
     processEvent(ref, event);

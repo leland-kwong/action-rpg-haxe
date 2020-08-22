@@ -12,7 +12,7 @@ import sys.io.File;
 #end
 
 class SaveState {
-  static final baseDir = 'external-assets';
+  public static final baseDir = 'external-assets';
 
   public static function save(
       data: Dynamic,
