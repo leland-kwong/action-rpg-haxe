@@ -14,6 +14,10 @@ import sys.io.File;
 class SaveState {
   public static final baseDir = 'external-assets';
 
+  public static function filePath(file) {
+    return '${baseDir}/${file}';
+  }
+
   public static function save(
       data: Dynamic,
       file: String,
