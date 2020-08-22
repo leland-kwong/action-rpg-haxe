@@ -61,6 +61,9 @@ class Global {
     Array<(dt: Float) -> Bool> = [];
   public static var renderHooks: 
     Array<(dt: Float) -> Bool> = [];
+  // handles input device events
+  public static var inputHooks: 
+    Array<(dt: Float) -> Bool> = [];
 
   public static var mainPhase: MainPhase = null;
   public static var logData: Dynamic = {};
@@ -178,7 +181,7 @@ class Main extends hxd.App {
   public override function render(e: h3d.Engine) {
     try {
 
-      Main.Global.mainPhase = MainPhase.Render;
+      Global.mainPhase = MainPhase.Render;
 
       {
         final nextRenderHooks = [];
@@ -215,11 +218,66 @@ class Main extends hxd.App {
     }
   }
 
+  public function testSaveLoad() {
+    final sessionRef = Session.create();
+
+    Session.logAndProcessEvent(sessionRef, {
+      type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
+      data: {
+        nodeId: 'test_nodeid',
+      }
+    });
+
+    Global.inputHooks.push((dt: Float) -> {
+      final Key = hxd.Key;
+      // save game
+      if (Key.isPressed(Key.S)) {
+        trace('save game');
+      }
+
+      // load game
+      if (Key.isPressed(Key.L)) {
+        trace('load game');
+      }
+
+      return true;
+    });
+  } 
+
+  function handleGlobalHotkeys(dt: Float) {
+    final Key = hxd.Key;
+
+#if debugMode
+    final isForceExit = Key.isDown(Key.CTRL) &&
+      Key.isPressed(Key.Q);
+
+    if (isForceExit) {
+      hxd.System.exit();
+    }
+#end
+
+    if (Key.isPressed(Key.I)
+        && Global.uiState.hud.enabled) {
+      Hud.UiStateManager.send({
+        type: 'INVENTORY_TOGGLE'
+      });
+    }
+
+    if (Key.isPressed(Key.ESCAPE)
+        && Global.uiHomeMenuEnabled) {
+      Stack.pop(Global.escapeStack);
+    }
+
+    return true;
+  }
+
   override function init() {
     try {
 
+      testSaveLoad();
       hxd.Res.initEmbed();
-      Main.Global.mainPhase = MainPhase.Init;
+      Global.mainPhase = MainPhase.Init;
+      Global.inputHooks.push(handleGlobalHotkeys);
 
       // setup global scene objects
       {
@@ -455,31 +513,7 @@ class Main extends hxd.App {
     }
   }
 
-  function handleGlobalHotkeys() {
-    final Key = hxd.Key;
-
-#if debugMode
-    final isForceExit = Key.isDown(Key.CTRL) &&
-      Key.isPressed(Key.Q);
-
-    if (isForceExit) {
-      hxd.System.exit();
-    }
-#end
-
-    if (Key.isPressed(Key.I)
-        && Global.uiState.hud.enabled) {
-      Hud.UiStateManager.send({
-        type: 'INVENTORY_TOGGLE'
-      });
-    }
-
-    if (Key.isPressed(Key.ESCAPE)
-        && Global.uiHomeMenuEnabled) {
-      Stack.pop(Global.escapeStack);
-    }
-  }
-
+  
   function hasRemainingUpdateFrames(
       acc: Float, frameTime: Float) {
     return acc >= frameTime;
@@ -489,13 +523,6 @@ class Main extends hxd.App {
   override function update(dt:Float) {
     try {
       Global.isNextFrame = false;
-
-      {
-        // reset scene data each update
-        Global.staticScene.x = 0;
-        Global.staticScene.y = 0;
-        Global.staticScene.scaleMode = ScaleMode.Zoom(4);
-      }
 
       Global.logData.escapeStack = Global.escapeStack;
       Global.mainPhase = MainPhase.Update;
@@ -553,15 +580,18 @@ class Main extends hxd.App {
           debugText.text = text;
         }
 
-        final nextHooks = [];
-        for (update in Main.Global.updateHooks) {
-          final shouldKeepAlive = update(frameTime);
+        // run updateHooks
+        {
+          final nextHooks = [];
+          for (update in Global.updateHooks) {
+            final shouldKeepAlive = update(frameTime);
 
-          if (shouldKeepAlive) {
-            nextHooks.push(update); 
+            if (shouldKeepAlive) {
+              nextHooks.push(update); 
+            }
           }
+          Global.updateHooks = nextHooks;
         }
-        Main.Global.updateHooks = nextHooks;
 
         // sync up scenes with the camera
         {
@@ -600,7 +630,20 @@ class Main extends hxd.App {
         Global.worldMouse.clicked = false;
       }
       
-      handleGlobalHotkeys();
+      // run input hooks outside of the main update loop
+      // because we only want it to trigger once per
+      // frame.
+      {
+        final nextHooks = [];
+        for (update in Main.Global.inputHooks) {
+          final shouldKeepAlive = update(frameTime);
+
+          if (shouldKeepAlive) {
+            nextHooks.push(update); 
+          }
+        }
+        Global.inputHooks = nextHooks;
+      }
       core.Anim.AnimEffect
         .update(frameDt);
       SpriteBatchSystem.updateAll(frameDt);
