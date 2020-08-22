@@ -699,9 +699,11 @@ class Experiment {
           false,
           null,
           loadPassiveSkillTree,
-          (err) -> {
-            trace('error loading passive tree', err);
-          });  
+          HaxeUtils.handleError(
+            'error loading passive skill tree',
+            (err) -> {
+              hxd.System.exit();
+            }));  
     }
 
     return () -> {

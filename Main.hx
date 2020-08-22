@@ -648,12 +648,10 @@ class Main extends hxd.App {
         .update(frameDt);
       SpriteBatchSystem.updateAll(frameDt);
     } catch (error: Dynamic) {
-
-      final stack = haxe.CallStack.exceptionStack();
-      trace(error);
-      trace(haxe.CallStack.toString(stack));
-      hxd.System.exit();
-
+      final handler = HaxeUtils.handleError(
+          null,
+          (err) -> hxd.System.exit());
+      handler(error);
     }
   }
 
