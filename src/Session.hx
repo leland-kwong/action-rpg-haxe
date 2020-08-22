@@ -45,9 +45,11 @@ class Session {
     };
   }
 
+  // logs the event to disk
   public static function logEvent(
       file: String, 
-      payload: SessionEvent) {
+      payload: SessionEvent,
+      ?onSuccess: () -> Void) {
 
     if (thread == null) {
       thread = Thread.create(() -> {
@@ -81,11 +83,14 @@ class Session {
             }
 
             final stringified = haxe.Json.stringify(payload);
-
             fileOutput.writeString(
                 '${payload}${delimiter}',
                 UTF8);
             fileOutput.flush();
+
+            if (onSuccess != null) {
+              onSuccess();
+            }
           }
         } catch (error: Dynamic) {
 
@@ -129,10 +134,11 @@ class Session {
 
   public static function logAndProcessEvent(
       ref, 
-      event: SessionEvent) {
+      event: SessionEvent,
+      ?onSuccess) {
     final file = 'sessions/${ref.sessionId}.log';
     
-    logEvent(file, event);
+    logEvent(file, event, onSuccess);
     processEvent(ref, event);
   }
 
