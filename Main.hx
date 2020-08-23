@@ -319,11 +319,7 @@ class Main extends hxd.App {
 
       }
 
-#if !production
-
       Tests.run();      
-
-#end
 
       final win = hxd.Window.getInstance();
 

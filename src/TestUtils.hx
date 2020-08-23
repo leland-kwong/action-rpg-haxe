@@ -4,7 +4,7 @@ class TestUtils {
     testFn: (
       (passed: Bool) -> Void
     ) -> Void,
-    afterTest: () -> Void = null
+    ?afterTest: () -> Void = null
   ) {
     function predicate(passed) {
       if (!passed) {
