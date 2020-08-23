@@ -218,32 +218,6 @@ class Main extends hxd.App {
     }
   }
 
-  public function testSaveLoad() {
-    final sessionRef = Session.create();
-
-    Session.logAndProcessEvent(sessionRef, {
-      type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-      data: {
-        nodeId: 'test_nodeid',
-      }
-    });
-
-    Global.inputHooks.push((dt: Float) -> {
-      final Key = hxd.Key;
-      // save game
-      if (Key.isPressed(Key.S)) {
-        trace('save game');
-      }
-
-      // load game
-      if (Key.isPressed(Key.L)) {
-        trace('load game');
-      }
-
-      return true;
-    });
-  } 
-
   function handleGlobalHotkeys(dt: Float) {
     final Key = hxd.Key;
 
@@ -274,7 +248,7 @@ class Main extends hxd.App {
   override function init() {
     try {
 
-      testSaveLoad();
+      Session.wip();
       hxd.Res.initEmbed();
       Global.mainPhase = MainPhase.Init;
       Global.inputHooks.push(handleGlobalHotkeys);

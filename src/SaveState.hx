@@ -21,7 +21,7 @@ class SaveState {
   public static function save(
       data: Dynamic,
       file: String,
-      serializeFn = null,
+      serializeFn,
       onSuccess: (res: Null<Dynamic>) -> Void,
       onError: (e: Dynamic) -> Void) {
 
@@ -51,10 +51,10 @@ class SaveState {
   public static function load(
     keyPath: String,
     fromUrl = false,
-    deserializeFn = null,
+    deserializeFn: (rawData: String) -> Dynamic,
     onSuccess: (data: Dynamic) -> Void,
     onError: (error: Dynamic) -> Void
-  ): Void {
+  ) {
     try {
 
       var fullPath = '${baseDir}/${keyPath}';
@@ -65,13 +65,10 @@ class SaveState {
       }
 
       final s = File.getContent(fullPath);
-      final deserialized = {
-        if (deserializeFn == null) {
-          final unserializer = new Unserializer(s);
-          unserializer.unserialize();
-        } else {
-          deserializeFn(s);
-        }
+      final deserialized = if (deserializeFn == null) {
+        haxe.Unserializer.run(s);
+      } else {
+        deserializeFn(s);
       }
 
       onSuccess(deserialized);
@@ -86,51 +83,54 @@ class SaveState {
   }
 
   public static function tests() {
-    var rand = '${Math.random() * 1000}'.substring(4);
-    var keyPath = 'test_game_state--${rand}.sav';
+    var keyPath = 'test_game_state.sav';
 
     #if debugMode {
       // TODO this test is currently not properly deleting the state afterwards
-      // assert('[SaveState] save and load', (hasPassed) -> {
-      //   var data = [
-      //     'foo' => 0,
-      //     'bar' => 1
-      //   ];
+      assert('[SaveState] save and load', (hasPassed) -> {
+        var data = {
+          foo: 1,
+          bar: 2
+        };
 
-      //   function onError(e) {
-      //     trace(e);
-      //     hasPassed(false);
-      //   }
+        function onError(e) {
+          trace(e);
+          hasPassed(false);
+        }
 
-      //   SaveState.save(data, keyPath, null, (_) -> {
-      //     SaveState.load(keyPath, false, (s: Map<String, Int>) -> {
-      //       var isEqualState = [for (k in s.keys()) k]
-      //         .foreach((k) -> {
-      //           data[k] == s[k];
-      //         });
+        SaveState.save(data, keyPath, null, (_) -> {
+          SaveState.load(
+              keyPath, 
+              false, 
+              null,
+              (s: Dynamic) -> {
+            var isEqualState = [for (k in Reflect.fields(s)) k]
+              .foreach((k) -> {
+                Reflect.field(data, k) == Reflect.field(s, k);
+              });
 
-      //       hasPassed(isEqualState);
-      //     }, onError);
-      //   }, onError);
-      // }, () -> {
-      //   SaveState.delete(keyPath);
-      // });
+            hasPassed(isEqualState);
+          }, onError);
+        }, onError);
+      }, () -> {
+        SaveState.delete(keyPath);
+      });
 
-      // assert('[SaveState] delete state', (hasPassed) -> {
-      //   function onError(e) {
-      //     trace(e);
-      //     hasPassed(false);
-      //   }
+      assert('[SaveState] delete state', (hasPassed) -> {
+        function onError(e) {
+          trace(e);
+          hasPassed(false);
+        }
 
-      //   SaveState.save({
-      //     foo: 'foo'
-      //   }, keyPath, null, (_) -> {
-      //     SaveState.delete(keyPath);
-      //     SaveState.load(keyPath, (s) -> {
-      //       hasPassed(s == null);
-      //     }, onError);
-      //   }, onError);
-      // });
+        SaveState.save({
+          foo: 'foo'
+        }, keyPath, null, (_) -> {
+          SaveState.delete(keyPath);
+          SaveState.load(keyPath, false, null, (s) -> {
+            hasPassed(s == null);
+          }, onError);
+        }, onError);
+      });
     }
     #end
   }
