@@ -32,16 +32,20 @@ class Session {
   public static final fileOutputByPath: 
     Map<String, sys.io.FileOutput> = new Map();
 
-  static function makeSessionId(
-      ?customId = null) {
-    final id = Utils.withDefault(customId, Sys.time());
-
-    return 'session_${Std.int(id)}';
+  static function makeId(
+      ?customId: String) {
+    return Utils.withDefault(
+        customId, 
+        '${Std.int(Sys.time())}');
   }
 
   public static function createGame(
       ?previousState: SessionRef, 
-      ?previousLogData: String): SessionRef {
+      ?previousLogData: String,
+      ?customId: String): SessionRef {
+
+    final id = makeId(customId);
+    final sessionId = 'session_${id}';
 
     // create game state from previous state and log
     if (previousState != null) {
@@ -49,14 +53,14 @@ class Session {
 
       processLog(newState, previousLogData);
       // create a new session id for new state
-      newState.sessionId = makeSessionId();
+      newState.sessionId = sessionId;
 
       return newState;
     }
 
     return {
-      gameId: 'game_${Std.int(Sys.time())}',
-      sessionId: makeSessionId(),
+      gameId: 'game_${id}',
+      sessionId: id,
       experienceGained: 0,
       questState: new Map(),
       inventoryState: 'UNKNOWN_INVENTORY_STATE',
@@ -88,6 +92,13 @@ class Session {
     };
   }
 
+  static final threadMessageQueue: 
+   Array<{
+     file: String,
+     event: SessionEvent,
+     onSuccess: () -> Void
+   }> = [];
+
   // logs the event to disk
   public static function logEventToDisk(
       ref: SessionRef, 
@@ -97,20 +108,24 @@ class Session {
 
     final file = SaveState.filePath(
         savedGamePath(ref));
-    final message = {
+
+    threadMessageQueue.push({
       file: file,
       event: event,
-    };
+      onSuccess: onSuccess
+    });
 
     if (thread == null) {
 #if (target.threaded)
       thread = Thread.create(() -> {
         try {
           while (true) {
-            final nextMessage = Thread.readMessage(true);
-#else
-            final nextMessage = message;
 #end
+            while (threadMessageQueue.length == 0) {
+              Sys.sleep(10 / 1000);
+            }
+
+            final nextMessage = threadMessageQueue.shift();
             final event: SessionEvent = nextMessage.event;
             final file = nextMessage.file;
             final isNewFile = !fileOutputByPath.exists(file);
@@ -151,8 +166,8 @@ class Session {
                 UTF8);
             fileOutput.flush();
 
-            if (onSuccess != null) {
-              onSuccess();
+            if (nextMessage.onSuccess != null) {
+              nextMessage.onSuccess();
             }
 #if (target.threaded)
           }
@@ -162,20 +177,16 @@ class Session {
             onError(error);
           } else {
             HaxeUtils.handleError(
-                error,
-                (_) -> hxd.System.exit());
+                '',
+                (_) -> hxd.System.exit())(error);
           }
         }
       }); 
 #end
     }
-
-#if (target.threaded)
-    thread.sendMessage(message);
-#end
   }
 
-  public static function processEvent(
+  static function processEvent(
       ref: SessionRef,
       ev: SessionEvent) {
     switch(ev) {
@@ -197,11 +208,13 @@ class Session {
     }
   }
 
+  static final savedGamesRootDir = 'saved-games';
+
   static function savedGameDir(gameId) {
-    return 'saved-games/${gameId}';
+    return '${savedGamesRootDir}/${gameId}';
   }
 
-  public static function savedGamePath(
+  static function savedGamePath(
       ref: SessionRef) {
     return '${savedGameDir(ref.gameId)}/${ref.sessionId}.log';
   }
@@ -295,7 +308,11 @@ class Session {
   }
 
   public static function getGamesList() {
+    final gameDirs = FileSystem.readDirectory(
+        SaveState.filePath(
+          savedGamesRootDir));
 
+    return gameDirs;
   }
 
   public static function deleteGame(
@@ -315,6 +332,7 @@ class Session {
 
           if (fileOutput != null) {
             fileOutput.close();
+            fileOutputByPath.remove(path);
           }
 
           FileSystem.deleteFile(path);
@@ -328,12 +346,19 @@ class Session {
   }
 
   public static function tests() {
-    final stateRef = Session.createGame();
+    final mockNodeId = 'unit_test_nodeid';
+    final mockEvent = Session.makeEvent(
+        'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION', {
+          nodeId: mockNodeId
+        });
 
     TestUtils.assert(
         'log event and load game',
         (passed) -> {
-          final mockNodeId = 'unit_test_nodeid';
+          final stateRef = Session.createGame(
+              null,
+              null,
+              'unit_test_id');
 
           function onError(err) {
             HaxeUtils.handleError(null)(err);
@@ -343,22 +368,13 @@ class Session {
                 HaxeUtils.handleError('error deleting file'));
           }
 
-          Session.logEventToDisk(stateRef, Session.makeEvent(
-                'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION', {
-                  nodeId: mockNodeId
-                }), () -> {
-
+          Session.logEventToDisk(stateRef, mockEvent, () -> {
             final gameFile = savedGamePath(stateRef);
             Session.loadGameFile(
                 gameFile,
-                (newStateRef) -> {
-                  Main.Global.logData.newStateRef = newStateRef;  
+                (loadedStateRef) -> {
                   passed(
-                      newStateRef.sessionId != stateRef.sessionId
-                      && newStateRef
-                      .passiveSkillTreeState
-                      .nodeSelectionStateById
-                      .get(mockNodeId) == true);
+                      stateRef.sessionId != loadedStateRef.sessionId);
 
                   deleteGame(
                       stateRef.gameId,
@@ -367,6 +383,53 @@ class Session {
                 },
                 onError);
           }, onError);
+        });
+
+    TestUtils.assert(
+        'list games',
+        (passed) -> {
+          final stateRefsList = [
+            for (i in 0...2) 
+              Session.createGame(
+                  null,
+                  null,
+                  'unit_test_id_${Utils.irnd(0, 1000)}')];    
+          var numLogged = 0;
+
+          function checkGamesList() {
+            if (numLogged != stateRefsList.length) {
+              return;
+            }
+
+            final gamesList = getGamesList();
+
+            function hasGameId(ref) {
+              return Lambda.exists(
+                  gamesList, 
+                  (gameId) -> gameId == ref.gameId);
+            }
+
+            passed(
+                Lambda.foreach(
+                  stateRefsList, 
+                  hasGameId));
+
+            // cleanup
+            for (gameId in gamesList) {
+              deleteGame(
+                  gameId,
+                  () -> {},
+                  HaxeUtils.handleError(null));
+            }
+          }
+
+          for (stateRef in stateRefsList) {
+            Session.logEventToDisk(
+                stateRef, mockEvent, () -> {
+                  numLogged += 1;
+                  checkGamesList();
+                });
+          }
         });
   }
 }

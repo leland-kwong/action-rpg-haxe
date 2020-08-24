@@ -12,15 +12,15 @@ class TestUtils {
     function predicate(passed, ?failureMessage: String) {
       doneState = true;
 
+      if (afterTest != null) {
+        afterTest();
+      }
+
       if (!passed) {
         final message = Utils.withDefault(
             failureMessage, 
             defaultFailureMessage);
         throw '[test fail] ${message}';
-      }
-
-      if (afterTest != null) {
-        afterTest();
       }
     }
 
@@ -36,6 +36,10 @@ class TestUtils {
       if (!doneState) {
         throw new haxe.Exception(
             '[test timeout] ${defaultFailureMessage}');
+
+        if (afterTest != null) {
+          afterTest();
+        }
       }
     }, timeout); 
   }
