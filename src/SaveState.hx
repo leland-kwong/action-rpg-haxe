@@ -22,7 +22,7 @@ class SaveState {
       data: Dynamic,
       file: String,
       serializeFn,
-      onSuccess: (res: Null<Dynamic>) -> Void,
+      onSuccess: (res: Dynamic) -> Void,
       onError: (e: Dynamic) -> Void) {
 
     try {
@@ -41,11 +41,15 @@ class SaveState {
         }
       };
       File.saveContent('${baseDir}/${file}', serialized);
-      onSuccess(null);
+      onSuccess(data);
     }
     catch (err: Dynamic) {
       onError(err);
     }
+  }
+
+  public static function noData(fileData) {
+    return fileData == null;
   }
 
   public static function load(

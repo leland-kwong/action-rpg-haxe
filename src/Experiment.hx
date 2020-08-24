@@ -69,7 +69,7 @@ class Experiment {
     }
     Main.Global.renderHooks.push(renderBackground);
 
-    final sessionRef = Session.create();
+    final sessionRef = Session.createGame();
 
     // test passive skill tree
     {
@@ -562,12 +562,10 @@ class Experiment {
                     && !isHoveredNodeSelected)
                 ||(isHoveredNodeSelected
                   && isDeselectableNode(state.hoveredNode.nodeId))) {
-              Session.logAndProcessEvent(sessionRef, {
-                type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-                data: {
+              Session.logAndProcessEvent(sessionRef, Session.makeEvent(
+                'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION', {
                   nodeId: state.hoveredNode.nodeId
-                }
-              });
+                }));
             }
           }
 

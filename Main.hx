@@ -248,7 +248,6 @@ class Main extends hxd.App {
   override function init() {
     try {
 
-      Session.wip();
       hxd.Res.initEmbed();
       Global.mainPhase = MainPhase.Init;
       Global.inputHooks.push(handleGlobalHotkeys);

@@ -1,10 +1,14 @@
+#if (target.threaded)
 import sys.thread.Thread;
+#end
+
 import sys.FileSystem;
 import sys.io.File;
 
 typedef SessionEvent = {
   type: String,
-  data: Dynamic
+  data: Dynamic,
+  timestamp: Float
 };
 
 typedef SessionRef = {
@@ -28,10 +32,31 @@ class Session {
   public static final fileOutputByPath: 
     Map<String, sys.io.FileOutput> = new Map();
 
-  public static function create(): SessionRef {
+  static function makeSessionId(
+      ?customId = null) {
+    final id = Utils.withDefault(customId, Sys.time());
+
+    return 'session_${Std.int(id)}';
+  }
+
+  public static function createGame(
+      ?previousState: SessionRef, 
+      ?previousLogData: String): SessionRef {
+
+    // create game state from previous state and log
+    if (previousState != null) {
+      final newState = Reflect.copy(previousState);
+
+      processLog(newState, previousLogData);
+      // create a new session id for new state
+      newState.sessionId = makeSessionId();
+
+      return newState;
+    }
+
     return {
-      sessionId: 'session_${Std.int(Sys.time())}',
       gameId: 'game_${Std.int(Sys.time())}',
+      sessionId: makeSessionId(),
       experienceGained: 0,
       questState: new Map(),
       inventoryState: 'UNKNOWN_INVENTORY_STATE',
@@ -45,32 +70,63 @@ class Session {
     };
   }
 
+  static function serialize(data: Dynamic): String {
+    return haxe.Serializer.run(data);
+  }
+
+  static function deserialize(rawData: String): Dynamic {
+    return haxe.Unserializer.run(rawData);
+  }
+
+  public static function makeEvent(
+      eventType: String,
+      eventDetail: Dynamic): SessionEvent {
+    return {
+      type: eventType,
+      data: eventDetail,
+      timestamp: Sys.time()
+    };
+  }
+
   // logs the event to disk
-  public static function logEvent(
-      file: String, 
-      payload: SessionEvent,
-      ?onSuccess: () -> Void) {
+  public static function logEventToDisk(
+      ref: SessionRef, 
+      event: SessionEvent,
+      ?onSuccess: () -> Void,
+      ?onError: (err: Dynamic) -> Void) {
+
+    final file = SaveState.filePath(
+        savedGamePath(ref));
+    final message = {
+      file: file,
+      event: event,
+    };
 
     if (thread == null) {
+#if (target.threaded)
       thread = Thread.create(() -> {
         try {
           while (true) {
             final nextMessage = Thread.readMessage(true);
-            Main.Global.logData.sessionMessage = nextMessage;
-            final payload: SessionEvent = nextMessage.payload;
+#else
+            final nextMessage = message;
+#end
+            final event: SessionEvent = nextMessage.event;
             final file = nextMessage.file;
+            final isNewFile = !fileOutputByPath.exists(file);
 
             final fileOutput = {
-              if (fileOutputByPath.exists(file)) {
-                fileOutputByPath.get(file);
-              } else {
+              if (isNewFile) {
                 final keypath = file.split('/');
                 final saveDir = keypath.slice(0, -1).join('/');
 
                 if (!FileSystem.exists(saveDir)) {
                   FileSystem.createDirectory(saveDir);
                 }
-                if (!FileSystem.exists(file)) {
+
+                final shouldCreateNewFile = !FileSystem.exists(file);
+
+                if (shouldCreateNewFile) {
                   File.saveContent(file, '');
                 }
 
@@ -79,35 +135,44 @@ class Session {
 
                 fileOutputByPath.set(file, fileOutput);
                 fileOutput;
+              } else {
+                fileOutputByPath.get(file);
               }
             }
 
-            final stringified = haxe.Json.stringify(payload);
+            // add current state to head of file
+            if (isNewFile) {
+              File.saveContent(
+                  file, serialize(ref));
+            }
+
             fileOutput.writeString(
-                '${payload}${delimiter}',
+                '${delimiter}${serialize(event)}',
                 UTF8);
             fileOutput.flush();
 
             if (onSuccess != null) {
               onSuccess();
             }
+#if (target.threaded)
           }
         } catch (error: Dynamic) {
 
-          final stack = haxe.CallStack.exceptionStack();
-          trace(error);
-          trace(haxe.CallStack.toString(stack));
-          hxd.System.exit();
-
+          if (onError != null) {
+            onError(error);
+          } else {
+            HaxeUtils.handleError(
+                error,
+                (_) -> hxd.System.exit());
+          }
         }
       }); 
+#end
     }
 
-    thread.sendMessage({
-      file: file,
-      payload: payload,
-      timestamp: Sys.time()
-    });
+#if (target.threaded)
+    thread.sendMessage(message);
+#end
   }
 
   public static function processEvent(
@@ -132,33 +197,21 @@ class Session {
     }
   }
 
-  public static function sessionPath(
-      ref: SessionRef) {
-    return 'sessions/${ref.sessionId}.log';
+  static function savedGameDir(gameId) {
+    return 'saved-games/${gameId}';
   }
 
   public static function savedGamePath(
       ref: SessionRef) {
-    return 'saved-games/${ref.gameId}.sav';
+    return '${savedGameDir(ref.gameId)}/${ref.sessionId}.log';
   }
 
   public static function logAndProcessEvent(
       ref, 
       event: SessionEvent,
       ?onSuccess) {
-    final file = SaveState.filePath(
-        sessionPath(ref));
 
-#if debugMode
-    TestUtils.assert(
-        'is incorrect log file path',
-        (passed) -> {
-          passed(
-              file == 'external-assets/${sessionPath(ref)}'); 
-        });
-#end
-    
-    logEvent(file, event, onSuccess);
+    logEventToDisk(ref, event, onSuccess);
     processEvent(ref, event);
   }
 
@@ -168,7 +221,7 @@ class Session {
     final events = logData.split(delimiter);
 
     for (evString in events) {
-      final parsed = haxe.Json.parse(evString);
+      final parsed: SessionEvent = deserialize(evString);
       processEvent(
           ref,
           parsed);
@@ -188,17 +241,20 @@ class Session {
         onError);
   }
 
-  public static function createAndSave(
-      onSuccess: (ref: SessionRef) -> Void,
-      onError: (err: Dynamic) -> Void) {
-    
-    final ref = create();
-    saveGame(
-        ref,
-        (_) -> {
-          onSuccess(ref);
-        },
-        onError);
+  static function handleLoadGame(rawGameData: String): SessionRef {
+    final firstDelimIndex = rawGameData.indexOf(delimiter);
+    final ref: SessionRef = deserialize(rawGameData.substring(0, firstDelimIndex));
+    final eventLog = rawGameData.substring(firstDelimIndex + 1);
+
+    final isValidRef = Type.typeof(ref) == TObject
+      && HaxeUtils.hasSameFields(ref, createGame());
+
+    if (!isValidRef) {
+      throw new haxe.Exception(
+          '[session load error] invalid session ref');
+    }
+
+    return createGame(ref, eventLog);
   }
 
   // Loading the game also processes the previous log data
@@ -213,20 +269,10 @@ class Session {
   // 2. Loads previous session log from game file
   // 3. Processes session log to update game state to latest
   // 4. Saves new game state to disk
-  public static function loadGame(
+  public static function loadGameFile(
       gameFile: String,
       onSuccess,
       onError) {
-
-    function createLogSessionHandler(ref: SessionRef) {
-      return function(logData: String) {
-        processLog(ref, logData); 
-        saveGame(
-            ref,
-            onSuccess,
-            onError);
-      }
-    }
 
     // the log data is a newline delimited
     // list of serialized events, so we have to
@@ -236,78 +282,92 @@ class Session {
       return rawData;
     }
 
-    function onRefLoaded(ref: SessionRef) {
-      
-      final isValidRef = Type.typeof(ref) == TObject
-          && HaxeUtils.hasSameFields(ref, create());
-
-      if (!isValidRef) {
-        throw new haxe.Exception(
-            '[session load error] invalid session ref');
-      }
-
-      SaveState.load(
-          sessionPath(ref),
-          false,
-          noDeserialize,
-          createLogSessionHandler(ref),
-          onError);
+    function onGameLoaded(gameData: String) {
+      onSuccess(handleLoadGame(gameData));
     }
 
     SaveState.load(
       gameFile,
       false,
-      null,
-      onRefLoaded,
+      noDeserialize,
+      onGameLoaded,
       onError);
   }
 
-  public static function wip() {
+  public static function getGamesList() {
 
-    function onCreateSuccess(sessionRef) { 
-      Main.Global.inputHooks.push((dt: Float) -> {
-        final Key = hxd.Key;
+  }
 
-        if (Key.isPressed(Key.S)) {
-          Session.logAndProcessEvent(sessionRef, {
-            type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-            data: {
-              nodeId: 'test_nodeid'
-            }
-          }, () -> {
-            trace('log succcess');
-            Session.saveGame(
-                sessionRef,
-                (_) -> trace(
-                  'save game success', 
-                  Session.savedGamePath(sessionRef)),
-                HaxeUtils.handleError(
-                  'save game failed'));
-          });
+  public static function deleteGame(
+      gameId: String, 
+      onSuccess, 
+      onError) {
+
+    try {
+      final dir = SaveState.filePath(
+          savedGameDir(gameId));
+      if (FileSystem.exists(dir)) {
+        final files = FileSystem.readDirectory(dir);
+        // need to clear directory first
+        for (f in files) {
+          final path = '${dir}/${f}';
+          final fileOutput = fileOutputByPath.get(path);
+
+          if (fileOutput != null) {
+            fileOutput.close();
+          }
+
+          FileSystem.deleteFile(path);
         }
+        FileSystem.deleteDirectory(dir);
+      }
+      onSuccess();
+    } catch (err) {
+      onError(err);
+    }
+  }
 
-        if(Key.isPressed(Key.L)) {
-          Session.loadGame(
-              Session.savedGamePath(sessionRef),
-              (loadedGameRef) -> {
-                Main.Global.logData.loadedGameRef = 
-                  loadedGameRef;
-                // trace('loaded game', loadedGameRef);
-              },
-              HaxeUtils.handleError(
-                'error loading game'));
-        }
+  public static function tests() {
+    final stateRef = Session.createGame();
 
-        return true;
-      });
-    }    
+    TestUtils.assert(
+        'log event and load game',
+        (passed) -> {
+          final mockNodeId = 'unit_test_nodeid';
 
-    Session.createAndSave(
-        onCreateSuccess,
-        HaxeUtils.handleError(
-          'error creating game')
-        );
-  } 
+          function onError(err) {
+            HaxeUtils.handleError(null)(err);
+            deleteGame(
+                stateRef.gameId,
+                () -> {},
+                HaxeUtils.handleError('error deleting file'));
+          }
 
+          Session.logEventToDisk(stateRef, Session.makeEvent(
+                'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION', {
+                  nodeId: mockNodeId
+                }), () -> {
+
+            final gameFile = savedGamePath(stateRef);
+            Session.loadGameFile(
+                gameFile,
+                (newStateRef) -> {
+                  Main.Global.logData.newStateRef = newStateRef;  
+                  passed(
+                      newStateRef.sessionId != stateRef.sessionId
+                      && newStateRef
+                      .passiveSkillTreeState
+                      .nodeSelectionStateById
+                      .get(mockNodeId) == true);
+
+                  deleteGame(
+                      stateRef.gameId,
+                      () -> {},
+                      HaxeUtils.handleError('error deleting file'));
+                },
+                onError);
+          }, onError);
+        });
+  }
 }
 

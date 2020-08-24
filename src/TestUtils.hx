@@ -1,20 +1,42 @@
 class TestUtils {
   public static function assert(
-    failureMessage: String,
+    defaultFailureMessage: String,
     testFn: (
-      (passed: Bool) -> Void
+      (passed: Bool, ?failureMessage: String) -> Void
     ) -> Void,
-    ?afterTest: () -> Void = null
+    ?afterTest: () -> Void = null,
+    ?timeout = 5000
   ) {
-    function predicate(passed) {
+    var doneState = false;
+
+    function predicate(passed, ?failureMessage: String) {
+      doneState = true;
+
       if (!passed) {
-        throw '[test fail] ${failureMessage}';
+        final message = Utils.withDefault(
+            failureMessage, 
+            defaultFailureMessage);
+        throw '[test fail] ${message}';
       }
 
       if (afterTest != null) {
         afterTest();
       }
     }
-    testFn(predicate);
+
+    try {
+      testFn(predicate);
+    } catch (err) {
+      doneState = true;
+      throw new haxe.Exception(
+          defaultFailureMessage, err);
+    }
+
+    haxe.Timer.delay(() -> {
+      if (!doneState) {
+        throw new haxe.Exception(
+            '[test timeout] ${defaultFailureMessage}');
+      }
+    }, timeout); 
   }
 }
