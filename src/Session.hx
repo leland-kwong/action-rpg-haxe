@@ -29,7 +29,7 @@ class Session {
   static final delimiter = '\n';
 
   static var thread: Thread;
-  public static final fileOutputByPath: 
+  static final fileOutputByPath: 
     Map<String, sys.io.FileOutput> = new Map();
 
   static function makeId(
@@ -39,7 +39,173 @@ class Session {
         '${Std.int(Sys.time())}');
   }
 
-  public static function createGame(
+  static function serialize(data: Dynamic): String {
+    return haxe.Serializer.run(data);
+  }
+
+  static function deserialize(rawData: String): Dynamic {
+    return haxe.Unserializer.run(rawData);
+  }
+
+  static final threadMessageQueue: 
+   Array<{
+     ref: SessionRef,
+     file: String,
+     event: SessionEvent,
+     onSuccess: () -> Void
+   }> = [];
+
+  // [SIDE-EFFECT] writes data to disk
+  static function handleThreadEvent(nextMessage) {
+    final event: SessionEvent = nextMessage.event;
+    final file = nextMessage.file;
+    final isNewFile = !fileOutputByPath.exists(file);
+
+    final fileOutput = {
+      if (isNewFile) {
+        final keypath = file.split('/');
+        final saveDir = keypath.slice(0, -1).join('/');
+
+        if (!FileSystem.exists(saveDir)) {
+          FileSystem.createDirectory(saveDir);
+        }
+
+        final shouldCreateNewFile = !FileSystem.exists(file);
+
+        if (shouldCreateNewFile) {
+          File.saveContent(file, '');
+        }
+
+        final fileOutput = sys.io.File.append(
+            file, false);
+
+        fileOutputByPath.set(file, fileOutput);
+        fileOutput;
+      } else {
+        fileOutputByPath.get(file);
+      }
+    }
+
+    // add current state to head of file
+    if (isNewFile) {
+      File.saveContent(
+          file, serialize(nextMessage.ref));
+    }
+
+    fileOutput.writeString(
+        '${delimiter}${serialize(event)}',
+        UTF8);
+    fileOutput.flush();
+
+    if (nextMessage.onSuccess != null) {
+      nextMessage.onSuccess();
+    }
+  }
+
+  static function logEventToDisk(
+      ref: SessionRef, 
+      event: SessionEvent,
+      ?onSuccess: () -> Void,
+      ?onError: (err: Dynamic) -> Void) {
+
+    final file = SaveState.filePath(
+        savedGamePath(ref));
+
+    threadMessageQueue.push({
+      ref: ref,
+      file: file,
+      event: event,
+      onSuccess: onSuccess
+    });
+
+#if (target.threaded)
+    if (thread == null) {
+      thread = Thread.create(() -> {
+        try {
+          while (true) {
+            while (threadMessageQueue.length == 0) {
+              Sys.sleep(10 / 1000);
+            }
+#end
+
+            final nextMessage = threadMessageQueue.shift();
+
+            // IMPORTANT: thread callback must be pure to 
+            // prevent issues with referencing wrong data
+            // due to thread asynchronicity.
+            handleThreadEvent(nextMessage);
+
+#if (target.threaded)
+          }
+        } catch (error: Dynamic) {
+
+          if (onError != null) {
+            onError(error);
+          } else {
+            HaxeUtils.handleError(
+                '',
+                (_) -> hxd.System.exit())(error);
+          }
+        }
+      }); 
+    }
+#end
+  }
+
+  static final savedGamesRootDir = 'saved-games';
+
+  static function savedGameDir(gameId) {
+    return '${savedGamesRootDir}/${gameId}';
+  }
+
+  static function savedGamePath(
+      ref: SessionRef) {
+    return '${savedGameDir(ref.gameId)}/${ref.sessionId}.log';
+  }
+
+  static function processLog(
+      ref: SessionRef,
+      logData: String) {
+
+    final isEmptyLog = logData.length == 0;
+
+    if (isEmptyLog) {
+      return;
+    }
+
+    final events = logData.split(delimiter);
+
+    for (evString in events) {
+      final parsed: SessionEvent = deserialize(evString);
+      processEvent(
+          ref,
+          parsed);
+    }
+  }
+
+  static function processEvent(
+      ref: SessionRef,
+      ev: SessionEvent) {
+    switch(ev) {
+      case { 
+        type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
+        data: d }: {
+          final nodeId = d.nodeId;
+          final s = ref.passiveSkillTreeState
+            .nodeSelectionStateById;
+          final currentlySelected = Utils.withDefault(
+              s.get(nodeId), false);
+
+          s.set(nodeId, !currentlySelected);
+      }
+
+      default: {
+        throw 'invalid session event ${ev.type}';
+      }
+    }
+  }
+
+  public static function createGameState(
       ?previousState: SessionRef, 
       ?previousLogData: String,
       ?customId: String): SessionRef {
@@ -74,14 +240,6 @@ class Session {
     };
   }
 
-  static function serialize(data: Dynamic): String {
-    return haxe.Serializer.run(data);
-  }
-
-  static function deserialize(rawData: String): Dynamic {
-    return haxe.Unserializer.run(rawData);
-  }
-
   public static function makeEvent(
       eventType: String,
       eventDetail: Dynamic): SessionEvent {
@@ -92,153 +250,14 @@ class Session {
     };
   }
 
-  static final threadMessageQueue: 
-   Array<{
-     file: String,
-     event: SessionEvent,
-     onSuccess: () -> Void
-   }> = [];
-
-  // logs the event to disk
-  public static function logEventToDisk(
-      ref: SessionRef, 
-      event: SessionEvent,
-      ?onSuccess: () -> Void,
-      ?onError: (err: Dynamic) -> Void) {
-
-    final file = SaveState.filePath(
-        savedGamePath(ref));
-
-    threadMessageQueue.push({
-      file: file,
-      event: event,
-      onSuccess: onSuccess
-    });
-
-    if (thread == null) {
-#if (target.threaded)
-      thread = Thread.create(() -> {
-        try {
-          while (true) {
-#end
-            while (threadMessageQueue.length == 0) {
-              Sys.sleep(10 / 1000);
-            }
-
-            final nextMessage = threadMessageQueue.shift();
-            final event: SessionEvent = nextMessage.event;
-            final file = nextMessage.file;
-            final isNewFile = !fileOutputByPath.exists(file);
-
-            final fileOutput = {
-              if (isNewFile) {
-                final keypath = file.split('/');
-                final saveDir = keypath.slice(0, -1).join('/');
-
-                if (!FileSystem.exists(saveDir)) {
-                  FileSystem.createDirectory(saveDir);
-                }
-
-                final shouldCreateNewFile = !FileSystem.exists(file);
-
-                if (shouldCreateNewFile) {
-                  File.saveContent(file, '');
-                }
-
-                final fileOutput = sys.io.File.append(
-                    file, false);
-
-                fileOutputByPath.set(file, fileOutput);
-                fileOutput;
-              } else {
-                fileOutputByPath.get(file);
-              }
-            }
-
-            // add current state to head of file
-            if (isNewFile) {
-              File.saveContent(
-                  file, serialize(ref));
-            }
-
-            fileOutput.writeString(
-                '${delimiter}${serialize(event)}',
-                UTF8);
-            fileOutput.flush();
-
-            if (nextMessage.onSuccess != null) {
-              nextMessage.onSuccess();
-            }
-#if (target.threaded)
-          }
-        } catch (error: Dynamic) {
-
-          if (onError != null) {
-            onError(error);
-          } else {
-            HaxeUtils.handleError(
-                '',
-                (_) -> hxd.System.exit())(error);
-          }
-        }
-      }); 
-#end
-    }
-  }
-
-  static function processEvent(
-      ref: SessionRef,
-      ev: SessionEvent) {
-    switch(ev) {
-      case { 
-        type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-        data: d }: {
-          final nodeId = d.nodeId;
-          final s = ref.passiveSkillTreeState
-            .nodeSelectionStateById;
-          final currentlySelected = Utils.withDefault(
-              s.get(nodeId), false);
-
-          s.set(nodeId, !currentlySelected);
-      }
-
-      default: {
-        throw 'invalid session event ${ev.type}';
-      }
-    }
-  }
-
-  static final savedGamesRootDir = 'saved-games';
-
-  static function savedGameDir(gameId) {
-    return '${savedGamesRootDir}/${gameId}';
-  }
-
-  static function savedGamePath(
-      ref: SessionRef) {
-    return '${savedGameDir(ref.gameId)}/${ref.sessionId}.log';
-  }
-
   public static function logAndProcessEvent(
       ref, 
       event: SessionEvent,
-      ?onSuccess) {
+      ?onSuccess,
+      ?onError) {
 
-    logEventToDisk(ref, event, onSuccess);
+    logEventToDisk(ref, event, onSuccess, onError);
     processEvent(ref, event);
-  }
-
-  public static function processLog(
-      ref: SessionRef,
-      logData: String) {
-    final events = logData.split(delimiter);
-
-    for (evString in events) {
-      final parsed: SessionEvent = deserialize(evString);
-      processEvent(
-          ref,
-          parsed);
-    }
   }
 
   public static function saveGame(
@@ -254,20 +273,20 @@ class Session {
         onError);
   }
 
-  static function handleLoadGame(rawGameData: String): SessionRef {
+  static function processGameData(rawGameData: String): SessionRef {
     final firstDelimIndex = rawGameData.indexOf(delimiter);
     final ref: SessionRef = deserialize(rawGameData.substring(0, firstDelimIndex));
     final eventLog = rawGameData.substring(firstDelimIndex + 1);
 
     final isValidRef = Type.typeof(ref) == TObject
-      && HaxeUtils.hasSameFields(ref, createGame());
+      && HaxeUtils.hasSameFields(ref, createGameState());
 
     if (!isValidRef) {
       throw new haxe.Exception(
           '[session load error] invalid session ref');
     }
 
-    return createGame(ref, eventLog);
+    return createGameState(ref, eventLog);
   }
 
   // Loading the game also processes the previous log data
@@ -296,7 +315,9 @@ class Session {
     }
 
     function onGameLoaded(gameData: String) {
-      onSuccess(handleLoadGame(gameData));
+      final ref = processGameData(gameData);
+
+      onSuccess(ref);
     }
 
     SaveState.load(
@@ -307,12 +328,45 @@ class Session {
       onError);
   }
 
+  public static function loadMostRecentGameFile(
+      gameId: String,
+      onSuccess,
+      onError) {
+
+    try {
+      final gameDir = savedGameDir(gameId);
+      final gameFiles = FileSystem.readDirectory(
+          SaveState.filePath(gameDir));
+      gameFiles.sort((a, b) -> {
+        if (a < b) {
+          return -1;
+        }
+
+        if (a > b) {
+          return 1;
+        }
+
+        return 0;
+      });
+
+      final mostRecent = gameFiles.slice(-1)[0];
+      final file = '${gameDir}/${mostRecent}';
+
+      loadGameFile(
+          file,
+          onSuccess,
+          onError);
+    } catch (err) {
+      onError(err);
+    }
+  }
+
   public static function getGamesList() {
-    final gameDirs = FileSystem.readDirectory(
+    final gameIds = FileSystem.readDirectory(
         SaveState.filePath(
           savedGamesRootDir));
 
-    return gameDirs;
+    return gameIds;
   }
 
   public static function deleteGame(
@@ -345,7 +399,7 @@ class Session {
     }
   }
 
-  public static function tests() {
+  public static function unitTests() {
     final mockNodeId = 'unit_test_nodeid';
     final mockEvent = Session.makeEvent(
         'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION', {
@@ -355,7 +409,7 @@ class Session {
     TestUtils.assert(
         'log event and load game',
         (passed) -> {
-          final stateRef = Session.createGame(
+          final stateRef = Session.createGameState(
               null,
               null,
               'unit_test_id');
@@ -368,7 +422,7 @@ class Session {
                 HaxeUtils.handleError('error deleting file'));
           }
 
-          Session.logEventToDisk(stateRef, mockEvent, () -> {
+          Session.logAndProcessEvent(stateRef, mockEvent, () -> {
             final gameFile = savedGamePath(stateRef);
             Session.loadGameFile(
                 gameFile,
@@ -390,7 +444,7 @@ class Session {
         (passed) -> {
           final stateRefsList = [
             for (i in 0...2) 
-              Session.createGame(
+              Session.createGameState(
                   null,
                   null,
                   'unit_test_id_${Utils.irnd(0, 1000)}')];    
@@ -431,6 +485,55 @@ class Session {
                 });
           }
         });
+
+    {
+      final initialRef = Session.createGameState(
+          null,
+          null,
+          'unit_test_load_recent');
+
+      TestUtils.assert(
+          'get recent game file',
+          (passed) -> {
+            final stateRefsList = [
+              for (i in 0...2) 
+                Session.createGameState(
+                    initialRef,
+                    '',
+                    'unit_test_load_recent_${i}')];    
+            var numLogged = 0;
+
+            function checkRecentGame() {
+              if (numLogged != stateRefsList.length) {
+                return;
+              }
+
+              loadMostRecentGameFile(
+                  initialRef.gameId,
+                  (loadedRef) -> {
+                    final newestGameId = stateRefsList.slice(-1)[0].gameId;
+                    
+                    passed(
+                        loadedRef.gameId == newestGameId);
+                  },
+                  HaxeUtils.handleError('error getting recent game file'));
+            }
+
+            for (stateRef in stateRefsList) {
+              Session.logEventToDisk(
+                  stateRef, mockEvent, () -> {
+                    numLogged += 1;
+                    checkRecentGame();
+                  });
+            }
+          },
+          () -> {
+            deleteGame(
+                initialRef.gameId,
+                () -> {},
+                HaxeUtils.handleError('error deleting game'));
+          });
+    }
   }
 }
 

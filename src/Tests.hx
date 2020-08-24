@@ -9,7 +9,7 @@ class Tests {
     SaveState.tests();
     Gui.tests();
     HaxeUtils.tests();
-    Session.tests();
+    Session.unitTests();
     //core.Anim.test();
 #end
 

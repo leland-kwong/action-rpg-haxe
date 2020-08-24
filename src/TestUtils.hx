@@ -28,8 +28,7 @@ class TestUtils {
       testFn(predicate);
     } catch (err) {
       doneState = true;
-      throw new haxe.Exception(
-          defaultFailureMessage, err);
+      HaxeUtils.handleError(defaultFailureMessage)(err);
     }
 
     haxe.Timer.delay(() -> {
