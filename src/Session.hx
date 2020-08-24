@@ -57,7 +57,7 @@ class Session {
   }
 
   // [SIDE-EFFECT] writes data to disk
-  static function handleThreadEvent(nextMessage) {
+  static function writeMessageToDisk(nextMessage) {
     final event: SessionEvent = nextMessage.event;
     final file = nextMessage.file;
     final isNewFile = !state.fileOutputByPath.exists(file);
@@ -114,14 +114,19 @@ class Session {
 
     final file = SaveState.filePath(
         savedGamePath(ref));
-
-    state.threadMessageQueue.push({
+    final message = {
       ref: ref,
       file: file,
       event: event,
       onSuccess: onSuccess,
       flushImmediate: flushImmediate
-    });
+    };
+
+    if (flushImmediate) {
+      writeMessageToDisk(message);
+    } else {
+      state.threadMessageQueue.push(message);
+    }
 
 #if (target.threaded)
     if (state.thread == null) {
@@ -139,7 +144,7 @@ class Session {
             // IMPORTANT: thread callback must be pure to 
             // prevent issues with referencing wrong data
             // due to thread asynchronicity.
-            handleThreadEvent(nextMessage);
+            writeMessageToDisk(nextMessage);
 
 #if (target.threaded)
           }
@@ -563,7 +568,7 @@ class Session {
       final initialRef = Session.createGameState(
           null,
           null,
-          'temp_game_state');
+          'unit_test_temp_game_state');
 
       Main.Global.updateHooks.push((dt: Float) -> {
         for (_ in 0...10) {
