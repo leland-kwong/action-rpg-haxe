@@ -100,13 +100,9 @@ class Gui {
     function cleanup() {
       state.isAlive = false;
 
-      final cleanupTextFields = (tf) -> {
+      for (tf in textFields) {
         tf.remove();
-        return true;
       }
-      Lambda.foreach(
-          textFields,
-          cleanupTextFields);
     }
 
     Main.Global.updateHooks.push((dt) -> {
@@ -147,7 +143,7 @@ class Gui {
       return state.isAlive;
     });
 
-    Main.Global.renderHooks.push((dt) -> {
+    Main.Global.renderHooks.push((time) -> {
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
       final hoveredItem = getHoveredControl(
