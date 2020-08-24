@@ -574,7 +574,7 @@ class Main extends hxd.App {
       // frame.
       {
         final nextHooks = [];
-        for (update in Main.Global.inputHooks) {
+        for (update in Global.inputHooks) {
           final shouldKeepAlive = update(frameTime);
 
           if (shouldKeepAlive) {
@@ -592,8 +592,8 @@ class Main extends hxd.App {
         final formattedStats = Json.stringify({
           time: Global.time,
           tickCount: Global.tickCount,
-          fpsTrue: trueFps,
-          fps: Math.round(1/frameTime),
+          trueFps: trueFps,
+          updatesPerFrame: Math.round(1/frameTime),
           drawCalls: engine.drawCalls,
           numEntities: Lambda.count(Entity.ALL_BY_ID),
           numSprites: Lambda.fold(
@@ -602,11 +602,12 @@ class Main extends hxd.App {
                 return count + ref.particles.length;
               }, 0),
           numActiveEntitiesToRender: 
-            Main.Global.entitiesToRender.length,
+            Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
             .nextAnimations.length,
-          numUpdateHooks: Main.Global.updateHooks.length,
-          numRenderHooks: Main.Global.renderHooks.length,
+          numUpdateHooks: Global.updateHooks.length,
+          numInputHooks: Global.inputHooks.length,
+          numRenderHooks: Global.renderHooks.length,
         }, null, '  ');
         var text = [
           'stats: ${formattedStats}',
