@@ -1676,6 +1676,10 @@ class Player extends Entity {
               this.id, 
               this.neighbors,
               (ref) -> {
+                if (ref.type == 'FRIENDLY_AI') {
+                  return false;
+                }
+
                 final angle = Math.atan2(
                     ref.y - oldPos.y,
                     ref.x - oldPos.x);
