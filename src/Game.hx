@@ -2257,6 +2257,7 @@ class Game extends h2d.Object {
         fileName, 
         mapData: Editor.EditorState) -> {
 
+      final editorConfig = Editor.getConfig(fileName);
       final cellSize = 16;
       final spawnerFindTargetFn = (_) -> {
         return Entity.getById('PLAYER');
@@ -2304,14 +2305,13 @@ class Game extends h2d.Object {
               y: y });
       }
 
-
       for (layerId in orderedLayers) {
         final grid = mapData.gridByLayerId.get(layerId);
         final tileGrid = tileGridByLayerId.get(layerId); 
 
         for (itemId => bounds in grid.itemCache) {
           final objectType = mapData.itemTypeById.get(itemId);
-          final objectMeta = Editor.getConfig(fileName).objectMetaByType
+          final objectMeta = editorConfig.objectMetaByType
             .get(objectType);
           final x = bounds[0];
           final y = bounds[2];
@@ -2683,10 +2683,6 @@ class Game extends h2d.Object {
           Main.Global.rootScene);
 
       final refreshTileGroup = (dt) -> {
-        final width = Std.int(Main.nativePixelResolution.x 
-            / Main.Global.resolutionScale);
-        final height = Std.int(Main.nativePixelResolution.y 
-            / Main.Global.resolutionScale);
         final idsRendered = new Map();
 
         tg.clear();
@@ -2700,7 +2696,7 @@ class Game extends h2d.Object {
             if (cellData != null) {
               for (itemId in cellData) {
                 final objectType = mapData.itemTypeById.get(itemId);
-                final objectMeta = Editor.getConfig(fileName)
+                final objectMeta = editorConfig
                   .objectMetaByType
                   .get(objectType);
 
@@ -2752,9 +2748,10 @@ class Game extends h2d.Object {
           };
           final mc = Main.Global.mainCamera;
           // Pretty large overdraw right now because some 
-          // objects are really large can get clipped too
-          // early. We can fix this by splitting large
-          // objects into multiple sprites 
+          // objects that are really large can get clipped too
+          // early (ie: teleporter). We can fix this by splitting 
+          // large objects into multiple sprites or rendering
+          // those objects separately
           final threshold = 200;
 
           Grid.eachCellInRect(
@@ -2784,7 +2781,7 @@ class Game extends h2d.Object {
 
         return !finished;
       }
-      Main.Global.updateHooks.push(refreshTileGroup);
+      Main.Global.renderHooks.push(refreshTileGroup);
 
     }
 
