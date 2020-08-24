@@ -8,7 +8,7 @@ import sys.io.File;
 typedef SessionEvent = {
   type: String,
   data: Dynamic,
-  timestamp: Float
+  time: Float
 };
 
 typedef SessionRef = {
@@ -34,7 +34,8 @@ class Session {
       ref: SessionRef,
       file: String,
       event: SessionEvent,
-      onSuccess: () -> Void
+      onSuccess: () -> Void,
+      flushImmediate: Bool
     }>()
   };
 
@@ -76,8 +77,7 @@ class Session {
           File.saveContent(file, '');
         }
 
-        final fileOutput = sys.io.File.append(
-            file, false);
+        final fileOutput = sys.io.File.append(file);
 
         state.fileOutputByPath.set(file, fileOutput);
         fileOutput;
@@ -95,7 +95,10 @@ class Session {
     fileOutput.writeString(
         '${delimiter}${serialize(event)}',
         UTF8);
-    fileOutput.flush();
+
+    if (nextMessage.flushImmediate) {
+      fileOutput.flush();
+    }
 
     if (nextMessage.onSuccess != null) {
       nextMessage.onSuccess();
@@ -106,7 +109,8 @@ class Session {
       ref: SessionRef, 
       event: SessionEvent,
       ?onSuccess: () -> Void,
-      ?onError: (err: Dynamic) -> Void) {
+      ?onError: (err: Dynamic) -> Void,
+      ?flushImmediate = false) {
 
     final file = SaveState.filePath(
         savedGamePath(ref));
@@ -115,7 +119,8 @@ class Session {
       ref: ref,
       file: file,
       event: event,
-      onSuccess: onSuccess
+      onSuccess: onSuccess,
+      flushImmediate: flushImmediate
     });
 
 #if (target.threaded)
@@ -244,10 +249,11 @@ class Session {
   public static function makeEvent(
       eventType: String,
       eventDetail: Dynamic): SessionEvent {
+
     return {
       type: eventType,
       data: eventDetail,
-      timestamp: Sys.time()
+      time: Sys.time()
     };
   }
 
@@ -255,9 +261,11 @@ class Session {
       ref, 
       event: SessionEvent,
       ?onSuccess,
-      ?onError) {
+      ?onError,
+      ?flushImmediate) {
 
-    logEventToDisk(ref, event, onSuccess, onError);
+    logEventToDisk(
+        ref, event, onSuccess, onError, flushImmediate);
     processEvent(ref, event);
   }
 
@@ -439,7 +447,7 @@ class Session {
                       HaxeUtils.handleError('error deleting file'));
                 },
                 onError);
-          }, onError);
+          }, onError, true);
         });
 
     TestUtils.assert(
@@ -491,7 +499,9 @@ class Session {
                 stateRef, mockEvent, () -> {
                   numLogged += 1;
                   checkGamesList();
-                });
+                },
+                null,
+                true);
           }
         });
 
@@ -533,7 +543,9 @@ class Session {
                   stateRef, mockEvent, () -> {
                     numLogged += 1;
                     checkRecentGame();
-                  });
+                  },
+                  null,
+                  true);
             }
           },
           () -> {
@@ -544,35 +556,23 @@ class Session {
           });
     }
 
-    {
+    final streeTestEnabled = false;
+
+    if (streeTestEnabled) {
       trace('event logging stress test started');
-
-      Main.Global.renderHooks.push((time: Float) -> {
-        final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
-            500 + Math.sin(time) * 100,
-            200,
-            'ui/npc_test_dummy');
-        spriteRef.batchElement.scale = 4;
-
-        return true;
-      });
 
       final initialRef = Session.createGameState(
           null,
           null,
           'temp_game_state');
 
-      Main.Global.inputHooks.push((dt: Float) -> {
-        final Key = hxd.Key;
-
-        if (Key.isPressed(Key.S)) {
-          for (_ in 0...30) {
-            Session.logAndProcessEvent(
-                initialRef,
-                Session.makeEvent(
-                  'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
-                  { nodeId: 'foobar_node_id' }));  
-          }
+      Main.Global.updateHooks.push((dt: Float) -> {
+        for (_ in 0...10) {
+          Session.logAndProcessEvent(
+              initialRef,
+              Session.makeEvent(
+                'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
+                { nodeId: 'foobar_node_id' }));  
         }
 
         return true;

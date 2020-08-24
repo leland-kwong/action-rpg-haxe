@@ -20,7 +20,7 @@ class TestUtils {
         final message = Utils.withDefault(
             failureMessage, 
             defaultFailureMessage);
-        throw '[test fail] ${message}';
+        trace('[test fail] ${message}');
       }
     }
 
@@ -33,7 +33,7 @@ class TestUtils {
 
     haxe.Timer.delay(() -> {
       if (!doneState) {
-        throw new haxe.Exception(
+        trace(
             '[test timeout] ${defaultFailureMessage}');
 
         if (afterTest != null) {
