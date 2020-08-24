@@ -25,12 +25,20 @@ typedef SessionRef = {
   }
 }
 
-class Session {
-  static final delimiter = '\n';
 
-  static var thread: Thread;
-  static final fileOutputByPath: 
-    Map<String, sys.io.FileOutput> = new Map();
+class Session {
+  static final state = {
+    thread: null,
+    fileOutputByPath: new Map<String, sys.io.FileOutput>(),
+    threadMessageQueue: new Array<{
+      ref: SessionRef,
+      file: String,
+      event: SessionEvent,
+      onSuccess: () -> Void
+    }>()
+  };
+
+  static final delimiter = '\n';
 
   static function makeId(
       ?customId: String) {
@@ -47,19 +55,11 @@ class Session {
     return haxe.Unserializer.run(rawData);
   }
 
-  static final threadMessageQueue: 
-   Array<{
-     ref: SessionRef,
-     file: String,
-     event: SessionEvent,
-     onSuccess: () -> Void
-   }> = [];
-
   // [SIDE-EFFECT] writes data to disk
   static function handleThreadEvent(nextMessage) {
     final event: SessionEvent = nextMessage.event;
     final file = nextMessage.file;
-    final isNewFile = !fileOutputByPath.exists(file);
+    final isNewFile = !state.fileOutputByPath.exists(file);
 
     final fileOutput = {
       if (isNewFile) {
@@ -79,10 +79,10 @@ class Session {
         final fileOutput = sys.io.File.append(
             file, false);
 
-        fileOutputByPath.set(file, fileOutput);
+        state.fileOutputByPath.set(file, fileOutput);
         fileOutput;
       } else {
-        fileOutputByPath.get(file);
+        state.fileOutputByPath.get(file);
       }
     }
 
@@ -111,7 +111,7 @@ class Session {
     final file = SaveState.filePath(
         savedGamePath(ref));
 
-    threadMessageQueue.push({
+    state.threadMessageQueue.push({
       ref: ref,
       file: file,
       event: event,
@@ -119,16 +119,16 @@ class Session {
     });
 
 #if (target.threaded)
-    if (thread == null) {
-      thread = Thread.create(() -> {
+    if (state.thread == null) {
+      state.thread = Thread.create(() -> {
         try {
           while (true) {
-            while (threadMessageQueue.length == 0) {
+            while (state.threadMessageQueue.length == 0) {
               Sys.sleep(10 / 1000);
             }
 #end
 
-            final nextMessage = threadMessageQueue.shift();
+            final nextMessage = state.threadMessageQueue.shift();
 
             // IMPORTANT: thread callback must be pure to 
             // prevent issues with referencing wrong data
@@ -382,11 +382,11 @@ class Session {
         // need to clear directory first
         for (f in files) {
           final path = '${dir}/${f}';
-          final fileOutput = fileOutputByPath.get(path);
+          final fileOutput = state.fileOutputByPath.get(path);
 
           if (fileOutput != null) {
             fileOutput.close();
-            fileOutputByPath.remove(path);
+            state.fileOutputByPath.remove(path);
           }
 
           FileSystem.deleteFile(path);
