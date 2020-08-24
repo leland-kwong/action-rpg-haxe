@@ -519,36 +519,6 @@ class Main extends hxd.App {
         Global.time += frameTime;
         frameDt += frameTime;
 
-        if (debugText != null) {
-          final formattedStats = Json.stringify({
-            time: Global.time,
-            tickCount: Global.tickCount,
-            fpsTrue: trueFps,
-            fps: Math.round(1/frameTime),
-            drawCalls: engine.drawCalls,
-            numEntities: Lambda.count(Entity.ALL_BY_ID),
-            numSprites: Lambda.fold(
-                SpriteBatchSystem.instances, 
-                (ref, count) -> {
-                  return count + ref.particles.length;
-                }, 0),
-            numActiveEntitiesToRender: 
-              Main.Global.entitiesToRender.length,
-            numAnimations: core.Anim.AnimEffect
-              .nextAnimations.length,
-            numUpdateHooks: Main.Global.updateHooks.length,
-            numRenderHooks: Main.Global.renderHooks.length,
-          }, null, '  ');
-          var text = [
-            'stats: ${formattedStats}',
-            'log: ${Json.stringify(Global.logData, null, '  ')}'
-          ].join('\n');
-          var debugUiMargin = 10;
-          debugText.x = debugUiMargin;
-          debugText.y = debugUiMargin;
-          debugText.text = text;
-        }
-
         // run updateHooks
         {
           final nextHooks = [];
@@ -613,9 +583,41 @@ class Main extends hxd.App {
         }
         Global.inputHooks = nextHooks;
       }
+
       core.Anim.AnimEffect
         .update(frameDt);
       SpriteBatchSystem.updateAll(frameDt);
+
+      if (debugText != null) {
+        final formattedStats = Json.stringify({
+          time: Global.time,
+          tickCount: Global.tickCount,
+          fpsTrue: trueFps,
+          fps: Math.round(1/frameTime),
+          drawCalls: engine.drawCalls,
+          numEntities: Lambda.count(Entity.ALL_BY_ID),
+          numSprites: Lambda.fold(
+              SpriteBatchSystem.instances, 
+              (ref, count) -> {
+                return count + ref.particles.length;
+              }, 0),
+          numActiveEntitiesToRender: 
+            Main.Global.entitiesToRender.length,
+          numAnimations: core.Anim.AnimEffect
+            .nextAnimations.length,
+          numUpdateHooks: Main.Global.updateHooks.length,
+          numRenderHooks: Main.Global.renderHooks.length,
+        }, null, '  ');
+        var text = [
+          'stats: ${formattedStats}',
+          'log: ${Json.stringify(Global.logData, null, '  ')}'
+        ].join('\n');
+        var debugUiMargin = 10;
+        debugText.x = debugUiMargin;
+        debugText.y = debugUiMargin;
+        debugText.text = text;
+      }
+
     } catch (error: Dynamic) {
       final handler = HaxeUtils.handleError(
           null,
