@@ -123,12 +123,13 @@ class Session {
       state.thread = Thread.create(() -> {
         try {
           while (true) {
-            while (state.threadMessageQueue.length == 0) {
-              Sys.sleep(10 / 1000);
-            }
 #end
-
             final nextMessage = state.threadMessageQueue.shift();
+
+            if (nextMessage == null) {
+              Sys.sleep(10 / 1000);
+              continue;
+            }
 
             // IMPORTANT: thread callback must be pure to 
             // prevent issues with referencing wrong data
@@ -391,6 +392,8 @@ class Session {
 
           FileSystem.deleteFile(path);
         }
+
+        trace('delete dir', dir);
         FileSystem.deleteDirectory(dir);
       }
       onSuccess();
@@ -455,7 +458,13 @@ class Session {
               return;
             }
 
-            final gamesList = getGamesList();
+            final gamesList = Lambda.filter(
+                getGamesList(),
+                (gameId) -> {
+                  return Lambda.exists(
+                      stateRefsList, 
+                      (ref) -> gameId == ref.gameId);
+                });
 
             function hasGameId(ref) {
               return Lambda.exists(
@@ -533,6 +542,41 @@ class Session {
                 () -> {},
                 HaxeUtils.handleError('error deleting game'));
           });
+    }
+
+    {
+      trace('event logging stress test started');
+
+      Main.Global.renderHooks.push((time: Float) -> {
+        final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+            500 + Math.sin(time) * 100,
+            200,
+            'ui/npc_test_dummy');
+        spriteRef.batchElement.scale = 4;
+
+        return true;
+      });
+
+      final initialRef = Session.createGameState(
+          null,
+          null,
+          'temp_game_state');
+
+      Main.Global.inputHooks.push((dt: Float) -> {
+        final Key = hxd.Key;
+
+        if (Key.isPressed(Key.S)) {
+          for (_ in 0...30) {
+            Session.logAndProcessEvent(
+                initialRef,
+                Session.makeEvent(
+                  'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
+                  { nodeId: 'foobar_node_id' }));  
+          }
+        }
+
+        return true;
+      });
     }
   }
 }

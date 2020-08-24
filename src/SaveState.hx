@@ -83,6 +83,7 @@ class SaveState {
   }
 
   public static function delete(keyPath: String) {
+    trace('delete file', keyPath);
     FileSystem.deleteFile('${baseDir}/${keyPath}');
   }
 
