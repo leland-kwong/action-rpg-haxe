@@ -401,7 +401,6 @@ class Session {
           FileSystem.deleteFile(path);
         }
 
-        trace('delete dir', dir);
         FileSystem.deleteDirectory(dir);
       }
       onSuccess();
