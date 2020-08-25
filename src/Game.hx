@@ -841,11 +841,12 @@ class Ai extends Entity {
       if (type == 'ENEMY') {
         final enemyType = Entity.getComponent(
             this, 'aiType');
-        Main.Global.questActions.push(
-            Quest.createAction(
-              'ENEMY_KILL', 
-              'intro_level',
-              { enemyType: enemyType }));
+
+        Session.logAndProcessEvent(
+            Main.Global.gameState, 
+            Session.makeEvent('ENEMY_KILLED', {
+              enemyType: enemyType
+            }));
       }
     }
   }
@@ -2152,10 +2153,10 @@ class MapObstacle extends Entity {
 
 // Spawns enemies over time
 class EnemySpawner extends Entity {
-  static final enemyTypes = [
-    'bat',
-    'botMage',
-  ];
+  static final enemyTypes = Lambda.filter([
+    for (aiType in Config.enemyStats.keys()) 
+      aiType
+  ], (type) -> type != 'introLevelBoss');
 
   static final sizeByEnemyType = [
     'bat' => 1,

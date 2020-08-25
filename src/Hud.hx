@@ -86,6 +86,7 @@ class UiStateManager {
         data: gameState
       }: {
         Main.Global.gameState = gameState;
+        Main.Global.logData.gameState = gameState;
         Main.Global.clearUi((field) -> {
           return field != 'hud';
         });

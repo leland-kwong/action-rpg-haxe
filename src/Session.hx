@@ -226,6 +226,26 @@ class Session {
           s.set(nodeId, !currentlySelected);
       }
 
+      case {
+        type: 'ENEMY_KILLED',
+        data: d
+      }: {
+        final enemyType = d.enemyType;
+        final experienceReward = Config.enemyStats.get(enemyType)
+          .experienceReward;
+
+        ref.experienceGained += experienceReward;
+
+        final questAction = Quest.createAction(
+              'ENEMY_KILL', 
+              'intro_level',
+              { enemyType: enemyType });
+        Quest.updateQuestState(
+            questAction,
+            ref.questState,
+            Quest.conditionsByName);
+      }
+
       default: {
         throw 'invalid session event ${ev.type}';
       }

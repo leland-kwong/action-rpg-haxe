@@ -572,8 +572,6 @@ class PassiveSkillTree {
             }
           }
 
-          Main.Global.logData.treeHoveredNode = state.hoveredNode; 
-
           return !state.shouldCleanup;
         }
         Main.Global.updateHooks.push(handleTreeInteraction);
