@@ -91,18 +91,8 @@ class Global {
     'kamehamehaTick' => 0.0
   ];
 
-  public static var questActions = [];
-
   public static var gameState = Session.createGameState(
       -1, null, null, 'placeholder_game_state');
-  public static var questState = Quest.updateQuestState(
-      {
-        type: 'GAME_START',
-        location: 'intro_level',
-        data: null
-      },
-      new Map(),
-      Quest.conditionsByName);
 
   static var sceneCleanupFn: () -> Void;
 

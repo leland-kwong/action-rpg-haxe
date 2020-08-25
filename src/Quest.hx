@@ -87,7 +87,7 @@ class Quest {
     ];
   };
 
-  public static function updateQuestState(
+  public static function updateState(
       action: GameAction,
       currentQuestStates: QuestStateByName,
       conditions: ConditionsByName) {
@@ -99,6 +99,16 @@ class Quest {
     }
 
     return newQuestState;
+  }
+
+  public static function createNewState() {
+    return updateState(
+        createAction(
+          '@initQuestState',
+          null,
+          null),
+        new Map(),
+        conditionsByName);
   }
 
   public static function createAction(

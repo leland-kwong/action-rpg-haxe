@@ -1,11 +1,13 @@
+import Session;
+
 class Config {
   public static final levelExpRequirements = {
     final xpDiff = 20;
     final maxLevel = 20;
     [
       for (level in 1...(maxLevel + 1)) {
-        (Math.pow(level,2) + level) /
-          2 * xpDiff - (level * xpDiff);
+        Std.int((Math.pow(level,2) + level) /
+          2 * xpDiff - (level * xpDiff));
       }
     ];
   }
@@ -24,4 +26,11 @@ class Config {
         experienceReward: 20
       }
     ];
+
+  public static function calcCurrentLevel(
+      experience: Int) {
+    return Lambda.findIndex(
+        levelExpRequirements,
+        (expReq) -> experience <= expReq);
+  }
 }

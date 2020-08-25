@@ -86,7 +86,6 @@ class UiStateManager {
         data: gameState
       }: {
         Main.Global.gameState = gameState;
-        Main.Global.logData.gameState = gameState;
         Main.Global.clearUi((field) -> {
           return field != 'hud';
         });
@@ -1308,16 +1307,6 @@ class Hud {
       return;
     }
 
-    Main.Global.questState = Lambda.fold(
-        Main.Global.questActions,
-        (a, qs) -> {
-          return Quest.updateQuestState(
-              a,
-              qs,
-              Quest.conditionsByName);
-        }, Main.Global.questState);
-    Main.Global.questActions = [];
-
     aiNameText.x = Main.Global.uiRoot.width / 2;
     aiNameText.y = 10;
     aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
@@ -1400,7 +1389,7 @@ class Hud {
             (o: TiledObject) -> o.name == 'origin');
         final maxWidth = 300;
         questDisplay.text = Quest.format(
-            Main.Global.questState);
+            Main.Global.gameState.questState);
         questDisplay.maxWidth = maxWidth;
         final win = hxd.Window.getInstance();
         questDisplay.x = rootObject.x * Hud.rScale;

@@ -14,13 +14,15 @@ typedef SessionEvent = {
 typedef SessionRef = {
   sessionId: String,
   gameId: String,
+  // Game slot that it was created at.
+  // This is used for the ui to show it
+  // in a consistent position
   slotId: Int,
   // level can be derived from this
   experienceGained: Int,
   questState: Quest.QuestStateByName,
   inventoryState: Dynamic,
   passiveSkillTreeState: {
-    totalPointsAvailable: Int,
     nodeSelectionStateById: 
       Map<String, Bool>
   },
@@ -199,10 +201,22 @@ class Session {
           parsed);
     }
   }
+  
+  public static function handleDidPlayerLevelUp(
+      oldExp, newExp) {
+    final didPlayerLevelUp = Config.calcCurrentLevel(oldExp) 
+      < Config.calcCurrentLevel(newExp);
+    
+    // trigger notification side effect
 
-  static function processEvent(
+    return didPlayerLevelUp;
+  }
+
+  public static function processEvent(
       ref: SessionRef,
       ev: SessionEvent) {
+    final oldRef = Reflect.copy(ref);
+
     switch(ev) {
       case {
         type: 'GAME_LOADED',
@@ -240,7 +254,7 @@ class Session {
               'ENEMY_KILL', 
               'intro_level',
               { enemyType: enemyType });
-        Quest.updateQuestState(
+        ref.questState = Quest.updateState(
             questAction,
             ref.questState,
             Quest.conditionsByName);
@@ -251,6 +265,11 @@ class Session {
       }
     }
     ref.lastUpdatedAt = ev.time;
+
+    handleDidPlayerLevelUp(
+        oldRef.experienceGained, 
+        ref.experienceGained);
+    return ref;
   }
 
   public static function createGameState(
@@ -278,11 +297,10 @@ class Session {
       slotId: slotId,
       sessionId: id,
       experienceGained: 0,
-      questState: new Map(),
+      questState: Quest.createNewState(),
       inventoryState: 'UNKNOWN_INVENTORY_STATE',
       passiveSkillTreeState: {
         // includes root node which is always selected
-        totalPointsAvailable: 10,
         nodeSelectionStateById: [
           'SKILL_TREE_ROOT' => true
         ]
@@ -639,6 +657,15 @@ class Session {
         return true;
       });
     }
+
+    TestUtils.assert(
+        'player should level up',
+        (passed) -> {
+          passed(
+              handleDidPlayerLevelUp(
+                Config.levelExpRequirements[0], 
+                Config.levelExpRequirements[1]));
+        });
   }
 }
 
