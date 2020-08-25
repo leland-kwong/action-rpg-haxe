@@ -757,8 +757,6 @@ class InventoryDragAndDropPrototype {
     {
       // cleanup
       if (!Main.Global.uiState.inventory.enabled) {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.None;
         for (interact in state.interactSlots) {
           interact.remove();
         }
@@ -1328,6 +1326,9 @@ class Hud {
     if (!Main.Global.uiState.hud.enabled) {
       return;
     }
+
+    Main.Global.worldMouse.hoverState = 
+      Main.HoverState.None;
 
     Tooltip.render(time);
     InventoryDragAndDropPrototype.render(time);
