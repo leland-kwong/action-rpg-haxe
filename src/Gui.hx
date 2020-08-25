@@ -36,6 +36,8 @@ class GuiComponents {
               'gameId: ${gameState.gameId}',
               'lastUpdated: ${gameState.lastUpdatedAt}'
             ].join('\n');
+          final textHeight = Std.int(
+              Gui.calcTextHeight(Fonts.primary(), label));
 
           return {
             value: gameState,
@@ -43,7 +45,9 @@ class GuiComponents {
             x: 0,
             y: index * (20 * 2 + itemSpacing) + 500,
             width: itemWidth + itemPadding,
-            height: 20 * 2 + itemPadding + descenderHeight
+            height: textHeight
+              + itemPadding 
+              + descenderHeight
           };
         });
     final root = new h2d.Object(Main.Global.uiRoot);
@@ -403,6 +407,10 @@ class Gui {
     tempTf.text = text;
 
     return tempTf; 
+  }
+
+  public static function calcTextHeight(font, text) {
+    return tempText(font, text).textHeight;
   }
 
   public static function tests() {
