@@ -57,8 +57,6 @@ class TiledParser {
 }
 
 class UiStateManager {
-  static var listeners = [];
-
   public static function send(action: UiAction) {
     final uiState = Main.Global.uiState;
 
