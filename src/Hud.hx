@@ -64,18 +64,7 @@ class UiStateManager {
       case { type: 'INVENTORY_TOGGLE' }: {
         final s = uiState.inventory;
 
-        if (!s.opened) {
-          s.opened = true;
-          final closeInventory = () -> {
-            s.opened = false;
-          };
-          Stack.push(
-              Main.Global.escapeStack, 
-              'close inventory',
-              closeInventory);
-        } else {
-          Stack.pop(Main.Global.escapeStack);
-        } 
+        s.enabled = !s.enabled;
       }
 
       case { 
@@ -87,6 +76,9 @@ class UiStateManager {
         final gameInstance = new Game(Main.Global.rootScene); 
 
         Main.Global.gameState = gameState;
+        Main.Global.clearUi((field) -> {
+          return field != 'hud';
+        });
         Main.Global.uiState.hud.enabled = true;
         Main.Global.replaceScene( 
           () -> gameInstance.remove());
@@ -104,14 +96,8 @@ class UiStateManager {
         data: sceneName
       }: {
         final Global = Main.Global;
-        final homeMenuOptions = [
-          ['editor', 'Editor'],
-          ['experiment', 'Experiment'],
-          ['exit', 'Exit']
-        ];
 
         Global.replaceScene(switch(sceneName) {
-          case 'mainMenu': Gui.GuiComponents.mainMenu(homeMenuOptions);
           case 'experiment': Experiment.init();
           case 'editor': Editor.init();
           case 'exit': Main.onGameExit();
@@ -119,24 +105,6 @@ class UiStateManager {
             throw 'home screen menu case not handled';
           };
         });
-
-        Global.escapeStack = [];
-
-        function homeScreenOnEscape() {
-          Stack.push(Global.escapeStack, 'goto home screen', () -> {
-            Global.uiState.hud.enabled = false;
-            final closeHomeMenu = Gui.GuiComponents
-              .mainMenu(homeMenuOptions);
-
-            Stack.push(Global.escapeStack, 'back to game', () -> {
-              closeHomeMenu();
-              homeScreenOnEscape();
-              Global.uiState.hud.enabled = true;
-            });
-          });
-        }
-
-        homeScreenOnEscape();
       }
 
       default: {
@@ -328,9 +296,9 @@ class Inventory {
   }
 
   public static function render(time: Float) {
-    final globalState = Main.Global.uiState.inventory;
+    final inventorState = Main.Global.uiState.inventory;
 
-    if (!globalState.opened) {
+    if (!inventorState.enabled) {
       return;
     }
 
@@ -783,7 +751,7 @@ class InventoryDragAndDropPrototype {
     // handle interact slots
     {
       // cleanup
-      if (!Main.Global.uiState.inventory.opened) {
+      if (!Main.Global.uiState.inventory.enabled) {
         Main.Global.worldMouse.hoverState = 
           Main.HoverState.None;
         for (interact in state.interactSlots) {
@@ -829,7 +797,7 @@ class InventoryDragAndDropPrototype {
       }
     }
 
-    if (!Main.Global.uiState.inventory.opened) {
+    if (!Main.Global.uiState.inventory.enabled) {
       return;
     }
 
@@ -1100,7 +1068,7 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function render(time) {
-    if (!Main.Global.uiState.inventory.opened) {
+    if (!Main.Global.uiState.inventory.enabled) {
       return;
     }
 
@@ -1384,7 +1352,7 @@ class Hud {
 
     // render quest statuses
     {
-      if (!Main.Global.uiState.inventory.opened) {
+      if (!Main.Global.uiState.inventory.enabled) {
         final questLayer = TiledParser.findLayer(
             uiLayoutRef, 'questLog');
         final questRegions = TiledParser.findLayer(

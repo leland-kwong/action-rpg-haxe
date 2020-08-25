@@ -70,12 +70,15 @@ class Global {
   public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
   public static var uiState = {
+    mainMenu: {
+      enabled: true
+    },
     hud: {
       enabled: true
     },
     inventory: {
-      opened: false
-    }
+      enabled: false
+    },
   }
   public static var uiHomeMenuEnabled = true;
 
@@ -87,7 +90,6 @@ class Global {
     'kamehamehaTick' => 0.0
   ];
 
-  public static var escapeStack: Stack.StackRef = [];
   public static var questActions = [];
 
   public static var gameState: Session.SessionRef;
@@ -109,6 +111,34 @@ class Global {
     } 
 
     sceneCleanupFn = cleanupFn;
+  }
+
+  public static function clearUi(
+      predicate: (field: String) -> Bool): Bool {
+    final wereUiItemsClosed = Lambda.fold(
+        Reflect.fields(Global.uiState),
+        (field, result) -> {
+          final shouldClear = predicate != null
+            ? predicate(field)
+            : true;
+
+          if (!shouldClear) {
+            return result;
+          }
+
+          final state = Reflect.field(Global.uiState, field);
+          final enabled = state.enabled;
+
+          state.enabled = false;
+        
+          if (enabled) {
+            return true;
+          }      
+
+          return result;
+        }, false);
+
+    return wereUiItemsClosed;
   }
 }
 
@@ -249,9 +279,14 @@ class Main extends hxd.App {
       });
     }
 
-    if (Key.isPressed(Key.ESCAPE)
-        && Global.uiHomeMenuEnabled) {
-      Stack.pop(Global.escapeStack);
+    if (Key.isPressed(Key.ESCAPE)) {
+      final wereUiItemsClosed = Global.clearUi((field) -> {
+        return field != 'hud'; 
+      });
+
+      if (!wereUiItemsClosed) {
+        Global.uiState.mainMenu.enabled = true;  
+      }
     }
 
     return true;
@@ -423,12 +458,8 @@ class Main extends hxd.App {
 #end
 
       Gui.init();
+      Gui.GuiComponents.mainMenu();
       Hud.init();
-
-      Hud.UiStateManager.send({
-        type: 'SWITCH_SCENE',
-        data: 'mainMenu'
-      });
 
     } catch (error: Dynamic) {
 
@@ -450,8 +481,6 @@ class Main extends hxd.App {
   override function update(dt:Float) {
     try {
       Global.isNextFrame = false;
-
-      Global.logData.escapeStack = Global.escapeStack;
       Global.mainPhase = MainPhase.Update;
       acc += dt;
 

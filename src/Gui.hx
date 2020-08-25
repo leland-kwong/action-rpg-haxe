@@ -11,6 +11,11 @@ typedef GuiControl = {
 }
 
 class GuiComponents {
+  static final sortOrders = {
+    mainMenuBg: 1000,
+    menuItemHighlightBg: 1001,
+  };
+  
   public static function savedGameSlots(
       gamesList: Array<Session.SessionRef>) {
     final font = Fonts.primary();
@@ -109,6 +114,9 @@ class GuiComponents {
             'ui/square_white',
             null,
             (p) -> {
+              p.sortOrder = GuiComponents
+                .sortOrders
+                .menuItemHighlightBg;
               p.batchElement.alpha = 0.8;
               p.batchElement.r = 0.9;
               p.batchElement.g = 0;
@@ -216,6 +224,8 @@ class GuiComponents {
           'ui/square_white',
           null,
           (p) -> {
+            p.sortOrder = GuiComponents.sortOrders.mainMenuBg;
+
             final b = p.batchElement;
             b.alpha = 0.8;
             b.r = 0;
@@ -225,6 +235,7 @@ class GuiComponents {
             b.scaleY = win.height;
           });
 
+      // render hovered item bg
       if (hoveredItem != null) { 
         Main.Global.uiSpriteBatch.emitSprite(
             hoveredItem.x,
@@ -232,6 +243,9 @@ class GuiComponents {
             'ui/square_white',
             null,
             (p) -> {
+              p.sortOrder = GuiComponents
+                .sortOrders
+                .menuItemHighlightBg;
               p.batchElement.alpha = 0.8;
               p.batchElement.r = 0.9;
               p.batchElement.g = 0;
@@ -247,13 +261,12 @@ class GuiComponents {
     return cleanup;
   }
 
-  public static function mainMenu(
-      options) {
+  public static function mainMenu() {
     final state = {
-      isAlive: true
+      isAlive: false
     };
 
-    {
+    function openGamesList() {
       final gamesList = Session.getGamesList();
       final gameRefsList = [];
       final asyncCallbacks = Lambda.map(
@@ -301,12 +314,43 @@ class GuiComponents {
           HaxeUtils.handleError('error loading game files'));
     }
 
-    final cleanupMainMenuOptions = mainMenuOptions(options);
+    function openMenuOptions() {
+      final options = [
+        ['editor', 'Editor'],
+        ['experiment', 'Experiment'],
+        ['exit', 'Exit']
+      ];
 
-    return () -> {
-      cleanupMainMenuOptions();
-      state.isAlive = false;
+      final cleanup = GuiComponents.mainMenuOptions(options); 
+
+      Main.Global.updateHooks.push((dt) -> {
+        if (!state.isAlive) {
+          cleanup();
+        }
+
+        return state.isAlive;
+      });
     }
+
+    Main.Global.updateHooks.push((dt) -> {
+      final menuEnabled = Main.Global.uiState.mainMenu.enabled;
+      final shouldOpen = menuEnabled
+        && !state.isAlive;
+      final shouldClose = !menuEnabled
+        && state.isAlive;
+
+      if (shouldOpen) {
+        state.isAlive = true;
+        openGamesList();
+        openMenuOptions();
+      }
+
+      if (shouldClose) {
+        state.isAlive = false;
+      }
+
+      return true;
+    });
   }
 }
 
@@ -351,6 +395,8 @@ class Gui {
         hoveredOption);
   }
 
+  // useful for measuring text since it is
+  // a singleton text node
   public static function tempText(
       font, 
       text) {
