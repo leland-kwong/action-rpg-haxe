@@ -15,7 +15,7 @@ class GuiComponents {
     mainMenuBg: 1000,
     menuItemHighlightBg: 1001,
   };
-  
+
   public static function savedGameSlots(
       gamesList: Array<Session.SessionRef>) {
     final font = Fonts.primary();
@@ -46,22 +46,20 @@ class GuiComponents {
             height: 20 * 2 + itemPadding + descenderHeight
           };
         });
+    final root = new h2d.Object(Main.Global.uiRoot);
     final textFields = Lambda.map(
         options, 
         (o) -> {
           final tf = new h2d.Text(
               font,
-              Main.Global.uiRoot);
+              root);
 
           return tf;
         });
 
     function cleanup() {
       state.isAlive = false;
-
-      for (tf in textFields) {
-        tf.remove();
-      }
+      root.remove();
     }
 
     Main.Global.updateHooks.push((dt) -> {
