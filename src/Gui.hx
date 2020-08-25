@@ -20,7 +20,7 @@ class GuiComponents {
       gamesList: Array<Session.SessionRef>) {
     final font = Fonts.primary();
     final itemPadding = 10;
-    final itemSpacing = 20;
+    final itemSpacing = 30;
     final itemWidth = 500;
     final descenderHeight = 4;
     final state = {

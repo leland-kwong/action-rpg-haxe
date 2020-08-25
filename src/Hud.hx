@@ -64,6 +64,10 @@ class UiStateManager {
       case { type: 'INVENTORY_TOGGLE' }: {
         final s = uiState.inventory;
 
+        if (!s.enabled) {
+          Main.Global.clearUi((field) -> field != 'hud');
+        }
+
         s.enabled = !s.enabled;
       }
 
@@ -75,7 +79,6 @@ class UiStateManager {
         Main.Global.clearUi((field) -> {
           return field != 'hud';
         });
-        Main.Global.uiState.hud.enabled = true;
         Main.Global.replaceScene( 
           () -> {
             final gameInstance = new Game(Main.Global.rootScene); 
@@ -99,7 +102,7 @@ class UiStateManager {
 
         Global.replaceScene(() -> {
           return  switch(sceneName) {
-            case 'experiment': Experiment.init();
+            case 'experiment': Experiment.openPassiveSkillTree();
             case 'editor': Editor.init();
             case 'exit': Main.onGameExit();
             default: {
@@ -1270,6 +1273,15 @@ class Hud {
     aiNameText.text = '';
     aiHealthBar.clear();
 
+    final uiState = Main.Global.uiState;
+    final enabled = !uiState.passiveSkillTree.enabled
+      && !uiState.mainMenu.enabled;
+    uiState.hud.enabled = enabled;
+
+    if (!enabled) {
+      return;
+    }
+
     Main.Global.questState = Lambda.fold(
         Main.Global.questActions,
         (a, qs) -> {
@@ -1379,6 +1391,7 @@ class Hud {
               'ui/stylized_border_1',
               null,
               (p) -> {
+                p.sortOrder = 0;
                 p.batchElement.scale = Hud.rScale;
               });
         }
@@ -1415,6 +1428,7 @@ class Hud {
       ];
       final hudAbilityLayerId = 'layer_2';
 
+      // render hud equipped abilities
       for (i in 0...inventoryEquippedSlots.length) {
         final lootId = inventoryEquippedSlots[i];
 
@@ -1452,17 +1466,19 @@ class Hud {
                   angleLength);
             }
 
-            inactiveAbilitiesSb.emitSprite(
+            final ref = inactiveAbilitiesSb.emitSprite(
                 cx, cy,
                 lootDef.spriteKey,
                 null,
                 spriteEffect);
+            ref.sortOrder = 1;
           } else {
-            Main.Global.uiSpriteBatch.emitSprite(
+            final ref = Main.Global.uiSpriteBatch.emitSprite(
                 cx, cy,
                 lootDef.spriteKey,
                 null,
                 spriteEffect);
+            ref.sortOrder = 1; 
           }
         }
       }

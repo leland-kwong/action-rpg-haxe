@@ -81,6 +81,9 @@ class Global {
     inventory: {
       enabled: false
     },
+    passiveSkillTree: {
+      enabled: false
+    }
   }
   public static var uiHomeMenuEnabled = true;
 
@@ -137,6 +140,18 @@ class Global {
         }, false);
 
     return wereUiItemsClosed;
+  }
+
+  public static function hasUiItemsEnabled() {
+    final uiPanelFields = Lambda.filter(
+        Reflect.fields(Global.uiState),
+        (field) -> field != 'hud');
+
+    return Lambda.exists(
+        uiPanelFields,
+        (field) -> {
+          return Reflect.field(Global.uiState, field).enabled;
+        });
   }
 }
 
@@ -270,11 +285,22 @@ class Main extends hxd.App {
     }
 #end
 
-    if (Key.isPressed(Key.I)
-        && Global.uiState.hud.enabled) {
+    if (Key.isPressed(Key.I)) {
       Hud.UiStateManager.send({
         type: 'INVENTORY_TOGGLE'
       });
+    }
+
+    final togglePassiveSkillTree = 
+      Key.isPressed(Key.P);
+    if (togglePassiveSkillTree) {
+      final skillTreeState = Global.uiState.passiveSkillTree;
+
+      if (!skillTreeState.enabled) {
+        Global.clearUi((field) -> field != 'hud');
+      }
+
+      skillTreeState.enabled = !skillTreeState.enabled;
     }
 
     if (Key.isPressed(Key.ESCAPE)) {
@@ -458,6 +484,7 @@ class Main extends hxd.App {
       Gui.init();
       Gui.GuiComponents.mainMenu();
       Hud.init();
+      Experiment.init();
 
     } catch (error: Dynamic) {
 

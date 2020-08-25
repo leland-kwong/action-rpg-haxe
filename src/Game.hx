@@ -1171,7 +1171,7 @@ class Player extends Entity {
     final hoverState = Main.Global.worldMouse.hoverState;
     final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
         || hoverState == Main.HoverState.LootHoveredCanPickup
-        || hoverState == Main.HoverState.Ui;
+        || Main.Global.hasUiItemsEnabled();
 
     if (preventAbilityUse) {
       return;

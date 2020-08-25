@@ -1,5 +1,5 @@
 class Experiment {
-  public static function init() {
+  public static function openPassiveSkillTree() {
     final EMPTY_HOVERED_NODE = {
       x: 0,
       y: 0,
@@ -12,6 +12,7 @@ class Experiment {
       nodeId: 'NO_HOVERED_NODE',
       startedAt: -1.
     };
+    final baseSortOrder = 10;
 
     final state = {
       hoveredNode: NULL_HOVERED_NODE,
@@ -53,14 +54,15 @@ class Experiment {
 
     // render background
     function renderBackground(time: Float) {
-      final ref = Main.Global.sb.emitSprite(
-          -240,
-          -135,
+      final win = hxd.Window.getInstance();
+      final ref = Main.Global.uiSpriteBatch.emitSprite(
+          0,
+          0,
           'ui/square_white');
       final elem = ref.batchElement;
-      ref.sortOrder = 0;
-      elem.scaleX = 480;
-      elem.scaleY = 270;
+      ref.sortOrder = baseSortOrder;
+      elem.scaleX = win.width;
+      elem.scaleY = win.height;
       elem.r = 0.1;
       elem.g = 0.1;
       elem.b = 0.1;
@@ -414,7 +416,7 @@ class Experiment {
                   objectMeta.spriteKey);
               final b = spriteRef.batchElement;
 
-              spriteRef.sortOrder = layerIndex;
+              spriteRef.sortOrder = baseSortOrder + layerIndex;
 
               // run hover animation for skill node
               if (isHoveredNode) {
@@ -484,6 +486,7 @@ class Experiment {
                   sx,
                   sy,
                   'ui/passive_skill_tree__node_size_${nodeSize}_selected_state');
+              spriteRef.sortOrder = baseSortOrder + 1;
 
               final b = spriteRef.batchElement;
 
@@ -654,7 +657,7 @@ class Experiment {
                 'ui/square_white');
             final b = ref.batchElement;
 
-            ref.sortOrder = 100;
+            ref.sortOrder = baseSortOrder + 100;
             b.scale = state.renderScale;
             b.scaleX *= w;
             b.scaleY *= h;
@@ -707,5 +710,37 @@ class Experiment {
     return () -> {
       state.shouldCleanup = true;
     };
+  }
+
+  public static function init() {
+    final state = {
+      isAlive: false,
+      cleanupFn: null
+    };
+
+    function managePassiveSkillTreeVisibility(dt) {
+      final enabled = Main.Global.uiState.passiveSkillTree.enabled;
+      final shouldOpen = enabled
+        && !state.isAlive;
+      final shouldClose = !enabled
+        && state.isAlive;
+
+      if (shouldOpen) {
+        state.isAlive = true;
+        state.cleanupFn = openPassiveSkillTree();
+      }
+
+      if (shouldClose) {
+        state.isAlive = false;
+        if (state.cleanupFn != null) {
+          state.cleanupFn();
+        }
+      }
+
+      return true;
+    }
+
+    Main.Global.updateHooks
+      .push(managePassiveSkillTreeVisibility);
   }
 }
