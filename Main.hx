@@ -281,29 +281,36 @@ class Main extends hxd.App {
     }
 #end
 
-    if (Key.isPressed(Key.I)) {
-      Hud.UiStateManager.send({
-        type: 'INVENTORY_TOGGLE'
-      });
-    }
-
-    final togglePassiveSkillTree = 
-      Key.isPressed(Key.P);
-    if (togglePassiveSkillTree) {
-      final skillTreeState = Global.uiState.passiveSkillTree;
-
-      if (!skillTreeState.enabled) {
-        Global.clearUi((field) -> field != 'hud');
+    // handle in game hotkeys
+    if (!Global.uiState.mainMenu.enabled) {
+      if (Key.isPressed(Key.I)) {
+        Hud.UiStateManager.send({
+          type: 'INVENTORY_TOGGLE'
+        });
       }
 
-      skillTreeState.enabled = !skillTreeState.enabled;
+      final togglePassiveSkillTree = 
+        Key.isPressed(Key.P);
+      if (togglePassiveSkillTree) {
+        final skillTreeState = Global.uiState.passiveSkillTree;
+
+        if (!skillTreeState.enabled) {
+          Global.clearUi((field) -> field != 'hud');
+        }
+
+        skillTreeState.enabled = !skillTreeState.enabled;
+      }
     }
 
-    if (Key.isPressed(Key.ESCAPE)) {
+    final toggleMainMenu = 
+      Key.isPressed(Key.ESCAPE);
+    if (toggleMainMenu) {
+      // close all open ui elements first
       final wereUiItemsClosed = Global.clearUi((field) -> {
         return field != 'hud'; 
       });
 
+      // only show main menu if there were no elements closed
       if (!wereUiItemsClosed) {
         Global.uiState.mainMenu.enabled = true;  
       }
