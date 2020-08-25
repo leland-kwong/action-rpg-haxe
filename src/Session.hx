@@ -207,7 +207,11 @@ class Session {
       case {
         type: 'GAME_LOADED',
       }: {
-        trace('new game created');  
+        if (isEmptyGameState(ref)) {
+          trace('new game created', ref.gameId);
+        } else {
+          trace('game reloaded', ref.gameId);  
+        }
       }
 
       case { 
