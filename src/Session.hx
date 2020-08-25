@@ -14,6 +14,7 @@ typedef SessionEvent = {
 typedef SessionRef = {
   sessionId: String,
   gameId: String,
+  slotId: Int,
   // level can be derived from this
   experienceGained: Int,
   questState: Quest.QuestStateByName,
@@ -22,24 +23,27 @@ typedef SessionRef = {
     totalPointsAvailable: Int,
     nodeSelectionStateById: 
       Map<String, Bool>
-  }
+  },
+  lastUpdatedAt: Float 
 }
 
+typedef ThreadMessage = {
+  ref: SessionRef,
+  file: String,
+  event: SessionEvent,
+  onSuccess: () -> Void,
+  flushImmediate: Bool
+}
 
 class Session {
   static final state = {
     thread: null,
-    fileOutputByPath: new Map<String, sys.io.FileOutput>(),
-    threadMessageQueue: new Array<{
-      ref: SessionRef,
-      file: String,
-      event: SessionEvent,
-      onSuccess: () -> Void,
-      flushImmediate: Bool
-    }>()
+    fileOutputByGameId: new Map<String, sys.io.FileOutput>(),
+    threadMessageQueue: new Array<ThreadMessage>()
   };
 
   static final delimiter = '\n';
+  static final NO_UPDATE_YET = -1;
 
   static function makeId(
       ?customId: String) {
@@ -57,10 +61,12 @@ class Session {
   }
 
   // [SIDE-EFFECT] writes data to disk
-  static function writeMessageToDisk(nextMessage) {
+  static function writeMessageToDisk(
+      nextMessage: ThreadMessage) {
     final event: SessionEvent = nextMessage.event;
     final file = nextMessage.file;
-    final isNewFile = !state.fileOutputByPath.exists(file);
+    final gameId = nextMessage.ref.gameId;
+    final isNewFile = !state.fileOutputByGameId.exists(gameId);
 
     final fileOutput = {
       if (isNewFile) {
@@ -79,10 +85,10 @@ class Session {
 
         final fileOutput = sys.io.File.append(file);
 
-        state.fileOutputByPath.set(file, fileOutput);
+        state.fileOutputByGameId.set(gameId, fileOutput);
         fileOutput;
       } else {
-        state.fileOutputByPath.get(file);
+        state.fileOutputByGameId.get(gameId);
       }
     }
 
@@ -198,6 +204,12 @@ class Session {
       ref: SessionRef,
       ev: SessionEvent) {
     switch(ev) {
+      case {
+        type: 'GAME_LOADED',
+      }: {
+        trace('new game created');  
+      }
+
       case { 
         type: 'PASSIVE_SKILL_TREE_TOGGLE_NODE_SELECTION',
         data: d }: {
@@ -214,9 +226,11 @@ class Session {
         throw 'invalid session event ${ev.type}';
       }
     }
+    ref.lastUpdatedAt = ev.time;
   }
 
   public static function createGameState(
+      slotId,
       ?previousState: SessionRef, 
       ?previousLogData: String,
       ?customId: String): SessionRef {
@@ -237,6 +251,7 @@ class Session {
 
     return {
       gameId: 'game_${id}',
+      slotId: slotId,
       sessionId: id,
       experienceGained: 0,
       questState: new Map(),
@@ -247,13 +262,19 @@ class Session {
         nodeSelectionStateById: [
           'SKILL_TREE_ROOT' => true
         ]
-      } 
+      } ,
+      lastUpdatedAt: NO_UPDATE_YET
     };
+  }
+
+  public static function isEmptyGameState(
+      ref: SessionRef) {
+    return ref.lastUpdatedAt == NO_UPDATE_YET;
   }
 
   public static function makeEvent(
       eventType: String,
-      eventDetail: Dynamic): SessionEvent {
+      ?eventDetail: Dynamic): SessionEvent {
 
     return {
       type: eventType,
@@ -293,14 +314,15 @@ class Session {
     final eventLog = rawGameData.substring(firstDelimIndex + 1);
 
     final isValidRef = Type.typeof(ref) == TObject
-      && HaxeUtils.hasSameFields(ref, createGameState());
+      && HaxeUtils.hasSameFields(ref, createGameState(-1));
 
     if (!isValidRef) {
+      trace('session ref', ref);
       throw new haxe.Exception(
           '[session load error] invalid session ref');
     }
 
-    return createGameState(ref, eventLog);
+    return createGameState(ref.slotId, ref, eventLog);
   }
 
   // Loading the game also processes the previous log data
@@ -316,6 +338,7 @@ class Session {
   // 3. Processes session log to update game state to latest
   // 4. Saves new game state to disk
   public static function loadGameFile(
+      gameId: String,
       gameFile: String,
       onSuccess,
       onError) {
@@ -332,6 +355,11 @@ class Session {
       final ref = processGameData(gameData);
 
       onSuccess(ref);
+    }
+
+    final fileOutput = state.fileOutputByGameId.get(gameId);
+    if (fileOutput != null) {
+      fileOutput.flush();
     }
 
     SaveState.load(
@@ -367,6 +395,7 @@ class Session {
       final file = '${gameDir}/${mostRecent}';
 
       loadGameFile(
+          gameId,
           file,
           onSuccess,
           onError);
@@ -396,11 +425,11 @@ class Session {
         // need to clear directory first
         for (f in files) {
           final path = '${dir}/${f}';
-          final fileOutput = state.fileOutputByPath.get(path);
+          final fileOutput = state.fileOutputByGameId.get(gameId);
 
           if (fileOutput != null) {
             fileOutput.close();
-            state.fileOutputByPath.remove(path);
+            state.fileOutputByGameId.remove(gameId);
           }
 
           FileSystem.deleteFile(path);
@@ -425,6 +454,7 @@ class Session {
         'log event and load game',
         (passed) -> {
           final stateRef = Session.createGameState(
+              -1,
               null,
               null,
               'unit_test_id');
@@ -440,6 +470,7 @@ class Session {
           Session.logAndProcessEvent(stateRef, mockEvent, () -> {
             final gameFile = savedGamePath(stateRef);
             Session.loadGameFile(
+                stateRef.gameId,
                 gameFile,
                 (loadedStateRef) -> {
                   passed(
@@ -460,6 +491,7 @@ class Session {
           final stateRefsList = [
             for (i in 0...2) 
               Session.createGameState(
+                  -1,
                   null,
                   null,
                   'unit_test_id_${Utils.irnd(0, 1000)}')];    
@@ -511,6 +543,7 @@ class Session {
 
     {
       final initialRef = Session.createGameState(
+          -1,
           null,
           null,
           'unit_test_load_recent');
@@ -521,6 +554,7 @@ class Session {
             final stateRefsList = [
               for (i in 0...2) 
                 Session.createGameState(
+                    initialRef.slotId,
                     initialRef,
                     '',
                     'unit_test_load_recent_${i}')];    
@@ -560,12 +594,13 @@ class Session {
           });
     }
 
-    final streeTestEnabled = false;
+    final stressTestEnabled = false;
 
-    if (streeTestEnabled) {
+    if (stressTestEnabled) {
       trace('event logging stress test started');
 
       final initialRef = Session.createGameState(
+          0,
           null,
           null,
           'unit_test_temp_game_state');

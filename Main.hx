@@ -8,6 +8,7 @@ import SpriteBatchSystem;
 import Camera;
 import Tests;
 import Collision;
+import Gui;
 
 enum MainPhase {
   Init;
@@ -89,6 +90,7 @@ class Global {
   public static var escapeStack: Stack.StackRef = [];
   public static var questActions = [];
 
+  public static var gameState: Session.SessionRef;
   public static var questState = Quest.updateQuestState(
       {
         type: 'GAME_START',
@@ -97,6 +99,17 @@ class Global {
       },
       new Map(),
       Quest.conditionsByName);
+
+  static var sceneCleanupFn: () -> Void;
+
+  public static function replaceScene(
+      cleanupFn: () -> Void) {
+    if (sceneCleanupFn != null) {
+      sceneCleanupFn();
+    } 
+
+    sceneCleanupFn = cleanupFn;
+  }
 }
 
 enum UiState {
@@ -156,7 +169,6 @@ class Main extends hxd.App {
   var debugText: h2d.Text;
   var acc = 0.0;
   var background: h2d.Graphics;
-  var sceneCleanupFn: () -> Void;
   public static final nativePixelResolution = {
     // TODO this should be based on
     // the actual screen's resolution
@@ -414,7 +426,6 @@ class Main extends hxd.App {
       Hud.init();
 
       final homeMenuOptions = [
-        ['newGame', 'New Game'],
         ['editor', 'Editor'],
         ['experiment', 'Experiment'],
         ['exit', 'Exit']
@@ -432,28 +443,22 @@ class Main extends hxd.App {
       }
 
       function onHomeMenuSelect(value) {
-        if (sceneCleanupFn != null && 
-            value != 'backToGame') {
-          sceneCleanupFn();
-        }
-
         // execute selection
-        sceneCleanupFn = switch(value) {
+        Global.replaceScene(switch(value) {
           case 'experiment': Experiment.init();
           case 'editor': Editor.init();
           case 'exit': onGameExit();
-          case 'newGame': initGame();
           default: {
             throw 'home screen menu case not handled';
           };
-        }
+        });
 
         Global.escapeStack = [];
 
         function homeScreenOnEscape() {
           Stack.push(Global.escapeStack, 'goto home screen', () -> {
             Global.uiState.hud.enabled = false;
-            final closeHomeMenu = Gui.homeMenu(
+            final closeHomeMenu = GuiComponents.mainMenu(
                 onHomeMenuSelect, homeMenuOptions);
 
             Stack.push(Global.escapeStack, 'back to game', () -> {
@@ -469,8 +474,9 @@ class Main extends hxd.App {
         return true;
       }
 
-      Gui.homeMenu(
-          onHomeMenuSelect, homeMenuOptions);
+      Global.replaceScene(
+          GuiComponents.mainMenu(
+            onHomeMenuSelect, homeMenuOptions));
 
     } catch (error: Dynamic) {
 

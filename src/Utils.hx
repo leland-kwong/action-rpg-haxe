@@ -142,4 +142,41 @@ class Utils {
   public static function isFalse(value) {
     return value == false;
   }
+
+  // runs each async callback and exits whenever
+  // any error occurs
+  public static  function asyncParallel(
+      asyncFns: Array<(
+        _onSuccess: (value: Dynamic) -> Void, 
+        _onError: (err: Dynamic) -> Void
+        ) -> Void>,
+      onSuccess,
+      onError) {
+    var hasError = false;
+    var numCompleted = 0;
+    final allValues = [];
+
+    function _onSuccess(value) {
+      if (hasError) {
+        return;
+      } 
+
+      numCompleted += 1;
+      allValues.push(value);
+
+      final isDone = numCompleted == asyncFns.length;
+      if (isDone) {
+        onSuccess(allValues);
+      }
+    }
+
+    function _onError(error) {
+      hasError = true;
+      onError(error);
+    }
+
+    for (fn in asyncFns) {
+      fn(_onSuccess, _onError);
+    }
+  }
 }

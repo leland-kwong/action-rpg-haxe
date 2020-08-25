@@ -79,6 +79,26 @@ class UiStateManager {
           Stack.pop(Main.Global.escapeStack);
         } 
       }
+      case { 
+        type: 'START_GAME',
+        data: gameState
+      }: {
+        Main.Global.logData.selectedGameState = gameState;
+
+        final gameInstance = new Game(Main.Global.rootScene); 
+
+        Main.Global.gameState = gameState;
+        Main.Global.uiState.hud.enabled = true;
+        Main.Global.replaceScene( 
+          () -> gameInstance.remove());
+        Hud.InventoryDragAndDropPrototype
+          .addTestItems();
+
+        Session.logAndProcessEvent(
+            gameState,
+            Session.makeEvent(
+              'GAME_LOADED'));
+      }
       default: {
         throw 'invalid ui action ${action.type}';
       }
