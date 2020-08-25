@@ -678,12 +678,6 @@ class PassiveSkillTree {
         }
 
         Main.Global.updateHooks.push(function update(dt: Float) {
-          Main.Global.logData.skillTreeState = {
-            dragState: state.dragState,
-            translate: state.translate,
-            zoom: state.renderScale
-          };
-
           if (state.shouldCleanup) {
             for (fn in cleanupFns) {
               fn();

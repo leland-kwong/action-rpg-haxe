@@ -413,33 +413,26 @@ class Session {
   }
 
   public static function deleteGame(
-      gameId: String, 
-      onSuccess, 
-      onError) {
+      gameId: String) {
 
-    try {
-      final dir = SaveState.filePath(
-          savedGameDir(gameId));
-      if (FileSystem.exists(dir)) {
-        final files = FileSystem.readDirectory(dir);
-        // need to clear directory first
-        for (f in files) {
-          final path = '${dir}/${f}';
-          final fileOutput = state.fileOutputByGameId.get(gameId);
+    final dir = SaveState.filePath(
+        savedGameDir(gameId));
+    if (FileSystem.exists(dir)) {
+      final files = FileSystem.readDirectory(dir);
+      // need to clear directory first
+      for (f in files) {
+        final path = '${dir}/${f}';
+        final fileOutput = state.fileOutputByGameId.get(gameId);
 
-          if (fileOutput != null) {
-            fileOutput.close();
-            state.fileOutputByGameId.remove(gameId);
-          }
-
-          FileSystem.deleteFile(path);
+        if (fileOutput != null) {
+          fileOutput.close();
+          state.fileOutputByGameId.remove(gameId);
         }
 
-        FileSystem.deleteDirectory(dir);
+        FileSystem.deleteFile(path);
       }
-      onSuccess();
-    } catch (err) {
-      onError(err);
+
+      FileSystem.deleteDirectory(dir);
     }
   }
 
@@ -461,10 +454,12 @@ class Session {
 
           function onError(err) {
             HaxeUtils.handleError(null)(err);
-            deleteGame(
-                stateRef.gameId,
-                () -> {},
-                HaxeUtils.handleError('error deleting file'));
+
+            try {
+              deleteGame(stateRef.gameId);
+            } catch (err) {
+              HaxeUtils.handleError('error deleting file');
+            }
           }
 
           Session.logAndProcessEvent(stateRef, mockEvent, () -> {
@@ -476,10 +471,11 @@ class Session {
                   passed(
                       stateRef.sessionId != loadedStateRef.sessionId);
 
-                  deleteGame(
-                      stateRef.gameId,
-                      () -> {},
-                      HaxeUtils.handleError('error deleting file'));
+                  try {
+                    deleteGame(stateRef.gameId);
+                  } catch (err) {
+                    HaxeUtils.handleError('error deleting file');
+                  }
                 },
                 onError);
           }, onError, true);
@@ -523,10 +519,11 @@ class Session {
 
             // cleanup
             for (gameId in gamesList) {
-              deleteGame(
-                  gameId,
-                  () -> {},
-                  HaxeUtils.handleError(null));
+              try {
+                deleteGame(gameId);
+              } catch (err) {
+                HaxeUtils.handleError('error deleting file');
+              }
             }
           }
 
@@ -587,10 +584,11 @@ class Session {
             }
           },
           () -> {
-            deleteGame(
-                initialRef.gameId,
-                () -> {},
-                HaxeUtils.handleError('error deleting game'));
+            try {
+              deleteGame(initialRef.gameId);
+            } catch (err) {
+              HaxeUtils.handleError('error deleting file');
+            }
           });
     }
 

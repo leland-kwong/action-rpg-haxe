@@ -10,6 +10,15 @@ typedef GuiControl = {
   label: String
 }
 
+typedef GuiNodeList = Array<GuiNode>;
+
+class GuiNode extends h2d.Interactive {
+  public final state: Dynamic = {
+    value: null,
+    disabled: false
+  };
+}
+
 class GuiComponents {
   static final sortOrders = {
     mainMenuBg: 1000,
@@ -17,102 +26,182 @@ class GuiComponents {
   };
 
   public static function savedGameSlots(
-      gamesList: Array<Session.SessionRef>) {
+      fetchGamesList) {
     final font = Fonts.primary();
     final itemPadding = 10;
-    final itemSpacing = 30;
+    final itemSpacing = 50;
     final itemWidth = 500;
     final descenderHeight = 4;
     final state = {
       isAlive: true
     };
     final win = hxd.Window.getInstance();
-    final options: Array<GuiControl> = Lambda.mapi(
-        gamesList,
-        (index, gameState) -> {
-          final label = Session.isEmptyGameState(gameState) 
-            ? 'new game' 
-            : [
-              'gameId: ${gameState.gameId}',
-              'lastUpdated: ${gameState.lastUpdatedAt}'
-            ].join('\n');
-          final textHeight = Std.int(
-              Gui.calcTextHeight(Fonts.primary(), label));
-
-          return {
-            value: gameState,
-            label: label,
-            x: 0,
-            y: index * (20 * 2 + itemSpacing) + 500,
-            width: itemWidth + itemPadding,
-            height: textHeight
-              + itemPadding 
-              + descenderHeight
-          };
-        });
     final root = new h2d.Object(Main.Global.uiRoot);
-    final textFields = Lambda.map(
-        options, 
-        (o) -> {
-          final tf = new h2d.Text(
-              font,
-              root);
-
-          return tf;
-        });
+    var gameSlotNodes: GuiNodeList = null;
+    var gameDeleteNodes: GuiNodeList = null;
 
     function cleanup() {
       state.isAlive = false;
       root.remove();
     }
 
-    Main.Global.updateHooks.push((dt) -> {
-      Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
+    function createGameSlotNodes(options) {
+      return Lambda.map(
+        options,
+        (opt) -> {
+          final interact = new GuiNode(
+              opt.width,
+              opt.height,
+              root);
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
-      final hoveredItem = Gui.getHoveredControl(
-          options, mx, my);
+          interact.x = opt.x;
+          interact.y = opt.y;
+          interact.state.value = opt.value;
+          interact.onClick = (e) -> {
+            Hud.UiStateManager.send({
+              type: 'START_GAME',
+              data: opt.value
+            });
 
-      if (hoveredItem != null && Main.Global.worldMouse.clicked) { 
-        Hud.UiStateManager.send({
-          type: 'START_GAME',
-          data: hoveredItem.value
+            cleanup();
+          };
+
+          final tf = new h2d.Text(
+              font,
+              interact);
+
+          tf.text = opt.label;
+          tf.x = itemPadding / 2;
+          tf.y = itemPadding / 2;
+
+          return interact;
         });
+    }
 
-        cleanup();
-        return false;
-      }
+    function createGameDeleteNodes(
+        refreshInteractNodes) { 
+      return Lambda.map(
+          gameSlotNodes,
+          (related: GuiNode) -> {
+            final relatedValue: Session.SessionRef = 
+              related.state.value; 
 
-      // update main menu option text nodes
-      {
-        for (o in options) {
-          o.x = 400;
+            if (Session.isEmptyGameState(relatedValue)) {
+              return new GuiNode(0, 0);
+            }
+            
+            final isCurrentlyActiveGame = relatedValue.gameId ==
+              Main.Global.gameState.gameId;
+            final text = isCurrentlyActiveGame
+              ? 'currently active game'
+              : 'delete';
+            final textWidth = Gui.calcTextWidth(
+                Fonts.primary(), text);
+            final textHeight = Gui.calcTextHeight(
+                Fonts.primary(), text);
+            final interact = new GuiNode(
+                textWidth + itemPadding,
+                textHeight + itemPadding + descenderHeight,
+                root);
+
+            final tf = new h2d.Text(
+                font,
+                interact);
+
+            tf.text = text;
+            tf.x = itemPadding / 2;
+            tf.y = itemPadding / 2;
+            tf.alpha = isCurrentlyActiveGame 
+              ? 1 
+              : 0.8;
+
+            interact.x = related.x + related.width;
+            interact.y = related.y;
+            interact.state.disabled = isCurrentlyActiveGame;
+
+            if (!isCurrentlyActiveGame) {
+              interact.onClick = (e) -> {
+                Hud.UiStateManager.send({
+                  type: 'DELETE_GAME',
+                  data: related.state.value.gameId
+                }, (_, err) -> {
+                  if (err != null) {
+                    HaxeUtils.handleError('delete game failure')(err);
+                    return;
+                  }
+
+                  refreshInteractNodes();
+                });
+              };
+            }
+
+            return interact;
+          });
+    }
+
+    function refreshInteractNodes() {
+      function removeGuiNodes(
+          nodeList: GuiNodeList) {
+        if (nodeList == null) {
+          return;
         }
 
-        for (i in 0...textFields.length) {
-          final tf = textFields[i];
-          final o = options[i];
-
-          tf.text = o.label;
-          tf.x = o.x + itemPadding / 2;
-          tf.y = o.y + itemPadding / 2;
+        for (node in nodeList) {
+          node.remove();
         }
       }
 
-      return state.isAlive;
-    });
+      removeGuiNodes(gameSlotNodes);
+      removeGuiNodes(gameDeleteNodes);
+      
+      function onGamesFetched(gamesList: Array<Session.SessionRef>) {
+        final options: Array<GuiControl> = Lambda.mapi(
+            gamesList,
+            (index, gameState) -> {
+              final label = Session.isEmptyGameState(gameState) 
+                ? 'new game' 
+                : [
+                'gameId: ${gameState.gameId}',
+                'lastUpdated: ${gameState.lastUpdatedAt}'
+                ].join('\n');
+              final textHeight = Std.int(
+                  Gui.calcTextHeight(Fonts.primary(), label));
+
+              return {
+                value: gameState,
+                label: label,
+                x: 400,
+                y: index * (20 * 2 + itemSpacing) + 500,
+                width: itemWidth + itemPadding,
+                height: textHeight
+                  + itemPadding 
+                  + descenderHeight
+              };
+            });
+        gameSlotNodes = createGameSlotNodes(options);
+        gameDeleteNodes = createGameDeleteNodes(
+            refreshInteractNodes);
+      }
+      fetchGamesList(onGamesFetched);
+    }
+
+    refreshInteractNodes();
 
     Main.Global.renderHooks.push((time) -> {
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
-      final hoveredItem = Gui.getHoveredControl(
-          options, mx, my);
+      final hoveredGameSlot = Lambda.find(
+          gameSlotNodes,
+          (i) -> i.isOver());
+      final hoveredDeleteNode = Lambda.find(
+          gameDeleteNodes,
+          (i) -> i.isOver());
+      final hoveredNode = hoveredGameSlot != null 
+        ? hoveredGameSlot 
+        : hoveredDeleteNode;
 
-      if (hoveredItem != null) { 
+      if (hoveredNode != null && !hoveredNode.state.disabled) { 
         Main.Global.uiSpriteBatch.emitSprite(
-            hoveredItem.x,
-            hoveredItem.y,
+            hoveredNode.x,
+            hoveredNode.y,
             'ui/square_white',
             null,
             (p) -> {
@@ -123,8 +212,8 @@ class GuiComponents {
               p.batchElement.r = 0.9;
               p.batchElement.g = 0;
               p.batchElement.b = 0.5;
-              p.batchElement.scaleX = hoveredItem.width;
-              p.batchElement.scaleY = hoveredItem.height;
+              p.batchElement.scaleX = hoveredNode.width;
+              p.batchElement.scaleY = hoveredNode.height;
             });
       }
       
@@ -269,51 +358,55 @@ class GuiComponents {
     };
 
     function openGamesList() {
-      final gamesList = Session.getGamesList();
-      final gameRefsList = [];
-      final asyncCallbacks = Lambda.map(
-          gamesList,
-          (gameId) -> {
-            return (_onSuccess, _onError) -> {
-              Session.loadMostRecentGameFile(
-                  gameId,
-                  _onSuccess,
-                  _onError);
-            };
-          });
-      function placeholderSlotCallback(_onSuccess, _) {
-        _onSuccess('PLACEHOLDER_CALLBACK');
-      }
+      function fetchGamesList(onComplete) {
+        final gamesList = Session.getGamesList();
+        final gameRefsList = [];
+        final asyncCallbacks = Lambda.map(
+            gamesList,
+            (gameId) -> {
+              return (_onSuccess, _onError) -> {
+                Session.loadMostRecentGameFile(
+                    gameId,
+                    _onSuccess,
+                    _onError);
+              };
+            });
+        function placeholderSlotCallback(_onSuccess, _) {
+          _onSuccess('PLACEHOLDER_CALLBACK');
+        }
 
-      Utils.asyncParallel(
-          asyncCallbacks.length > 0
+        Utils.asyncParallel(
+            asyncCallbacks.length > 0
             ? asyncCallbacks
             : [placeholderSlotCallback], 
-          (gameRefs: Array<Dynamic>) -> {
-            final numSlots = 3;
-            final gameSlots = [
-              // setup empty slots first
-              for (i in 0...numSlots) 
-                Session.createGameState(i)
-            ];
+            (gameRefs: Array<Dynamic>) -> {
+              final numSlots = 3;
+              final gameSlots = [
+                // setup empty slots first
+                for (i in 0...numSlots) 
+                  Session.createGameState(i)
+              ];
 
-            // fill empty slots with previous game refs
-            for (ref in gameRefs) {
-              if (ref != 'PLACEHOLDER_CALLBACK') {
-                gameSlots[ref.slotId] = ref;
-              }
-            } 
+              // fill empty slots with previous game refs
+              for (ref in gameRefs) {
+                if (ref != 'PLACEHOLDER_CALLBACK') {
+                  gameSlots[ref.slotId] = ref;
+                }
+              } 
 
-            final cleanup = GuiComponents.savedGameSlots(gameSlots);
-            Main.Global.updateHooks.push((dt) -> {
-              if (!state.isAlive) {
-                cleanup();
-              }
+              onComplete(gameSlots);
+            }, 
+            HaxeUtils.handleError('error loading game files'));
+      }
 
-              return state.isAlive;
-            });
-          }, 
-          HaxeUtils.handleError('error loading game files'));
+      final cleanup = GuiComponents.savedGameSlots(fetchGamesList);
+      Main.Global.updateHooks.push((dt) -> {
+        if (!state.isAlive) {
+          cleanup();
+        }
+
+        return state.isAlive;
+      });
     }
 
     function openMenuOptions() {
@@ -411,6 +504,10 @@ class Gui {
 
   public static function calcTextHeight(font, text) {
     return tempText(font, text).textHeight;
+  }
+
+  public static function calcTextWidth(font, text) {
+    return tempText(font, text).textWidth;
   }
 
   public static function tests() {

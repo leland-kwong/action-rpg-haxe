@@ -57,7 +57,17 @@ class TiledParser {
 }
 
 class UiStateManager {
-  public static function send(action: UiAction) {
+  public static function noopCompleteCallback(_, _) {
+  }
+
+  public static function send(
+      action: UiAction,
+      ?onCompleteCalback: (
+        successValue: Dynamic, 
+        error: Dynamic) -> Void) {
+    final onComplete = Utils.withDefault(
+        onCompleteCalback, 
+        noopCompleteCallback);
     final uiState = Main.Global.uiState;
 
     switch(action) {
@@ -91,6 +101,18 @@ class UiStateManager {
             gameState,
             Session.makeEvent(
               'GAME_LOADED'));
+      }
+
+      case { 
+        type: 'DELETE_GAME',
+        data: gameId
+      }: {
+        try {
+          Session.deleteGame(gameId); 
+          onComplete(null, null);
+        } catch (err) {
+          onComplete(null, err);
+        }
       }
 
       case { 
