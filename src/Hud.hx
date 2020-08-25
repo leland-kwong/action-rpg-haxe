@@ -79,6 +79,7 @@ class UiStateManager {
           Stack.pop(Main.Global.escapeStack);
         } 
       }
+
       case { 
         type: 'START_GAME',
         data: gameState
@@ -99,6 +100,47 @@ class UiStateManager {
             Session.makeEvent(
               'GAME_LOADED'));
       }
+
+      case { 
+        type: 'SWITCH_SCENE',
+        data: sceneName
+      }: {
+        final Global = Main.Global;
+        final homeMenuOptions = [
+          ['editor', 'Editor'],
+          ['experiment', 'Experiment'],
+          ['exit', 'Exit']
+        ];
+
+        Global.replaceScene(switch(sceneName) {
+          case 'mainMenu': Gui.GuiComponents.mainMenu(homeMenuOptions);
+          case 'experiment': Experiment.init();
+          case 'editor': Editor.init();
+          case 'exit': Main.onGameExit();
+          default: {
+            throw 'home screen menu case not handled';
+          };
+        });
+
+        Global.escapeStack = [];
+
+        function homeScreenOnEscape() {
+          Stack.push(Global.escapeStack, 'goto home screen', () -> {
+            Global.uiState.hud.enabled = false;
+            final closeHomeMenu = Gui.GuiComponents
+              .mainMenu(homeMenuOptions);
+
+            Stack.push(Global.escapeStack, 'back to game', () -> {
+              closeHomeMenu();
+              homeScreenOnEscape();
+              Global.uiState.hud.enabled = true;
+            });
+          });
+        }
+
+        homeScreenOnEscape();
+      }
+
       default: {
         throw 'invalid ui action ${action.type}';
       }

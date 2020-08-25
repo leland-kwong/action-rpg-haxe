@@ -69,7 +69,7 @@ class Experiment {
     }
     Main.Global.renderHooks.push(renderBackground);
 
-    final sessionRef = Session.createGameState();
+    final sessionRef = Main.Global.gameState;
 
     // test passive skill tree
     {

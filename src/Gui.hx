@@ -67,7 +67,6 @@ class GuiComponents {
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 
-      // TODO: handle game slot selection event
       if (hoveredItem != null && Main.Global.worldMouse.clicked) { 
         Hud.UiStateManager.send({
           type: 'START_GAME',
@@ -126,7 +125,6 @@ class GuiComponents {
   }
 
   public static function mainMenuOptions(
-      onSelect, 
       options: Array<Array<String>>) {
     final font = Fonts.primary();
     final itemPadding = 10;
@@ -177,12 +175,13 @@ class GuiComponents {
           options, mx, my);
 
       if (hoveredItem != null && Main.Global.worldMouse.clicked) { 
-        final shouldCleanup = onSelect(hoveredItem.value);
+        Hud.UiStateManager.send({
+          type: 'SWITCH_SCENE',
+          data: hoveredItem.value
+        });
 
-        if (shouldCleanup) {
-          cleanup();
-          return false;
-        }
+        cleanup();
+        return false;
       }
 
       // update main menu option text nodes
@@ -249,7 +248,6 @@ class GuiComponents {
   }
 
   public static function mainMenu(
-      onSelect,
       options) {
     final state = {
       isAlive: true
@@ -303,7 +301,7 @@ class GuiComponents {
           HaxeUtils.handleError('error loading game files'));
     }
 
-    final cleanupMainMenuOptions = mainMenuOptions(onSelect, options);
+    final cleanupMainMenuOptions = mainMenuOptions(options);
 
     return () -> {
       cleanupMainMenuOptions();

@@ -184,7 +184,7 @@ class Main extends hxd.App {
     Global.uiRoot.addChild(debugText);
   }
 
-  function onGameExit() {
+  public static function onGameExit() {
     hxd.System.exit();
 
     return () -> {};
@@ -425,58 +425,10 @@ class Main extends hxd.App {
       Gui.init();
       Hud.init();
 
-      final homeMenuOptions = [
-        ['editor', 'Editor'],
-        ['experiment', 'Experiment'],
-        ['exit', 'Exit']
-      ];
-
-      function initGame() {
-        final gameRef = new Game(s2d); 
-
-        Global.uiState.hud.enabled = true;
-
-        Hud.InventoryDragAndDropPrototype
-          .addTestItems();
-
-        return () -> gameRef.remove();
-      }
-
-      function onHomeMenuSelect(value) {
-        // execute selection
-        Global.replaceScene(switch(value) {
-          case 'experiment': Experiment.init();
-          case 'editor': Editor.init();
-          case 'exit': onGameExit();
-          default: {
-            throw 'home screen menu case not handled';
-          };
-        });
-
-        Global.escapeStack = [];
-
-        function homeScreenOnEscape() {
-          Stack.push(Global.escapeStack, 'goto home screen', () -> {
-            Global.uiState.hud.enabled = false;
-            final closeHomeMenu = GuiComponents.mainMenu(
-                onHomeMenuSelect, homeMenuOptions);
-
-            Stack.push(Global.escapeStack, 'back to game', () -> {
-              closeHomeMenu();
-              homeScreenOnEscape();
-              Global.uiState.hud.enabled = true;
-            });
-          });
-        }
-
-        homeScreenOnEscape();
-
-        return true;
-      }
-
-      Global.replaceScene(
-          GuiComponents.mainMenu(
-            onHomeMenuSelect, homeMenuOptions));
+      Hud.UiStateManager.send({
+        type: 'SWITCH_SCENE',
+        data: 'mainMenu'
+      });
 
     } catch (error: Dynamic) {
 
