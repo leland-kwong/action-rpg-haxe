@@ -25,6 +25,8 @@ enum HoverState {
   Ui;
 }
 
+typedef VoidFn = () -> Void;
+
 class Global {
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
@@ -105,24 +107,20 @@ class Global {
   static var sceneCleanupFn: () -> Void;
 
   public static function replaceScene(
-      cleanupFn: () -> Void) {
+      getNextScene: () -> VoidFn) {
     if (sceneCleanupFn != null) {
       sceneCleanupFn();
     } 
 
-    sceneCleanupFn = cleanupFn;
+    sceneCleanupFn = getNextScene();
   }
 
   public static function clearUi(
-      predicate: (field: String) -> Bool): Bool {
+      shouldClear: (field: String) -> Bool): Bool {
     final wereUiItemsClosed = Lambda.fold(
         Reflect.fields(Global.uiState),
         (field, result) -> {
-          final shouldClear = predicate != null
-            ? predicate(field)
-            : true;
-
-          if (!shouldClear) {
+          if (!shouldClear(field)) {
             return result;
           }
 

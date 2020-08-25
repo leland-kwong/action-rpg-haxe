@@ -71,17 +71,16 @@ class UiStateManager {
         type: 'START_GAME',
         data: gameState
       }: {
-        Main.Global.logData.selectedGameState = gameState;
-
-        final gameInstance = new Game(Main.Global.rootScene); 
-
         Main.Global.gameState = gameState;
         Main.Global.clearUi((field) -> {
           return field != 'hud';
         });
         Main.Global.uiState.hud.enabled = true;
         Main.Global.replaceScene( 
-          () -> gameInstance.remove());
+          () -> {
+            final gameInstance = new Game(Main.Global.rootScene); 
+            return () -> gameInstance.remove();
+          });
         Hud.InventoryDragAndDropPrototype
           .addTestItems();
 
@@ -96,14 +95,17 @@ class UiStateManager {
         data: sceneName
       }: {
         final Global = Main.Global;
+        Main.Global.clearUi((field) -> true);
 
-        Global.replaceScene(switch(sceneName) {
-          case 'experiment': Experiment.init();
-          case 'editor': Editor.init();
-          case 'exit': Main.onGameExit();
-          default: {
-            throw 'home screen menu case not handled';
-          };
+        Global.replaceScene(() -> {
+          return  switch(sceneName) {
+            case 'experiment': Experiment.init();
+            case 'editor': Editor.init();
+            case 'exit': Main.onGameExit();
+            default: {
+              throw 'home screen menu case not handled';
+            };
+          }
         });
       }
 
