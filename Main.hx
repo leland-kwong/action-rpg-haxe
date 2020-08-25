@@ -18,10 +18,6 @@ enum MainPhase {
 
 enum HoverState {
   None;
-  LootHovered;
-  // yet to be used
-  LootHoveredCanPickup;
-  Enemy;
   Ui;
 }
 
@@ -443,22 +439,21 @@ class Main extends hxd.App {
                 Std.int(f.w / 2), 
                 Std.int(f.h / 2)));
 
-          function handleCursorStyle(dt) {
-            final hoverState = Global.worldMouse.hoverState;
-
-            rootInteract.cursor = switch(hoverState) {
-              case 
-                HoverState.LootHovered
-                | HoverState.LootHoveredCanPickup
-                | HoverState.Enemy: targetCursor;
-
-              default: Cursor.Default;
+          function deriveCursorStyle() {
+            if (Global.hasUiItemsEnabled()) {
+              return Cursor.Default;
             }
+
+            return targetCursor;
+          }
+
+          function updateCursorStyle(dt) {
+            rootInteract.cursor = deriveCursorStyle();
 
             return true;
           }
 
-          Global.updateHooks.push(handleCursorStyle);
+          Global.updateHooks.push(updateCursorStyle);
         }
       }
 
@@ -484,7 +479,7 @@ class Main extends hxd.App {
       Gui.init();
       Gui.GuiComponents.mainMenu();
       Hud.init();
-      Experiment.init();
+      PassiveSkillTree.init();
 
     } catch (error: Dynamic) {
 

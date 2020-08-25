@@ -1120,7 +1120,6 @@ class Player extends Entity {
 
   public override function update(dt) {
     super.update(dt);
-    Cooldown.update(cds, dt);
     abilityEvents = [];
 
     dx = 0;
@@ -1165,12 +1164,13 @@ class Player extends Entity {
         damageTaken = 0;
       }
     }
+
+    Cooldown.update(cds, dt);
   }
 
   public function useAbility() {
-    final hoverState = Main.Global.worldMouse.hoverState;
     final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
-        || hoverState == Main.HoverState.LootHoveredCanPickup
+        || Cooldown.has(cds, 'playerCanPickupItem') 
         || Main.Global.hasUiItemsEnabled();
 
     if (preventAbilityUse) {

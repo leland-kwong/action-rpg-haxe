@@ -102,7 +102,7 @@ class UiStateManager {
 
         Global.replaceScene(() -> {
           return  switch(sceneName) {
-            case 'experiment': Experiment.openPassiveSkillTree();
+            case 'experiment': Experiment.init();
             case 'editor': Editor.init();
             case 'exit': Main.onGameExit();
             default: {
@@ -221,11 +221,6 @@ class Inventory {
         Main.Global.hoveredEntity.hoverStart = Main.Global.time;
       }
 
-      if (entityRef.type == 'LOOT') {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.LootHovered;
-      }
-
       final hoveredId = Main.Global.hoveredEntity.id;
       final lootRef = Entity.getById(hoveredId);
       final playerRef = Entity.getById('PLAYER');
@@ -238,8 +233,11 @@ class Inventory {
         distFromPlayer <= playerRef.stats.pickupRadius;
       if (playerCanPickupItem) {
         if (Main.Global.worldMouse.buttonDown == 0) {
-          Main.Global.worldMouse.hoverState = 
-            Main.HoverState.LootHoveredCanPickup;
+          final cds = Entity.getById('PLAYER').cds;
+          Cooldown.set(
+              cds,
+              'playerCanPickupItem',
+              1/100);
         }
 
         final pickupItemButtonClicked = 
@@ -650,7 +648,8 @@ class InventoryDragAndDropPrototype {
       slotDefinition: null,
       slotIndex: -1,
       distance: Math.POSITIVE_INFINITY
-    }
+    },
+    slotHovered: false
   };
 
   static public function getEquippedAbilities() {
@@ -753,6 +752,11 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function update(dt) {
+    if (state.slotHovered) {
+      Main.Global.worldMouse.hoverState = 
+        Main.HoverState.Ui;
+    }
+
     // handle interact slots
     {
       // cleanup
@@ -761,6 +765,7 @@ class InventoryDragAndDropPrototype {
           interact.remove();
         }
         state.interactSlots = [];
+        state.slotHovered = false;
       } else if (state.interactSlots.length == 0) {
         final tiledInteractables = {
           final hudLayoutRef = TiledParser.loadFile(
@@ -786,13 +791,11 @@ class InventoryDragAndDropPrototype {
               interact.y = ti.y * Hud.rScale;
 
               interact.onOver = (ev: hxd.Event) -> {
-                Main.Global.worldMouse.hoverState = 
-                  Main.HoverState.Ui;
+                state.slotHovered = true;
               }
 
               interact.onOut = (ev: hxd.Event) -> {
-                Main.Global.worldMouse.hoverState = 
-                  Main.HoverState.None;
+                state.slotHovered = false;
               }
 
               interact;
@@ -1270,6 +1273,8 @@ class Hud {
     questDisplay.text = '';
     aiNameText.text = '';
     aiHealthBar.clear();
+    Main.Global.worldMouse.hoverState = 
+      Main.HoverState.None;
 
     final uiState = Main.Global.uiState;
     final enabled = !uiState.passiveSkillTree.enabled
@@ -1327,9 +1332,6 @@ class Hud {
       return;
     }
 
-    Main.Global.worldMouse.hoverState = 
-      Main.HoverState.None;
-
     Tooltip.render(time);
     InventoryDragAndDropPrototype.render(time);
     Inventory.render(time);
@@ -1342,8 +1344,6 @@ class Hud {
       final entRef = Entity.getById(
           hoveredEntityId);
       if (entRef.type == 'ENEMY') {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.Enemy;
         aiNameText.text = Entity.getComponent(entRef, 'aiType');
         final healthPctRemain = entRef.health / 
           entRef.stats.maxHealth;
