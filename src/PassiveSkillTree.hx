@@ -11,8 +11,6 @@ class PassiveSkillTree {
   public static function calcNumUnusedPoints(sessionRef) {
     final pointsAvailable = Config.calcCurrentLevel(
         sessionRef.experienceGained) 
-      // account for level index starting at 0
-      + 1
       // account for the root node which is already selected
       + 1;
 

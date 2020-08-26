@@ -1192,7 +1192,7 @@ class Player extends Entity {
     final y2 = Main.Global.rootScene.mouseY;
     // player's pivot is at their feet, this adjusts the
     // ability launch point to be roughly at player's torso
-    final yCenterOffset = -8;
+    final yCenterOffset = -10;
     final startY = y + yCenterOffset;
     final launchOffset = 12;
     final angle = Math.atan2(y2 - startY, x2 - x);
