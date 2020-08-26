@@ -522,6 +522,22 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/hud_passive_skill_tree_button--hover.png</key>
+            <key type="filename">aseprite_exports/ui/hud_passive_skill_tree_button.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0,0</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>3,3,5,5</rect>
+                <key>scale9Paddings</key>
+                <rect>3,3,5,5</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/kamehameha_center_width_1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>

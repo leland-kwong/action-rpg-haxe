@@ -362,6 +362,14 @@ class Editor {
                   hoverSprite: 'ui/hud_inventory_button--hover'
                 }
               },
+              'hud_passive_skill_tree_button' => {
+                spriteKey: 'ui/hud_passive_skill_tree_button',
+                type: 'UI_ELEMENT',
+                data: {
+                  onClick: 'PASSIVE_SKILL_TREE_TOGGLE',
+                  hoverSprite: 'ui/hud_passive_skill_tree_button--hover'
+                }
+              },
               'hud_ability_slot__1' => {
                 spriteKey: 'ui/hud_ability_slot_1',
                 sharedId: 'hud_ability_slot__1'

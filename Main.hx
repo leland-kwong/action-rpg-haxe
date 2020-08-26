@@ -283,13 +283,9 @@ class Main extends hxd.App {
       final togglePassiveSkillTree = 
         Key.isPressed(Key.P);
       if (togglePassiveSkillTree) {
-        final skillTreeState = Global.uiState.passiveSkillTree;
-
-        if (!skillTreeState.enabled) {
-          Global.clearUi((field) -> field != 'hud');
-        }
-
-        skillTreeState.enabled = !skillTreeState.enabled;
+        Hud.UiStateManager.send({
+          type: 'PASSIVE_SKILL_TREE_TOGGLE'
+        });
       }
     }
 

@@ -81,6 +81,16 @@ class UiStateManager {
         s.enabled = !s.enabled;
       }
 
+      case { type: 'PASSIVE_SKILL_TREE_TOGGLE' }: {
+        final s = uiState.passiveSkillTree;
+
+        if (!s.enabled) {
+          Main.Global.clearUi((field) -> field != 'hud');
+        }
+
+        s.enabled = !s.enabled;
+      }
+
       case { 
         type: 'START_GAME',
         data: gameState
@@ -407,7 +417,6 @@ class UiGrid {
 
         if (Main.Global.uiState.hud.enabled 
             && objectMeta.type == 'UI_ELEMENT') {
-          trace(x, y, width, height);
           final iRef = new h2d.Interactive(
               width,
               height,
@@ -592,6 +601,18 @@ class UiGrid {
       final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
           bounds[0] * Hud.rScale,
           bounds[2] * Hud.rScale,
+          objectMeta.spriteKey);
+      spriteRef.sortOrder = 1;
+      spriteRef.batchElement.scale = Hud.rScale;
+      spriteRef.batchElement.r = 0.;
+      spriteRef.batchElement.g = 0.;
+      spriteRef.batchElement.b = 0.;
+      spriteRef.batchElement.a = 0.9;
+
+      // background sprite 'drop shadow'
+      final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * Hud.rScale,
+          (bounds[2] + 1) * Hud.rScale,
           objectMeta.spriteKey);
       spriteRef.sortOrder = 1;
       spriteRef.batchElement.scale = Hud.rScale;
