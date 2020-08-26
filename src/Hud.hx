@@ -450,6 +450,7 @@ class UiGrid {
       return;
     }
 
+    final editorConfig = Editor.getConfig(hudLayoutFile);
     final hudLayoutRef = loadHudLayout();
     final orderedLayers = hudLayoutRef.layerOrderById;
 
@@ -477,7 +478,7 @@ class UiGrid {
       }
     }
 
-    // render resource bars
+    // render hud resource bars
     {
       final resourceBarsLayer = 'layer_2';
       final grid = 
@@ -488,7 +489,6 @@ class UiGrid {
         SortedHudResourceBars = [];
 
       for (objectId in grid.itemCache.keys()) {
-        final editorConfig = Editor.getConfig(hudLayoutFile);
         final objectType = hudLayoutRef.itemTypeById.get(objectId);
         final isHealthBarNode = objectType == 'cockpit_health_bar_node';
         final isEnergyBarNode = objectType == 'cockpit_energy_bar_node';
@@ -574,6 +574,61 @@ class UiGrid {
             (a, b) -> sortByX(a, b));
         renderResourceBar(numSegments, sortedEnergyBars);
       }
+    }
+
+    // render hud experience progress
+    {
+      final experienceProgressLayer = 'layer_1';
+      final grid = 
+        hudLayoutRef.gridByLayerId.get(experienceProgressLayer);
+      final objectId = 'hud_experience_progress';
+      final bounds = grid.itemCache.get(objectId); 
+      final objectType = hudLayoutRef.itemTypeById.get(objectId);
+      final objectMeta = editorConfig
+        .objectMetaByType
+        .get(objectType);
+
+      // background sprite
+      final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * Hud.rScale,
+          bounds[2] * Hud.rScale,
+          objectMeta.spriteKey);
+      spriteRef.sortOrder = 1;
+      spriteRef.batchElement.scale = Hud.rScale;
+      spriteRef.batchElement.r = 0.;
+      spriteRef.batchElement.g = 0.;
+      spriteRef.batchElement.b = 0.;
+      spriteRef.batchElement.a = 0.9;
+
+      final currentExp = Main.Global.gameState.experienceGained;
+      final currentLevel = Config.calcCurrentLevel(
+          currentExp);
+      final nextLevel = currentLevel + 1;
+      final currentLevelExpRequirement = Config.levelExpRequirements[currentLevel];
+      final nextLevelExpRequirement = Config.levelExpRequirements[nextLevel];
+      final expDiffBetweenCurrentAndNextLevel = nextLevelExpRequirement 
+        - currentLevelExpRequirement;
+      final expUntilNextLevel = nextLevelExpRequirement - currentExp;
+      final levelProgress = expUntilNextLevel 
+        / expDiffBetweenCurrentAndNextLevel;
+
+      Main.Global.logData.levelInfo = [
+        currentLevel, 
+        currentExp,
+        expUntilNextLevel,
+        Config.levelExpRequirements.slice(0, 5)];
+
+      // experience progress sprite
+      final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * Hud.rScale,
+          bounds[2] * Hud.rScale,
+          objectMeta.spriteKey);
+      spriteRef.sortOrder = 1;
+      spriteRef.batchElement.scale = Hud.rScale;
+      spriteRef.batchElement.scaleX *= 1 - levelProgress;
+      spriteRef.batchElement.r = 1.;
+      spriteRef.batchElement.g = 0.7;
+      spriteRef.batchElement.b = 0.;
     }
   }
 }

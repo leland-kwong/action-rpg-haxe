@@ -31,6 +31,6 @@ class Config {
       experience: Int) {
     return Lambda.findIndex(
         levelExpRequirements,
-        (expReq) -> experience <= expReq);
+        (expReq) -> experience <= expReq) - 1;
   }
 }

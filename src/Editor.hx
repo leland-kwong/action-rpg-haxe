@@ -187,9 +187,9 @@ class Editor {
   // all configuration stuff lives here
   public static function getConfig(
       // activeFile = 'editor-data/level_1.eds'
-      activeFile = 'editor-data/passive_skill_tree.eds'
+      // activeFile = 'editor-data/passive_skill_tree.eds'
       // activeFile = 'editor-data/dummy_level.eds'
-      // activeFile = 'editor-data/hud.eds'
+      activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,
@@ -349,6 +349,10 @@ class Editor {
               },
               'cockpit_energy_bar_node' => {
                 spriteKey: 'ui/cockpit_resource_bar_energy'
+              },
+              'hud_experience_progress' => {
+                spriteKey: 'ui/hud_experience_progress',
+                sharedId: 'hud_experience_progress'
               },
               'hud_inventory_button' => {
                 spriteKey: 'ui/hud_inventory_button',
