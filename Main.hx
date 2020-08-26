@@ -255,7 +255,7 @@ class Main extends hxd.App {
       final stack = haxe.CallStack.exceptionStack();
       trace(error);
       trace(haxe.CallStack.toString(stack));
-      hxd.System.exit();
+      // hxd.System.exit();
 
     }
   }
@@ -488,7 +488,7 @@ class Main extends hxd.App {
       final stack = haxe.CallStack.exceptionStack();
       trace(error);
       trace(haxe.CallStack.toString(stack));
-      hxd.System.exit();
+      // hxd.System.exit();
 
     }
   }
@@ -593,12 +593,8 @@ class Main extends hxd.App {
         Global.inputHooks = nextHooks;
       }
 
-      core.Anim.AnimEffect
-        .update(frameDt);
-      SpriteBatchSystem.updateAll(frameDt);
-
       if (debugText != null) {
-        final formattedStats = Json.stringify({
+        final stats = {
           time: Global.time,
           tickCount: Global.tickCount,
           trueFps: trueFps,
@@ -617,21 +613,25 @@ class Main extends hxd.App {
           numUpdateHooks: Global.updateHooks.length,
           numInputHooks: Global.inputHooks.length,
           numRenderHooks: Global.renderHooks.length,
-        }, null, '  ');
-        var text = [
+        }
+        final formattedStats = Json.stringify(stats, null, '  ');
+        final text = [
           'stats: ${formattedStats}',
           'log: ${Json.stringify(Global.logData, null, '  ')}'
         ].join('\n');
-        var debugUiMargin = 10;
+        final debugUiMargin = 10;
         debugText.x = debugUiMargin;
         debugText.y = debugUiMargin;
         debugText.text = text;
       }
 
+      core.Anim.AnimEffect
+        .update(frameDt);
+      SpriteBatchSystem.updateAll(frameDt);
+
     } catch (error: Dynamic) {
       final handler = HaxeUtils.handleError(
-          null,
-          (err) -> hxd.System.exit());
+          null);
       handler(error);
     }
   }
