@@ -117,6 +117,13 @@ class Easing {
     return 1 + pow(sin(x * PI),12) / 4;
   }
 
+  public static function easeOutBack(x: Float): Float {
+    final c1 = 1.70158;
+    final c3 = c1 + 1;
+
+    return 1 + c3 * pow(x - 1, 3) + c1 * pow(x - 1, 2);
+  } 
+
   public static function progress(startTime: Float, currentTime: Float, duration: Float) {
     return Math.min(1, (currentTime - startTime) / duration);
   }

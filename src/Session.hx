@@ -184,12 +184,12 @@ class Session {
 
   static function processLog(
       ref: SessionRef,
-      logData: String) {
+      logData: String): Bool {
 
     final isEmptyLog = logData.length == 0;
 
     if (isEmptyLog) {
-      return;
+      return false;
     }
 
     final events = logData.split(delimiter);
@@ -200,16 +200,19 @@ class Session {
           ref,
           parsed);
     }
+
+    return events.length > 0;
   }
   
   public static function handleDidPlayerLevelUp(
-      oldExp, newExp) {
-    final didPlayerLevelUp = Config.calcCurrentLevel(oldExp) 
-      < Config.calcCurrentLevel(newExp);
-    
-    // trigger notification side effect
+      oldExp, 
+      newExp) {
+    final oldLevel = Config.calcCurrentLevel(oldExp);
+    final newLevel = Config.calcCurrentLevel(newExp);
 
-    return didPlayerLevelUp;
+    // trace(oldLevel, newLevel);
+
+    return oldLevel < newLevel;
   }
 
   public static function processEvent(
@@ -266,9 +269,17 @@ class Session {
     }
     ref.lastUpdatedAt = ev.time;
 
-    handleDidPlayerLevelUp(
-        oldRef.experienceGained, 
-        ref.experienceGained);
+    // handle game notification effects
+    final isCurrentGame = Main.Global.gameState.gameId == ref.gameId;
+    if (isCurrentGame) {
+      if (handleDidPlayerLevelUp(
+            oldRef.experienceGained, 
+            ref.experienceGained)) {
+
+        // trigger notification side effect
+        Effects.playerLevelUp(ref);
+      }
+    }
     return ref;
   }
 
@@ -284,10 +295,12 @@ class Session {
     // create game state from previous state and log
     if (previousState != null) {
       final newState = Reflect.copy(previousState);
+      final hasChanged = processLog(newState, previousLogData);
 
-      processLog(newState, previousLogData);
-      // create a new session id for new state
-      newState.sessionId = sessionId;
+      if (hasChanged) {
+        // create a new session id for new state
+        newState.sessionId = sessionId;
+      }
 
       return newState;
     }
@@ -337,19 +350,6 @@ class Session {
     processEvent(ref, event);
   }
 
-  public static function saveGame(
-      ref: SessionRef,
-      onSuccess,
-      onError) {
-
-    SaveState.save(
-        ref,
-        savedGamePath(ref),
-        null,
-        onSuccess,
-        onError);
-  }
-
   static function processGameData(rawGameData: String): SessionRef {
     final firstDelimIndex = rawGameData.indexOf(delimiter);
     final ref: SessionRef = deserialize(rawGameData.substring(0, firstDelimIndex));
@@ -359,7 +359,6 @@ class Session {
       && HaxeUtils.hasSameFields(ref, createGameState(-1));
 
     if (!isValidRef) {
-      trace('session ref', ref);
       throw new haxe.Exception(
           '[session load error] invalid session ref');
     }
@@ -394,9 +393,9 @@ class Session {
     }
 
     function onGameLoaded(gameData: String) {
-      final ref = processGameData(gameData);
+      final updatedRef = processGameData(gameData);
 
-      onSuccess(ref);
+      onSuccess(updatedRef);
     }
 
     final fileOutput = state.fileOutputByGameId.get(gameId);

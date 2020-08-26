@@ -112,7 +112,7 @@ class GuiComponents {
             tf.x = itemPadding / 2;
             tf.y = itemPadding / 2;
             tf.alpha = isCurrentlyActiveGame 
-              ? 1 
+              ? 0.7
               : 0.8;
 
             interact.x = related.x + related.width;
@@ -365,6 +365,13 @@ class GuiComponents {
             gamesList,
             (gameId) -> {
               return (_onSuccess, _onError) -> {
+                final isCurrentGame = Main.Global.gameState.gameId == gameId;
+
+                if (isCurrentGame) {
+                  _onSuccess(Main.Global.gameState);
+                  return;
+                }
+
                 Session.loadMostRecentGameFile(
                     gameId,
                     _onSuccess,
@@ -457,10 +464,6 @@ class Gui {
       isAlive: true
     };
 
-    tempTf = new h2d.Text(
-        Fonts.primary(), 
-        Main.Global.rootScene);
-
     Main.Global.renderHooks.push((time) -> {
       tempTf.text = '';
 
@@ -495,6 +498,12 @@ class Gui {
   public static function tempText(
       font, 
       text) {
+
+    if (tempTf == null) {
+      tempTf = new h2d.Text(
+          Fonts.primary(), 
+          Main.Global.rootScene);
+    }
 
     tempTf.font = font;
     tempTf.text = text;

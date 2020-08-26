@@ -324,7 +324,7 @@
             <key type="filename">aseprite_exports/player_animation/run-7.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.357143,0.68387</point_f>
+                <point_f>0.357143,0.75</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
@@ -466,6 +466,31 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/hud_ability_slot_1.png</key>
+            <key type="filename">aseprite_exports/ui/hud_ability_slot_2.png</key>
+            <key type="filename">aseprite_exports/ui/hud_ability_slot_3.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_burst_charge.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_energy_1.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_flame_torch.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>6,6,11,11</rect>
+                <key>scale9Paddings</key>
+                <rect>6,6,11,11</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/hud_inventory_button--hover.png</key>
             <key type="filename">aseprite_exports/ui/hud_inventory_button.png</key>
             <struct type="IndividualSpriteSettings">
@@ -557,14 +582,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_burst_charge.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_energy_1.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_flame_torch.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
-            <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
+            <key type="filename">aseprite_exports/ui/notification_gradient.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -573,9 +591,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>6,6,11,11</rect>
+                <rect>50,0,100,1</rect>
                 <key>scale9Paddings</key>
-                <rect>6,6,11,11</rect>
+                <rect>50,0,100,1</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
