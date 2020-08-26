@@ -251,12 +251,9 @@ class Main extends hxd.App {
       Global.debugScene.render(e);
 
     } catch (error: Dynamic) {
-
-      final stack = haxe.CallStack.exceptionStack();
-      trace(error);
-      trace(haxe.CallStack.toString(stack));
-      // hxd.System.exit();
-
+      HaxeUtils.handleError(
+          null, 
+          (_) -> hxd.System.exit())(error);
     }
   }
 
@@ -402,6 +399,7 @@ class Main extends hxd.App {
           Global.worldMouse.buttonDown = -1;
         };
         
+        // setup custom cursor graphic
         {
           final spriteSheetRes = hxd.Res.sprite_sheet_ui_cursor_png;
           final spriteSheetData: SpriteBatchSystem.SpriteSheetData = 
@@ -484,12 +482,9 @@ class Main extends hxd.App {
       PassiveSkillTree.init();
 
     } catch (error: Dynamic) {
-
-      final stack = haxe.CallStack.exceptionStack();
-      trace(error);
-      trace(haxe.CallStack.toString(stack));
-      // hxd.System.exit();
-
+      HaxeUtils.handleError(
+          '[update error]',
+          (_) -> hxd.System.exit())(error);
     }
   }
 
@@ -630,9 +625,9 @@ class Main extends hxd.App {
       SpriteBatchSystem.updateAll(frameDt);
 
     } catch (error: Dynamic) {
-      final handler = HaxeUtils.handleError(
-          null);
-      handler(error);
+      HaxeUtils.handleError(
+          '[update error]',
+          (_) -> hxd.System.exit())(error);
     }
   }
 
