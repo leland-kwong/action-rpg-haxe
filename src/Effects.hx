@@ -27,10 +27,11 @@ class Effects {
       return newText;
     }
 
-    final newLevel = Config.calcCurrentLevel(gameState.experienceGained);
+    final humanizedLevel = Config.calcCurrentLevel(
+        gameState.experienceGained) + 2;
     final textBlocks = [
       'level'.toUpperCase(),
-      ' ${newLevel} ',
+      ' ${humanizedLevel} ',
       'reached!'.toUpperCase()
     ];
 

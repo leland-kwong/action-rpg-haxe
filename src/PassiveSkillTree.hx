@@ -1,4 +1,25 @@
 class PassiveSkillTree {
+  static function calcNumSelectedNodes(
+      sessionRef: Session.SessionRef) {
+    return Lambda.count(
+        sessionRef
+        .passiveSkillTreeState
+        .nodeSelectionStateById,
+        Utils.isTrue);
+  }
+
+  public static function calcNumUnusedPoints(sessionRef) {
+    final pointsAvailable = Config.calcCurrentLevel(
+        sessionRef.experienceGained) 
+      // account for level index starting at 0
+      + 1
+      // account for the root node which is already selected
+      + 1;
+
+    return pointsAvailable 
+      - calcNumSelectedNodes(sessionRef);
+  }
+
   public static function openPassiveSkillTree() {
     final EMPTY_HOVERED_NODE = {
       x: 0,
@@ -115,25 +136,6 @@ class PassiveSkillTree {
 
         final colRect = new h2d.col.Bounds();
         final treeCollisionGrid = Grid.create(4);
-
-        function calcNumSelectedNodes(
-            sessionRef: Session.SessionRef) {
-          return Lambda.count(
-              sessionRef
-                .passiveSkillTreeState
-                .nodeSelectionStateById,
-              Utils.isTrue);
-        }
-
-        function calcNumUnusedPoints(sessionRef) {
-          final pointsAvailable = Config.calcCurrentLevel(
-              sessionRef.experienceGained) 
-            // account for the root node which is already selected
-            + 1;
-
-          return pointsAvailable 
-            - calcNumSelectedNodes(sessionRef);
-        }
 
         function isNodeSelected(
             sessionRef: Session.SessionRef,

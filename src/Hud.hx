@@ -463,6 +463,7 @@ class UiGrid {
     final hudLayoutRef = loadHudLayout();
     final orderedLayers = hudLayoutRef.layerOrderById;
 
+    // render hud buttons
     {
       final cockpitLayer = 'layer_1';
       final grid = hudLayoutRef.gridByLayerId.get(cockpitLayer);
@@ -474,7 +475,8 @@ class UiGrid {
         final x = bounds[0] * Hud.rScale;
         final y = bounds[2] * Hud.rScale;
         final hoverSprite = objectMeta.data.hoverSprite;
-        final spriteKey = (state.hoveredId == objectId
+        final isHovered = state.hoveredId == objectId;
+        final spriteKey = (isHovered
             && hoverSprite != null)
           ? hoverSprite
           : objectMeta.spriteKey;
@@ -484,6 +486,18 @@ class UiGrid {
             spriteKey);
         ref.sortOrder = 1;
         ref.batchElement.scale = Hud.rScale;
+
+        final shouldHighlightSkillTreeButton = 
+          objectType == 'hud_passive_skill_tree_button' 
+          && PassiveSkillTree.calcNumUnusedPoints(
+              Main.Global.gameState) > 0;
+        if (shouldHighlightSkillTreeButton) {
+          final progress = Math.abs(Math.sin(Main.Global.time * 6));
+          ref.batchElement.y -= progress * 6;
+          ref.batchElement.r = 0.5 + 0.5 * progress;
+          ref.batchElement.g = 0.4 + 0.5 * progress;
+          ref.batchElement.b = 0.;
+        }
       }
     }
 
