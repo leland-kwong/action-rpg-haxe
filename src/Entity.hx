@@ -147,17 +147,6 @@ class Entity extends h2d.Object {
     ALL_BY_ID.set(id, this);
   }
 
-  static function setIfMissing(
-      ref: Entity,
-      component: String,
-      value: Dynamic) {
-    final c = ref.components;
-
-    if (!c.exists(component)) {
-      c.set(component, value);
-    }
-  }
-
   public static function setComponent(
       ref: Entity, type: String, value: Dynamic) {
 
