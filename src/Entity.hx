@@ -2,6 +2,8 @@ import Grid.GridRef;
 
 typedef EntityId = String;
 
+typedef EntityComponents = Map<String, Dynamic>;
+
 typedef EntityProps = {
   var x: Float;
   var y: Float;
@@ -10,6 +12,7 @@ typedef EntityProps = {
   var ?id: EntityId;
   var ?weight: Float;
   var ?sightRange: Int;
+  var ?components: EntityComponents;
 }
 
 class Cooldown {
@@ -98,10 +101,7 @@ class Entity extends h2d.Object {
   public var obstacleGrid: GridRef;
   public var stats: EntityStats.StatsRef;
   var deathAnimationStyle = 'default';
-  public var components: Map<String, Dynamic> = [
-    'neighborQueryThreshold' => 5
-  ];
-  public var neighborCheckInterval: Int = 1; // after X ticks
+  public var components: EntityComponents;
   public final createdAt = Main.Global.time;
   public var renderFn: (ref: Entity, time: Float) -> Void;
   public var onDone: (ref: Entity) -> Void;
@@ -124,6 +124,21 @@ class Entity extends h2d.Object {
         props.radius, radius);
     x = props.x;
     y = props.y;
+    components = {
+      final c = props.components != null 
+        ? props.components
+        : new Map();
+      
+      if (!c.exists('neighborQueryThreshold')) {
+        c.set('neighborQueryThreshold', 5);
+      }
+
+      if (!c.exists('neighborCheckInterval')) {
+        c.set('neighborCheckInterval', 1);
+      }
+
+      c;
+    }
     avoidanceRadius = Utils.withDefault(
         props.avoidanceRadius, radius);
     weight = Utils.withDefault(props.weight, weight);
@@ -143,9 +158,15 @@ class Entity extends h2d.Object {
   }
 
   public static function getComponent(
-      ref: Entity, type: String) {
+      ref: Entity, 
+      type: String, 
+      ?defaultValue: Dynamic): Dynamic {
 
-    return ref.components.get(type);
+    final value = ref.components.get(type);
+
+    return value == null 
+      ? defaultValue 
+      : value;
   }
 
   public static function getCollisions(
@@ -274,6 +295,10 @@ class Entity extends h2d.Object {
 
   public function isDone() {
     return health <= 0;
+  }
+
+  public static function exists(id: EntityId) {
+    return getById(id) != NULL_ENTITY;
   }
 
   override function onRemove() {

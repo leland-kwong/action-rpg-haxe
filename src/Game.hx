@@ -414,12 +414,12 @@ class Ai extends Entity {
       ?findTargetFn, 
       ?attackTargetFilterFn) {
     super(props);
-    neighborCheckInterval = 10;
     traversableGrid = Main.Global.traversableGrid;
 
     cds = new Cooldown();
     Entity.setComponent(this, 'aiType', props.aiType);
     Entity.setComponent(this, 'neighborQueryThreshold', 10);
+    Entity.setComponent(this, 'neighborCheckInterval', 10);
 
     type = 'ENEMY';
     status = 'UNTARGETABLE';
@@ -559,6 +559,74 @@ class Ai extends Entity {
         startTime: Main.Global.time
       };
     }
+  }
+
+  // creates an aura entity
+  public static function Aura(
+      followId, 
+      filterTypes: Map<String, Bool>) {
+    final auraRadius = 100;
+    final inst = new Entity({
+      x: 0,
+      y: 0,
+      components: [
+        'aiType' => 'aura',
+        'neighborQueryThreshold' => auraRadius,
+        'neighborCheckInterval' => 20,
+        'isDynamic' => true,
+        'checkNeighbors' => true
+      ]
+    });
+
+    Main.Global.updateHooks.push(function auraUpdate(dt) {
+      Main.Global.logData.auraNeighborCount = inst.neighbors.length;
+      final follow = Entity.getById(followId);
+      inst.x = follow.x;
+      inst.y = follow.y;
+
+      return Entity.exists(inst.id);
+    });
+
+    Main.Global.renderHooks.push(function auraRender(time) {
+      for (n in inst.neighbors) {
+        final entityRef = Entity.getById(n);
+        if (filterTypes.exists(entityRef.type)) {  
+          final x = entityRef.x;
+          final y = entityRef.y;
+          final colorAdjust = Math.sin(Main.Global.time);
+          final angle = Math.sin(Main.Global.time) * 4;
+
+          {
+            final p = Main.Global.sb.emitSprite(
+                x, y,
+                'ui/aura_glyph_1',
+                angle);
+            p.sortOrder = 2;
+            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.a = 0.4;
+          }
+
+          {
+            final p = Main.Global.sb.emitSprite(
+                x, y,
+                'ui/aura_glyph_1',
+                angle * -1);
+            p.sortOrder = 2;
+            p.batchElement.scale = 0.8;
+            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.a = 0.8;
+          }
+        }
+      }
+
+      return Entity.exists(inst.id);
+    });
+
+    return inst;
   }
 
   public override function update(dt) {
@@ -1051,7 +1119,7 @@ class Player extends Entity {
       });
 
       function shadowSpriteEffect(p) {
-        p.sortOrder = 1.;
+        p.sortOrder = 2.;
       }
 
       ref.renderFn = (ref, time) -> {
@@ -1079,6 +1147,11 @@ class Player extends Entity {
 
       ref;
     }
+
+    Ai.Aura(this.id, [
+        'FRIENDLY_AI' => true,
+        'PLAYER' => true
+    ]);
   }
 
   function movePlayer() {
@@ -1932,8 +2005,9 @@ class Player extends Entity {
         activeAnim = idleAnim;
       }
     }
+
     final currentSprite = core.Anim.getFrame(activeAnim, time);
-    Main.Global.sb.emitSprite(
+    final baseSprite = Main.Global.sb.emitSprite(
       x, y,
       currentSprite,
       null,
@@ -3043,25 +3117,29 @@ class Game extends h2d.Object {
         groupIndex = 0;
       }
 
-      final isDynamic = switch(a.type) {
-        case 
-          'ENEMY'
-        | 'FRIENDLY_AI'
-        | 'PROJECTILE'
-        | 'PLAYER': {
-          true;
+      final isDynamic = Entity.getComponent(a, 'isDynamic', false) ||
+        switch(a.type) {
+          case 
+              'ENEMY'
+            | 'FRIENDLY_AI'
+            | 'PROJECTILE'
+            | 'PLAYER': {
+              true;
+            };
+
+          default: false;
         };
 
-        default: false;
-      }
       final isMoving = a.dx != 0 || a.dy != 0;
       final hasTakenDamage = a.damageTaken > 0;
       final isCheckTick = (Main.Global.tickCount + groupIndex) % 
-        a.neighborCheckInterval == 0;
+        Entity.getComponent(a, 'neighborCheckInterval') == 0;
       final shouldFindNeighbors = {
         final isRecentlySummoned =  Cooldown.has(
             a.cds, 'recentlySummoned');
-        final isActive = isMoving || hasTakenDamage;
+        final isActive = isMoving 
+          || hasTakenDamage
+          || Entity.getComponent(a, 'checkNeighbors', false);
 
         isDynamic && (
             isRecentlySummoned

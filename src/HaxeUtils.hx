@@ -4,13 +4,13 @@ class HaxeUtils {
       ?onError: (error: Dynamic) -> Void) {
 
     return function haxeErrorHandler(error: Dynamic) {
-      final stack = haxe.CallStack.exceptionStack();
-
       if (message != null) {
-        trace(message);
+        trace(message, error);
+      } else {
+        trace(error);
       }
 
-      trace(error);
+      final stack = haxe.CallStack.exceptionStack();
       trace(haxe.CallStack.toString(stack));
 
       if (onError != null) {
