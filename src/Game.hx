@@ -1195,6 +1195,7 @@ class Player extends Entity {
   public override function update(dt) {
     super.update(dt);
     abilityEvents = [];
+    Cooldown.update(cds, dt);
 
     dx = 0;
     dy = 0;
@@ -1244,8 +1245,8 @@ class Player extends Entity {
 
   public function useAbility() {
     final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
-        || Cooldown.has(cds, 'playerCanPickupItem') 
-        || Main.Global.hasUiItemsEnabled();
+      || Cooldown.has(cds, 'playerCanPickupItem') 
+      || Main.Global.hasUiItemsEnabled();
 
     if (preventAbilityUse) {
       return;
