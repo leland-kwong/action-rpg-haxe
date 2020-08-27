@@ -68,6 +68,15 @@ class Cooldown {
    which also will make serialization easier.
  */
 class Entity extends h2d.Object {
+  static final defaultComponents: Map<String, Dynamic> = [
+    'neighborQueryThreshold' => 10,
+    'neighborCheckInterval' => 1,
+    'alpha' => 1,
+    'speed' => {
+      type: 'MOVESPEED_MODIFIER',
+      value: 0
+    }
+  ];
   public final showHitNumbers = true;
   public static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
@@ -99,7 +108,7 @@ class Entity extends h2d.Object {
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
-  public var stats: EntityStats.StatsRef;
+  public var stats = EntityStats.placeholderStats;
   var deathAnimationStyle = 'default';
   public var components: EntityComponents;
   public final createdAt = Main.Global.time;
@@ -129,14 +138,6 @@ class Entity extends h2d.Object {
         ? props.components
         : new Map();
       
-      if (!c.exists('neighborQueryThreshold')) {
-        c.set('neighborQueryThreshold', 5);
-      }
-
-      if (!c.exists('neighborCheckInterval')) {
-        c.set('neighborCheckInterval', 1);
-      }
-
       c;
     }
     avoidanceRadius = Utils.withDefault(
@@ -144,6 +145,17 @@ class Entity extends h2d.Object {
     weight = Utils.withDefault(props.weight, weight);
 
     ALL_BY_ID.set(id, this);
+  }
+
+  static function setIfMissing(
+      ref: Entity,
+      component: String,
+      value: Dynamic) {
+    final c = ref.components;
+
+    if (!c.exists(component)) {
+      c.set(component, value);
+    }
   }
 
   public static function setComponent(
@@ -159,14 +171,35 @@ class Entity extends h2d.Object {
 
   public static function getComponent(
       ref: Entity, 
-      type: String, 
+      type: String,
       ?defaultValue: Dynamic): Dynamic {
 
     final value = ref.components.get(type);
 
-    return value == null 
-      ? defaultValue 
-      : value;
+    if (value == null) {
+      final _default = defaultValue == null
+        ? defaultComponents.get(type)
+        : defaultValue;
+
+#if debugMode
+      final isMissingDefault = _default == null;
+      if (isMissingDefault) {
+        throw new haxe.Exception(
+            '[ecs] default component `${type}` missing');
+      }
+#end
+
+      return _default;
+    }
+
+    return value;
+  }
+
+  public static function hasComponent(
+      ref: Entity,
+      type: String) {
+
+    return ref.components.exists(type);
   }
 
   public static function getCollisions(
@@ -198,6 +231,11 @@ class Entity extends h2d.Object {
   }
 
   public function update(dt: Float) {
+
+    EntityStats.update(
+        stats,
+        dt);
+
     if (showHitNumbers 
         && damageTaken > 0) {
       final font = Fonts.primary().clone();
@@ -248,9 +286,11 @@ class Entity extends h2d.Object {
     damageTaken = 0;
 
     final max = 1;
+    final totalSpeed = (speed + stats.moveSpeed);
+
     if (dx != 0) {
       final nextPos = x + Utils.clamp(dx, -max, max) 
-        * speed * dt;
+        * totalSpeed * dt;
       final direction = dx > 0 ? 1 : -1;
       final isTraversable = traversableGrid != null 
         ? Lambda.count(
@@ -269,7 +309,7 @@ class Entity extends h2d.Object {
 
     if (dy != 0) {
       final nextPos = y + Utils.clamp(dy, -max, max) 
-        * speed * dt;
+        * totalSpeed * dt;
       final direction = dy > 0 ? 1 : -1;
       final isTraversable = traversableGrid != null 
         ? Lambda.count(

@@ -804,26 +804,14 @@ class InventoryDragAndDropPrototype {
             [])
       );
     };
-    {
-      final slotX = 0 * slotSize;
-      final slotY = 4 * slotSize;
-      equipItemToSlot(
-          createLootInstanceByType('energyBomb'), 0); 
-    }
+    equipItemToSlot(
+        createLootInstanceByType('spiderBots'), 0); 
 
-    {
-      final slotX = 3 * slotSize;
-      final slotY = 5 * slotSize;
-      equipItemToSlot(
-          createLootInstanceByType('flameTorch'), 1); 
-    }
+    equipItemToSlot(
+        createLootInstanceByType('moveSpeedAura'), 1); 
 
-    {
-      final slotX = 1 * slotSize;
-      final slotY = 8 * slotSize;
-      equipItemToSlot(
-          createLootInstanceByType('energy1'), 2); 
-    }
+    equipItemToSlot(
+        createLootInstanceByType('energyBomb'), 2); 
   }
 
   static function getEquipmentSlotDefinitions() {

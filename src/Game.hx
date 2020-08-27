@@ -362,12 +362,27 @@ class Ai extends Entity {
     3 => 30,
     4 => 50,
   ];
-  static var speedBySize = [
-    0 => 0.,
-    1 => 90.0,
-    2 => 60.0,
-    3 => 40.0,
-    4 => 100.0,
+  static final speedBySize: Map<Int, EntityStats.EventObject> = [
+    0 => {
+      type: 'MOVESPEED_MODIFIER',
+      value: 0.
+    },
+    1 => {
+      type: 'MOVESPEED_MODIFIER',
+      value: 90.
+    },
+    2 => {
+      type: 'MOVESPEED_MODIFIER',
+      value: 60.
+    },
+    3 => {
+      type: 'MOVESPEED_MODIFIER',
+      value: 40.
+    },
+    4 => {
+      type: 'MOVESPEED_MODIFIER',
+      value: 100.
+    },
   ];
   static var attackRangeByType = [
     0 => 0,
@@ -423,7 +438,6 @@ class Ai extends Entity {
 
     type = 'ENEMY';
     status = 'UNTARGETABLE';
-    speed = 0.0;
     health = healthBySize[size];
     stats = EntityStats.create({
       maxHealth: health,
@@ -583,13 +597,27 @@ class Ai extends Entity {
       final follow = Entity.getById(followId);
       inst.x = follow.x;
       inst.y = follow.y;
+      final modifier: EntityStats.EventObject = {
+        type: 'MOVESPEED_MODIFIER',
+        value: 200
+      };
+
+      for (id in inst.neighbors) {
+        final entityRef = Entity.getById(id);
+        if (filterTypes.exists(entityRef.type)) {  
+          final stats = entityRef.stats;
+          EntityStats.addEvent(
+              stats,
+              modifier);
+        }
+      }
 
       return Entity.exists(inst.id);
     });
 
     Main.Global.renderHooks.push(function auraRender(time) {
-      for (n in inst.neighbors) {
-        final entityRef = Entity.getById(n);
+      for (id in inst.neighbors) {
+        final entityRef = Entity.getById(id);
         if (filterTypes.exists(entityRef.type)) {  
           final x = entityRef.x;
           final y = entityRef.y;
@@ -626,7 +654,7 @@ class Ai extends Entity {
       return Entity.exists(inst.id);
     });
 
-    return inst;
+    return inst.id;
   }
 
   public override function update(dt) {
@@ -652,7 +680,9 @@ class Ai extends Entity {
 
     if (!Cooldown.has(cds, 'recentlySummoned')) {
       status = 'TARGETABLE';
-      speed = speedBySize[size];
+      EntityStats.addEvent(
+          stats,
+          speedBySize[size]);
     }
 
     if (follow != null && !Cooldown.has(cds, 'attack')) {
@@ -680,13 +710,13 @@ class Ai extends Entity {
           var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
 
           if (o.forceMultiplier > 0) {
-            var separation = Math.sqrt(speed / 4);
+            var separation = Math.sqrt(stats.moveSpeed / 4);
             var min = pt.radius + ept.radius + separation;
             var isColliding = d < min;
             if (isColliding) {
               var conflict = min - d;
               var adjustedConflict = Math.min(
-                  conflict, conflict * 15 / speed);
+                  conflict, conflict * 15 / stats.moveSpeed);
               var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
               var w = pt.weight / (pt.weight + ept.weight);
               // immobile entities have a stronger influence (obstacles such as walls, etc...)
@@ -969,7 +999,6 @@ class Player extends Entity {
     cds = new Cooldown();
     type = 'PLAYER';
     health = 1000;
-    speed = 200.0;
     forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
     obstacleGrid = Main.Global.obstacleGrid;
@@ -1060,7 +1089,7 @@ class Player extends Entity {
         state.mode = MODE_WANDER;
 
         final py = this.y + yOffset;
-        final pSpeed = this.speed;
+        final pSpeed = this.stats.moveSpeed;
         final distFromPos = Utils.distance(
             ref.x, ref.y,
             state.prevMove.x, state.prevMove.y);
@@ -1147,11 +1176,6 @@ class Player extends Entity {
 
       ref;
     }
-
-    Ai.Aura(this.id, [
-        'FRIENDLY_AI' => true,
-        'PLAYER' => true
-    ]);
   }
 
   function movePlayer() {
@@ -1190,6 +1214,11 @@ class Player extends Entity {
 
     dx = dxNormalized;
     dy = dyNormalized;
+    EntityStats.addEvent(
+        stats, {
+          type: 'MOVESPEED_MODIFIER',
+          value: 100,
+        });
   }
 
   public override function update(dt) {
@@ -1240,7 +1269,37 @@ class Player extends Entity {
       }
     }
 
-    Cooldown.update(cds, dt);
+
+    final equippedAbilities = Hud.InventoryDragAndDropPrototype
+      .getEquippedAbilities();
+    final lootDefsByType = [
+      for (lootId in equippedAbilities) {
+        final lootInst = Hud.InventoryDragAndDropPrototype
+          .getItemById(lootId);
+        final def = Loot.getDef(lootInst.type);
+
+        def.type => def;
+      }
+    ];
+
+    {
+      final auraKey = 'moveSpeedAura';
+      final hasMoveSpeedAura = Entity.hasComponent(this, auraKey);
+      if (lootDefsByType.exists(auraKey)) {
+        if (!hasMoveSpeedAura) {
+          final auraId = Ai.Aura(this.id, [
+              'FRIENDLY_AI' => true,
+              'PLAYER' => true
+          ]);
+
+          Entity.setComponent(this, auraKey, auraId);
+        }
+      } else if (hasMoveSpeedAura) {
+        final auraId = Entity.getComponent(this, auraKey);
+        Entity.destroy(auraId);
+        Entity.setComponent(this, auraKey, null);
+      }
+    }
   }
 
   public function useAbility() {
@@ -3092,10 +3151,6 @@ class Game extends h2d.Object {
 
     // reset list before next loop
     Main.Global.entitiesToRender = [];
-
-    EntityStats.update(
-        Entity.getById('PLAYER').stats,
-        dt);
 
     Cooldown.update(SoundFx.globalCds, dt);
 

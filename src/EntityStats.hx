@@ -5,7 +5,7 @@ typedef EventObject = {
   final ?duration: Float;
 }
 
-private typedef RecentEvents = Array<EventObject>;
+private typedef StatsEventsList = Array<EventObject>;
 
 typedef InitialStats = {
   var maxHealth: Int;
@@ -13,40 +13,63 @@ typedef InitialStats = {
   var currentHealth: Float;
   var currentEnergy: Float;
   var energyRegeneration: Int; // per second
+  var ?label: String;
   var ?pickupRadius: Int;
 }
 
 typedef StatsRef = {
   > InitialStats,
 
-  var recentEvents: RecentEvents;
-  var _damageFromHits: Float;
+  var label: String;
+  var moveSpeed: Float;
+  var recentEvents: StatsEventsList;
 };
 
-// TODO
-// We should rename this since we'll be able to 
-// use this this for npcs and enemies as well
 class EntityStats {
   public static function create(props: InitialStats): StatsRef {
     final p = props;
 
     return {
+      label:         p.label,
       maxHealth:     p.maxHealth,
       maxEnergy:     p.maxEnergy,
       currentHealth: p.currentHealth,
       currentEnergy: p.currentEnergy,
       // per second
       energyRegeneration: p.energyRegeneration,
-      pickupRadius: p.pickupRadius,
-      _damageFromHits: 0.0,
-      recentEvents: []
+      pickupRadius:  p.pickupRadius,
+      moveSpeed:     0,
+      recentEvents:  [],
     };
   }
 
-  public static function addEvent(
-      statsRef, event: EventObject) {
+  public static final placeholderStats = create({
+    label: '@placeholder',
+    maxHealth: 0,
+    maxEnergy: 0,
+    currentHealth: 0.,
+    currentEnergy: 0.,
+    energyRegeneration: 0,
+    pickupRadius: 0
+  });
 
-    statsRef.recentEvents.push(event);
+  public static function addEvent(
+      statsRef: StatsRef, 
+      event: EventObject, 
+      ?after = false) {
+
+    if (statsRef == null) {
+      return;
+    }
+
+    // put event at end of list because
+    // it depends on previous events
+    if (after) {
+      statsRef.recentEvents.push(event);
+      return;
+    }
+
+    statsRef.recentEvents.unshift(event);
   }
 
   // run events
@@ -57,16 +80,11 @@ class EntityStats {
       return;
     }
 
-    final events = sr.recentEvents;
+    final nextRecentEvents = [];
     var i = 0;
+    var velocity = 0.;
 
-    // reset any frame-specific information
-    {
-      sr._damageFromHits = 0.0;
-    }
-
-    while (i < events.length) {
-      final ev = events[i];
+    for (ev in sr.recentEvents) {
       final done = switch(ev) {
         case { 
           type: 'ENERGY_SPEND', 
@@ -82,7 +100,7 @@ class EntityStats {
           type: 'DAMAGE_RECEIVED',
           value: v }: {
 
-            sr._damageFromHits += v;
+            sr.currentHealth -= v;
             true;
           }
 
@@ -114,23 +132,30 @@ class EntityStats {
             aliveTime > dur; 
           }
 
+        case {
+          type: 'MOVESPEED_MODIFIER',
+          value: v }: {
+            velocity += v;            
+            true;
+          }
+
         case _:
-          false;
+          throw new haxe.Exception(
+              '[stats recentEvent] invalid recentEvent type `${ev.type}`');
       }
 
-      sr.currentHealth -= sr._damageFromHits;
-
-      if (done) {
-        events.splice(i, 1);
-      } else {
-        i += 1;
-      }
+      if (!done) {
+        nextRecentEvents.push(ev);
+      } 
     }
+
+    sr.moveSpeed = velocity;
 
     // handle regeneration
     final newCurrentEnergy = sr.currentEnergy 
       + sr.energyRegeneration * dt;
     sr.currentEnergy = Utils.clamp(
         newCurrentEnergy, 0, sr.maxEnergy);
+    sr.recentEvents = nextRecentEvents;
   } 
 }

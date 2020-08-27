@@ -119,6 +119,17 @@ class Loot {
       spriteKey: 'ui/loot__ability_energy_1'
     },
     {
+      name: 'Burst Of Speed (aura)',
+      type: 'moveSpeedAura',
+      category: 'ability',
+      cooldown: 0,
+      actionSpeed: 0,
+      energyCost: 0,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_movespeed_aura'
+    },
+    {
       name: 'Green Arrow Socketable',
       type: 'greenArrowSocketable',
       category: 'socketable',
