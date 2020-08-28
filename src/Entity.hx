@@ -147,15 +147,31 @@ class Entity extends h2d.Object {
     ALL_BY_ID.set(id, this);
   }
 
-  public static function setComponent(
-      ref: Entity, type: String, value: Dynamic) {
+  public static function setComponent<T>(
+      ref: Entity, 
+      type: String, 
+      value: T): T {
 
     if (value == null) {
       ref.components.remove(type);
-      return;
+    } else {
+      ref.components.set(type, value);
     }
 
-    ref.components.set(type, value);
+    return value;
+  }
+
+  public static function setWith<T, T2>(
+      ref: Entity,
+      component: String,
+      calcNextValue: (
+        curVal: T, 
+        ctx: T2) -> T,
+      ?context: T2): T {
+
+    final curVal = getComponent(ref, component); 
+    return setComponent(
+        ref, component, calcNextValue(curVal, context));
   }
 
   public static function getComponent(

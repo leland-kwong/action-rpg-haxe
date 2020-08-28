@@ -575,88 +575,6 @@ class Ai extends Entity {
     }
   }
 
-  // creates an aura entity
-  public static function Aura(
-      followId, 
-      filterTypes: Map<String, Bool>) {
-    final auraRadius = 100;
-    final inst = new Entity({
-      x: 0,
-      y: 0,
-      components: [
-        'aiType' => 'aura',
-        'neighborQueryThreshold' => auraRadius,
-        'neighborCheckInterval' => 20,
-        'isDynamic' => true,
-        'checkNeighbors' => true
-      ]
-    });
-
-    Main.Global.updateHooks.push(function auraUpdate(dt) {
-      Main.Global.logData.auraNeighborCount = inst.neighbors.length;
-      final follow = Entity.getById(followId);
-      inst.x = follow.x;
-      inst.y = follow.y;
-      final modifier: EntityStats.EventObject = {
-        type: 'MOVESPEED_MODIFIER',
-        value: 200
-      };
-
-      for (id in inst.neighbors) {
-        final entityRef = Entity.getById(id);
-        if (filterTypes.exists(entityRef.type)) {  
-          final stats = entityRef.stats;
-          EntityStats.addEvent(
-              stats,
-              modifier);
-        }
-      }
-
-      return Entity.exists(inst.id);
-    });
-
-    Main.Global.renderHooks.push(function auraRender(time) {
-      for (id in inst.neighbors) {
-        final entityRef = Entity.getById(id);
-        if (filterTypes.exists(entityRef.type)) {  
-          final x = entityRef.x;
-          final y = entityRef.y;
-          final colorAdjust = Math.sin(Main.Global.time);
-          final angle = Math.sin(Main.Global.time) * 4;
-
-          {
-            final p = Main.Global.sb.emitSprite(
-                x, y,
-                'ui/aura_glyph_1',
-                angle);
-            p.sortOrder = 2;
-            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.a = 0.4;
-          }
-
-          {
-            final p = Main.Global.sb.emitSprite(
-                x, y,
-                'ui/aura_glyph_1',
-                angle * -1);
-            p.sortOrder = 2;
-            p.batchElement.scale = 0.8;
-            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.a = 0.8;
-          }
-        }
-      }
-
-      return Entity.exists(inst.id);
-    });
-
-    return inst.id;
-  }
-
   public override function update(dt) {
     // damage render effect
     {
@@ -973,6 +891,111 @@ class Ai extends Entity {
   }
 }
 
+class Aura {
+  static final instancesByFollowId = new Map();
+
+  public static function create(
+      followId, 
+      filterTypes: Map<String, Bool>) {
+    final lifeTime = 0.5;
+    final fromCache = instancesByFollowId.get(followId);
+    if (fromCache != null) {
+      Entity.setComponent(fromCache, 'lifeTime', lifeTime); 
+      return;
+    }
+  
+    final auraRadius = 100;
+    final inst = new Entity({
+      x: 0,
+      y: 0,
+      components: [
+        'aiType' => 'aura',
+        'neighborQueryThreshold' => auraRadius,
+        'neighborCheckInterval' => 20,
+        'isDynamic' => true,
+        'checkNeighbors' => true,
+        'lifeTime' => lifeTime
+      ]
+    });
+    instancesByFollowId.set(followId, inst);
+
+    function sub(curVal: Float, dt: Float) {
+      return curVal - dt;
+    }
+
+    Main.Global.updateHooks.push(function auraUpdate(dt) {
+      Main.Global.logData.auraNeighborCount = inst.neighbors.length;
+      final follow = Entity.getById(followId);
+      inst.x = follow.x;
+      inst.y = follow.y;
+      final modifier: EntityStats.EventObject = {
+        type: 'MOVESPEED_MODIFIER',
+        value: 200
+      };
+
+      for (id in inst.neighbors) {
+        final entityRef = Entity.getById(id);
+        if (filterTypes.exists(entityRef.type)) {  
+          final stats = entityRef.stats;
+          EntityStats.addEvent(
+              stats,
+              modifier);
+        }
+      }
+
+      final lifeTime = Entity.setWith(inst, 'lifeTime',
+          sub, dt);
+
+      if (lifeTime <= 0) {
+        instancesByFollowId.remove(followId);
+        Entity.destroy(inst.id);
+        return false;
+      }
+
+      return true;
+    });
+
+    Main.Global.renderHooks.push(function auraRender(time) {
+      for (id in inst.neighbors) {
+        final entityRef = Entity.getById(id);
+        if (filterTypes.exists(entityRef.type)) {  
+          final x = entityRef.x;
+          final y = entityRef.y;
+          final colorAdjust = Math.sin(Main.Global.time);
+          final angle = Math.sin(Main.Global.time) * 4;
+
+          {
+            final p = Main.Global.sb.emitSprite(
+                x, y,
+                'ui/aura_glyph_1',
+                angle);
+            p.sortOrder = 2;
+            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.a = 0.4;
+          }
+
+          {
+            final p = Main.Global.sb.emitSprite(
+                x, y,
+                'ui/aura_glyph_1',
+                angle * -1);
+            p.sortOrder = 2;
+            p.batchElement.scale = 0.8;
+            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
+            p.batchElement.a = 0.8;
+          }
+        }
+      }
+
+      return Entity.exists(inst.id);
+    });
+  }
+}
+
 class Player extends Entity {
   var rootScene: h2d.Scene;
   var runAnim: core.Anim.AnimRef;
@@ -1282,23 +1305,11 @@ class Player extends Entity {
       }
     ];
 
-    {
-      final auraKey = 'moveSpeedAura';
-      final hasMoveSpeedAura = Entity.hasComponent(this, auraKey);
-      if (lootDefsByType.exists(auraKey)) {
-        if (!hasMoveSpeedAura) {
-          final auraId = Ai.Aura(this.id, [
-              'FRIENDLY_AI' => true,
-              'PLAYER' => true
-          ]);
-
-          Entity.setComponent(this, auraKey, auraId);
-        }
-      } else if (hasMoveSpeedAura) {
-        final auraId = Entity.getComponent(this, auraKey);
-        Entity.destroy(auraId);
-        Entity.setComponent(this, auraKey, null);
-      }
+    if (lootDefsByType.exists('moveSpeedAura')) {
+      Aura.create(this.id, [
+          'FRIENDLY_AI' => true,
+          'PLAYER' => true
+      ]);
     }
   }
 
