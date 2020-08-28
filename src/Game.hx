@@ -928,25 +928,28 @@ class Aura {
       filterTypes: Map<String, Bool>) {
     final lifeTime = 0.5;
     final fromCache = instancesByFollowId.get(followId);
-    if (fromCache != null) {
-      Entity.setComponent(fromCache, 'lifeTime', lifeTime); 
+    final isCached = fromCache != null;
+    final auraRadius = 100;
+    final inst = isCached
+      ? fromCache 
+      : new Entity({
+        x: 0,
+        y: 0,
+        type: 'moveSpeedAura',
+        components: [
+          'aiType' => 'aura',
+          'neighborQueryThreshold' => auraRadius,
+          'neighborCheckInterval' => 20,
+          'isDynamic' => true,
+          'checkNeighbors' => true,
+        ]
+      });
+    Entity.setComponent(inst, 'lifeTime', lifeTime); 
+
+    if (isCached) {
       return;
     }
-  
-    final auraRadius = 100;
-    final inst = new Entity({
-      x: 0,
-      y: 0,
-      type: 'moveSpeedAura',
-      components: [
-        'aiType' => 'aura',
-        'neighborQueryThreshold' => auraRadius,
-        'neighborCheckInterval' => 20,
-        'isDynamic' => true,
-        'checkNeighbors' => true,
-        'lifeTime' => lifeTime
-      ]
-    });
+
     inst.stats = EntityStats.create({
       label: 'moveSpeedAura',
       currentHealth: 1.
