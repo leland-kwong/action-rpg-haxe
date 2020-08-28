@@ -8,8 +8,8 @@ typedef EventObject = {
 private typedef StatsEventsList = Array<EventObject>;
 
 typedef InitialStats = {
-  var maxHealth: Int;
   var currentHealth: Float;
+  var ?maxHealth: Int;
   var ?maxEnergy: Int;
   var ?currentEnergy: Float;
   var ?energyRegeneration: Int; // per second
@@ -32,8 +32,10 @@ class EntityStats {
 
     return {
       label:         p.label,
-      maxHealth:     p.maxHealth,
-      maxEnergy:     p.maxEnergy,
+      maxHealth:     Utils.withDefault(
+          p.maxHealth, Std.int(p.currentHealth)),
+      maxEnergy:     Utils.withDefault(
+          p.maxEnergy, Std.int(p.currentEnergy)),
       currentHealth: p.currentHealth,
       currentEnergy: p.currentEnergy,
       // per second

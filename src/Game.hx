@@ -99,7 +99,6 @@ class Projectile extends Entity {
     type = 'PROJECTILE';
     stats = EntityStats.create({
       label: '@projectile',
-      maxHealth: 1,
       currentHealth: 1.,
     });
     speedModifier = {
@@ -464,9 +463,7 @@ class Ai extends Entity {
     status = 'UNTARGETABLE';
     final initialHealth = healthBySize[size];
     stats = EntityStats.create({
-      maxHealth: initialHealth,
       currentHealth: initialHealth,
-      maxEnergy: 0,
       currentEnergy: 0,
       energyRegeneration: 0
     });
@@ -1119,12 +1116,7 @@ class Player extends Entity {
         id: 'PLAYER_PET_ORB'
       });
       ref.stats = EntityStats.create({
-        maxHealth: 1,
-        maxEnergy: 0,
         currentHealth: 1,
-        currentEnergy: 0,
-        energyRegeneration: 0,
-        pickupRadius: 0
       });
 
       final yOffset = 0;
@@ -2367,7 +2359,6 @@ class EnemySpawner extends Entity {
 
     stats = EntityStats.create({
       label: '@EnemySpawner',
-      maxHealth: 1,
       currentHealth: 1.,
     });
   }
@@ -2546,7 +2537,6 @@ class Game extends h2d.Object {
               }, objectMeta);
               final initialHealth = 10000;
               ref.stats = EntityStats.create({
-                maxHealth: initialHealth,
                 currentHealth: initialHealth,
               });
             }
@@ -2770,7 +2760,6 @@ class Game extends h2d.Object {
               ref.type = 'INTERACTABLE_PROP';
               ref.stats = EntityStats.create({
                 label: '@prop_1_1',
-                maxHealth: 1,
                 currentHealth: 1.,
               });
               Main.Global.rootScene.addChild(ref);
@@ -2785,7 +2774,6 @@ class Game extends h2d.Object {
               final initialHealth = 1000000;
               wallRef.stats = EntityStats.create({
                 label: '@prop_1_1',
-                maxHealth: 1000000,
                 currentHealth: 1000000.,
               });
               wallRef.type = 'OBSTACLE';
