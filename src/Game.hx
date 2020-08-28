@@ -99,9 +99,9 @@ class Projectile extends Entity {
     type = 'PROJECTILE';
     stats = EntityStats.create({
       label: '@projectile',
-      maxHealth: 0,
+      maxHealth: 1,
       maxEnergy: 0,
-      currentHealth: 0.,
+      currentHealth: 1.,
       currentEnergy: 0.,
       energyRegeneration: 0,
       pickupRadius: 0
@@ -135,7 +135,7 @@ class Projectile extends Entity {
     collidedWith = [];
 
     if (lifeTime <= 0) {
-      health = 0;
+      Entity.destroy(id);
     }
 
     for (id in neighbors) {
@@ -163,8 +163,13 @@ class LineProjectile extends Projectile {
   public override function update(dt: Float) {
     super.update(dt);
 
+    final damageEvent: EntityStats.EventObject = {
+      type: 'DAMAGE_RECEIVED',
+      value: damage
+    };
     for (ent in collidedWith) {
-      ent.damageTaken += damage;
+      EntityStats.addEvent(
+          ent.stats, damageEvent);
     }
   } 
 }
@@ -204,10 +209,15 @@ class Bullet extends Projectile {
     }
 
     if (collidedWith.length > 0) {
-      health = 0;
+      Entity.destroy(id);
 
+      final damageEvent: EntityStats.EventObject = {
+        type: 'DAMAGE_RECEIVED',
+        value: damage
+      };
       for (ent in collidedWith) {
-        ent.damageTaken += damage;
+        EntityStats.addEvent(
+            ent.stats, damageEvent);
       }
     }
 
@@ -287,7 +297,7 @@ class EnergyBomb extends Projectile {
     }
 
     if (collidedWith.length > 0) {
-      health = 0;
+      Entity.destroy(id);
     }
 
     // Trigger cluster explosion
@@ -456,10 +466,10 @@ class Ai extends Entity {
 
     type = 'ENEMY';
     status = 'UNTARGETABLE';
-    health = healthBySize[size];
+    final initialHealth = healthBySize[size];
     stats = EntityStats.create({
-      maxHealth: health,
-      currentHealth: health,
+      maxHealth: initialHealth,
+      currentHealth: initialHealth,
       maxEnergy: 0,
       currentEnergy: 0,
       energyRegeneration: 0
@@ -598,7 +608,7 @@ class Ai extends Entity {
     {
       var c = activeAnim;
 
-      if (damageTaken > 0) {
+      if (stats.damageTaken > 0) {
         Cooldown.set(cds, 'hitFlash', 0.06);
       }
     }
@@ -800,8 +810,13 @@ class Ai extends Entity {
               });
             }
 
-            health = 0;
-            attackTarget.damageTaken += 2;
+            Entity.destroy(id);
+            final damageEvent: EntityStats.EventObject = {
+              type: 'DAMAGE_RECEIVED',
+              value: 2
+            };
+            EntityStats.addEvent(
+                attackTarget.stats, damageEvent);
             final aoeSize = 30; // diameter
             // deal damage to other nearby enemies
             final nearbyEntities = Grid.getItemsInRect(
@@ -812,7 +827,8 @@ class Ai extends Entity {
 
               if (entityRef != attackTarget 
                   && attackTargetFilterFn(entityRef)) {
-                entityRef.damageTaken += 2;
+                EntityStats.addEvent(
+                    attackTarget.stats, damageEvent);
               }
             }
           }
@@ -1108,9 +1124,9 @@ class Player extends Entity {
         id: 'PLAYER_PET_ORB'
       });
       ref.stats = EntityStats.create({
-        maxHealth: 0,
+        maxHealth: 1,
         maxEnergy: 0,
-        currentHealth: 0,
+        currentHealth: 1,
         currentEnergy: 0,
         energyRegeneration: 0,
         pickupRadius: 0
@@ -1306,17 +1322,6 @@ class Player extends Entity {
     if (!Cooldown.has(cds, 'recoveringFromAbility')) {
       movePlayer();
     }
-
-    {
-      if (damageTaken > 0) {
-        EntityStats.addEvent(
-            Entity.getById('PLAYER').stats, 
-            { type: 'DAMAGE_RECEIVED', 
-              value: damageTaken });
-        damageTaken = 0;
-      }
-    }
-
 
     final equippedAbilities = Hud.InventoryDragAndDropPrototype
       .getEquippedAbilities();
@@ -1573,7 +1578,10 @@ class Player extends Entity {
                           lootDef.minDamage, 
                           lootDef.maxDamage) 
                         * tickPercent);
-                    item.damageTaken += damage;
+                    EntityStats.addEvent(item.stats, {
+                      type: 'DAMAGE_RECEIVED',
+                      value: damage
+                    });
                   }
 
                   adjustedEndPt = p;
@@ -2361,6 +2369,16 @@ class EnemySpawner extends Entity {
     this.x = x;
     this.y = y;
     this.findTarget = findTarget;
+
+    stats = EntityStats.create({
+      label: '@EnemySpawner',
+      maxHealth: 1,
+      maxEnergy: 0,
+      currentHealth: 1.,
+      currentEnergy: 0.,
+      energyRegeneration: 0,
+      pickupRadius: 0
+    });
   }
 
   public override function update(dt: Float) {
@@ -2382,7 +2400,7 @@ class EnemySpawner extends Entity {
 
     final isDone = enemiesLeftToSpawn <= 0;
     if (isDone) {
-      health = 0;
+      Entity.destroy(this.id);
       return;
     } 
 
@@ -2422,7 +2440,7 @@ class Game extends h2d.Object {
   override function onRemove() {
     // reset game state
     for (entityRef in Entity.ALL_BY_ID) {
-      entityRef.health = 0;
+      Entity.destroy(entityRef.id);
       entityRef.renderFn = null;
       entityRef.onDone = null;
       entityRef.type = 'ENTITY_CLEANUP';
@@ -2761,7 +2779,15 @@ class Game extends h2d.Object {
               };
               ref.onDone = shatterAnimation;
               ref.type = 'INTERACTABLE_PROP';
-              ref.health = 1;
+              ref.stats = EntityStats.create({
+                label: '@prop_1_1',
+                maxHealth: 1,
+                maxEnergy: 0,
+                currentHealth: 1.,
+                currentEnergy: 0.,
+                energyRegeneration: 0,
+                pickupRadius: 0
+              });
               Main.Global.rootScene.addChild(ref);
             }
 
@@ -2771,7 +2797,16 @@ class Game extends h2d.Object {
                 y: y + 32,
                 radius: 8,
               });
-              wallRef.health = 100000 * 10000;
+              final initialHealth = 1000000;
+              wallRef.stats = EntityStats.create({
+                label: '@prop_1_1',
+                maxHealth: 1000000,
+                maxEnergy: 0,
+                currentHealth: 1000000.,
+                currentEnergy: 0.,
+                energyRegeneration: 0,
+                pickupRadius: 0
+              });
               wallRef.type = 'OBSTACLE';
               wallRef.forceMultiplier = 3.0;
               addToTileGrid(tileGrid, x, y, itemId);
@@ -3261,7 +3296,7 @@ class Game extends h2d.Object {
         };
 
       final isMoving = a.dx != 0 || a.dy != 0;
-      final hasTakenDamage = a.damageTaken > 0;
+      final hasTakenDamage = a.stats.damageTaken > 0;
       final isCheckTick = (Main.Global.tickCount + groupIndex) % 
         Entity.getComponent(a, 'neighborCheckInterval') == 0;
       final shouldFindNeighbors = {

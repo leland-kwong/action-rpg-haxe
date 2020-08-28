@@ -99,7 +99,7 @@ class Entity extends h2d.Object {
   public var dy = 0.0;
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
-  public var health = 1;
+  public var health = 0;
   public var damageTaken = 0;
   public var status = 'TARGETABLE';
   public var cds: Cooldown;
@@ -238,7 +238,7 @@ class Entity extends h2d.Object {
         dt);
 
     if (showHitNumbers 
-        && damageTaken > 0) {
+        && stats.damageTaken > 0) {
       final font = Fonts.primary().clone();
       font.resizeTo(8);
       final tf = new h2d.Text(
@@ -252,7 +252,7 @@ class Entity extends h2d.Object {
           endY - y,
           endX - x);
       tf.textAlign = Center;
-      tf.text = Std.string(damageTaken);
+      tf.text = Std.string(stats.damageTaken);
       tf.dropShadow = {
         dx: 0.,
         dy: 1.,
@@ -282,9 +282,6 @@ class Entity extends h2d.Object {
         return true;
       });
     }
-
-    health -= damageTaken;
-    damageTaken = 0;
 
     final max = 1;
     final totalSpeed = stats.moveSpeed;
@@ -335,7 +332,7 @@ class Entity extends h2d.Object {
   }
 
   public function isDone() {
-    return health <= 0;
+    return health <= 0 && stats.currentHealth <= 0;
   }
 
   public static function exists(id: EntityId) {
@@ -343,7 +340,9 @@ class Entity extends h2d.Object {
   }
 
   public static function destroy(id: EntityId) {
-    Entity.getById(id).health = 0;
+    final ref = Entity.getById(id);
+    ref.health = 0;
+    ref.stats.currentHealth = 0;
   }
 
   public static function getById(

@@ -21,6 +21,7 @@ typedef StatsRef = {
   > InitialStats,
 
   var label: String;
+  var damageTaken: Float;
   var moveSpeed: Float;
   var recentEvents: StatsEventsList;
 };
@@ -39,15 +40,16 @@ class EntityStats {
       energyRegeneration: p.energyRegeneration,
       pickupRadius:  p.pickupRadius,
       moveSpeed:     0,
+      damageTaken:   0,
       recentEvents:  [],
     };
   }
 
   public static final placeholderStats = create({
     label: '@placeholder',
-    maxHealth: 0,
+    maxHealth: 1,
     maxEnergy: 0,
-    currentHealth: 0.,
+    currentHealth: 1.,
     currentEnergy: 0.,
     energyRegeneration: 0,
     pickupRadius: 0
@@ -83,6 +85,7 @@ class EntityStats {
     final nextRecentEvents = [];
     var i = 0;
     var velocity = 0.;
+    var totalDamage = 0.;
 
     for (ev in sr.recentEvents) {
       final done = switch(ev) {
@@ -100,7 +103,7 @@ class EntityStats {
           type: 'DAMAGE_RECEIVED',
           value: v }: {
 
-            sr.currentHealth -= v;
+            totalDamage += v;
             true;
           }
 
@@ -150,6 +153,8 @@ class EntityStats {
     }
 
     sr.moveSpeed = velocity;
+    sr.currentHealth -= totalDamage;
+    sr.damageTaken = totalDamage;
 
     // handle regeneration
     final newCurrentEnergy = sr.currentEnergy 

@@ -805,7 +805,7 @@ class InventoryDragAndDropPrototype {
       );
     };
     equipItemToSlot(
-        createLootInstanceByType('spiderBots'), 0); 
+        createLootInstanceByType('energyBomb'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 
@@ -1435,7 +1435,7 @@ class Hud {
           hoveredEntityId);
       if (entRef.type == 'ENEMY') {
         aiNameText.text = Entity.getComponent(entRef, 'aiType');
-        final healthPctRemain = entRef.health / 
+        final healthPctRemain = entRef.stats.currentHealth / 
           entRef.stats.maxHealth;
         aiHealthBar.clear();
         aiHealthBar.lineStyle(4, Game.Colors.black);
