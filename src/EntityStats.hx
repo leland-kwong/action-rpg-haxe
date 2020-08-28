@@ -70,19 +70,13 @@ class EntityStats {
       ?after = false,
       ?applyImmediate = false) {
 
-    if (statsRef == placeholderStats) {
-      throw new haxe.Exception(
-          'may not add events to placeholderStats');
-    }
-
     // put event at end of list because
     // it depends on previous events
     if (after) {
       statsRef.recentEvents.push(event);
-      return;
+    } else {
+      statsRef.recentEvents.unshift(event);
     }
-
-    statsRef.recentEvents.unshift(event);
 
     if (applyImmediate) {
       update(statsRef, 0);

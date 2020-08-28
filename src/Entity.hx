@@ -7,6 +7,8 @@ typedef EntityComponents = Map<String, Dynamic>;
 typedef EntityProps = {
   var x: Float;
   var y: Float;
+  var ?stats: EntityStats.StatsRef;
+  var ?type: String;
   var ?radius: Int;
   var ?avoidanceRadius: Int;
   var ?id: EntityId;
@@ -16,6 +18,8 @@ typedef EntityProps = {
 
 class Cooldown {
   var cds: Map<String, Float>;
+
+  public static final defaultCooldown = new Cooldown();
 
   public function new() {
     cds = new Map();
@@ -100,10 +104,10 @@ class Entity extends h2d.Object {
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var status = 'TARGETABLE';
-  public var cds: Cooldown;
+  public var cds = Cooldown.defaultCooldown;
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
-  public var stats = EntityStats.placeholderStats;
+  public var stats: EntityStats.StatsRef;
   var deathAnimationStyle = 'default';
   public var components: EntityComponents;
   public final createdAt = Main.Global.time;
@@ -118,14 +122,14 @@ class Entity extends h2d.Object {
       ? 'entity_${idGenerated++}'
       : props.id;
 
-    if (fromInitialization) {
-      return;
-    }
-
     super();
 
     radius = Utils.withDefault(
         props.radius, radius);
+    type = Utils.withDefault(
+        props.type, type);
+    stats = Utils.withDefault(
+        props.stats, EntityStats.placeholderStats);
     x = props.x;
     y = props.y;
     components = {
@@ -137,6 +141,10 @@ class Entity extends h2d.Object {
     }
     avoidanceRadius = Utils.withDefault(
         props.avoidanceRadius, radius);
+
+    if (fromInitialization) {
+      return;
+    }
 
     ALL_BY_ID.set(id, this);
   }
@@ -339,11 +347,16 @@ class Entity extends h2d.Object {
 
   public static function destroy(id: EntityId) {
     final ref = Entity.getById(id);
-    EntityStats.addEvent(
-        ref.stats, 
-        EntityStats.destroyEvent,
-        false,
-        true);
+    try {
+      EntityStats.addEvent(
+          ref.stats, 
+          EntityStats.destroyEvent,
+          false,
+          true);
+    } catch(err) {
+      HaxeUtils.handleError(
+          '${{id: ref.id, stats: ref.stats}}')(err);
+    }
   }
 
   public static function getById(

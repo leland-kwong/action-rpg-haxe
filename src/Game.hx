@@ -194,7 +194,8 @@ class Bullet extends Projectile {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
     lifeTime = 2.0;
     spriteKey = _spriteKey;
-    this.sourceStats = sourceStats;
+    this.sourceStats = Utils.withDefault(
+        sourceStats, EntityStats.placeholderStats);
   }
 
   public override function update(dt: Float) {
@@ -936,6 +937,7 @@ class Aura {
     final inst = new Entity({
       x: 0,
       y: 0,
+      type: 'moveSpeedAura',
       components: [
         'aiType' => 'aura',
         'neighborQueryThreshold' => auraRadius,
@@ -945,6 +947,10 @@ class Aura {
         'lifeTime' => lifeTime
       ]
     });
+    inst.stats = EntityStats.create({
+      label: 'moveSpeedAura',
+      currentHealth: 1.
+    });
     instancesByFollowId.set(followId, inst);
 
     function sub(curVal: Float, dt: Float) {
@@ -952,6 +958,15 @@ class Aura {
     }
 
     Main.Global.updateHooks.push(function auraUpdate(dt) {
+      final lifeTime = Entity.setWith(inst, 'lifeTime',
+          sub, dt);
+
+      if (lifeTime <= 0 || inst.isDone()) {
+        instancesByFollowId.remove(followId);
+        Entity.destroy(inst.id);
+        return false;
+      }
+
       Main.Global.logData.auraNeighborCount = inst.neighbors.length;
       final follow = Entity.getById(followId);
       inst.x = follow.x;
@@ -969,15 +984,6 @@ class Aura {
               stats,
               modifier);
         }
-      }
-
-      final lifeTime = Entity.setWith(inst, 'lifeTime',
-          sub, dt);
-
-      if (lifeTime <= 0) {
-        instancesByFollowId.remove(followId);
-        Entity.destroy(inst.id);
-        return false;
       }
 
       return true;
@@ -2688,6 +2694,10 @@ class Game extends h2d.Object {
                 final refLeft = new Entity({
                   x: x - 30,
                   y: y + 27,
+                  type: 'teleporterPillar'
+                });
+                refLeft.stats = EntityStats.create({
+                  currentHealth: 1.
                 });
 
                 refLeft.renderFn = (ref, _) -> {
@@ -2700,6 +2710,10 @@ class Game extends h2d.Object {
                 final refRight = new Entity({
                   x: refLeft.x + 55,
                   y: refLeft.y,
+                  type: 'teleporterPillar'
+                });
+                refRight.stats = EntityStats.create({
+                  currentHealth: 1.
                 });
 
                 refRight.renderFn = (ref, _) -> {
@@ -3222,7 +3236,6 @@ class Game extends h2d.Object {
 
     var groupIndex = 0;
     for (a in Entity.ALL_BY_ID) {
-
       // cleanup entity
       if (a.isDone()) {
         Entity.ALL_BY_ID.remove(a.id);
