@@ -95,7 +95,6 @@ class Projectile extends Entity {
       x: x1,
       y: y1,
       radius: radius,
-      weight: 0.0,
     });
     type = 'PROJECTILE';
     stats = EntityStats.create({
@@ -655,13 +654,10 @@ class Ai extends Entity {
               var adjustedConflict = Math.min(
                   conflict, conflict * 15 / stats.moveSpeed);
               var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-              var w = pt.weight / (pt.weight + ept.weight);
               // immobile entities have a stronger influence (obstacles such as walls, etc...)
               var multiplier = ept.forceMultiplier;
-              var avoidX = Math.cos(a) * adjustedConflict 
-                * w * multiplier;
-              var avoidY = Math.sin(a) * adjustedConflict 
-                * w * multiplier;
+              var avoidX = Math.cos(a) * adjustedConflict * multiplier;
+              var avoidY = Math.sin(a) * adjustedConflict * multiplier;
 
               dx -= avoidX;
               dy -= avoidY;
@@ -1035,7 +1031,6 @@ class Player extends Entity {
       x: x,
       y: y,
       radius: 6,
-      weight: 1.0,
       id: 'PLAYER'
     });
     cds = new Cooldown();
@@ -2401,17 +2396,15 @@ class EnemySpawner extends Entity {
     enemiesLeftToSpawn -= 1;
 
     final enemyType = Utils.rollValues(enemyTypes);
-    var size = sizeByEnemyType[enemyType];
-    var radius = 3 + size * 6;
-    var posRange = 20;
-    var e = new Ai({
+    final size = sizeByEnemyType[enemyType];
+    final radius = 3 + size * 6;
+    final posRange = 20;
+    new Ai({
       x: x + Utils.irnd(-posRange, posRange),
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
       aiType: enemyType,
-      weight: 1.0,
     }, size, findTarget);
-    parent.addChildAt(e, 0);
   }
 }
 
@@ -2521,7 +2514,6 @@ class Game extends h2d.Object {
                 radius: 30,
                 sightRange: 150,
                 aiType: 'introLevelBoss',
-                weight: 1.0,
               }, size, (_) -> Entity.getById('PLAYER'));
               Main.Global.rootScene.addChildAt(e, 0);
             }
@@ -3211,7 +3203,41 @@ class Game extends h2d.Object {
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(Main.Global.obstacleGrid, a.id);
         Grid.removeItem(Main.Global.lootColGrid, a.id);
-        a.remove();
+
+        final numItemsToDrop = switch(a.type) {
+          case 'INTERACTABLE_PROP': 
+            Utils.rollValues([
+                0, 0, 0, 0, 0, 1
+            ]);
+          case 'ENEMY': 
+            Utils.rollValues([
+                0, 0, 0, 0, 1, 1, 2
+            ]);
+          default: 0;
+        }
+
+        if (numItemsToDrop > 0) {
+          for (_ in 0...numItemsToDrop) {
+            final lootPool = Lambda.map(
+                Lambda.filter(
+                  Loot.lootDefinitions,
+                  (def) -> {
+                    return def.category == 'ability';
+                  }),
+                (def) -> {
+                  return def.type;
+                });
+            final lootInstance = Loot.createInstance(lootPool);
+            Game.createLootEntity(
+                a.x + Utils.irnd(5, 10, true), 
+                a.y + Utils.irnd(5, 10, true), 
+                lootInstance);
+          }
+        }
+
+        if (a.onDone != null) {
+          a.onDone(a);
+        }
         continue;
       }
 

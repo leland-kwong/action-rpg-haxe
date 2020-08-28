@@ -10,7 +10,6 @@ typedef EntityProps = {
   var ?radius: Int;
   var ?avoidanceRadius: Int;
   var ?id: EntityId;
-  var ?weight: Float;
   var ?sightRange: Int;
   var ?components: EntityComponents;
 }
@@ -98,7 +97,6 @@ class Entity extends h2d.Object {
   public var avoidanceRadius: Int;
   public var dx = 0.0;
   public var dy = 0.0;
-  public var weight = 1.0;
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var health = 1;
@@ -141,7 +139,6 @@ class Entity extends h2d.Object {
     }
     avoidanceRadius = Utils.withDefault(
         props.avoidanceRadius, radius);
-    weight = Utils.withDefault(props.weight, weight);
 
     ALL_BY_ID.set(id, this);
   }
@@ -343,43 +340,6 @@ class Entity extends h2d.Object {
 
   public static function exists(id: EntityId) {
     return getById(id) != NULL_ENTITY;
-  }
-
-  override function onRemove() {
-    final numItemsToDrop = switch(type) {
-      case 'INTERACTABLE_PROP': 
-        Utils.rollValues([
-            0, 0, 0, 0, 0, 1
-        ]);
-      case 'ENEMY': 
-        Utils.rollValues([
-            0, 0, 0, 0, 1, 1, 2
-        ]);
-      default: 0;
-    }
-
-    if (numItemsToDrop > 0) {
-      for (_ in 0...numItemsToDrop) {
-        final lootPool = Lambda.map(
-            Lambda.filter(
-              Loot.lootDefinitions,
-              (def) -> {
-                return def.category == 'ability';
-              }),
-            (def) -> {
-              return def.type;
-            });
-        final lootInstance = Loot.createInstance(lootPool);
-        Game.createLootEntity(
-            x + Utils.irnd(5, 10, true), 
-            y + Utils.irnd(5, 10, true), 
-            lootInstance);
-      }
-    }
-
-    if (onDone != null) {
-      onDone(this);
-    }
   }
 
   public static function destroy(id: EntityId) {
