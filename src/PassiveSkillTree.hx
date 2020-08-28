@@ -1,4 +1,31 @@
 class PassiveSkillTree {
+  static var treeLayoutData: Editor.EditorState;
+  static final passiveTreeLayoutFile = 
+      'editor-data/passive_skill_tree.eds';
+
+  static function loadLayoutFile(?onComplete) {
+    if (treeLayoutData != null) {
+      onComplete(treeLayoutData);
+      return;
+    }
+
+    SaveState.load(
+        passiveTreeLayoutFile,
+        false,
+        null,
+        (res: Editor.EditorState) -> {
+          treeLayoutData = res;
+          if (onComplete != null) {
+            onComplete(treeLayoutData);
+          }
+        },
+        HaxeUtils.handleError(
+          'error loading passive skill tree',
+          (err) -> {
+            hxd.System.exit();
+          }));  
+  }
+
   static function calcNumSelectedNodes(
       sessionRef: Session.SessionRef) {
     return Lambda.count(
@@ -6,6 +33,30 @@ class PassiveSkillTree {
         .passiveSkillTreeState
         .nodeSelectionStateById,
         Utils.isTrue);
+  }
+
+  public static function eachSelectedNode(
+      gameState: Session.SessionRef,
+      callback: (nodeMeta: Editor.ConfigObjectMeta) -> Void) {
+    if (treeLayoutData == null) {
+      loadLayoutFile();
+      return;
+    }
+
+    final nodeStates = gameState
+        .passiveSkillTreeState
+        .nodeSelectionStateById;
+    final editorConfig = Editor.getConfig(
+        passiveTreeLayoutFile);
+
+    for (nodeId => isSelected in nodeStates) {
+      if (isSelected) {
+        final objectType = treeLayoutData.itemTypeById.get(nodeId);
+        final objectMeta = editorConfig.objectMetaByType.get(objectType);
+
+        callback(objectMeta);
+      } 
+    }
   }
 
   public static function calcNumUnusedPoints(sessionRef) {
@@ -97,11 +148,9 @@ class PassiveSkillTree {
       final debugOptions = {
         renderTreeCollisions: false
       };
-      final passiveTreeLayoutFile = 
-        'editor-data/passive_skill_tree.eds';
-
       function loadPassiveSkillTree(
           layoutData: Editor.EditorState) {
+
         final layersToIgnore = [
           'layer_prefab',
           'layer_marquee_selection'
@@ -688,16 +737,7 @@ class PassiveSkillTree {
         });
       }
 
-      SaveState.load(
-          passiveTreeLayoutFile,
-          false,
-          null,
-          loadPassiveSkillTree,
-          HaxeUtils.handleError(
-            'error loading passive skill tree',
-            (err) -> {
-              hxd.System.exit();
-            }));  
+      loadLayoutFile(loadPassiveSkillTree);
     }
 
     return () -> {

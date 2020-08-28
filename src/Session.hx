@@ -499,7 +499,7 @@ class Session {
             try {
               deleteGame(stateRef.gameId);
             } catch (err) {
-              HaxeUtils.handleError('error deleting file');
+              HaxeUtils.handleError('error deleting file')(err);
             }
           }
 

@@ -182,16 +182,19 @@ class Bullet extends Projectile {
   ];
   var launchSoundPlayed = false;
   var spriteKey: String;
+  var sourceStats: EntityStats.StatsRef;
   public var playSound = true;
   public var explosionScale = 1.;
 
   public function new(
     x1, y1, x2, y2, speed, 
-    _spriteKey, collisionFilter
+    _spriteKey, collisionFilter,
+    ?sourceStats
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
     lifeTime = 2.0;
     spriteKey = _spriteKey;
+    this.sourceStats = sourceStats;
   }
 
   public override function update(dt: Float) {
@@ -206,9 +209,10 @@ class Bullet extends Projectile {
     if (collidedWith.length > 0) {
       Entity.destroy(id);
 
+      final baseDamage = 1;
       final damageEvent: EntityStats.EventObject = {
         type: 'DAMAGE_RECEIVED',
-        value: damage
+        value: baseDamage + sourceStats.damage
       };
       for (ent in collidedWith) {
         EntityStats.addEvent(
@@ -1277,6 +1281,18 @@ class Player extends Entity {
     abilityEvents = [];
     Cooldown.update(cds, dt);
 
+    PassiveSkillTree.eachSelectedNode(
+        Main.Global.gameState,
+        function updatePlayerStats(nodeMeta) {
+          final modifier = nodeMeta.data.statModifier;
+
+          if (modifier != null) {
+            EntityStats.addEvent(
+                stats,
+                modifier);
+          }
+        });
+
     dx = 0;
     dy = 0;
 
@@ -1402,7 +1418,7 @@ class Player extends Entity {
 
     switch lootDef.type {
       case 'basicBlaster': {
-        var b = new Bullet(
+        new Bullet(
             x1,
             y1,
             x1_1,
@@ -1413,7 +1429,8 @@ class Player extends Entity {
               ent.type == 'ENEMY' || 
               ent.type == 'OBSTACLE' ||
               ent.type == 'INTERACTABLE_PROP')
-            );
+            ,
+            stats);
       }
 
       case 'channelBeam': {

@@ -23,6 +23,7 @@ typedef StatsRef = {
   var label: String;
   var damageTaken: Float;
   var moveSpeed: Float;
+  var damage: Float;
   var recentEvents: StatsEventsList;
 };
 
@@ -43,6 +44,8 @@ class EntityStats {
       pickupRadius:  p.pickupRadius,
       moveSpeed:     0,
       damageTaken:   0,
+      // base damage that the entity deals
+      damage: 0,
       recentEvents:  [],
     };
   }
@@ -64,12 +67,12 @@ class EntityStats {
   public static function addEvent(
       statsRef: StatsRef, 
       event: EventObject, 
-      ?after = false) {
+      ?after = false,
+      ?applyImmediate = false) {
 
     if (statsRef == placeholderStats) {
       throw new haxe.Exception(
           'may not add events to placeholderStats');
-      return;
     }
 
     // put event at end of list because
@@ -80,6 +83,11 @@ class EntityStats {
     }
 
     statsRef.recentEvents.unshift(event);
+
+    if (applyImmediate) {
+      update(statsRef, 0);
+      return;
+    }
   }
 
   // run events
@@ -87,9 +95,9 @@ class EntityStats {
       sr: StatsRef, dt: Float) {
 
     final nextRecentEvents = [];
-    var i = 0;
     var velocity = 0.;
-    var totalDamage = 0.;
+    var totalDamageTaken = 0.;
+    var flatDamageBuff = 0.;
 
     for (ev in sr.recentEvents) {
       final done = switch(ev) {
@@ -111,10 +119,18 @@ class EntityStats {
           }
 
         case { 
+          type: 'FLAT_DAMAGE_INCREASE',
+          value: v }: {
+
+            flatDamageBuff += v;
+            true;
+          }
+
+        case { 
           type: 'DAMAGE_RECEIVED',
           value: v }: {
 
-            totalDamage += v;
+            totalDamageTaken += v;
             true;
           }
 
@@ -164,8 +180,9 @@ class EntityStats {
     }
 
     sr.moveSpeed = velocity;
-    sr.currentHealth -= totalDamage;
-    sr.damageTaken = totalDamage;
+    sr.currentHealth -= totalDamageTaken;
+    sr.damageTaken = totalDamageTaken;
+    sr.damage = flatDamageBuff;
 
     // handle regeneration
     final newCurrentEnergy = sr.currentEnergy 

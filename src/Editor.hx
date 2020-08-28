@@ -281,6 +281,12 @@ class Editor {
               },
               'passive_skill_tree__node_damage_1' => {
                 spriteKey: 'ui/passive_skill_tree__node_orange',
+                data: {
+                  statModifier: {
+                    type: 'FLAT_DAMAGE_INCREASE',
+                    value: 1
+                  }
+                }
               },
               'passive_skill_tree__node_action_speed_1' => {
                 spriteKey: 'ui/passive_skill_tree__node_green',

@@ -805,7 +805,7 @@ class InventoryDragAndDropPrototype {
       );
     };
     equipItemToSlot(
-        createLootInstanceByType('energyBomb'), 0); 
+        createLootInstanceByType('basicBlaster'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 

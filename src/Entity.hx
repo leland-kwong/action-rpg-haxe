@@ -341,7 +341,9 @@ class Entity extends h2d.Object {
     final ref = Entity.getById(id);
     EntityStats.addEvent(
         ref.stats, 
-        EntityStats.destroyEvent);
+        EntityStats.destroyEvent,
+        false,
+        true);
   }
 
   public static function getById(
