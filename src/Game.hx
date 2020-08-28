@@ -1093,6 +1093,14 @@ class Player extends Entity {
         radius: 5,
         id: 'PLAYER_PET_ORB'
       });
+      ref.stats = EntityStats.create({
+        maxHealth: 0,
+        maxEnergy: 0,
+        currentHealth: 0,
+        currentEnergy: 0,
+        energyRegeneration: 0,
+        pickupRadius: 0
+      });
 
       final yOffset = 0;
       final MODE_FOLLOW = 'follow';
@@ -1118,7 +1126,7 @@ class Player extends Entity {
             state.prevMove.x, state.prevMove.y);
         final speedDistThreshold = 20;
         final accel = distFromPos < speedDistThreshold
-          ? -ref.speed * 0.2
+          ? -ref.stats.moveSpeed * 0.2
           : pSpeed * 0.1;
         final hasPlayerChangedPosition = 
           prevPlayerX != this.x
@@ -1130,12 +1138,15 @@ class Player extends Entity {
           state.idleDuration = 0;
         }
 
-        ref.speed = {
-          Utils.clamp(
-              ref.speed + accel,
-              0,
-              pSpeed);
-        }
+        final newSpeed = Utils.clamp(
+            ref.stats.moveSpeed + accel,
+            0,
+            pSpeed);
+        EntityStats.addEvent(
+            ref.stats, {
+              type: 'MOVESPEED_MODIFIER',
+              value: newSpeed
+            });
 
         if (state.mode == MODE_FOLLOW) {
           prevPlayerX = this.x;
