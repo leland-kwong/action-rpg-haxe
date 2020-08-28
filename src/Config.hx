@@ -14,16 +14,61 @@ class Config {
 
   public static final enemyStats: 
     Map<String, {
-      experienceReward: Int
+      experienceReward: Int,
+      health: Int,
+      speed: EntityStats.EventObject,
+      attackRange: Int,
+      attackType: String
     }> = [
+      'npcTestDummy' => {
+        experienceReward: 0,
+        health: 99999999 * 99999999,
+        speed: {
+          type: 'MOVESPEED_MODIFIER',
+          value: 0.
+        },
+        attackRange: 0,
+        attackType: 'no_attack'
+      },
       'bat' => {
         experienceReward: 1,
+        health: 5,
+        speed: {
+          type: 'MOVESPEED_MODIFIER',
+          value: 90.
+        },
+        attackRange: 30,
+        attackType: 'attack_bullet'
       },
       'botMage' => {
         experienceReward: 2,
+        health: 5,
+        speed: {
+          type: 'MOVESPEED_MODIFIER',
+          value: 60.
+        },
+        attackRange: 120,
+        attackType: 'attack_bullet'
       },
       'introLevelBoss' => {
-        experienceReward: 20
+        experienceReward: 20,
+        health: 30,
+        speed: {
+          type: 'MOVESPEED_MODIFIER',
+          value: 40.
+        },
+        attackRange: 80,
+        attackType: 'attack_bullet'
+      },
+      'spiderBots' => {
+        experienceReward: 0,
+        health: 50,
+        speed: {
+          type: 'MOVESPEED_MODIFIER',
+          value: 100.
+        },
+        attackRange: 13,
+        attackType: 'attack_self_detonate'
       }
     ];
 

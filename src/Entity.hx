@@ -86,9 +86,9 @@ class Entity extends h2d.Object {
       x: 0, 
       y: 0, 
       radius: 0,
-      id: 'NULL_ENTITY'
+      id: 'NULL_ENTITY',
+      type: 'NULL_ENTITY'
     }, true);
-    defaultEntity.type = 'NULL_ENTITY';
     defaultEntity;
   };
   static var idGenerated = 0;
@@ -347,16 +347,11 @@ class Entity extends h2d.Object {
 
   public static function destroy(id: EntityId) {
     final ref = Entity.getById(id);
-    try {
-      EntityStats.addEvent(
-          ref.stats, 
-          EntityStats.destroyEvent,
-          false,
-          true);
-    } catch(err) {
-      HaxeUtils.handleError(
-          '${{id: ref.id, stats: ref.stats}}')(err);
-    }
+    EntityStats.addEvent(
+        ref.stats, 
+        EntityStats.destroyEvent,
+        false,
+        true);
   }
 
   public static function getById(

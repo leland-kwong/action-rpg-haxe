@@ -382,43 +382,6 @@ typedef AiProps = {
 };
 
 class Ai extends Entity {
-  static var healthBySize = [
-    // test dummy 
-    0 => 99999999 * 99999999,
-    1 => 5,
-    2 => 10,
-    3 => 30,
-    4 => 50,
-  ];
-  static final speedBySize: Map<Int, EntityStats.EventObject> = [
-    0 => {
-      type: 'MOVESPEED_MODIFIER',
-      value: 0.
-    },
-    1 => {
-      type: 'MOVESPEED_MODIFIER',
-      value: 90.
-    },
-    2 => {
-      type: 'MOVESPEED_MODIFIER',
-      value: 60.
-    },
-    3 => {
-      type: 'MOVESPEED_MODIFIER',
-      value: 40.
-    },
-    4 => {
-      type: 'MOVESPEED_MODIFIER',
-      value: 100.
-    },
-  ];
-  static var attackRangeByType = [
-    0 => 0,
-    1 => 30,
-    2 => 120,
-    3 => 80,
-    4 => 13,
-  ];
   static final defaultFindTargetFn = (ent: Entity) -> {
     return Entity.NULL_ENTITY;
   };
@@ -427,20 +390,12 @@ class Ai extends Entity {
       return ent.type == 'PLAYER' 
         || ent.type == 'OBSTACLE';
     };
-  final attackTypeBySpecies = [
-    0 => 'no_attack',
-    1 => 'attack_bullet',
-    2 => 'attack_bullet',
-    3 => 'attack_bullet',
-    4 => 'attack_self_detonate',
-  ];
 
   var font: h2d.Font = Fonts.primary();
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
   var spawnDuration: Float = 0.1;
-  var size: Int;
   var debugCenter = false;
   var idleAnim: core.Anim.AnimRef;
   var runAnim: core.Anim.AnimRef;
@@ -453,7 +408,7 @@ class Ai extends Entity {
     defaultAttackTargetFilterFn;
 
   public function new(
-      props: AiProps, size, 
+      props: AiProps, 
       ?findTargetFn, 
       ?attackTargetFilterFn) {
     super(props);
@@ -466,7 +421,8 @@ class Ai extends Entity {
 
     type = 'ENEMY';
     status = 'UNTARGETABLE';
-    final initialHealth = healthBySize[size];
+    final initialHealth = Config
+      .enemyStats.get(props.aiType).health;
     stats = EntityStats.create({
       currentHealth: initialHealth,
       currentEnergy: 0,
@@ -484,11 +440,11 @@ class Ai extends Entity {
     }
 
     cds = new Cooldown();
-    this.size = size;
 
     Cooldown.set(cds, 'recentlySummoned', spawnDuration);
 
-    if (size == 0) {
+    final aiType = props.aiType;
+    if (aiType == 'npcTestDummy') {
       idleAnim = {
         frames: [
           'ui/npc_test_dummy'
@@ -500,7 +456,7 @@ class Ai extends Entity {
       runAnim = idleAnim;
     }
 
-    if (size == 1) {
+    if (aiType == 'bat') {
       var idleFrames = [
         'enemy-1_animation/idle-0',
         'enemy-1_animation/idle-1',
@@ -529,7 +485,7 @@ class Ai extends Entity {
       };
     }
 
-    if (size == 2) {
+    if (aiType == 'botMage') {
       var idleFrames = [
         'enemy-2_animation/idle-0',
         'enemy-2_animation/idle-1',
@@ -553,7 +509,7 @@ class Ai extends Entity {
       }
     }
 
-    if (size == 3) {
+    if (aiType == 'introLevelBoss') {
       idleAnim = {
         frames: [
         'intro_boss_animation/idle-0',
@@ -578,7 +534,7 @@ class Ai extends Entity {
       };
     }
 
-    if (size == 4) {
+    if (aiType == 'spiderBots') {
       idleAnim = {
         frames: [
         'spider_bot_animation/idle-0',
@@ -621,18 +577,20 @@ class Ai extends Entity {
     follow = findTargetFn(this);
     var origX = x;
     var origY = y;
+    final aiMeta = Config.enemyStats.get(
+        Entity.getComponent(this, 'aiType'));
 
     if (!Cooldown.has(cds, 'recentlySummoned')) {
       status = 'TARGETABLE';
       EntityStats.addEvent(
           stats,
-          speedBySize[size]);
+          aiMeta.speed);
     }
 
     if (follow != null && !Cooldown.has(cds, 'attack')) {
       // distance to keep from destination
       var threshold = follow.radius + 5;
-      var attackRange = attackRangeByType[size];
+      var attackRange = aiMeta.attackRange;
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(
@@ -731,7 +689,7 @@ class Ai extends Entity {
     if (!Cooldown.has(cds, 'recentlySummoned') && attackTarget != null) {
       final isValidTarget = attackTargetFilterFn(attackTarget);
       if (!Cooldown.has(cds, 'attack') && isValidTarget) {
-        final attackType = attackTypeBySpecies[size];
+        final attackType = aiMeta.attackType;
 
         switch (attackType) {
           case 'attack_bullet': {
@@ -1728,7 +1686,7 @@ class Player extends Entity {
             y: y + Utils.irnd(-lo, lo),
             radius: 8,
             aiType: 'spiderBot',
-          }, 4, findNearestTarget, attackTargetFilterFn);
+          }, findNearestTarget, attackTargetFilterFn);
           botRef.type = 'FRIENDLY_AI';
           botRef.deathAnimationStyle = 'none';
         }
@@ -2351,10 +2309,10 @@ class MapObstacle extends Entity {
 
 // Spawns enemies over time
 class EnemySpawner extends Entity {
-  static final enemyTypes = Lambda.filter([
-    for (aiType in Config.enemyStats.keys()) 
-      aiType
-  ], (type) -> type != 'introLevelBoss');
+  static final enemyTypes = [
+    'bat',
+    'botMage'
+  ];
 
   static final sizeByEnemyType = [
     'bat' => 1,
@@ -2430,7 +2388,7 @@ class EnemySpawner extends Entity {
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
       aiType: enemyType,
-    }, size, findTarget);
+    }, findTarget);
   }
 }
 
@@ -2534,7 +2492,7 @@ class Game extends h2d.Object {
                 radius: 30,
                 sightRange: 150,
                 aiType: 'introLevelBoss',
-              }, size, (_) -> Entity.getById('PLAYER'));
+              }, (_) -> Entity.getById('PLAYER'));
               Main.Global.rootScene.addChildAt(e, 0);
             }
 
@@ -2544,7 +2502,7 @@ class Game extends h2d.Object {
                 y: y,
                 aiType: 'NPC_TEST_DUMMY',
                 radius: 10
-              }, 0);
+              });
             }
 
             case 'pillar': {
