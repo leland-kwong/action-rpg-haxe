@@ -55,12 +55,18 @@ class EntityStats {
     pickupRadius: 0
   });
 
+  public static final destroyEvent: EventObject = {
+    type: 'DESTROY'
+  };
+
   public static function addEvent(
       statsRef: StatsRef, 
       event: EventObject, 
       ?after = false) {
 
-    if (statsRef == null) {
+    if (statsRef == placeholderStats) {
+      throw new haxe.Exception(
+          'may not add events to placeholderStats');
       return;
     }
 
@@ -78,10 +84,6 @@ class EntityStats {
   public static function update(
       sr: StatsRef, dt: Float) {
 
-    if (sr == null) {
-      return;
-    }
-
     final nextRecentEvents = [];
     var i = 0;
     var velocity = 0.;
@@ -89,6 +91,13 @@ class EntityStats {
 
     for (ev in sr.recentEvents) {
       final done = switch(ev) {
+        case {
+          type: 'DESTROY'
+        }: {
+          sr.currentHealth = 0;
+          true;
+        }
+
         case { 
           type: 'ENERGY_SPEND', 
           value: v }: {

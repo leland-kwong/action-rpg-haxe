@@ -1051,7 +1051,6 @@ class Player extends Entity {
     });
     cds = new Cooldown();
     type = 'PLAYER';
-    health = 1000;
     forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
     obstacleGrid = Main.Global.obstacleGrid;
@@ -2431,12 +2430,6 @@ class Game extends h2d.Object {
   var MOUSE_POINTER_RADIUS = 5.0;
   var finished = false;
 
-  public function isGameOver() {
-    final playerRef = Entity.getById('player');
-
-    return playerRef.health <= 0;
-  }
-
   override function onRemove() {
     // reset game state
     for (entityRef in Entity.ALL_BY_ID) {
@@ -2559,7 +2552,15 @@ class Game extends h2d.Object {
                 radius: radius,
                 avoidanceRadius: radius + 3
               }, objectMeta);
-              ref.health = 10000 * 10000;
+              final initialHealth = 10000;
+              ref.stats = EntityStats.create({
+                maxHealth: initialHealth,
+                maxEnergy: 0,
+                currentHealth: initialHealth,
+                currentEnergy: 0,
+                energyRegeneration: 0,
+                pickupRadius: 0
+              });
             }
 
             case 'player': {
@@ -3056,6 +3057,15 @@ class Game extends h2d.Object {
     Main.Global.updateHooks.push(lootDropAnimation);
 
     lootRef.type = 'LOOT';
+    lootRef.stats = EntityStats.create({
+      label: '@LOOT',
+      maxHealth: 1,
+      maxEnergy: 0,
+      currentHealth: 1.,
+      currentEnergy: 0.,
+      energyRegeneration: 0,
+      pickupRadius: 0
+    });
     // instance-specific data such as the rolled rng values
     // as well as the loot type so we can look it up in the
     // loot definition table

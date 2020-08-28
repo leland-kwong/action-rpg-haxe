@@ -99,8 +99,6 @@ class Entity extends h2d.Object {
   public var dy = 0.0;
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
-  public var health = 0;
-  public var damageTaken = 0;
   public var status = 'TARGETABLE';
   public var cds: Cooldown;
   public var traversableGrid: GridRef;
@@ -332,7 +330,7 @@ class Entity extends h2d.Object {
   }
 
   public function isDone() {
-    return health <= 0 && stats.currentHealth <= 0;
+    return stats.currentHealth <= 0;
   }
 
   public static function exists(id: EntityId) {
@@ -341,8 +339,9 @@ class Entity extends h2d.Object {
 
   public static function destroy(id: EntityId) {
     final ref = Entity.getById(id);
-    ref.health = 0;
-    ref.stats.currentHealth = 0;
+    EntityStats.addEvent(
+        ref.stats, 
+        EntityStats.destroyEvent);
   }
 
   public static function getById(
