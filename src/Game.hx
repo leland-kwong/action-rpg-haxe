@@ -1723,7 +1723,6 @@ class Player extends Entity {
       case 'burstCharge': {
         final state = {
           isDashComplete: false,
-          distanceTraveled: 0.
         };
         final oldPos = {
           x: this.x,
@@ -1799,7 +1798,6 @@ class Player extends Entity {
         // burst hit offset position
         final xOffset = 10;
         final yOffset = -8;
-        final originalSpeed = this.speed;
 
         function isSameSign(a: Float, b: Float) {
           return (a < 0 && b < 0) ||
@@ -1813,8 +1811,11 @@ class Player extends Entity {
 
           this.dx = dx;
           this.dy = dy;
-          this.speed = 500;
-          state.distanceTraveled += dt * this.speed;
+          final distanceTraveled = Utils.distance(
+              this.x,
+              this.y,
+              oldPos.x,
+              oldPos.y);
           Entity.setComponent(this, 'alpha', 0.2);
           
           final hasCollisions = Entity.getCollisions(
@@ -1835,10 +1836,10 @@ class Player extends Entity {
               }).length > 0;
 
           state.isDashComplete = hasCollisions 
-            || state.distanceTraveled >= maxDist;
+            || distanceTraveled >= maxDist
+            || progress >= 1;
 
           if (state.isDashComplete) {
-            this.speed = originalSpeed;
             Entity.setComponent(this, 'alpha', 1);
 
             final hitX = this.x + dx * launchOffset;
@@ -1864,6 +1865,12 @@ class Player extends Entity {
             ref.damage = 3;
 
             return false;
+          } else {
+            EntityStats.addEvent(
+                this.stats, {
+                  type: 'MOVESPEED_MODIFIER',
+                  value: 500
+                });
           }
 
           return true;
