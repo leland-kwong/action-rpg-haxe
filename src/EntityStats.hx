@@ -9,10 +9,10 @@ private typedef StatsEventsList = Array<EventObject>;
 
 typedef InitialStats = {
   var maxHealth: Int;
-  var maxEnergy: Int;
   var currentHealth: Float;
-  var currentEnergy: Float;
-  var energyRegeneration: Int; // per second
+  var ?maxEnergy: Int;
+  var ?currentEnergy: Float;
+  var ?energyRegeneration: Int; // per second
   var ?label: String;
   var ?pickupRadius: Int;
 }

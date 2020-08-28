@@ -100,11 +100,7 @@ class Projectile extends Entity {
     stats = EntityStats.create({
       label: '@projectile',
       maxHealth: 1,
-      maxEnergy: 0,
       currentHealth: 1.,
-      currentEnergy: 0.,
-      energyRegeneration: 0,
-      pickupRadius: 0
     });
     speedModifier = {
       type: 'MOVESPEED_MODIFIER',
@@ -2372,11 +2368,7 @@ class EnemySpawner extends Entity {
     stats = EntityStats.create({
       label: '@EnemySpawner',
       maxHealth: 1,
-      maxEnergy: 0,
       currentHealth: 1.,
-      currentEnergy: 0.,
-      energyRegeneration: 0,
-      pickupRadius: 0
     });
   }
 
@@ -2555,11 +2547,7 @@ class Game extends h2d.Object {
               final initialHealth = 10000;
               ref.stats = EntityStats.create({
                 maxHealth: initialHealth,
-                maxEnergy: 0,
                 currentHealth: initialHealth,
-                currentEnergy: 0,
-                energyRegeneration: 0,
-                pickupRadius: 0
               });
             }
 
@@ -2783,11 +2771,7 @@ class Game extends h2d.Object {
               ref.stats = EntityStats.create({
                 label: '@prop_1_1',
                 maxHealth: 1,
-                maxEnergy: 0,
                 currentHealth: 1.,
-                currentEnergy: 0.,
-                energyRegeneration: 0,
-                pickupRadius: 0
               });
               Main.Global.rootScene.addChild(ref);
             }
@@ -2802,11 +2786,7 @@ class Game extends h2d.Object {
               wallRef.stats = EntityStats.create({
                 label: '@prop_1_1',
                 maxHealth: 1000000,
-                maxEnergy: 0,
                 currentHealth: 1000000.,
-                currentEnergy: 0.,
-                energyRegeneration: 0,
-                pickupRadius: 0
               });
               wallRef.type = 'OBSTACLE';
               wallRef.forceMultiplier = 3.0;
@@ -3060,11 +3040,7 @@ class Game extends h2d.Object {
     lootRef.stats = EntityStats.create({
       label: '@LOOT',
       maxHealth: 1,
-      maxEnergy: 0,
       currentHealth: 1.,
-      currentEnergy: 0.,
-      energyRegeneration: 0,
-      pickupRadius: 0
     });
     // instance-specific data such as the rolled rng values
     // as well as the loot type so we can look it up in the
