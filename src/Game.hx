@@ -83,6 +83,7 @@ class Projectile extends Entity {
   var cFilter: EntityFilter;
   public var maxNumHits = 1;
   var numHits = 0;
+  final speedModifier: EntityStats.EventObject;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
@@ -97,7 +98,19 @@ class Projectile extends Entity {
       weight: 0.0,
     });
     type = 'PROJECTILE';
-    this.speed = speed;
+    stats = EntityStats.create({
+      label: '@projectile',
+      maxHealth: 0,
+      maxEnergy: 0,
+      currentHealth: 0.,
+      currentEnergy: 0.,
+      energyRegeneration: 0,
+      pickupRadius: 0
+    });
+    speedModifier = {
+      type: 'MOVESPEED_MODIFIER',
+      value: speed
+    };
     forceMultiplier = 0.0;
     cFilter = collisionFilter;
 
@@ -117,6 +130,8 @@ class Projectile extends Entity {
   public override function update(dt: Float) {
     super.update(dt);
 
+    EntityStats.addEvent(
+        stats, speedModifier);
     lifeTime -= dt;
     collidedWith = [];
 
@@ -237,7 +252,7 @@ class EnergyBomb extends Projectile {
     x1, y1, x2, y2, cFilter
   ) {
     super(x1, y1, x2, y2, 
-        initialSpeed, 8, cFilter);
+        0.0, 8, cFilter);
     radius = 4;
     lifeTime = 1.5;
     cds = new Cooldown();
@@ -260,7 +275,11 @@ class EnergyBomb extends Projectile {
     final moveDuration = 2.;
     final progress = Easing.easeOutExpo(
         (Main.Global.time - createdAt) / moveDuration);
-    speed = (1 - progress) * initialSpeed;
+    EntityStats.addEvent(
+        stats, {
+          type: 'MOVESPEED_MODIFIER',
+          value: (1 - progress) * initialSpeed
+        });
 
     if (!launchSoundPlayed) {
       launchSoundPlayed = true;

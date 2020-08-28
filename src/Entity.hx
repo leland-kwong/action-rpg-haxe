@@ -99,7 +99,6 @@ class Entity extends h2d.Object {
   public var dx = 0.0;
   public var dy = 0.0;
   public var weight = 1.0;
-  public var speed = 0.0;
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var health = 1;
@@ -291,7 +290,7 @@ class Entity extends h2d.Object {
     damageTaken = 0;
 
     final max = 1;
-    final totalSpeed = (speed + stats.moveSpeed);
+    final totalSpeed = stats.moveSpeed;
 
     if (dx != 0) {
       final nextPos = x + Utils.clamp(dx, -max, max) 
