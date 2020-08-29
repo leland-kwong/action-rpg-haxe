@@ -97,7 +97,7 @@ class Experiment {
         if (hasCollision && isHitTick) {
           final duration = 0.2;
           final startTime = Main.Global.time;
-          final numParticles = 200;
+          final numParticles = 5;
 
           final frames = ['ui/square_glow'];
           function particleEffectCallback(
