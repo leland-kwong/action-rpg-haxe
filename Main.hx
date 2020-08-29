@@ -300,14 +300,6 @@ class Main extends hxd.App {
       }
     }
 
-    final triggerExperiment = 
-      Key.isDown(Key.CTRL) 
-      && Key.isPressed(Key.E);
-    if (triggerExperiment) {
-      trace('trigger experiment');
-      Experiment.init();
-    }
-
     return true;
   }
 
