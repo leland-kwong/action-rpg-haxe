@@ -539,7 +539,7 @@ class Ai extends Entity {
       };
     }
 
-    if (aiType == 'spiderBots') {
+    if (aiType == 'spiderBot') {
       idleAnim = {
         frames: [
         'spider_bot_animation/idle-0',
@@ -1006,7 +1006,8 @@ class Player extends Entity {
   var abilityEvents: Array<{
     type: String,
     startPoint: h2d.col.Point,
-    endPoint: h2d.col.Point
+    endPoint: h2d.col.Point,
+    ?targetId: Entity.EntityId
   }>;
   var facingX = 1;
   var facingY = 1;
@@ -1404,208 +1405,35 @@ class Player extends Entity {
       }
 
       case 'channelBeam': {
-        final tempState = Main.Global.tempState;
-        final tickKey = 'kamehamehaChanneling';
-        // handle beam channel ticks
-        {
-          final baseTickAmount = 0.3;
-          final tickRate = .01;
-          if (Cooldown.has(cds, tickKey)) {
-            final curTick = Utils.withDefault(
-                tempState.get(tickKey), 0);
-            tempState.set(tickKey, Math.min(1, curTick + tickRate));
-          } else {
-            tempState.set(tickKey, baseTickAmount);
-          }
-          Cooldown.set(cds, tickKey, 0.05);
-        }
-
-        final additionalLength = 40 * Math.max(1, tempState.get(tickKey) * 2);
-        final maxLength = 60 + additionalLength; 
-        Main.Global.logData.laserMaxLength = maxLength;
-        final laserCenterSpriteData = SpriteBatchSystem.getSpriteData(
-            Main.Global.sb.batchManager.spriteSheetData,
-            'ui/kamehameha_center_width_1'
-            );
-        final beamThickness = 
-          laserCenterSpriteData.frame.h;
-        final laserTailSpriteData = SpriteBatchSystem.getSpriteData(
-          Main.Global.sb.batchManager.spriteSheetData,
-          'ui/kamehameha_tail');
-        final angle = Math.atan2(y2 - startY, x2 - x);
-        final vx = Math.cos(angle);
-        final vy = Math.sin(angle);
-        // initial launch point
-        final x1 = x + vx * launchOffset;
-        final y1 = startY + vy * launchOffset;
-        final laserTailX1 = x1 + vx * maxLength;
-        final laserTailY1 = y1 + vy * maxLength;
-
-        var dynamicWorldGrid = Main.Global.dynamicWorldGrid;
-        var worldCellSize = dynamicWorldGrid.cellSize;
-        var cellSize = 3;
-        var startGridX = Math.floor(x1 / cellSize);
-        var startGridY = Math.floor(y1 / cellSize);
-        var targetGridX = Math.floor(laserTailX1 / cellSize);
-        var targetGridY = Math.floor(laserTailY1 / cellSize);
-        var startPt = new h2d.col.Point(x1, y1);
-        var endPt = new h2d.col.Point(laserTailX1, laserTailY1);
-        var centerLine = new h2d.col.Line(startPt, endPt);
-        var debug = {
-          startPos: false,
-          queryRects: false,
-          endPos: false,
-        };
-
-        if (debug.startPos) {
-          // TODO: should be moved to a render method
-          Main.Global.sb.emitSprite(
-            laserTailX1, laserTailY1,
-            'ui/square_white',
-            null,
-            (p) -> {
-              final scale = 10;
-              final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
-              b.scaleX = scale;
-            }
-          );
-        }
-
-        var adjustedEndPt = endPt;
-
-        Utils.bresenhamLine(
-            startGridX, startGridY, targetGridX, 
-            targetGridY, (ctx, x, y, i) -> {
-
-            var worldX = Math.round(x * cellSize);
-            var worldY = Math.round(y * cellSize);
-
-            if (debug.queryRects) {
-              // TODO: should be moved to a render method
-              Main.Global.sb.emitSprite(
-                worldX,
-                worldY,
-                'ui/square_white',
-                null,
-                (p) -> {
-                  final scale = cellSize;
-                  final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
-                  b.scaleX = scale;
-                  b.scaleY = scale; 
-                }
-              );
-            }
-
-            var items = Grid.getItemsInRect(
-                dynamicWorldGrid, worldX, worldY, 
-                worldCellSize, worldCellSize);
-            var staticWorld = Main.Global.obstacleGrid;
-            var obsWorldCellSize = beamThickness + 16;
-            var obstacles = Grid.getItemsInRect(
-              staticWorld, worldX, worldY, 
-              obsWorldCellSize, obsWorldCellSize);
-
-            var checkCollisions = (items: Map<String, String>) -> {
-              for (entityId in items) {
-                var item = Entity.getById(entityId);
-
-                if (item.type == 'PLAYER' 
-                    || item.type == 'FRIENDLY_AI') {
-                  return false;
-                }
-
-                var colCircle = new h2d.col.Circle(
-                    item.x, item.y, item.radius);
-                // var colPt = new h2d.col.Point(item.x, item.y);
-                var intersectionPoint = Collision
-                  .beamCircleIntersectTest(
-                      startPt, 
-                      endPt,
-                      colCircle,
-                      beamThickness);
-                var isIntersecting = intersectionPoint != endPt;
-
-                // TODO add support for more accurate intersection point for line -> rectangle
-                // We can figure out the edge that the beam touches and then find the intersection
-                // point at the rectangle edge and the beam's center line.
-
-                if (isIntersecting) {
-                  var circleCol = new h2d.col.Circle(
-                      item.x, item.y, item.radius);
-                  var trueIntersectionPts = circleCol
-                    .lineIntersect(centerLine.p1, centerLine.p2);
-                  // intersection point
-                  var p = intersectionPoint;
-
-                  var laserHitCdKey = 'kamehamehaHit';
-                  if (!Cooldown.has(item.cds, laserHitCdKey)) {
-                    final tickPercent = tempState.get(tickKey);
-                    final cooldownReduction = -tickPercent * 0.1;
-                    Cooldown.set(
-                        item.cds, 
-                        laserHitCdKey, 
-                        0.2 + cooldownReduction);
-                    final damage = Math.round(
-                        Utils.irnd(
-                          lootDef.minDamage, 
-                          lootDef.maxDamage) 
-                        * tickPercent);
-                    EntityStats.addEvent(item.stats, {
-                      type: 'DAMAGE_RECEIVED',
-                      value: damage
-                    });
-                  }
-
-                  adjustedEndPt = p;
-
-                  if (debug.endPos) {
-                    // TODO: should be moved to a render method
-                    Main.Global.sb.emitSprite(
-                      x1,
-                      y1,
-                      'ui/square_white',
-                      null,
-                      (p) -> {
-                        final scale = 10;
-
-                        p.batchElement.scaleX = scale;
-                        p.batchElement.scaleY = scale;
-                      }
-                    );
-
-                    // TODO: should be moved to a render method
-                    Main.Global.sb.emitSprite(
-                      p.x,
-                      p.y,
-                      'ui/square_white',
-                      null,
-                      (p) -> {
-                        final scale = 10;
-
-                        p.batchElement.scaleX = scale;
-                        p.batchElement.scaleY = scale;
-                      }
-                    );
-                  };
-                }
-
-                return isIntersecting;
-              }
-
-              return false;
-            }
-
-            return !checkCollisions(obstacles) 
-              && !checkCollisions(items);
-          }
-        );
+        // push render event
+        final targetId = Ability.ChannelBeam
+          .findTargetInPath(function collisionFilter(id: Entity.EntityId) {
+            final type = Entity.getById(id).type;
+            return switch(type) {
+              case 'ENEMY' | 'OBSTACLE' | 'INTERACTABLE_PROP': true;
+              default: false;
+            };
+          });
+        final beamBounds = Ability.ChannelBeam.getBeamBounds();
+        final dx = Math.cos(beamBounds.angle);
+        final dy = Math.sin(beamBounds.angle);
+        final startPt = new h2d.col.Point(
+            this.x + dx * launchOffset,
+            this.y + (dy * launchOffset) + yCenterOffset);
+        final targetRef = Entity.getById(targetId);
+        final endPt = Entity.isNullId(targetId) 
+          ? new h2d.col.Point(
+              Main.Global.rootScene.mouseX,
+              Main.Global.rootScene.mouseY)
+          : new h2d.col.Point(
+              targetRef.x,
+              targetRef.y);
 
         abilityEvents.push({
           type: 'KAMEHAMEHA',
           startPoint: startPt,
-          endPoint: adjustedEndPt,
+          endPoint: endPt,
+          targetId: targetId
         });
       }
 
@@ -2215,75 +2043,14 @@ class Player extends Entity {
       switch(e) {
         case { type: 'KAMEHAMEHA', 
           startPoint: startPt, 
-          endPoint: endPt 
+          endPoint: endPt,
+          targetId: tid
         }: {
-
-          final laserHeadSpriteData = SpriteBatchSystem.getSpriteData(
-              Main.Global.sb.batchManager.spriteSheetData,
-              'ui/kamehameha_head'
-              );
-          final laserHeadWidth = laserHeadSpriteData.frame.w;
-          final tickPercent = Main.Global.tempState.get(
-                'kamehamehaChanneling');
-          final yScale = tickPercent + Utils.irnd(0, 1) * 0.125;
-          
-          // laser head
-          final angle = Math.atan2(
-              endPt.y - startPt.y,
-              endPt.x - startPt.x);
-          final vx = Math.cos(angle);
-          final vy = Math.sin(angle);
-
-          {
-            Main.Global.sb.emitSprite(
-                startPt.x, startPt.y,
-                'ui/kamehameha_head',
-                angle,
-                (p) -> {
-                  p.batchElement.scaleY = yScale;
-                });
-          }
-
-          {
-            var lcx = startPt.x + (vx * laserHeadWidth);
-            var lcy = startPt.y + (vy * laserHeadWidth);
-            var beamCallback = (p) -> {
-              final b: h2d.SpriteBatch.BatchElement = 
-                p.batchElement;
-
-              b.scaleX = Math.round(
-                  Utils.distance(lcx, lcy, endPt.x, endPt.y));
-              b.scaleY = yScale; 
-            };
-
-            // laser center
-            final angle = Math.atan2(
-                endPt.y - lcy,
-                endPt.x - lcx);
-
-            Main.Global.sb.emitSprite(
-                lcx, lcy,
-                'ui/kamehameha_center_width_1',
-                angle,
-                beamCallback);
-          }
-
-          // laser tail
-          {
-            final angle = Math.atan2(
-                endPt.y - endPt.y + vy,
-                endPt.x - endPt.x + vx);
-
-            Main.Global.sb.emitSprite(
-                endPt.x, endPt.y,
-                'ui/kamehameha_tail',
-                angle,
-                (p) -> {
-                  p.batchElement.scaleX = 1 + 
-                    Utils.irnd(0, 1) * 0.25;
-                  p.batchElement.scaleY = yScale; 
-                });
-          }
+          Ability.ChannelBeam.renderLaser(
+              Entity.getById('PLAYER'),
+              startPt,
+              endPt,
+              Entity.getById(tid));
         }
 
         default: {}
@@ -2962,7 +2729,8 @@ class Game extends h2d.Object {
 
     }
 
-    final levelFile = 'editor-data/dummy_level.eds';
+    // final levelFile = 'editor-data/dummy_level.eds';
+    final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,

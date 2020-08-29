@@ -60,7 +60,7 @@ class Config {
         attackRange: 80,
         attackType: 'attack_bullet'
       },
-      'spiderBots' => {
+      'spiderBot' => {
         experienceReward: 0,
         health: 50,
         speed: {

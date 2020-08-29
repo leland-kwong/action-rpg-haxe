@@ -87,10 +87,6 @@ class Global {
     id: Entity.NULL_ENTITY.id,
     hoverStart: -1.0
   };
-  public static var tempState: Map<String, Float> = [
-    'kamehamehaTick' => 0.0
-  ];
-
   public static var gameState = Session.createGameState(
       -1, null, null, 'placeholder_game_state');
 

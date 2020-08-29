@@ -55,7 +55,7 @@ class Loot {
       category: 'ability',
       cooldown: 0,
       actionSpeed: 1/200,
-      energyCost: .25,
+      energyCost: .125,
       minDamage: 1,
       maxDamage: 3,
       spriteKey: 'ui/loot__ability_channel_beam'

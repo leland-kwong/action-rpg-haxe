@@ -813,7 +813,7 @@ class InventoryDragAndDropPrototype {
         createLootInstanceByType('moveSpeedAura'), 1); 
 
     equipItemToSlot(
-        createLootInstanceByType('energy1'), 2); 
+        createLootInstanceByType('spiderBots'), 2); 
   }
 
   static function getEquipmentSlotDefinitions() {
