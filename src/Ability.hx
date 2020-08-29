@@ -127,7 +127,8 @@ class ChannelBeam {
     }
   }
 
-  public static function findTargetInPath(
+  public static function run(
+      source: Entity,
       collisionFilter): Entity.EntityId {
     state.possibleTargets.clear();
 
@@ -172,7 +173,10 @@ class ChannelBeam {
               EntityStats.addEvent(
                   possibleTargetRef.stats, {
                     type: 'DAMAGE_RECEIVED',
-                    value: 1
+                    value: {
+                      baseDamage: 1,
+                      sourceStats: source.stats
+                    }
                   });
             }
             return possibleTargetRef.id;

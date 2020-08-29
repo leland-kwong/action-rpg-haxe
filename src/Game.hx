@@ -84,6 +84,7 @@ class Projectile extends Entity {
   public var maxNumHits = 1;
   var numHits = 0;
   final speedModifier: EntityStats.EventObject;
+  public var source: Entity;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
@@ -122,6 +123,11 @@ class Projectile extends Entity {
   }
 
   public override function update(dt: Float) {
+    if (source == null) {
+      throw new haxe.Exception(
+          'source prop missing for $this');
+    }
+
     super.update(dt);
 
     EntityStats.addEvent(
@@ -160,7 +166,10 @@ class LineProjectile extends Projectile {
 
     final damageEvent: EntityStats.EventObject = {
       type: 'DAMAGE_RECEIVED',
-      value: damage
+      value: {
+        baseDamage: damage,
+        sourceStats: source.stats
+      }
     };
     for (ent in collidedWith) {
       EntityStats.addEvent(
@@ -182,20 +191,16 @@ class Bullet extends Projectile {
   ];
   var launchSoundPlayed = false;
   var spriteKey: String;
-  var sourceStats: EntityStats.StatsRef;
   public var playSound = true;
   public var explosionScale = 1.;
 
   public function new(
     x1, y1, x2, y2, speed, 
-    _spriteKey, collisionFilter,
-    ?sourceStats
+    _spriteKey, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
     lifeTime = 2.0;
     spriteKey = _spriteKey;
-    this.sourceStats = Utils.withDefault(
-        sourceStats, EntityStats.placeholderStats);
   }
 
   public override function update(dt: Float) {
@@ -213,7 +218,10 @@ class Bullet extends Projectile {
       final baseDamage = 1;
       final damageEvent: EntityStats.EventObject = {
         type: 'DAMAGE_RECEIVED',
-        value: baseDamage + sourceStats.damage
+        value: {
+          baseDamage: baseDamage,
+          sourceStats: source.stats
+        }
       };
       for (ent in collidedWith) {
         EntityStats.addEvent(
@@ -324,6 +332,7 @@ class EnergyBomb extends Projectile {
               0, 
               'ui/placeholder',
               cFilter);
+          ref.source = this;
           ref.maxNumHits = 999999;
           ref.explosionScale = 1.6;
           ref.playSound = false;
@@ -713,6 +722,7 @@ class Ai extends Entity {
                 100.0,
                 'ui/bullet_enemy_large',
                 attackTargetFilterFn);
+            b.source = this;
             Main.Global.rootScene.addChild(b);
           }
 
@@ -774,7 +784,10 @@ class Ai extends Entity {
             Entity.destroy(id);
             final damageEvent: EntityStats.EventObject = {
               type: 'DAMAGE_RECEIVED',
-              value: 2
+              value: {
+                baseDamage: 2,
+                sourceStats: Entity.getById('PLAYER').stats
+              }
             };
             EntityStats.addEvent(
                 attackTarget.stats, damageEvent);
@@ -1389,7 +1402,7 @@ class Player extends Entity {
 
     switch lootDef.type {
       case 'basicBlaster': {
-        new Bullet(
+        final ref = new Bullet(
             x1,
             y1,
             x1_1,
@@ -1399,18 +1412,22 @@ class Player extends Entity {
             (ent) -> (
               ent.type == 'ENEMY' || 
               ent.type == 'OBSTACLE' ||
-              ent.type == 'INTERACTABLE_PROP')
-            ,
-            stats);
+              ent.type == 'INTERACTABLE_PROP'));
+        ref.source = this;
       }
 
       case 'channelBeam': {
         // push render event
         final targetId = Ability.ChannelBeam
-          .findTargetInPath(function collisionFilter(id: Entity.EntityId) {
+          .run(this, function collisionFilter(id: Entity.EntityId) {
             final type = Entity.getById(id).type;
             return switch(type) {
-              case 'ENEMY' | 'OBSTACLE' | 'INTERACTABLE_PROP': true;
+              case 
+                  'ENEMY' 
+                | 'OBSTACLE' 
+                | 'INTERACTABLE_PROP': 
+                true;
+
               default: false;
             };
           });
@@ -1534,6 +1551,7 @@ class Player extends Entity {
             x1_1,
             y1_1,
             collisionFilter);
+        b.source = this;
         Main.Global.rootScene.addChild(b);
       }
 
@@ -1692,6 +1710,7 @@ class Player extends Entity {
               }
             );
 
+            ref.source = this;
             ref.maxNumHits = 999999;
             // ref.explosionScale = 1.6;
             ref.playSound = false;
@@ -1898,7 +1917,7 @@ class Player extends Entity {
               400,
               10,
               collisionFilter);
-
+          hitRef.source = this;
           hitRef.maxNumHits = 9999;
           hitRef.lifeTime = 0.05;
         }

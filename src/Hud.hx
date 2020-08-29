@@ -807,13 +807,13 @@ class InventoryDragAndDropPrototype {
       );
     };
     equipItemToSlot(
-        createLootInstanceByType('channelBeam'), 0); 
+        createLootInstanceByType('flameTorch'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 
 
     equipItemToSlot(
-        createLootInstanceByType('spiderBots'), 2); 
+        createLootInstanceByType('energy1'), 2); 
   }
 
   static function getEquipmentSlotDefinitions() {

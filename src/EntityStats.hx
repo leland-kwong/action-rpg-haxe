@@ -124,7 +124,11 @@ class EntityStats {
           type: 'DAMAGE_RECEIVED',
           value: v }: {
 
-            totalDamageTaken += v;
+            final baseDamage = v.baseDamage;
+            final sourceStats = v.sourceStats;
+            final totalDamage = (baseDamage + sourceStats.damage);
+
+            totalDamageTaken += totalDamage;
             true;
           }
 
