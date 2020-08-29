@@ -1,7 +1,10 @@
 # Todos
 
+## SpriteBatch System
+  - [ ] Use a global particle pool which should give a pretty large performance boost since we don't have to recreate new objects each frame. This will be especially important when we're using flashy partilcles.
+
 ## Bugs
-- [ ] `gameState` can sometimes end up in a bad state which cannot be loaded up next time. Its possible that the thread did not finish processing the most recent event.
+  - [ ] `gameState` can sometimes end up in a bad state which cannot be loaded up next time. Its possible that the thread did not finish processing the most recent event.
 
 ## Game state
   - [ ] Integrate inventory state
@@ -32,6 +35,6 @@
   - [ ] Autotile algorithm should check the current tile type against the neighboring tile type to determine what type of tile to use for autotiling. This can allow us to vary our designs when we have tiles regions next to each other but are of different types. For example, we can go from regular floor to bridge and then back to regular floor.
 
 ## Entity System Performance
-  - [x] Replace all base stats on `Entity` class such as `health` and `speed` with the `EntityStats.EntityRef` data structure. This way all stats are being handled by the stats system instead and keeps things nicely data driven with support for modifier events as well.
-  - [ ] [PERFORMANCE ENHANCEMENT] We can reuse `EntityStats.EntityRef` instances by pooling them and releasing them back to the pool when an entity is destroyed. This way we can don't have to create a bunch of garbage which will be useful for when we want to create things like a multiple bullet spread. (Be sure to benchmark to validate that this will increase performance).
+  - [x] Replace all base stats on `Entity` class such as `health` and `speed` with the `EntityStats.StatsRef` data structure. This way all stats are being handled by the stats system instead and keeps things nicely data driven with support for modifier events as well.
+  - [ ] [PERFORMANCE ENHANCEMENT] We can reuse `EntityStats.StatsRef` instances by pooling them and releasing them back to the pool when an entity is destroyed. This way we can don't have to create a bunch of garbage which will be useful for when we want to create things like a multiple bullet spread. (Be sure to benchmark to validate that this will increase performance).
 

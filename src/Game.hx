@@ -1,8 +1,6 @@
 /*
    * [ ] TODO: [HIGH PRIORITY]: Add an api for triggering damage to each entity within a given area. Right now we're using a bullet with a low lifetime to do this which is very hacky.
    * [ ] TODO: Add small amount of squash/stretch when an entity takes a hit
-   * [ ] TODO: Add debugging of the ai's collision shape so we can quickly
-         tell if things are working properly.
    * [ ] TODO: Add support for rectangular collisions on entities. This is
          especially important for walls but also useful for npcs that don't
          exactly fit within the shape of a circle.
@@ -12,12 +10,6 @@
          too far away from player. If they are a screen's distance
          away from player, teleport them nearby to player. This will
          also help prevent them from getting stuck in certain situations.
-   * [ ] TODO: Make map parser autotiling ignore tiles
-         that are on the same layer but not the same
-         object type. This way, if we place detail-oriented
-         tiles on the layer that don't lie on the grid, we 
-         don't run into issues where the autotiling thinks it 
-         is a tile and does the wrong autotile calculation.
    * [ ] TODO: Add some basic pathfinding for ai (maybe flowfield?) so they're
          not getting stuck when trying to walk towards player even though
          they're clearly within vision. This can happen if there is a 
