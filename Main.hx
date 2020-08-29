@@ -610,6 +610,15 @@ class Main extends hxd.App {
         debugText.x = debugUiMargin;
         debugText.y = debugUiMargin;
         debugText.text = text;
+        Global.logData.maxParticles = Math.max(
+            Global.logData.maxParticles,
+            stats.numSprites);
+        Global.logData.totalParticles =
+          Utils.withDefault(
+              Global.logData.totalParticles, 0) 
+          + stats.numSprites;
+        Global.logData.avgParticles = Std.int(
+            Global.logData.totalParticles / Global.tickCount);
       }
 
       core.Anim.AnimEffect

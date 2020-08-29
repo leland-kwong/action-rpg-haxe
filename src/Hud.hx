@@ -99,11 +99,13 @@ class UiStateManager {
         Main.Global.clearUi((field) -> {
           return field != 'hud';
         });
+
         Main.Global.replaceScene( 
-          () -> {
-            final gameInstance = new Game(Main.Global.rootScene); 
-            return () -> gameInstance.remove();
-          });
+            () -> {
+              final gameInstance = new Game(Main.Global.rootScene); 
+              return () -> gameInstance.remove();
+            });
+
         Hud.InventoryDragAndDropPrototype
           .addTestItems();
 
@@ -805,7 +807,7 @@ class InventoryDragAndDropPrototype {
       );
     };
     equipItemToSlot(
-        createLootInstanceByType('basicBlaster'), 0); 
+        createLootInstanceByType('channelBeam'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 

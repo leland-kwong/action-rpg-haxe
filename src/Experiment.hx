@@ -29,6 +29,7 @@ class Experiment {
     final interval = 4;
     final beamThickness = 15;
     final maxLength = 180;
+    final tickFrequency = 15;
 
     Main.Global.renderHooks.push((time) -> {
       final baseSort = 10000000000000;
@@ -36,9 +37,15 @@ class Experiment {
       final source = Entity.getById('PLAYER');
 
       // draw laser
-      function renderLaser(startPt, endPt) {
+      function renderLaser(
+          startPt, 
+          endPt, 
+          hasCollision = false,
+          entityRef: Entity) {
         final desiredLength = Utils.distance(
             startPt.x, startPt.y, endPt.x, endPt.y);
+        final dx = Math.cos(bounds.angle);
+        final dy = Math.sin(bounds.angle);
         final length = Math.min(
             maxLength, 
             state.collidedTarget == 'NULL_ENTITY' 
@@ -62,29 +69,76 @@ class Experiment {
             source.y,
             'ui/kamehameha_head',
             bounds.angle);
-        final lcx = source.x + Math.cos(bounds.angle) * laserHeadWidth;
-        final lcy = source.y + Math.sin(bounds.angle) * laserHeadWidth;
-        final sprite = Main.Global.sb.emitSprite(
+        final lcx = source.x + dx * laserHeadWidth;
+        final lcy = source.y + dy * laserHeadWidth;
+        final centerSprite = Main.Global.sb.emitSprite(
             lcx,
             lcy,
             'ui/kamehameha_center_width_1',
             bounds.angle);
         final shaftLength = length - laserHeadWidth - laserTailWidth;
-        sprite.batchElement.scaleX = shaftLength;
-        final sprite = Main.Global.sb.emitSprite(
-            lcx + Math.cos(bounds.angle) * (shaftLength + laserTailWidth),
-            lcy + Math.sin(bounds.angle) * (shaftLength + laserTailWidth),
+        centerSprite.batchElement.scaleX = shaftLength;
+        final tailSprite = Main.Global.sb.emitSprite(
+            lcx + dx * (shaftLength + laserTailWidth),
+            lcy + dy * (shaftLength + laserTailWidth),
             'ui/kamehameha_tail',
             bounds.angle);
+
+        // deform tail sprite
+        if (hasCollision) {
+          final offsetX = -Utils.rnd(0, 1) * 2 * dx;
+          final offsetY = -Utils.rnd(0, 1) * 2 * dy;
+          centerSprite.batchElement.scaleX += offsetX;
+          tailSprite.batchElement.x += offsetX;
+          tailSprite.batchElement.y += offsetY;
+        }
+
+        final isHitTick = Entity.Cooldown.has(entityRef.cds, 'hitFlash');
+        if (hasCollision && isHitTick) {
+          final duration = 0.2;
+          final startTime = Main.Global.time;
+          final numParticles = 200;
+
+          final frames = ['ui/square_glow'];
+          function particleEffectCallback(
+              p: SpriteBatchSystem.SpriteRef) {
+            final rawProgress = Easing.progress(
+                  startTime, Main.Global.time, duration);
+            final progress = Easing.easeInBack(rawProgress);
+            p.sortOrder += 5;
+            p.batchElement.scale = 3 * (1 - progress);
+            p.batchElement.g = 0.5 + 0.5 * (1 - progress);
+            p.batchElement.b = 1 - (progress * 1.5);
+            p.batchElement.a = 1 - progress;
+          }
+
+          for (_ in 0...numParticles) {
+            final params = {
+              frames: frames,
+              duration: duration,
+              startTime: startTime,
+              x: tailSprite.batchElement.x,
+              y: tailSprite.batchElement.y,
+              dx: Utils.rnd(-1, 1, true) * 20,
+              dy: Utils.rnd(-1, 1, true) * 20,
+              angle: Utils.rnd(0, 2) * Math.PI,
+              effectCallback: particleEffectCallback
+            }
+
+            core.Anim.AnimEffect.add(params);
+          }
+        }
       }
       renderLaser(
           source,
           state.collidedTarget == 'NULL_ENTITY' 
-          ? {
-            x: Main.Global.rootScene.mouseX,
-            y: Main.Global.rootScene.mouseY,
-          } 
-          : Entity.getById(state.collidedTarget));
+            ? {
+              x: Main.Global.rootScene.mouseX,
+              y: Main.Global.rootScene.mouseY,
+            } 
+            : Entity.getById(state.collidedTarget),
+          state.collidedTarget != 'NULL_ENTITY',
+          Entity.getById(state.collidedTarget));
 
       // show all locations queried
       function renderLocationsQueried() {
@@ -135,9 +189,10 @@ class Experiment {
     });
 
     function findCollisions() {
-      final bounds = getBeamBounds();
       state.possibleTargets.clear();
       state.collidedTarget = 'NULL_ENTITY';
+
+      final bounds = getBeamBounds();
       final dx = Math.cos(bounds.angle);
       final dy = Math.sin(bounds.angle);
       final source = Entity.getById('PLAYER');
@@ -175,6 +230,15 @@ class Experiment {
               (beamThickness / 2) + possibleTargetRef.radius;
             if (isCollision) {
               state.collidedTarget = id;
+
+              final isHitTick = Main.Global.tickCount % tickFrequency == 0;
+              if (isHitTick) {
+                EntityStats.addEvent(
+                    possibleTargetRef.stats, {
+                      type: 'DAMAGE_RECEIVED',
+                      value: 1
+                    });
+              }
               return;
             }
           }
@@ -184,6 +248,7 @@ class Experiment {
 
     Main.Global.updateHooks.push((dt) -> {
       findCollisions();
+
       return state.isAlive;
     });
 

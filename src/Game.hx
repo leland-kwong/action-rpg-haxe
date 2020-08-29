@@ -239,7 +239,7 @@ class Bullet extends Projectile {
         y + dy - y,
         x + dx - x);
     Main.Global.sb.emitSprite(
-        x, y, spriteKey, angle, null, 1);
+        x, y, spriteKey, angle, null);
   }
 }
 
@@ -358,7 +358,7 @@ class EnergyBomb extends Projectile {
             b.alpha = ringBurstCd / ringBurstDuration ;
             // increase scale over time
             b.scale = (ringBurstDuration - ringBurstCd) * 5;
-          }, 1);
+          });
     }
 
     final angle = time * Math.PI * 8;
@@ -370,7 +370,7 @@ class EnergyBomb extends Projectile {
           final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
           b.g = v;
           b.b = v / 2;
-        }, 1);
+        });
   }
 }
 
@@ -2503,7 +2503,7 @@ class Game extends h2d.Object {
                 x: x,
                 y: y,
                 aiType: 'npcTestDummy',
-                radius: 10
+                radius: 6
               });
             }
 
@@ -2970,6 +2970,7 @@ class Game extends h2d.Object {
         (mapData) -> {
           try {
             processMap(levelFile, mapData);
+            Experiment.init();
           } catch(err) {
             HaxeUtils.handleError('load level error')(err);
           }

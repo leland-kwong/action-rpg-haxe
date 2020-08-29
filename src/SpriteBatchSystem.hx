@@ -168,8 +168,7 @@ class SpriteBatchSystem {
     ?angle: Float,
     // a callback for running side effects
     // to modify the sprite before rendering
-    ?effectCallback: EffectCallback,
-    ?z: Float = 0) {
+    ?effectCallback: EffectCallback) {
 
     final g = new BatchElement(
         makeTile(
@@ -183,7 +182,7 @@ class SpriteBatchSystem {
     g.y = y;
     final spriteRef: SpriteRef = {
       batchElement: g,
-      sortOrder: y + z,
+      sortOrder: y,
     }
     if (effectCallback != null) {
       effectCallback(spriteRef);
