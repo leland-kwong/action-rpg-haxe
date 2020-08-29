@@ -491,6 +491,7 @@
             <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_flame_torch.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_movespeed_aura.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -616,7 +617,7 @@
             <key type="filename">aseprite_exports/ui/kamehameha_tail.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0,0.5</point_f>
+                <point_f>1,0.5</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>

@@ -817,7 +817,7 @@
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":14,"h":19},
 	"sourceSize": {"w":14,"h":19},
-	"pivot": {"x":0,"y":0.5}
+	"pivot": {"x":1,"y":0.5}
 },
 "ui/loot__ability_basic_blaster":
 {
@@ -1564,6 +1564,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1063,"h":502},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:35989ede5e68a4f7a1134894555d16a1:c6b344f8196d2aa6d1ef726a8673729d:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:0db8367afae13061ae080a4cbca2c693:c6b344f8196d2aa6d1ef726a8673729d:6cc8953523e0367402f95f3c9a630665$"
 }
 }
