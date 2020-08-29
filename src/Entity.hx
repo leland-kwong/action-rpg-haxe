@@ -78,7 +78,8 @@ class Entity extends h2d.Object {
     'speed' => {
       type: 'MOVESPEED_MODIFIER',
       value: 0
-    }
+    },
+    'aiType' => 'UNKNOWN_AI_TYPE'
   ];
   public final showHitNumbers = true;
   public static var NULL_ENTITY: Entity = {
@@ -104,11 +105,11 @@ class Entity extends h2d.Object {
   public var avoidOthers = false;
   public var forceMultiplier = 1.0;
   public var status = 'TARGETABLE';
+  public var deathAnimationStyle = 'default';
   public var cds = Cooldown.defaultCooldown;
   public var traversableGrid: GridRef;
   public var obstacleGrid: GridRef;
   public var stats: EntityStats.StatsRef;
-  var deathAnimationStyle = 'default';
   public var components: EntityComponents;
   public final createdAt = Main.Global.time;
   public var renderFn: (ref: Entity, time: Float) -> Void;

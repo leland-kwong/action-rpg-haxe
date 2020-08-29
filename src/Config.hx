@@ -15,14 +15,14 @@ class Config {
   public static final enemyStats: 
     Map<String, {
       experienceReward: Int,
-      health: Int,
+      health: Float,
       speed: EntityStats.EventObject,
       attackRange: Int,
       attackType: String
     }> = [
       'npcTestDummy' => {
         experienceReward: 0,
-        health: 99999999 * 99999999,
+        health: Math.pow(10, 10),
         speed: {
           type: 'MOVESPEED_MODIFIER',
           value: 0.

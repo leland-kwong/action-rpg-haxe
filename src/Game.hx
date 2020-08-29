@@ -76,6 +76,7 @@ class Projectile extends Entity {
   public var maxNumHits = 1;
   var numHits = 0;
   final speedModifier: EntityStats.EventObject;
+  // the entity that this was created from
   public var source: Entity;
 
   public function new(
@@ -383,6 +384,7 @@ typedef AiProps = {
 };
 
 class Ai extends Entity {
+  static final hitFlashDuration = 0.06;
   static final defaultFindTargetFn = (ent: Entity) -> {
     return Entity.NULL_ENTITY;
   };
@@ -414,6 +416,7 @@ class Ai extends Entity {
       ?attackTargetFilterFn) {
     super(props);
     traversableGrid = Main.Global.traversableGrid;
+    final aiType = props.aiType;
 
     cds = new Cooldown();
 #if debugMode
@@ -449,7 +452,6 @@ class Ai extends Entity {
 
     Cooldown.set(cds, 'recentlySummoned', spawnDuration);
 
-    final aiType = props.aiType;
     if (aiType == 'npcTestDummy') {
       idleAnim = {
         frames: [
@@ -460,6 +462,17 @@ class Ai extends Entity {
       };
 
       runAnim = idleAnim;
+      onDone = (self: Entity) -> {
+        // respawn itself
+        haxe.Timer.delay(() -> {
+          new Ai({
+            x: this.x,
+            y: this.y,
+            aiType: Entity.getComponent(this, 'aiType'),
+            radius: this.radius
+          });
+        }, 400);
+      }
     }
 
     if (aiType == 'bat') {
@@ -569,7 +582,7 @@ class Ai extends Entity {
       var c = activeAnim;
 
       if (stats.damageTaken > 0) {
-        Cooldown.set(cds, 'hitFlash', 0.06);
+        Cooldown.set(cds, 'hitFlash', hitFlashDuration);
       }
     }
 
@@ -816,6 +829,7 @@ class Ai extends Entity {
       switch (deathAnimationStyle) {
         case 'default': {
           // trigger death animation
+
           final startTime = Main.Global.time;
           final frames = [
             'destroy_animation/default-0',
@@ -2740,8 +2754,8 @@ class Game extends h2d.Object {
 
     }
 
-    // final levelFile = 'editor-data/dummy_level.eds';
-    final levelFile = 'editor-data/level_1.eds';
+    final levelFile = 'editor-data/dummy_level.eds';
+    // final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,
@@ -2995,7 +3009,8 @@ class Game extends h2d.Object {
             Utils.rollValues([
                 0, 0, 0, 0, 0, 1
             ]);
-          case 'ENEMY': 
+          case 'ENEMY' 
+            if (Entity.getComponent(a, 'aiType') != 'npcTestDummy'): 
             Utils.rollValues([
                 0, 0, 0, 0, 1, 1, 2
             ]);

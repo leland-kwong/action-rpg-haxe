@@ -807,7 +807,7 @@ class InventoryDragAndDropPrototype {
       );
     };
     equipItemToSlot(
-        createLootInstanceByType('flameTorch'), 0); 
+        createLootInstanceByType('basicBlaster'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 

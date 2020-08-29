@@ -51,7 +51,7 @@ class Global {
   public static var time = 0.0;
   public static var isNextFrame = true;
 
-  public static var tickCount = 0;
+  public static var tickCount = 0.;
   public static var resolutionScale = 4;
 
   // for convenience, not sure if this is performant enough
@@ -301,7 +301,6 @@ class Main extends hxd.App {
 
   override function init() {
     try {
-
       hxd.Res.initEmbed();
       Global.mainPhase = MainPhase.Init;
       Global.inputHooks.push(handleGlobalHotkeys);
@@ -550,7 +549,9 @@ class Main extends hxd.App {
           }
         }
 
-        Global.tickCount = Std.int(
+        // ints (under 8 bytes in size) can only be a maximum of 10^10 before they wrap over
+        // and become negative values. So to get around this, we floor a float value to achieve the same thing.
+        Global.tickCount = Math.ffloor(
             Global.time / frameTime);
 
         // we want to set this to false as soon as
