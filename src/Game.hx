@@ -415,6 +415,11 @@ class Ai extends Entity {
     traversableGrid = Main.Global.traversableGrid;
 
     cds = new Cooldown();
+#if debugMode
+    if (!Config.enemyStats.exists(props.aiType)) {
+      throw new haxe.Exception('invalid aiType `${props.aiType}`');
+    }
+#end
     Entity.setComponent(this, 'aiType', props.aiType);
     Entity.setComponent(this, 'neighborQueryThreshold', 10);
     Entity.setComponent(this, 'neighborCheckInterval', 10);
@@ -1264,26 +1269,24 @@ class Player extends Entity {
     dy = 0;
 
     // collision avoidance
-    if (neighbors != null) {
-      for (entityId in neighbors) {
-        final entity = Entity.getById(entityId);
+    for (entityId in neighbors) {
+      final entity = Entity.getById(entityId);
 
-        if (entity.type == 'FRIENDLY_AI') {
-          continue;
-        }
+      if (entity.type == 'FRIENDLY_AI') {
+        continue;
+      }
 
-        final r2 = entity.avoidanceRadius;
-        final a = Math.atan2(y - entity.y, x - entity.x);
-        final d = Utils.distance(entity.x, entity.y, x, y);
-        final min = radius + r2;
-        final isColliding = d < min;
+      final r2 = entity.avoidanceRadius;
+      final a = Math.atan2(y - entity.y, x - entity.x);
+      final d = Utils.distance(entity.x, entity.y, x, y);
+      final min = radius + r2;
+      final isColliding = d < min;
 
-        if (isColliding) {
-          final conflict = (min - d);
+      if (isColliding) {
+        final conflict = (min - d);
 
-          x += Math.cos(a) * conflict; 
-          y += Math.sin(a) * conflict; 
-        }
+        x += Math.cos(a) * conflict; 
+        y += Math.sin(a) * conflict; 
       }
     }
 
@@ -2485,7 +2488,6 @@ class Game extends h2d.Object {
             } 
 
             case 'intro_level_boss': {
-              final size = 3;
               final e = new Ai({
                 x: x,
                 y: y,
@@ -2500,7 +2502,7 @@ class Game extends h2d.Object {
               new Ai({
                 x: x,
                 y: y,
-                aiType: 'NPC_TEST_DUMMY',
+                aiType: 'npcTestDummy',
                 radius: 10
               });
             }
@@ -2960,13 +2962,17 @@ class Game extends h2d.Object {
 
     }
 
-    final levelFile = 'editor-data/level_1.eds';
+    final levelFile = 'editor-data/dummy_level.eds';
     SaveState.load(
         levelFile,
         false,
         null,
         (mapData) -> {
-          processMap(levelFile, mapData);
+          try {
+            processMap(levelFile, mapData);
+          } catch(err) {
+            HaxeUtils.handleError('load level error')(err);
+          }
 
           return;
         }, 
