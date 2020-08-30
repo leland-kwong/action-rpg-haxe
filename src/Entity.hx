@@ -80,7 +80,10 @@ class Entity extends h2d.Object {
       value: 0
     },
     'aiType' => 'UNKNOWN_AI_TYPE',
-    'lootChances' => [0]
+
+    // used to indicate an entity is behind an obstacle such as a tall wall which enables an entity to render a silhouette.
+    'isObscured' => false,
+    'isObscuring' => false,
   ];
   public final showHitNumbers = true;
   public static var NULL_ENTITY: Entity = {

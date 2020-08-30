@@ -1047,6 +1047,7 @@ class Player extends Entity {
     forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
     obstacleGrid = Main.Global.obstacleGrid;
+    Entity.setComponent(this, 'neighborQueryThreshold', 100);
 
     rootScene = s2d;
     stats = EntityStats.create({
@@ -1311,6 +1312,14 @@ class Player extends Entity {
 
         x += Math.cos(a) * conflict; 
         y += Math.sin(a) * conflict; 
+      }
+
+      if (entity.type == 'OBSTACLE') {
+        final isBehind = y < entity.y;
+        if (isBehind) {
+          Entity.setComponent(this, 'isObscured', true);
+          Entity.setComponent(entity, 'isObscuring', true);
+        }
       }
     }
 
@@ -1949,17 +1958,25 @@ class Player extends Entity {
     }
 
     final currentSprite = core.Anim.getFrame(activeAnim, time);
+    function spriteEffect(p: SpriteBatchSystem.SpriteRef) {
+      p.batchElement.scaleX = facingX;
+      p.batchElement.alpha = Utils.withDefault(
+          Entity.getComponent(this, 'alpha'),
+          1);
+    }
     final baseSprite = Main.Global.sb.emitSprite(
       x, y,
       currentSprite,
       null,
-      (p) -> {
-        p.batchElement.scaleX = facingX;
-        p.batchElement.alpha = Utils.withDefault(
-            Entity.getComponent(this, 'alpha'),
-            1);
-      }
+      spriteEffect
     );
+
+    final obscuredSilhouetteSprite = 
+      Main.Global.oeSpriteBatch.emitSprite(
+          x, y,
+          currentSprite,
+          null,
+          spriteEffect);
 
     // render heal animation
     final isPlayerRestoringHealth = Lambda.exists(
@@ -2569,13 +2586,13 @@ class Game extends h2d.Object {
                 x: x,
                 y: y + 32,
                 radius: 8,
+                type: 'OBSTACLE'
               });
               final initialHealth = 1000000;
               wallRef.stats = EntityStats.create({
                 label: '@prop_1_1',
                 currentHealth: 1000000.,
               });
-              wallRef.type = 'OBSTACLE';
               wallRef.forceMultiplier = 3.0;
               addToTileGrid(tileGrid, x, y, itemId);
               final gridX = Std.int((x - (tileGrid.cellSize / 2)) 
@@ -2596,9 +2613,6 @@ class Game extends h2d.Object {
 
                 return false;
               };
-              final spriteEffect = (p) -> {
-                p.sortOrder = p.batchElement.y + 32.;
-              };
               wallRef.renderFn = (ref, time) -> {
                 final shouldAutoTile = objectMeta.isAutoTile;
                 final spriteKey = {
@@ -2613,13 +2627,20 @@ class Game extends h2d.Object {
                     objectMeta.spriteKey;
                   }
                 }
-                Main.Global.sb.emitSprite(
+                final wallSprite = Main.Global.sb.emitSprite(
                     x,
                     y,
-                    spriteKey,
-                    null,
-                    spriteEffect);
+                    spriteKey);
+                wallSprite.sortOrder = 
+                  wallSprite.batchElement.y + 32.;
 
+                if (Entity.getComponent(wallRef, 'isObscuring')) {
+                  final wallMaskSprite = Main.Global.wmSpriteBatch.emitSprite(
+                      x,
+                      y,
+                      spriteKey);
+                }
+                
                 final debugWallCollision = false;
                 if (debugWallCollision) {
                   final grid = Main.Global.obstacleGrid;
@@ -2767,8 +2788,8 @@ class Game extends h2d.Object {
 
     }
 
-    // final levelFile = 'editor-data/dummy_level.eds';
-    final levelFile = 'editor-data/level_1.eds';
+    final levelFile = 'editor-data/dummy_level.eds';
+    // final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,
@@ -2995,7 +3016,11 @@ class Game extends h2d.Object {
       return !finished;
     }
 
-    // reset list before next loop
+    // reset before next loop
+    for (entityRef in Main.Global.entitiesToRender) {
+      Entity.setComponent(entityRef, 'isObscured', false);
+      Entity.setComponent(entityRef, 'isObscuring', false);
+    }
     Main.Global.entitiesToRender = [];
 
     Cooldown.update(SoundFx.globalCds, dt);
@@ -3023,7 +3048,6 @@ class Game extends h2d.Object {
         }
 
         if (numItemsToDrop > 0) {
-          trace('loot dropped by', a.id, a.type);
           for (_ in 0...numItemsToDrop) {
             final lootPool = Lambda.map(
                 Lambda.filter(
