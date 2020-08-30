@@ -10,7 +10,7 @@
   - [ ] Integrate inventory state
 
 ## Projectile abilities
-  - [ ] `channelBeam` ability should have a tick cooldown per target. This way the first hit will hit immediately on each new target. Currently the tick cooldown is a global which can cause undesirable situations when hitting things like interactable props.
+  - [x] `channelBeam` ability should have a tick cooldown per target. This way the first hit will hit immediately on each new target. Currently the tick cooldown is a global which can cause undesirable situations when hitting things like interactable props.
   - [x] Remove `damage` property on all classes and instead use the `EntityStats.StatsRef.damage` property for damage calculation.
 
 ## Skill tree editor
