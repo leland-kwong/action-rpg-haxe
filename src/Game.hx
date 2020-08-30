@@ -1331,7 +1331,7 @@ class Player extends Entity {
           .getItemById(lootId);
         final def = Loot.getDef(lootInst.type);
 
-        def.type => def;
+        lootInst.type => def;
       }
     ];
 
@@ -1397,7 +1397,7 @@ class Player extends Entity {
     var energyCost = lootDef.energyCost;
     var hasEnoughEnergy = energyCost 
       <= Entity.getById('PLAYER').stats.currentEnergy;
-    final cooldownKey = 'ability__${lootDef.type}';
+    final cooldownKey = 'ability__${lootInst.type}';
     var isUnavailable = Cooldown.has(cds, cooldownKey) 
       || !hasEnoughEnergy;
 
@@ -1414,7 +1414,7 @@ class Player extends Entity {
         { type: 'ENERGY_SPEND',
           value: energyCost });
 
-    switch lootDef.type {
+    switch lootInst.type {
       case 'basicBlaster': {
         final ref = new Bullet(
             x1,
@@ -3042,15 +3042,13 @@ class Game extends h2d.Object {
 
         if (numItemsToDrop > 0) {
           for (_ in 0...numItemsToDrop) {
-            final lootPool = Lambda.map(
-                Lambda.filter(
-                  Loot.lootDefinitions,
-                  (def) -> {
-                    return def.category == 'ability';
-                  }),
-                (def) -> {
-                  return def.type;
-                });
+            final lootPool = [
+              for (type => def in Loot.lootDefinitions) {
+                if (def.category == 'ability') {
+                  type;
+                }
+              }
+            ];
             final lootInstance = Loot.createInstance(lootPool);
             Game.createLootEntity(
                 a.x + Utils.irnd(5, 10, true), 

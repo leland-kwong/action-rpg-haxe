@@ -796,18 +796,8 @@ class InventoryDragAndDropPrototype {
   }
 
   static public function addTestItems() {
-    final createLootInstanceByType = type -> {
-      return Loot.createInstance(
-          Lambda.fold(
-            Loot.lootDefinitions,
-            (def, lootPool: Array<Loot.LootDefType>) -> {
-              if (def.type == type) {
-                lootPool.push(type); 
-              }
-              return lootPool;
-            },
-            [])
-      );
+    final createLootInstanceByType = (type: Loot.LootDefType) -> {
+      return Loot.createInstance([type]);
     };
     equipItemToSlot(
         createLootInstanceByType('channelBeam'), 0); 
@@ -1563,7 +1553,7 @@ class Hud {
           final playerRef = Entity.getById('PLAYER');
           final cooldownLeft = Cooldown.get(
               playerRef.cds,
-              'ability__${lootDef.type}');
+              'ability__${lootInst.type}');
           final isCoolingDown = cooldownLeft > 0;
 
           if (isCoolingDown) {

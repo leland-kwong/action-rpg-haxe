@@ -4,7 +4,6 @@ typedef LootDefCat = String;
 
 typedef LootDef = {
   name: String,
-  type: LootDefType,
   energyCost: Float,
   cooldown: Float,
   actionSpeed: Float,
@@ -21,10 +20,12 @@ typedef LootInstance = {
 };
 
 class Loot {
-  public static final lootDefinitions: Array<LootDef> = [
-    {
+  // IMPORTANT: 
+  // Once we ship the game, we must be careful about modifying the keys
+  // because this lookup table will affect loot from previous versions as well.
+  public static final lootDefinitions: Map<LootDefType, LootDef> = [
+    'basicBlaster' => {
       name: 'Basic Blaster',
-      type: 'basicBlaster',
       category: 'ability',
       energyCost: 2,
       cooldown: 0,
@@ -33,9 +34,8 @@ class Loot {
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_basic_blaster',
     },
-    {
+    'spiderBots' => {
       name: 'Spider Bots',
-      type: 'spiderBots',
       category: 'ability',
       energyCost: 2,
       cooldown: 0,
@@ -49,9 +49,8 @@ class Loot {
     // way you can still burst with the ability while
     // still gaining the benefits of a channeling when
     // desired.
-    {
+    'channelBeam' => {
       name: 'Laser Beam',
-      type: 'channelBeam',
       category: 'ability',
       cooldown: 0,
       actionSpeed: 1/200,
@@ -60,9 +59,8 @@ class Loot {
       maxDamage: 3,
       spriteKey: 'ui/loot__ability_channel_beam'
     },
-    {
+    'energyBomb' => {
       name: 'Energy Bomb',
-      type: 'energyBomb',
       category: 'ability',
       cooldown: 0.3,
       actionSpeed: 0.15,
@@ -71,9 +69,8 @@ class Loot {
       maxDamage: 5,
       spriteKey: 'ui/loot__ability_energy_bomb'
     },
-    {
+    'flameTorch' => {
       name: 'Flame Torch',
-      type: 'flameTorch',
       category: 'ability',
       cooldown: 0,
       actionSpeed: 0.25,
@@ -82,9 +79,8 @@ class Loot {
       maxDamage: 5,
       spriteKey: 'ui/loot__ability_flame_torch'
     },
-    {
+    'burstCharge' => {
       name: 'Burst Charge',
-      type: 'burstCharge',
       category: 'ability',
       cooldown: 0.3,
       actionSpeed: 0.15,
@@ -96,9 +92,8 @@ class Loot {
     // TODO: Add support for charges
     // where the ability builds charges as you
     // kill enemies.
-    {
+    'heal1' => {
       name: 'Basic Heal',
-      type: 'heal1',
       category: 'ability',
       cooldown: 0.3,
       actionSpeed: 0,
@@ -107,9 +102,8 @@ class Loot {
       maxDamage: 0,
       spriteKey: 'ui/loot__ability_heal_1'
     },
-    {
+    'energy1' => {
       name: 'Basic Energy Restore',
-      type: 'energy1',
       category: 'ability',
       cooldown: 0.3,
       actionSpeed: 0,
@@ -118,9 +112,8 @@ class Loot {
       maxDamage: 0,
       spriteKey: 'ui/loot__ability_energy_1'
     },
-    {
+    'moveSpeedAura' => {
       name: 'Burst Of Speed (aura)',
-      type: 'moveSpeedAura',
       category: 'ability',
       cooldown: 0,
       actionSpeed: 0,
@@ -129,9 +122,8 @@ class Loot {
       maxDamage: 0,
       spriteKey: 'ui/loot__ability_movespeed_aura'
     },
-    {
+    'nullItem' => {
       name: 'Null Item',
-      type: 'nullItem',
       category: 'nullCategory',
       cooldown: 0,
       actionSpeed: 0,
@@ -142,12 +134,8 @@ class Loot {
     },
   ];
 
-  static final defsByType: Map<LootDefType, LootDef> = [
-    for (def in lootDefinitions) def.type => def
-  ];
-
-  public static function getDef(type): LootDef {
-    return defsByType.get(type);
+  public static function getDef(type: LootDefType): LootDef {
+    return lootDefinitions.get(type);
   }
 
   public static function createInstance(
@@ -155,11 +143,11 @@ class Loot {
       ?explicitId: String): LootInstance {
 
     final rolledType = Utils.rollValues(typesToRoll);
-    final id = explicitId != null ? 
+    final instanceId = explicitId != null ? 
       explicitId : Utils.uid();
 
     return {
-      id: id,
+      id: instanceId,
       type: rolledType
     };
   }
