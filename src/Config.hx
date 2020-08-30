@@ -1,9 +1,9 @@
 import Session;
 
 class Config {
+  static final maxLevel = 20; 
   public static final levelExpRequirements = {
     final xpDiff = 20;
-    final maxLevel = 20;
     [
       for (level in 1...(maxLevel + 1)) {
         Std.int((Math.pow(level,2) + level) /
@@ -32,7 +32,7 @@ class Config {
       },
       'bat' => {
         experienceReward: 1,
-        health: 5,
+        health: 10,
         speed: {
           type: 'MOVESPEED_MODIFIER',
           value: 90.
@@ -42,7 +42,7 @@ class Config {
       },
       'botMage' => {
         experienceReward: 2,
-        health: 5,
+        health: 20,
         speed: {
           type: 'MOVESPEED_MODIFIER',
           value: 60.
@@ -52,7 +52,7 @@ class Config {
       },
       'introLevelBoss' => {
         experienceReward: 20,
-        health: 30,
+        health: 100,
         speed: {
           type: 'MOVESPEED_MODIFIER',
           value: 40.
@@ -72,10 +72,17 @@ class Config {
       }
     ];
 
+  // returns the array index pointing to the level
+  // based on `levelExpRequirements`
   public static function calcCurrentLevel(
       experience: Int) {
-    return Lambda.findIndex(
+    final levelIndex = Lambda.findIndex(
         levelExpRequirements,
-        (expReq) -> experience < expReq) - 1;
+        (expReq) -> experience < expReq);
+    final isMaxLevel = levelIndex == -1;
+
+    return (isMaxLevel 
+      ? maxLevel 
+      : levelIndex) - 1;
   }
 }
