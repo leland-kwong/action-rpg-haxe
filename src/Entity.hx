@@ -79,7 +79,8 @@ class Entity extends h2d.Object {
       type: 'MOVESPEED_MODIFIER',
       value: 0
     },
-    'aiType' => 'UNKNOWN_AI_TYPE'
+    'aiType' => 'UNKNOWN_AI_TYPE',
+    'lootChances' => [0]
   ];
   public final showHitNumbers = true;
   public static var NULL_ENTITY: Entity = {
@@ -114,6 +115,7 @@ class Entity extends h2d.Object {
   public final createdAt = Main.Global.time;
   public var renderFn: (ref: Entity, time: Float) -> Void;
   public var onDone: (ref: Entity) -> Void;
+  public var facingDir = 1;
  
   public function new(
       props: EntityProps, 
@@ -372,4 +374,35 @@ class Entity extends h2d.Object {
   public static function isNullId(id: EntityId) {
     return id == NULL_ENTITY.id;
   }
+
+  static final outlineOffsets = [
+    [-1, 0],
+    [0, -1],
+    [1, 0],
+    [0, 1],
+  ];
+  public static function renderOutline(
+      sortOrder: Float, spriteKey, ref: Entity) {
+    for (o in outlineOffsets) {
+      final ox = o[0];
+      final oy = o[1];
+
+      Main.Global.sb.emitSprite(
+          ref.x + ox, ref.y + oy,
+          spriteKey,
+          null,
+          (p) -> {
+            p.sortOrder = sortOrder - 1;
+            final b: h2d.SpriteBatch.BatchElement = 
+              p.batchElement;
+
+            b.r = 150;
+            b.g = 150;
+            b.b = 150;
+
+            b.scaleX = ref.facingDir * 1;
+          });
+    }
+  }
+
 }

@@ -403,7 +403,6 @@ class Ai extends Entity {
   var idleAnim: core.Anim.AnimRef;
   var runAnim: core.Anim.AnimRef;
   var activeAnim: core.Anim.AnimRef;
-  var facingDir = 1;
   public var sightRange = 200;
   public var attackTarget: Entity;
   var findTargetFn: (self: Entity) -> Entity;
@@ -428,7 +427,6 @@ class Ai extends Entity {
     Entity.setComponent(this, 'neighborQueryThreshold', 10);
     Entity.setComponent(this, 'neighborCheckInterval', 10);
 
-    type = 'ENEMY';
     status = 'UNTARGETABLE';
     final initialHealth = Config
       .enemyStats.get(props.aiType).health;
@@ -882,7 +880,7 @@ class Ai extends Entity {
     final currentFrameName = core.Anim.getFrame(
         activeAnim, time);
 
-    Main.Global.sb.emitSprite(
+    final sprite = Main.Global.sb.emitSprite(
         x, y,
         currentFrameName,
         null,
@@ -899,6 +897,12 @@ class Ai extends Entity {
 
           b.scaleX = facingDir * 1;
         });
+
+    final shouldHighlight = Main.Global.hoveredEntity.id == id;
+    if (shouldHighlight) {
+      Entity.renderOutline(
+          sprite.sortOrder - 1, currentFrameName, this);
+    }
   }
 }
 
@@ -2129,7 +2133,7 @@ class EnemySpawner extends Entity {
       radius: 0
     });
     enemiesLeftToSpawn = numEnemies;
-    type = 'ENEMY';
+    type = 'ENEMY_INVISIBLE_SPAWNER';
     cds = new Cooldown();
     this.parent = parent;
     this.x = x;
@@ -2183,6 +2187,7 @@ class EnemySpawner extends Entity {
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
       aiType: enemyType,
+      type: 'ENEMY'
     }, findTarget);
   }
 }
@@ -2286,6 +2291,7 @@ class Game extends h2d.Object {
                 radius: 30,
                 sightRange: 150,
                 aiType: 'introLevelBoss',
+                type: 'ENEMY'
               }, (_) -> Entity.getById('PLAYER'));
               Main.Global.rootScene.addChildAt(e, 0);
             }
@@ -2487,10 +2493,17 @@ class Game extends h2d.Object {
                 radius: 5,
               });
               ref.renderFn = (ref, time) -> {
-                Main.Global.sb.emitSprite(
+                final sprite = Main.Global.sb.emitSprite(
                     ref.x,
                     ref.y,
                     objectMeta.spriteKey);
+                if (Main.Global.hoveredEntity.id == ref.id) {
+                  Entity.renderOutline(
+                      sprite.sortOrder - 1,
+                      objectMeta.spriteKey,
+                      ref);
+                }
+
               }
               final shatterAnimation = (ref) -> {
                 final startedAt = Main.Global.time;
@@ -2754,8 +2767,8 @@ class Game extends h2d.Object {
 
     }
 
-    final levelFile = 'editor-data/dummy_level.eds';
-    // final levelFile = 'editor-data/level_1.eds';
+    // final levelFile = 'editor-data/dummy_level.eds';
+    final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,
@@ -2844,28 +2857,20 @@ class Game extends h2d.Object {
             p.batchElement.scaleY = ref.radius * 0.5;
           });
 
-      final lootRenderFn = (p: SpriteRef) -> {
-        p.sortOrder = ref.y / 2;
-
-        if (Main.Global.hoveredEntity.id == 
-            ref.id) {
-          final hoverStart = Main.Global
-            .hoveredEntity.hoverStart;
-          p.batchElement.y = ref.y - 
-            Math.abs(
-                Math.sin(time * 2 - hoverStart)) * 2;
-          p.batchElement.b = 0;
-          p.batchElement.r = 0;
-          p.batchElement.g = 1;
-        }
-      };
-      Main.Global.sb.emitSprite(
+      final spriteKey = Loot.getDef(
+            Entity.getComponent(ref, 'lootInstance').type).spriteKey;
+      final sprite = Main.Global.sb.emitSprite(
           ref.x,
           ref.y,
-          Loot.getDef(
-            Entity.getComponent(ref, 'lootInstance').type).spriteKey,
-          null,
-          lootRenderFn);
+          spriteKey);
+      sprite.sortOrder = ref.y / 2;
+
+      if (Main.Global.hoveredEntity.id == ref.id) {
+        Entity.renderOutline(
+            sprite.sortOrder - 1,
+            spriteKey,
+            ref);
+      }
     };
   }
 
@@ -3018,6 +3023,7 @@ class Game extends h2d.Object {
         }
 
         if (numItemsToDrop > 0) {
+          trace('loot dropped by', a.id, a.type);
           for (_ in 0...numItemsToDrop) {
             final lootPool = Lambda.map(
                 Lambda.filter(

@@ -1394,25 +1394,46 @@ class Hud {
 
     final x = Main.Global.rootScene.mouseX;
     final y = Main.Global.rootScene.mouseY;
-    final hoveredEntityId = Utils.withDefault(
-        Lambda.find(
-          Grid.getItemsInRect(
-            Main.Global.dynamicWorldGrid,
-            x, y, 5, 5),
-          (entityId) -> {
-            final entRef = Entity.getById(entityId);
-            final p = new h2d.col.Point(x, y);
-            final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
-            final distFromMouse = Utils.distance(
-                x, y, entRef.x, entRef.y);
-            final isMatch = c.contains(p) &&
-              entRef.type == 'ENEMY';
+    final threshold = 16;
+    final hoveredMatch = Lambda.fold(
+        Grid.getItemsInRect(
+          Main.Global.dynamicWorldGrid,
+          x, y, threshold, threshold),
+        (entityId, result: {
+          previousDist: Float,
+          matchId: Entity.EntityId
+        }) -> {
+          final entRef = Entity.getById(entityId);
+          final p = new h2d.col.Point(x, y);
+          final c = new h2d.col.Circle(
+              entRef.x, entRef.y, entRef.radius + threshold / 2);
+          final distFromMouse = Utils.distance(
+              x, y, entRef.x, entRef.y);
+          final isMatch = distFromMouse < result.previousDist 
+            && c.contains(p) 
+            && switch(entRef.type) {
+              case 
+                  'ENEMY' 
+                | 'INTERACTABLE_PROP'
+                | 'LOOT':
+                true;
 
-            return isMatch;
-          }),
-        Entity.NULL_ENTITY.id);
-    Main.Global.hoveredEntity.id = 
-      hoveredEntityId;
+              default: false;
+            };
+
+          if (isMatch) {
+            return {
+              previousDist: distFromMouse,
+              matchId: entityId
+            };
+          }
+
+          return result;
+        }, {
+          previousDist: Math.POSITIVE_INFINITY,
+          matchId: Entity.NULL_ENTITY.id
+        });
+    Main.Global.hoveredEntity.id = hoveredMatch.matchId;
     InventoryDragAndDropPrototype.update(dt);
     Inventory.update(dt);
     Tooltip.update(dt);

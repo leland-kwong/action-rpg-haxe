@@ -38,7 +38,7 @@ class Config {
           value: 90.
         },
         attackRange: 30,
-        attackType: 'attack_bullet'
+        attackType: 'attack_bullet',
       },
       'botMage' => {
         experienceReward: 2,
