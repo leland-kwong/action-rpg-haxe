@@ -280,7 +280,6 @@ class EnergyBomb extends Projectile {
 
   public override function update(dt: Float) {
     super.update(dt);
-    Cooldown.update(cds, dt);
 
     final moveDuration = 2.;
     final progress = Easing.easeOutExpo(
@@ -447,8 +446,6 @@ class Ai extends Entity {
       sightRange = props.sightRange;
     }
 
-    cds = new Cooldown();
-
     Cooldown.set(cds, 'recentlySummoned', spawnDuration);
 
     if (aiType == 'npcTestDummy') {
@@ -589,8 +586,6 @@ class Ai extends Entity {
 
     dx = 0.0;
     dy = 0.0;
-
-    Cooldown.update(cds, dt);
 
     follow = findTargetFn(this);
     var origX = x;
@@ -1043,7 +1038,6 @@ class Player extends Entity {
       radius: 6,
       id: 'PLAYER'
     });
-    cds = new Cooldown();
     type = 'PLAYER';
     forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
@@ -1277,7 +1271,6 @@ class Player extends Entity {
   public override function update(dt) {
     super.update(dt);
     abilityEvents = [];
-    Cooldown.update(cds, dt);
 
     PassiveSkillTree.eachSelectedNode(
         Main.Global.gameState,
@@ -2152,7 +2145,6 @@ class EnemySpawner extends Entity {
     });
     enemiesLeftToSpawn = numEnemies;
     type = 'ENEMY_INVISIBLE_SPAWNER';
-    cds = new Cooldown();
     this.parent = parent;
     this.x = x;
     this.y = y;
@@ -2186,8 +2178,6 @@ class EnemySpawner extends Entity {
       Entity.destroy(this.id);
       return;
     } 
-
-    Cooldown.update(cds, dt);
 
     if (Cooldown.has(cds, 'recentlySpawned')) {
       return;
@@ -3193,6 +3183,7 @@ class Game extends h2d.Object {
         default: {}
       }
 
+      Cooldown.update(a.cds, dt);
       a.update(dt);
 
       final shouldRender = {

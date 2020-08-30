@@ -42,13 +42,21 @@ class Cooldown {
     ref.cds[key] = value;
   }
 
-  public static function get(ref: Cooldown, key) {
+  public static function get(ref: Cooldown, key): Float {
+    if (ref == null) {
+      return 0;
+    }
+
     final v = ref.cds.get(key);
 
     return v == null ? 0 : v;
   }
 
   public static function update(ref: Cooldown, dt: Float) {
+    if (ref == null) {
+      return;
+    }
+
     final cds = ref.cds;
 
     for (key => timeRemaining in cds) {
@@ -145,6 +153,7 @@ class Entity extends h2d.Object {
       
       c;
     }
+    cds = new Cooldown();
     avoidanceRadius = Utils.withDefault(
         props.avoidanceRadius, radius);
 

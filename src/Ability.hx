@@ -1,8 +1,10 @@
+import Entity;
+
 class ChannelBeam {
   static final interval = 4;
   static final beamThickness = 15;
   public static final maxLength = 180;
-  static final tickFrequency = 15;
+  static final tickCooldown = 200 / 1000;
   static final baseSort = 10000000000000;
   static final state = {
     isAlive: true,
@@ -90,7 +92,7 @@ class ChannelBeam {
       tailSprite.batchElement.y += offsetY;
     }
 
-    final isHitTick = Entity.Cooldown.has(entityRef.cds, 'hitFlash');
+    final isHitTick = Cooldown.has(entityRef.cds, 'hitFlash');
     if (hasCollision && isHitTick) {
       final duration = 0.2;
       final startTime = Main.Global.time;
@@ -129,7 +131,7 @@ class ChannelBeam {
 
   public static function run(
       source: Entity,
-      collisionFilter): Entity.EntityId {
+      collisionFilter): EntityId {
     state.possibleTargets.clear();
 
     final bounds = getBeamBounds();
@@ -167,8 +169,9 @@ class ChannelBeam {
           if (isCollision) {
             state.collidedTarget = id;
 
-            final isHitTick = Main.Global.tickCount % tickFrequency == 0;
-            if (isHitTick) {
+            if (!Cooldown.has(possibleTargetRef.cds, 'channelBeamHit')) {
+              Cooldown.set(
+                  possibleTargetRef.cds, 'channelBeamHit', tickCooldown);
               EntityStats.addEvent(
                   possibleTargetRef.stats, {
                     type: 'DAMAGE_RECEIVED',
