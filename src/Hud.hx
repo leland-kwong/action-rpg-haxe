@@ -266,17 +266,23 @@ class Inventory {
       final playerCanPickupItem = isPickupMode && 
         distFromPlayer <= playerRef.stats.pickupRadius;
       if (playerCanPickupItem) {
+        final cds = Entity.getById('PLAYER').cds;
+
         if (Main.Global.worldMouse.buttonDown == 0) {
-          final cds = Entity.getById('PLAYER').cds;
           Cooldown.set(
               cds,
               'playerCanPickupItem',
-              1/100);
+              4/100);
         }
 
         final pickupItemButtonClicked = 
           Main.Global.worldMouse.clicked;
         if (pickupItemButtonClicked) {
+          Cooldown.set(
+              cds,
+              'playerCanPickupItem',
+              0);
+
           final size = lootRef.radius * 2;
           final addSuccess = Inventory
             .inventorySlotAutoAddItem(
