@@ -1344,7 +1344,8 @@ class Player extends Entity {
   }
 
   public function useAbility() {
-    final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
+    final preventAbilityUse = 
+         Cooldown.has(cds, 'recoveringFromAbility') 
       || Cooldown.has(cds, 'playerCanPickupItem') 
       || Main.Global.hasUiItemsEnabled();
 
