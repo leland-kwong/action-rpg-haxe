@@ -12,7 +12,8 @@ typedef InitialStats = {
   var ?maxHealth: Float;
   var ?maxEnergy: Float;
   var ?currentEnergy: Float;
-  var ?energyRegeneration: Int; // per second
+  // per second
+  var ?energyRegeneration: Int;
   var ?label: String;
   var ?pickupRadius: Int;
 }
@@ -23,6 +24,7 @@ typedef StatsRef = {
   var label: String;
   var damageTaken: Float;
   var moveSpeed: Float;
+  // base damage that the entity deals
   var damage: Float;
   var recentEvents: StatsEventsList;
 };
@@ -39,12 +41,10 @@ class EntityStats {
           p.maxEnergy, p.currentEnergy),
       currentHealth: p.currentHealth,
       currentEnergy: p.currentEnergy,
-      // per second
       energyRegeneration: p.energyRegeneration,
       pickupRadius:  p.pickupRadius,
       moveSpeed:     0,
       damageTaken:   0,
-      // base damage that the entity deals
       damage: 0,
       recentEvents:  [],
     };
