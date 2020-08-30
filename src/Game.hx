@@ -426,6 +426,7 @@ class Ai extends Entity {
     Entity.setComponent(this, 'aiType', props.aiType);
     Entity.setComponent(this, 'neighborQueryThreshold', 10);
     Entity.setComponent(this, 'neighborCheckInterval', 10);
+    Entity.setComponent(this, 'rarity', Utils.irnd(0, 2));
 
     status = 'UNTARGETABLE';
     final initialHealth = Config
@@ -1459,8 +1460,8 @@ class Player extends Entity {
         final targetRef = Entity.getById(targetId);
         final endPt = Entity.isNullId(targetId) 
           ? new h2d.col.Point(
-              Main.Global.rootScene.mouseX,
-              Main.Global.rootScene.mouseY)
+              startPt.x + dx * Ability.ChannelBeam.maxLength,
+              startPt.y + dy * Ability.ChannelBeam.maxLength)
           : new h2d.col.Point(
               targetRef.x,
               targetRef.y);
@@ -2318,6 +2319,7 @@ class Game extends h2d.Object {
                 x: x,
                 y: y,
                 aiType: 'npcTestDummy',
+                type: 'ENEMY',
                 radius: 6
               });
             }
@@ -2788,8 +2790,8 @@ class Game extends h2d.Object {
 
     }
 
-    final levelFile = 'editor-data/dummy_level.eds';
-    // final levelFile = 'editor-data/level_1.eds';
+    // final levelFile = 'editor-data/dummy_level.eds';
+    final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,

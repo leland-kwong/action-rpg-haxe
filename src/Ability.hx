@@ -1,7 +1,7 @@
 class ChannelBeam {
   static final interval = 4;
   static final beamThickness = 15;
-  static final maxLength = 180;
+  public static final maxLength = 180;
   static final tickFrequency = 15;
   static final baseSort = 10000000000000;
   static final state = {
@@ -136,8 +136,7 @@ class ChannelBeam {
     final dx = Math.cos(bounds.angle);
     final dy = Math.sin(bounds.angle);
     final source = Entity.getById('PLAYER');
-    final numChecks = Math.min(maxLength, bounds.diagonalLength) 
-      / interval;
+    final numChecks = maxLength / interval;
     Main.Global.logData.numLaserChecks = numChecks;
     for (i in 0...Std.int(numChecks)) {
       final x = source.x + dx * i * interval;
