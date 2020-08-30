@@ -125,10 +125,11 @@ class Projectile extends Entity {
 
     EntityStats.addEvent(
         stats, speedModifier);
-    lifeTime -= dt;
     collidedWith = [];
 
-    if (lifeTime <= 0) {
+    final alivePercent = Easing.progress(
+        createdAt, Main.Global.time, lifeTime);
+    if (alivePercent >= 1) {
       Entity.destroy(id);
     }
 
@@ -184,6 +185,7 @@ class Bullet extends Projectile {
   ];
   var launchSoundPlayed = false;
   var spriteKey: String;
+  public var explodeWhenExpired = false;
   public var playSound = true;
   public var explosionScale = 1.;
 
@@ -192,7 +194,7 @@ class Bullet extends Projectile {
     _spriteKey, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
-    lifeTime = 2.0;
+    lifeTime = 2.;
     spriteKey = _spriteKey;
   }
 
@@ -222,7 +224,9 @@ class Bullet extends Projectile {
       }
     }
 
-    if (isDone()) {
+    if (isDone() && 
+        explodeWhenExpired ||
+        (!explodeWhenExpired && collidedWith.length > 0)) {
       core.Anim.AnimEffect.add({
         frames: onHitFrames,
         startTime: Main.Global.time,
@@ -236,25 +240,19 @@ class Bullet extends Projectile {
   }
 
   public override function render(time: Float) {
+    final progress = Easing.easeInExpo(
+        Easing.progress(
+          createdAt, time, lifeTime));
     final angle = Math.atan2(
         y + dy - y,
         x + dx - x);
-    Main.Global.sb.emitSprite(
+    final sprite = Main.Global.sb.emitSprite(
         x, y, spriteKey, angle, null);
+    sprite.batchElement.scale = 1 - progress;
   }
 }
 
 class EnergyBomb extends Projectile {
-  static final onHitFrames = [
-    'projectile_hit_animation/burst-0',
-    'projectile_hit_animation/burst-1',
-    'projectile_hit_animation/burst-2', 
-    'projectile_hit_animation/burst-3', 
-    'projectile_hit_animation/burst-4', 
-    'projectile_hit_animation/burst-5', 
-    'projectile_hit_animation/burst-6', 
-    'projectile_hit_animation/burst-7', 
-  ];
   final initialSpeed = 250.;
   var launchSoundPlayed = false;
 
@@ -265,17 +263,6 @@ class EnergyBomb extends Projectile {
         0.0, 8, cFilter);
     radius = 4;
     lifeTime = 1.5;
-    cds = new Cooldown();
-  }
-
-  public override function onRemove() {
-    core.Anim.AnimEffect.add({
-      frames: onHitFrames,
-      startTime: Main.Global.time,
-      duration: 0.15,
-      x: x,
-      y: y,
-    }); 
   }
 
   public override function update(dt: Float) {
@@ -306,31 +293,32 @@ class EnergyBomb extends Projectile {
     // of impact 
     if (isDone()) {
       for (i in 0...5) {
-        final explosionStart = Main.Global.time + i * 0.05;
+        final explosionStart = Main.Global.time + i * 0.025;
         Main.Global.updateHooks.push((dt) -> {
           if (Main.Global.time < explosionStart) {
             return true;
           }
 
+          final offsetRange = 20;
           final x2 = x + (i == 0 
             ? 0 
-            : Utils.irnd(-10, 10, true));
+            : Utils.irnd(-offsetRange, offsetRange, true));
           final y2 = y + (i == 0 
             ? 0 
-            : Utils.irnd(-10, 10, true));
+            : Utils.irnd(-offsetRange, offsetRange, true));
           final ref = new Bullet(
               x2, y2, 
               x2, y2,
               0, 
               'ui/placeholder',
               cFilter);
-          ref.source = this;
+          ref.explodeWhenExpired = true;
+          ref.source = this.source;
           ref.maxNumHits = 999999;
           ref.explosionScale = 1.6;
           ref.playSound = false;
           ref.radius = 20;
-          ref.lifeTime = 0.1;
-          ref.damage = 3;
+          ref.lifeTime = 0;
           Main.Global.rootScene
             .addChild(ref);
 
@@ -1427,7 +1415,34 @@ class Player extends Entity {
               ent.type == 'ENEMY' || 
               ent.type == 'OBSTACLE' ||
               ent.type == 'INTERACTABLE_PROP'));
+        ref.lifeTime = 1.2;
         ref.source = this;
+      }
+
+      case 'basicBlasterEvolved': {
+        final collisionFilter = (ent) -> (
+            ent.type == 'ENEMY' || 
+            ent.type == 'OBSTACLE' ||
+            ent.type == 'INTERACTABLE_PROP');
+        for (_angle in [
+          angle,
+          angle - Math.PI / 10,
+          angle + Math.PI / 10,
+        ]) {
+          final ref = new Bullet(
+              x + Math.cos(_angle) * launchOffset,
+              startY + Math.sin(_angle) * launchOffset,
+              x + Math.cos(_angle) * launchOffset * 1.1,
+              startY + Math.sin(_angle) * launchOffset * 1.1,
+              250.0,
+              'ui/bullet_player_basic',
+              collisionFilter);
+          final isSideShot = _angle != angle;
+          ref.lifeTime = isSideShot 
+            ? 0.7 
+            : 1.;
+          ref.source = this;
+        }
       }
 
       case 'channelBeam': {
@@ -2219,7 +2234,6 @@ class Game extends h2d.Object {
   }
 
   public function newLevel(s2d: h2d.Scene) {
-
     final processMap = (
         fileName, 
         mapData: Editor.EditorState) -> {

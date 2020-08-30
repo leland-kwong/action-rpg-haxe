@@ -799,8 +799,12 @@ class InventoryDragAndDropPrototype {
     final createLootInstanceByType = (type: Loot.LootDefType) -> {
       return Loot.createInstance([type]);
     };
+
     equipItemToSlot(
-        createLootInstanceByType('channelBeam'), 0); 
+        createLootInstanceByType('energyBomb'), 0); 
+
+    // equipItemToSlot(
+    //     createLootInstanceByType('basicBlasterEvolved'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 

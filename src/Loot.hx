@@ -11,6 +11,7 @@ typedef LootDef = {
   minDamage: Int,
   maxDamage: Int,
   spriteKey: String,
+  ?damageMultiplier: Float,
 };
 
 // loot that was generated via rng
@@ -24,6 +25,12 @@ class Loot {
   // Once we ship the game, we must be careful about modifying the keys
   // because this lookup table will affect loot from previous versions as well.
   public static final lootDefinitions: Map<LootDefType, LootDef> = [
+    /*
+       Ability ideas
+       
+       * teleportation
+         Teleports the player to the target location
+     */
     'basicBlaster' => {
       name: 'Basic Blaster',
       category: 'ability',
@@ -33,6 +40,16 @@ class Loot {
       minDamage: 1,
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_basic_blaster',
+    },
+    'basicBlasterEvolved' => {
+      name: 'Basic Blaster Evolved',
+      category: 'ability',
+      energyCost: 3,
+      cooldown: 0,
+      actionSpeed: 1/10,
+      minDamage: 1,
+      maxDamage: 1,
+      spriteKey: 'ui/loot__ability_basic_blaster_evolved',
     },
     'spiderBots' => {
       name: 'Spider Bots',
