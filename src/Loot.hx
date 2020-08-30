@@ -130,17 +130,6 @@ class Loot {
       spriteKey: 'ui/loot__ability_movespeed_aura'
     },
     {
-      name: 'Green Arrow Socketable',
-      type: 'greenArrowSocketable',
-      category: 'socketable',
-      cooldown: 0,
-      actionSpeed: 0,
-      energyCost: 0,
-      minDamage: 0,
-      maxDamage: 0,
-      spriteKey: 'ui/loot__socketable_green_arrow_up'
-    },
-    {
       name: 'Null Item',
       type: 'nullItem',
       category: 'nullCategory',
@@ -153,12 +142,12 @@ class Loot {
     },
   ];
 
-  static final defs: Map<LootDefType, LootDef> = [
+  static final defsByType: Map<LootDefType, LootDef> = [
     for (def in lootDefinitions) def.type => def
   ];
 
   public static function getDef(type): LootDef {
-    return defs.get(type);
+    return defsByType.get(type);
   }
 
   public static function createInstance(
