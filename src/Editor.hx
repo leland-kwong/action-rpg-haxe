@@ -188,8 +188,8 @@ class Editor {
   public static function getConfig(
       // activeFile = 'editor-data/level_1.eds'
       // activeFile = 'editor-data/passive_skill_tree.eds'
-      activeFile = 'editor-data/dummy_level.eds'
-      // activeFile = 'editor-data/hud.eds'
+      // activeFile = 'editor-data/dummy_level.eds'
+      activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,

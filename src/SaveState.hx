@@ -12,6 +12,11 @@ import sys.io.File;
 #end
 
 class SaveState {
+  public static final dataCacheByFile: 
+    Map<String, Dynamic> = new Map();
+  public static function invalidateCache() {
+    dataCacheByFile.clear();
+  }
   public static final baseDir = 'external-assets';
 
   public static function filePath(file) {
@@ -40,7 +45,9 @@ class SaveState {
           haxe.Serializer.run(data);
         }
       };
-      File.saveContent('${baseDir}/${file}', serialized);
+      final fullPath = '${baseDir}/${file}';
+      File.saveContent(fullPath, serialized);
+      dataCacheByFile.set(fullPath, data);
       onSuccess(data);
     }
     catch (err: Dynamic) {
@@ -52,20 +59,25 @@ class SaveState {
     return fileData == null;
   }
 
-  public static function load(
+  public static function load<T>(
     keyPath: String,
     fromUrl = false,
     deserializeFn: (rawData: String) -> Dynamic,
     onSuccess: (data: Dynamic) -> Void,
     onError: (error: Dynamic) -> Void
-  ) {
+  ): T {
     try {
+      final fullPath = '${baseDir}/${keyPath}';
 
-      var fullPath = '${baseDir}/${keyPath}';
+      if (dataCacheByFile.exists(fullPath)) {
+        final fromCache = dataCacheByFile.get(fullPath);
+        onSuccess(fromCache);
+        return fromCache;
+      }
 
       if (!FileSystem.exists(fullPath)) {
         onSuccess(null);
-        return;
+        return null;
       }
 
       final s = File.getContent(fullPath);
@@ -75,15 +87,22 @@ class SaveState {
         deserializeFn(s);
       }
 
+      dataCacheByFile.set(fullPath, deserialized);
       onSuccess(deserialized);
+      return deserialized;
     }
     catch (error: Dynamic) {
       onError(error);
+      return error;
     }
+
+    return null;
   }
 
   public static function delete(keyPath: String) {
-    FileSystem.deleteFile('${baseDir}/${keyPath}');
+    final fullPath = '${baseDir}/${keyPath}';
+    dataCacheByFile.remove(fullPath);
+    FileSystem.deleteFile(fullPath);
   }
 
   public static function tests() {
@@ -103,18 +122,29 @@ class SaveState {
         }
 
         SaveState.save(data, keyPath, null, (_) -> {
+          function isEqualState(data, s) {
+            return [for (k in Reflect.fields(s)) k]
+              .foreach((k) -> {
+                Reflect.field(data, k) == Reflect.field(s, k);
+              });
+          }
+
+          var asyncPassed = false;
           SaveState.load(
               keyPath, 
               false, 
               null,
               (s: Dynamic) -> {
-            var isEqualState = [for (k in Reflect.fields(s)) k]
-              .foreach((k) -> {
-                Reflect.field(data, k) == Reflect.field(s, k);
-              });
-
-            hasPassed(isEqualState);
+            asyncPassed = isEqualState(data, s);
           }, onError);
+
+          final synchronousValue = SaveState.load(
+              keyPath, false, null,
+              (_) -> {}, onError);
+
+          hasPassed(
+              asyncPassed
+              && isEqualState(data, synchronousValue));
         }, onError);
       }, () -> {
         SaveState.delete(keyPath);

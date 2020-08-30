@@ -1,22 +1,15 @@
 class PassiveSkillTree {
-  static var treeLayoutData: Editor.EditorState;
   static final passiveTreeLayoutFile = 
       'editor-data/passive_skill_tree.eds';
 
-  static function loadLayoutFile(?onComplete) {
-    if (treeLayoutData != null) {
-      onComplete(treeLayoutData);
-      return;
-    }
-
-    SaveState.load(
+  static function loadLayoutFile(?onComplete): Editor.EditorState {
+    return SaveState.load(
         passiveTreeLayoutFile,
         false,
         null,
         (res: Editor.EditorState) -> {
-          treeLayoutData = res;
           if (onComplete != null) {
-            onComplete(treeLayoutData);
+            onComplete(res);
           }
         },
         HaxeUtils.handleError(
@@ -38,8 +31,9 @@ class PassiveSkillTree {
   public static function eachSelectedNode(
       gameState: Session.SessionRef,
       callback: (nodeMeta: Editor.ConfigObjectMeta) -> Void) {
+    final treeLayoutData = loadLayoutFile();
+
     if (treeLayoutData == null) {
-      loadLayoutFile();
       return;
     }
 

@@ -372,30 +372,27 @@ class UiGrid {
   static var state = {
     hoveredId: NULL_HOVERED_ID,
   };
-  static final hudLayoutFile = 'external-assets/editor-data/hud.eds';
-  static var hudLayoutCache: Editor.EditorState;
+  static final hudLayoutFile = 'editor-data/hud.eds';
 
-  public static function loadHudLayout() {
-    if (hudLayoutCache != null) {
-      return hudLayoutCache;
-    }
-
-    final s = sys.io.File.getContent(
-        hudLayoutFile);
-    final unserializer = new haxe.Unserializer(s);
-
-    hudLayoutCache = unserializer.unserialize();
-
-    return hudLayoutCache;
+  public static function loadHudLayout(): Editor.EditorState {
+    return SaveState.load(
+        hudLayoutFile,
+        false,
+        null,
+        (_) -> {},
+        (_) -> {});
   }
 
   public static function update(dt: Float) {
     if (!Main.Global.uiState.hud.enabled) {
-      hudLayoutCache = null;
       return;
     }
 
     final hudLayoutRef = loadHudLayout();
+    if (hudLayoutRef == null) {
+      return;
+    }
+
     final isInteractInitialized = iList.length != 0;
 
     if (isInteractInitialized) {
@@ -807,7 +804,7 @@ class InventoryDragAndDropPrototype {
       );
     };
     equipItemToSlot(
-        createLootInstanceByType('basicBlaster'), 0); 
+        createLootInstanceByType('channelBeam'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 1); 
