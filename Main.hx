@@ -147,53 +147,6 @@ enum UiState {
   Normal;
 }
 
-class UiButton extends h2d.Object {
-  var text: h2d.Text;
-  var state: UiState;
-  public var button: Interactive;
-
-  public function new(btnText, font, onClick) {
-    super();
-
-    text = new Text(font);
-    text.text = btnText;
-
-    button = new Interactive(
-      text.textWidth,
-      text.textHeight
-    );
-
-    button.onOver = function(ev: hxd.Event) {
-      state = UiState.Over;
-    }
-
-    button.onOut = function(ev: hxd.Event) {
-      state = UiState.Normal;
-    }
-
-    button.onClick = function(ev: hxd.Event) {
-      onClick();
-    }
-
-    button.addChild(text);
-    addChild(button);
-  }
-
-  public function update(dt) {
-    if (state == UiState.Normal) {
-      text.textColor = Game.Colors.pureWhite;
-    }
-
-    if (state == UiState.Over) {
-      text.textColor = Game.Colors.yellow;
-    }
-  }
-}
-
-enum abstract MainSceneType(String) {
-  var PlayGame;
-}
-
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
