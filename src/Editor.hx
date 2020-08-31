@@ -380,17 +380,8 @@ class Editor {
                   hoverSprite: 'ui/hud_passive_skill_tree_button--hover'
                 }
               },
-              'hud_ability_slot__1' => {
-                spriteKey: 'ui/hud_ability_slot_1',
-                sharedId: 'hud_ability_slot__1'
-              },
-              'hud_ability_slot__2' => {
-                spriteKey: 'ui/hud_ability_slot_2',
-                sharedId: 'hud_ability_slot__2'
-              },
-              'hud_ability_slot__3' => {
-                spriteKey: 'ui/hud_ability_slot_3',
-                sharedId: 'hud_ability_slot__3'
+              'hud_ability_slot' => {
+                spriteKey: 'ui/hud_ability_slot',
               },
             ];
           }

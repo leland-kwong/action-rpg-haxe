@@ -607,7 +607,7 @@ class UiGrid {
 
     // render hud experience progress
     {
-      final experienceProgressLayer = 'layer_1';
+      final experienceProgressLayer = 'layer_2';
       final grid = 
         hudLayoutRef.gridByLayerId.get(experienceProgressLayer);
       final objectId = 'hud_experience_progress';
@@ -1557,65 +1557,85 @@ class Hud {
 
       inactiveAbilitiesCooldownGraphics.clear();
 
-      final editorHudSlotObjectIds = [
-        'hud_ability_slot__1',
-        'hud_ability_slot__2',
-        'hud_ability_slot__3',
-      ];
-      final hudAbilityLayerId = 'layer_2';
+      final hudAbilitySlotLayerId = 'layer_1';
+      final editorState = UiGrid.loadHudLayout();
+      final grid = editorState.gridByLayerId.get(hudAbilitySlotLayerId);
+      final slotIds = [
+        for (objectId => bounds in grid.itemCache) {
+          final type = editorState.itemTypeById.get(objectId);
 
-      // render hud equipped abilities
-      for (i in 0...inventoryEquippedSlots.length) {
-        final lootId = inventoryEquippedSlots[i];
-
-        if (lootId != null) {
-          final hudSlot = hudEquippedAbilitySlots[i];
-          final editorState = UiGrid.loadHudLayout();
-          final grid = editorState.gridByLayerId.get(hudAbilityLayerId);
-          final slotObjectId = editorHudSlotObjectIds[i];
-          final bounds = grid.itemCache.get(slotObjectId);
-          final cx = (bounds[0]) * Hud.rScale;
-          final cy = (bounds[2]) * Hud.rScale;
-          final lootInst = InventoryDragAndDropPrototype
-            .getItemById(lootId); 
-          final lootDef = Loot.getDef(lootInst.type);
-          final playerRef = Entity.getById('PLAYER');
-          final cooldownLeft = Cooldown.get(
-              playerRef.cds,
-              'ability__${lootInst.type}');
-          final isCoolingDown = cooldownLeft > 0;
-
-          if (isCoolingDown) {
-            // draw pie chart for cooldown
+          if (type == 'hud_ability_slot') {
             {
-              final angleStart = 0 + 3 * Math.PI / 2;
-              final progress = 1 - (cooldownLeft / lootDef.cooldown);
-              final angleLength = Math.PI * 2 * progress;
-              final g = inactiveAbilitiesCooldownGraphics;
-
-              g.beginFill(0xfffffff, 0.6);
-              g.drawPie(
-                  cx,
-                  cy,
-                  30,
-                  angleStart,
-                  angleLength);
-            }
-
-            final ref = inactiveAbilitiesSb.emitSprite(
-                cx, cy,
-                lootDef.spriteKey,
-                null,
-                spriteEffect);
-            ref.sortOrder = 1;
-          } else {
-            final ref = Main.Global.uiSpriteBatch.emitSprite(
-                cx, cy,
-                lootDef.spriteKey,
-                null,
-                spriteEffect);
-            ref.sortOrder = 1; 
+              id: objectId,
+              bounds: bounds
+            };
           }
+        }
+      ];
+
+      slotIds.sort(function byXPos(a, b) {
+        final xA = a.bounds[0];
+        final xB = b.bounds[0];
+
+        return switch ([xA, xB]) {
+          case xA < xB => true: -1;
+          case xA > xB => true: 1;
+          default: 0;
+        }
+      });
+      
+      // render hud equipped abilities
+      for (slotIndex in 0...slotIds.length) {
+        final slotInfo = slotIds[slotIndex];
+        final type = editorState.itemTypeById.get(slotInfo.id);
+
+        final lootId = inventoryEquippedSlots[slotIndex];
+
+        if (lootId == null) {
+          continue;
+        }
+
+        final cx = (slotInfo.bounds[0]) * Hud.rScale;
+        final cy = (slotInfo.bounds[2]) * Hud.rScale;
+        final lootInst = InventoryDragAndDropPrototype
+          .getItemById(lootId); 
+        final lootDef = Loot.getDef(lootInst.type);
+        final playerRef = Entity.getById('PLAYER');
+        final cooldownLeft = Cooldown.get(
+            playerRef.cds,
+            'ability__${lootInst.type}');
+        final isCoolingDown = cooldownLeft > 0;
+
+        if (isCoolingDown) {
+          // draw pie chart for cooldown
+          {
+            final angleStart = 0 + 3 * Math.PI / 2;
+            final progress = 1 - (cooldownLeft / lootDef.cooldown);
+            final angleLength = Math.PI * 2 * progress;
+            final g = inactiveAbilitiesCooldownGraphics;
+
+            g.beginFill(0xfffffff, 0.6);
+            g.drawPie(
+                cx,
+                cy,
+                30,
+                angleStart,
+                angleLength);
+          }
+
+          final ref = inactiveAbilitiesSb.emitSprite(
+              cx, cy,
+              lootDef.spriteKey,
+              null,
+              spriteEffect);
+          ref.sortOrder = 1;
+        } else {
+          final ref = Main.Global.uiSpriteBatch.emitSprite(
+              cx, cy,
+              lootDef.spriteKey,
+              null,
+              spriteEffect);
+          ref.sortOrder = 1; 
         }
       }
     }
