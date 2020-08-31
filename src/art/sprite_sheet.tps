@@ -345,7 +345,6 @@
             <key type="filename">aseprite_exports/projectile_hit_animation/burst-6.png</key>
             <key type="filename">aseprite_exports/projectile_hit_animation/burst-7.png</key>
             <key type="filename">aseprite_exports/ui/bullet_enemy_large.png</key>
-            <key type="filename">aseprite_exports/ui/loot__socketable_green_arrow_up.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -485,6 +484,7 @@
             <key type="filename">aseprite_exports/ui/hud_ability_slot_2.png</key>
             <key type="filename">aseprite_exports/ui/hud_ability_slot_3.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster_evolved.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_burst_charge.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_channel_beam.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_energy_1.png</key>
@@ -551,6 +551,21 @@
                 <rect>3,3,5,5</rect>
                 <key>scale9Paddings</key>
                 <rect>3,3,5,5</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/hud_player_level.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>3,2,5,3</rect>
+                <key>scale9Paddings</key>
+                <rect>3,2,5,3</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -626,6 +641,21 @@
                 <rect>4,5,7,9</rect>
                 <key>scale9Paddings</key>
                 <rect>4,5,7,9</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/loot_effect_legendary_gradient.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,1</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>0,70,1,141</rect>
+                <key>scale9Paddings</key>
+                <rect>0,70,1,141</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

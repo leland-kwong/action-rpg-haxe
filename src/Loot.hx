@@ -2,6 +2,13 @@ typedef LootDefType = String;
 
 typedef LootDefCat = String;
 
+enum Rarity {
+  Normal;
+  Magical;
+  Rare;
+  Legendary;
+}
+
 typedef LootDef = {
   name: String,
   energyCost: Float,
@@ -12,6 +19,7 @@ typedef LootDef = {
   maxDamage: Int,
   spriteKey: String,
   ?damageMultiplier: Float,
+  ?rarity: Rarity
 };
 
 // loot that was generated via rng
@@ -50,6 +58,7 @@ class Loot {
       minDamage: 1,
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_basic_blaster_evolved',
+      rarity: Legendary
     },
     'spiderBots' => {
       name: 'Spider Bots',

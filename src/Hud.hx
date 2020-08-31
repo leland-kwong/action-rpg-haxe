@@ -826,16 +826,16 @@ class InventoryDragAndDropPrototype {
     };
 
     equipItemToSlot(
-        createLootInstanceByType('energyBomb'), 0); 
+        createLootInstanceByType('spiderBots'), 0); 
 
     // equipItemToSlot(
     //     createLootInstanceByType('basicBlasterEvolved'), 0); 
 
     equipItemToSlot(
-        createLootInstanceByType('moveSpeedAura'), 1); 
+        createLootInstanceByType('basicBlasterEvolved'), 1); 
 
     equipItemToSlot(
-        createLootInstanceByType('energy1'), 2); 
+        createLootInstanceByType('moveSpeedAura'), 2); 
   }
 
   static function getEquipmentSlotDefinitions() {

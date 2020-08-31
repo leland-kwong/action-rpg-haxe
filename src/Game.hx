@@ -2868,6 +2868,19 @@ class Game extends h2d.Object {
     // loot definition table
     Entity.setComponent(lootRef, 'lootInstance', 
         lootInstance);
+    final radius1 = Utils.rnd(0.5, 1);
+    final radius2 = Utils.rnd(0.5, 2);
+    final radius3 = Utils.rnd(0.5, 2);
+    final timeOffset1 = Utils.rnd(-20, 20) * Utils.rnd(1, 3);
+    final timeOffset2 = Utils.rnd(-20, 20) * Utils.rnd(1, 3);
+    final timeOffset3 = Utils.rnd(-20, 20) * Utils.rnd(1, 3);
+    final xOffset1 = Utils.irnd(-10, 10);
+    final xOffset2 = Utils.irnd(-10, 10);
+    final xOffset3 = Utils.irnd(-10, 10);
+    final yOffset1 = Utils.irnd(-40, 0);
+    final yOffset2 = Utils.irnd(-40, 0);
+    final yOffset3 = Utils.irnd(-40, 0);
+
     lootRef.renderFn = (ref, time: Float) -> {
       // drop shadow
       Main.Global.sb.emitSprite(
@@ -2885,8 +2898,9 @@ class Game extends h2d.Object {
             p.batchElement.scaleY = ref.radius * 0.5;
           });
 
-      final spriteKey = Loot.getDef(
-            Entity.getComponent(ref, 'lootInstance').type).spriteKey;
+      final lootDef = Loot.getDef(
+            Entity.getComponent(ref, 'lootInstance').type);
+      final spriteKey = lootDef.spriteKey;
       final sprite = Main.Global.sb.emitSprite(
           ref.x,
           ref.y,
@@ -2898,6 +2912,51 @@ class Game extends h2d.Object {
             sprite.sortOrder - 0.1,
             spriteKey,
             ref);
+      }
+
+      if (lootDef.rarity == Loot.Rarity.Legendary) {
+        final lightBeamConfigs = [
+          // main beam
+          {
+            radius: ref.radius * 1.2,
+            x: ref.x - ref.radius * 1.2,
+            y: ref.y,
+            alpha: 0.9 + 0.1 * Math.sin(Main.Global.time * 1.5)
+          },
+          {
+            radius: radius1,
+            x: ref.x + xOffset1,
+            y: ref.y + yOffset1,
+            alpha: Math.sin((Main.Global.time + timeOffset1))
+          },
+          {
+            radius: radius2,
+            x: ref.x + xOffset2,
+            y: ref.y + yOffset2,
+            alpha: Math.sin((Main.Global.time + timeOffset2))
+          },
+          {
+            radius: radius3,
+            x: ref.x + xOffset3,
+            y: ref.y + yOffset3,
+            alpha: Math.sin((Main.Global.time + timeOffset3))
+          },
+        ];
+
+        for (cfg in lightBeamConfigs) {
+          final sprite = Main.Global.sb.emitSprite(
+              cfg.x,
+              cfg.y,
+              'ui/loot_effect_legendary_gradient');
+          final cam = Main.Global.mainCamera;
+          final cameraDy = Math.abs(cfg.y - cam.y);
+          final alphaFallOff = Math.max(
+              0, 1 - Math.pow(cameraDy / cam.h * 2, 3));
+          Main.Global.logData.alphaFallOff = alphaFallOff;
+          sprite.batchElement.scaleY = 1.3;
+          sprite.batchElement.scaleX = cfg.radius * 2;
+          sprite.batchElement.a = cfg.alpha * alphaFallOff;
+        }
       }
     };
   }
