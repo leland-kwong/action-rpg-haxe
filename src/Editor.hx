@@ -82,7 +82,11 @@ typedef EditorState = {
   gridByLayerId: Map<String, Grid.GridRef>,
   itemTypeById: Map<String, String>
 };
-typedef EditorRendererTileRow = Map<Int, h2d.TileGroup>;
+typedef EditorRendererRow = {
+  tg: EditorTileGroup,
+  o: h2d.Object
+};
+typedef EditorRendererLayer = Map<Int, EditorRendererRow>;
 
 typedef ConfigObjectMeta = {
   spriteKey: String,
@@ -383,6 +387,10 @@ class Editor {
               'hud_ability_slot' => {
                 spriteKey: 'ui/hud_ability_slot',
               },
+              'ui_inventory_underlay' => {
+                spriteKey: 'ui/ui_inventory_underlay',
+                sharedId: 'ui_inventory_underlay'
+              }
             ];
           }
 
@@ -548,8 +556,8 @@ class Editor {
       layersToShow: [],
       // set to first layer by default
       activeLayerId: editorState.layerOrderById[0],
-      tileRowsByLayerId: 
-        new Map<String, EditorRendererTileRow>(),
+      renderRowsByLayerId: 
+        new Map<String, EditorRendererLayer>(),
       searchObjectMatchesById: 
         new Array<{
           objectId: String,
@@ -1001,7 +1009,7 @@ class Editor {
       }
 
       {
-        final tileRowsRedrawn: Map<String, Bool> = new Map();
+        final renderRowsRedrawn: Map<String, Bool> = new Map();
         final currentActions = localState.actions;
 
         for (action in currentActions) {
@@ -1019,51 +1027,59 @@ class Editor {
                 final activeGrid = editorState.gridByLayerId.get(
                     action.layerId);
                 // [SIDE-EFFECT] creates a tileGroup if it doesn't exist
-                final activeTileRows = {
+                final activeRenderLayer = {
                   final activeLayerId = action.layerId;
-                  final tileRows = localState.tileRowsByLayerId
+                  final renderRows = localState.renderRowsByLayerId
                     .get(activeLayerId);
 
-                  if (tileRows == null) {
+                  if (renderRows == null) {
                     final newTileRows = new Map();
-                    localState.tileRowsByLayerId.set(
+                    localState.renderRowsByLayerId.set(
                         activeLayerId,
                         newTileRows);
                     newTileRows;
                   } else {
-                    tileRows;
+                    renderRows;
                   }
                 }
                 final rowIndex = action.gridY;
-                final tg = {
-                  final tg = activeTileRows.get(rowIndex);
 
-                  if (tg == null) {
+                final renderRow = {
+                  final renderRow = activeRenderLayer.get(rowIndex);
+
+                  if (renderRow == null) {
                     final isVisibleLayer = (layerId) ->
                       layerId == action.layerId;
                     final newTg = new EditorTileGroup(
                         spriteSheetTile,
-                        Main.Global.staticScene,
+                        s2d,
                         () -> {
                           return Lambda.find(
                               localState.layersToShow,
                               isVisibleLayer) != null;
                         });
-                    activeTileRows.set(rowIndex, newTg);
+                    final newObject = new h2d.Object();
+                    final newRenderRow = {
+                      tg: newTg,
+                      o: newObject
+                    }
+                    activeRenderLayer.set(rowIndex, newRenderRow);
                     cleanupFns.push(() -> {
                       newTg.remove();
                       newTg.clear();
+                      newObject.remove();
                     });
-                    newTg;
+                    newRenderRow;
                   } else {
-                    tg;
+                    renderRow;
                   }
                 };
+                final tg = renderRow.tg;
 
                 // refresh tile row
                 final rowId = '${action.layerId}__${rowIndex}';
-                if (tileRowsRedrawn.get(rowId) == null) {
-                  tileRowsRedrawn.set(rowId, true);
+                if (renderRowsRedrawn.get(rowId) == null) {
+                  renderRowsRedrawn.set(rowId, true);
                   tg.clear();
 
                   if (action.layerId == 'layer_marquee_selection') {
@@ -1133,11 +1149,11 @@ class Editor {
         // sort tilegroups by layer order and
         // row position so they draw properly
         for (layerId in editorState.layerOrderById) {
-          final tRows = Utils.withDefault(
-              localState.tileRowsByLayerId.get(layerId),
+          final rRows = Utils.withDefault(
+              localState.renderRowsByLayerId.get(layerId),
               new Map());
           final rowIndices = [];
-          for (rowIndex in tRows.keys()) {
+          for (rowIndex in rRows.keys()) {
             rowIndices.push(rowIndex);
           }
           rowIndices.sort((a, b) -> {
@@ -1152,9 +1168,11 @@ class Editor {
             return 0;
           });
           for (rowIndex in rowIndices) {
-            final tileGroup = tRows.get(rowIndex);
+            final renderRow = rRows.get(rowIndex);
             Main.Global.staticScene.addChild(
-                tileGroup);
+                renderRow.tg);
+            Main.Global.staticScene.addChild(
+                renderRow.o);
 
             // move marquee selection relative to mouse position
             if (layerId == 'layer_marquee_selection') {
@@ -1181,8 +1199,8 @@ class Editor {
                   (my - editorState.translate.y * localState.zoom),
                   cellSize);
 
-              tileGroup.x = snappedMousePos.x / localState.zoom;
-              tileGroup.y = snappedMousePos.y / localState.zoom;
+              renderRow.tg.x = snappedMousePos.x / localState.zoom;
+              renderRow.tg.y = snappedMousePos.y / localState.zoom;
             }
           }
         }
