@@ -347,6 +347,10 @@ class Editor {
 
           case _.indexOf('editor-data/hud.eds') != -1 => true: {
             [
+              'hud_player_level' => {
+                spriteKey: 'ui/hud_player_level',
+                sharedId: 'hud_player_level'
+              },
               'cockpit_underlay' => {
                 spriteKey: 'ui/cockpit_underlay'
               },

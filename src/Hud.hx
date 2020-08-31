@@ -379,6 +379,7 @@ class UiGrid {
     hoveredId: NULL_HOVERED_ID,
   };
   static final hudLayoutFile = 'editor-data/hud.eds';
+  static var tfPlayerLevel: h2d.Text;
 
   public static function loadHudLayout(): Editor.EditorState {
     return SaveState.load(
@@ -669,6 +670,30 @@ class UiGrid {
       spriteRef.batchElement.r = 1.;
       spriteRef.batchElement.g = 0.7;
       spriteRef.batchElement.b = 0.;
+    }
+
+    // render hud player level
+    {
+      final playerLevelLayer = 'layer_2';
+      final grid = 
+        hudLayoutRef.gridByLayerId.get(playerLevelLayer);
+      final objectId = 'hud_player_level';
+      final bounds = grid.itemCache.get(objectId); 
+      final objectType = hudLayoutRef.itemTypeById.get(objectId);
+      final objectMeta = editorConfig
+        .objectMetaByType
+        .get(objectType);
+
+      final tfPlayerLevel = TextPool.get();
+      tfPlayerLevel.font = Fonts.title();
+      Main.Global.uiRoot.addChild(tfPlayerLevel);
+      tfPlayerLevel.text = Std.string(
+          Config.calcCurrentLevel(
+            Main.Global.gameState.experienceGained) + 1);
+      tfPlayerLevel.x = bounds[0] * Hud.rScale;
+      tfPlayerLevel.y = bounds[2] * Hud.rScale - tfPlayerLevel.textHeight / 2;
+      tfPlayerLevel.textAlign = Center;
+      tfPlayerLevel.textColor = 0xffffff;
     }
   }
 }
@@ -1438,14 +1463,14 @@ class Hud {
   }
 
   public static function render(time: Float) {
-    if (!Main.Global.uiState.hud.enabled) {
-      return;
-    }
-
     Tooltip.render(time);
     InventoryDragAndDropPrototype.render(time);
     Inventory.render(time);
     Hud.UiGrid.render(time);
+
+    if (!Main.Global.uiState.hud.enabled) {
+      return;
+    }
 
     // show hovered ai info
     {

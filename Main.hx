@@ -482,6 +482,8 @@ class Main extends hxd.App {
       var frameDt = 0.;
       var numUpdates = 0;
 
+      TextPool.resetAll();
+
       // run while there is remaining frames to simulate
       while (hasRemainingUpdateFrames(acc, frameTime)
           && numUpdates < maxNumUpdatesPerFrame) {

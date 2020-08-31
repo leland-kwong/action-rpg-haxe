@@ -65,7 +65,7 @@
 },
 "destroy_animation/default-6":
 {
-	"frame": {"x":579,"y":503,"w":6,"h":6},
+	"frame": {"x":593,"y":503,"w":6,"h":6},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":5,"y":4,"w":6,"h":6},
@@ -74,7 +74,7 @@
 },
 "destroy_animation/default-7":
 {
-	"frame": {"x":579,"y":503,"w":6,"h":6},
+	"frame": {"x":593,"y":503,"w":6,"h":6},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":5,"y":4,"w":6,"h":6},
@@ -533,7 +533,7 @@
 },
 "projectile_hit_animation/burst-7":
 {
-	"frame": {"x":860,"y":506,"w":3,"h":3},
+	"frame": {"x":610,"y":503,"w":3,"h":3},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":3,"h":3},
@@ -773,6 +773,15 @@
 	"spriteSourceSize": {"x":0,"y":0,"w":12,"h":12},
 	"sourceSize": {"w":12,"h":12},
 	"pivot": {"x":0,"y":0}
+},
+"ui/hud_player_level":
+{
+	"frame": {"x":579,"y":503,"w":11,"h":6},
+	"rotated": false,
+	"trimmed": false,
+	"spriteSourceSize": {"x":0,"y":0,"w":11,"h":6},
+	"sourceSize": {"w":11,"h":6},
+	"pivot": {"x":0.5,"y":0.5}
 },
 "ui/kamehameha_center_width_1":
 {
@@ -1064,7 +1073,7 @@
 },
 "ui/placeholder":
 {
-	"frame": {"x":860,"y":506,"w":3,"h":3},
+	"frame": {"x":610,"y":503,"w":3,"h":3},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":3,"h":3},
@@ -1073,7 +1082,7 @@
 },
 "ui/player_pet_orb":
 {
-	"frame": {"x":588,"y":503,"w":5,"h":6},
+	"frame": {"x":602,"y":503,"w":5,"h":6},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":5,"h":6},
@@ -1127,7 +1136,7 @@
 },
 "ui/square_glow":
 {
-	"frame": {"x":772,"y":171,"w":3,"h":3},
+	"frame": {"x":860,"y":506,"w":3,"h":3},
 	"rotated": false,
 	"trimmed": false,
 	"spriteSourceSize": {"x":0,"y":0,"w":3,"h":3},
@@ -1564,6 +1573,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1048,"h":510},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:ab63d46f341ff66e27953cfd259f43df:97b271cf6b28f974b863706436deafca:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:a079b70636260a224f3367cb47d20ef3:4299d5567e7dd97e6e3925b85b3833c8:6cc8953523e0367402f95f3c9a630665$"
 }
 }
