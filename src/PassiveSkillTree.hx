@@ -53,14 +53,19 @@ class PassiveSkillTree {
     }
   }
 
-  public static function calcNumUnusedPoints(sessionRef) {
-    final pointsAvailable = Config.calcCurrentLevel(
-        sessionRef.experienceGained) 
+  static function calcNumAvailablePoints(
+      sessionRef: Session.SessionRef) {
+    return Config.calcCurrentLevel(
+        sessionRef.experienceGained);
+  }
+
+  public static function calcNumUnusedPoints(
+      sessionRef: Session.SessionRef) {
+
+    return calcNumAvailablePoints(sessionRef) 
+      - calcNumSelectedNodes(sessionRef) 
       // account for the root node which is already selected
       + 1;
-
-    return pointsAvailable 
-      - calcNumSelectedNodes(sessionRef);
   }
 
   public static function openPassiveSkillTree() {
@@ -417,11 +422,15 @@ class PassiveSkillTree {
 
           Main.Global.updateHooks.push((dt) -> {
             final win = hxd.Window.getInstance();
+            final numAvailablePoints = calcNumAvailablePoints(sessionRef);
             final numUnusedPoints = calcNumUnusedPoints(sessionRef);
 
             tf.x = win.width / 2;
             tf.y = 10;
-            tf.text = 'unused skill points: ${numUnusedPoints}';
+            tf.text = [
+              'skill points available: ',
+              '$numUnusedPoints / $numAvailablePoints'
+            ].join('');
 
             return !state.shouldCleanup;
           });
