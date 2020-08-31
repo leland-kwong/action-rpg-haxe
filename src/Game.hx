@@ -2895,7 +2895,7 @@ class Game extends h2d.Object {
 
       if (Main.Global.hoveredEntity.id == ref.id) {
         Entity.renderOutline(
-            sprite.sortOrder - 1,
+            sprite.sortOrder - 0.1,
             spriteKey,
             ref);
       }
