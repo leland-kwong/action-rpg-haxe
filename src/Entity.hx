@@ -398,22 +398,16 @@ class Entity extends h2d.Object {
     for (o in outlineOffsets) {
       final ox = o[0];
       final oy = o[1];
+      final p = Main.Global.sb.emitSprite(
+          ref.x + ox, 
+          ref.y + oy,
+          spriteKey);
 
-      Main.Global.sb.emitSprite(
-          ref.x + ox, ref.y + oy,
-          spriteKey,
-          null,
-          (p) -> {
-            p.sortOrder = sortOrder - 1;
-            final b: h2d.SpriteBatch.BatchElement = 
-              p.batchElement;
-
-            b.r = 150;
-            b.g = 150;
-            b.b = 150;
-
-            b.scaleX = ref.facingDir * 1;
-          });
+      p.sortOrder = sortOrder - 1;
+      p.r = 150;
+      p.g = 150;
+      p.b = 150;
+      p.scaleX = ref.facingDir * 1;
     }
   }
 
