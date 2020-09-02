@@ -17,7 +17,6 @@ typedef SpriteSheetData = {
 
 class SpriteRef extends BatchElement {
   public var sortOrder: Float;
-  public var batchElement: BatchElement;
 }
 
 typedef BatchManagerRef = {
@@ -88,7 +87,7 @@ class BatchManager {
     });
 
     for (p in s.particles) {
-      s.batch.add(p.batchElement);
+      s.batch.add(p);
     }
   }
 }
@@ -174,7 +173,6 @@ class SpriteBatchSystem {
           this.batchManager.spriteSheet,
           this.batchManager.spriteSheetData, 
           spriteKey));
-    spriteRef.batchElement = spriteRef;
     if (angle != null) {
       spriteRef.rotation = angle;
     }
