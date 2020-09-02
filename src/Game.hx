@@ -2736,14 +2736,14 @@ class Game extends h2d.Object {
       }
 
       final miniMapPositionsDrawn = [];
+      final hasTile = (cellData) -> 
+        cellData != null; 
 
       final refreshMap = (dt) -> {
         final idsRendered = new Map();
 
         for (layerId in orderedLayers) {
           final tileGrid = tileGridByLayerId.get(layerId);
-          final hasTile = (cellData) -> 
-            cellData != null; 
           final renderTile = (
               gridX: Int, 
               gridY: Int, 
@@ -2786,7 +2786,10 @@ class Game extends h2d.Object {
                       pos.x,
                       y,
                       spriteKey);
-                  tileRef.sortOrder = 0;
+                  // we can safely set all tiles to a sortOrder of 0
+                  // since we're adding tiles row-wise which means
+                  // they'll all be sorted naturally anyway
+                  tileRef.sortOrder = -1;
 
                   final miniMapPosDrawn = Grid2d.get(
                       miniMapPositionsDrawn, pos.x, pos.y) != null;
