@@ -184,11 +184,9 @@ class Effects {
               'ui/square_white');
 
           beamRef.sortOrder = playerRef.y - 1;
-          
-          final b = beamRef.batchElement;
-          b.scaleX = scaleX;
-          b.scaleY = length * Easing.easeOutExpo(p2);
-          b.alpha = 0.9 - v;
+          beamRef.scaleX = scaleX;
+          beamRef.scaleY = length * Easing.easeOutExpo(p2);
+          beamRef.alpha = 0.9 - v;
 
           return p < 1; 
         });
