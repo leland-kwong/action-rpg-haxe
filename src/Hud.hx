@@ -1366,7 +1366,6 @@ class InventoryDragAndDropPrototype {
 class Hud {
   public static final HUD_LAYOUT_FILE = 'editor-data/hud.eds';
   public static var rScale = 4;
-  static var mapData: TiledMapData;
   static var aiNameText: h2d.Text;
   static var aiHealthBar: h2d.Graphics;
   static final aiHealthBarWidth = 200;
@@ -1385,9 +1384,6 @@ class Hud {
         Main.Global.uiRoot);
     aiNameText.textAlign = Center;
     aiNameText.textColor = Game.Colors.pureWhite;
-
-    mapData = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
 
     questDisplay = new h2d.Text(
         Fonts.primary(),
