@@ -160,22 +160,7 @@ class Inventory {
   // pixel art's resolution (480 x 270)
   public static function inventorySlotAutoAddItem(
       itemInstance: Loot.LootInstance): Bool {
-
-    final slotDefinition = {
-      final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json); 
-      final inventoryLayerRef = TiledParser
-        .findLayer(hudLayoutRef, 'inventory');
-      final interactRef = TiledParser
-        .findLayer(
-            inventoryLayerRef, 'interactable');
-      Lambda.find(
-          interactRef.objects,
-          (o) -> o.name == 'inventory_slots');
-    }
-    final slotSize: Int = Lambda.find(
-        slotDefinition.properties, 
-        (p: TiledUiProp) -> p.name == 'slotSize').value;
+    final slotSize = 16;
     // convert item dimensions to slot units 
     final lootDef = Loot.getDef(itemInstance.type);
     final spriteData = SpriteBatchSystem.getSpriteData(
@@ -185,8 +170,9 @@ class Inventory {
     final pixelHeight = spriteData.sourceSize.h;
     final sw = Math.ceil(pixelWidth / slotSize);
     final sh = Math.ceil(pixelHeight / slotSize);
-    final maxCol = Std.int(slotDefinition.width / slotSize);
-    final maxRow = Std.int(slotDefinition.height / slotSize);
+    final INVENTORY_RECT = InventoryDragAndDropPrototype.INVENTORY_RECT;
+    final maxCol = Std.int(INVENTORY_RECT.width / slotSize / Hud.rScale);
+    final maxRow = Std.int(INVENTORY_RECT.height / slotSize / Hud.rScale);
     final maxY = maxRow - 1;
     final maxX = maxCol - 1;
     final cellSize = InventoryDragAndDropPrototype
@@ -842,7 +828,7 @@ class InventoryDragAndDropPrototype {
         createLootInstanceByType('basicBlasterEvolved'), 1); 
 
     equipItemToSlot(
-        createLootInstanceByType('basicBlasterEvolved'), 2); 
+        createLootInstanceByType('energy1'), 2); 
 
     equipItemToSlot(
         createLootInstanceByType('moveSpeedAura'), 3); 
@@ -891,7 +877,7 @@ class InventoryDragAndDropPrototype {
     ];
   }
 
-  static final INVENTORY_RECT = {
+  public static final INVENTORY_RECT = {
     equippedItemId: NULL_PICKUP_ID,
     allowedCategory: 'any',
     x: 256 * Hud.rScale,
