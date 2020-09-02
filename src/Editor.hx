@@ -1749,16 +1749,15 @@ class Editor {
       final translate = editorState.translate;
       final snapGridSize = localState.snapGridSize;
       final spriteEffectZoom = (p) -> {
-        final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+        final b: h2d.SpriteBatch.BatchElement = p;
         b.scale = localState.zoom;
       };
       final centerCircleRadius = 10;
-      final centerCircleSpriteEffect = (p) -> {
-        final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+      final centerCircleSpriteEffect = (p: SpriteBatchSystem.SpriteRef) -> {
         p.sortOrder = 99999999.0;
         // b.g = 0.8;
-        b.b = 0.2;
-        b.scale = centerCircleRadius * 2;
+        p.b = 0.2;
+        p.scale = centerCircleRadius * 2;
       };
 
       // render grid lines
@@ -1774,12 +1773,10 @@ class Editor {
         final numRows = Math.ceil(
             win.height / gridLineSize / localState.zoom);
 
-        function colSpriteEffect(p) {
-          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
+        function colSpriteEffect(p: SpriteBatchSystem.SpriteRef) {
           p.sortOrder = -1.;
-          b.scaleY = Std.int(win.height);
-          b.alpha = 0.1;
+          p.scaleY = Std.int(win.height);
+          p.alpha = 0.1;
         }
 
         for (x in -1...(numCols + 1)) {
@@ -1790,12 +1787,10 @@ class Editor {
               colSpriteEffect);
         }
 
-        function rowSpriteEffect(p) {
-          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
+        function rowSpriteEffect(p: SpriteBatchSystem.SpriteRef) {
           p.sortOrder = -1.;
-          b.scaleX = Std.int(win.width);
-          b.alpha = 0.1;
+          p.scaleX = Std.int(win.width);
+          p.alpha = 0.1;
         }
 
         for (y in -1...(numRows + 1)) {
@@ -1822,7 +1817,7 @@ class Editor {
             Math.min(2, menuItem.height / spriteMaxDimension);
           }
           final spriteEffect = (p) -> {
-            final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+            final b: h2d.SpriteBatch.BatchElement = p;
             b.scale = scale;
 
             if (meta.flipX) {
@@ -1847,12 +1842,12 @@ class Editor {
                 menuItem.x - menuItem.width / 2,
                 menuItem.y - menuItem.height / 2,
                 'ui/square_white');
-            s.batchElement.scaleX = menuItem.width;
-            s.batchElement.scaleY = menuItem.height;
-            s.batchElement.r = 0.;
-            s.batchElement.g = 0.;
-            s.batchElement.b = 0.;
-            s.batchElement.a = 0.1;
+            s.scaleX = menuItem.width;
+            s.scaleY = menuItem.height;
+            s.r = 0.;
+            s.g = 0.;
+            s.b = 0.;
+            s.a = 0.1;
           }
 
           // render label
@@ -1901,7 +1896,7 @@ class Editor {
                 null,
                 (p) -> {
                   final b: h2d.SpriteBatch.BatchElement =
-                    p.batchElement;
+                    p;
                   b.alpha = 0.3;
                   p.sortOrder = drawSortSelection;
                   spriteEffectZoom(p);
@@ -1929,7 +1924,7 @@ class Editor {
               null,
               (p) -> {
                 final b: h2d.SpriteBatch.BatchElement =
-                  p.batchElement;
+                  p;
                 p.sortOrder = sortOrder;
                 b.scaleX = snapGridSize * zoom;
                 b.alpha = alpha;
@@ -1943,7 +1938,7 @@ class Editor {
               null,
               (p) -> {
                 final b: h2d.SpriteBatch.BatchElement =
-                  p.batchElement;
+                  p;
                 p.sortOrder = sortOrder;
                 b.scaleY = snapGridSize * zoom;
                 b.alpha = alpha;
@@ -1957,7 +1952,7 @@ class Editor {
               null,
               (p) -> {
                 final b: h2d.SpriteBatch.BatchElement =
-                  p.batchElement;
+                  p;
                 p.sortOrder = sortOrder;
                 b.scaleX = snapGridSize * zoom;
                 b.alpha = alpha;
@@ -1970,7 +1965,7 @@ class Editor {
               null,
               (p) -> {
                 final b: h2d.SpriteBatch.BatchElement =
-                  p.batchElement;
+                  p;
                 p.sortOrder = sortOrder;
                 b.scaleY = snapGridSize * zoom;
                 b.alpha = alpha;
@@ -1987,7 +1982,7 @@ class Editor {
             null,
             (p) -> {
               final b: h2d.SpriteBatch.BatchElement =
-                p.batchElement;
+                p;
               b.scale = 10;
               p.sortOrder = drawSortSelection + 1;
               b.b = 0.4;
@@ -2009,7 +2004,7 @@ class Editor {
             null,
             (p) -> {
               final b: h2d.SpriteBatch.BatchElement =
-                p.batchElement;
+                p;
               b.scaleX = Math.abs(selection.x1 - selection.x2) * zoom;
               b.scaleY = Math.abs(selection.y1 - selection.y2) * zoom;
               p.sortOrder = drawSortSelection + 2;
@@ -2045,9 +2040,9 @@ class Editor {
               y - sh / 2,
               'ui/square_white');
 
-          spriteRef.batchElement.scaleX = sw;
-          spriteRef.batchElement.scaleY = sh;
-          spriteRef.batchElement.alpha = 0.1 + 
+          spriteRef.scaleX = sw;
+          spriteRef.scaleY = sh;
+          spriteRef.alpha = 0.1 + 
             Math.sin(Main.Global.time * 4) * 0.1;
         }
       }
