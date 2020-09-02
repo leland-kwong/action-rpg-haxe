@@ -10,11 +10,6 @@ typedef InventoryRef = {
   inventorySlots: Grid.GridRef,
   abilitySlots: Grid.GridRef
 };
-typedef TiledUiProp = {
-  name: String,
-  type: String,
-  value: Dynamic,
-};
 typedef SortedHudResourceBars = Array<String>;
 private typedef EquippableSlotMeta = {
   equippedItemId: String,
@@ -24,36 +19,6 @@ private typedef EquippableSlotMeta = {
   y: Int,
   width: Int,
   height: Int,
-}
-
-class TiledParser {
-  static var cache: Map<
-    hxd.res.Resource, TiledMapData> = 
-    new Map();
-
-  public static function loadFile(
-      res: hxd.res.Resource): TiledMapData {
-
-    final fromCache = cache.get(res);
-
-    if (fromCache != null) {
-      return fromCache;
-    }
-
-    final data = haxe.Json.parse(res.entry.getText());
-    cache.set(res, data);
-
-    return data;
-  }
-
-  public static function findLayer(
-      layerRef: TiledLayer, 
-      name): TiledLayer {
-
-    return Lambda.find(
-        layerRef.layers, 
-        (layer: TiledLayer) -> layer.name == name);
-  }
 }
 
 class UiStateManager {
@@ -1501,40 +1466,24 @@ class Hud {
       } 
     }
 
-    final uiLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-
     // render quest statuses
     {
       if (!Main.Global.uiState.inventory.enabled) {
-        final questLayer = TiledParser.findLayer(
-            uiLayoutRef, 'questLog');
-        final questRegions = TiledParser.findLayer(
-            questLayer, 'regions');
-        final rootObject = Lambda.find(
-            questRegions.objects,
-            (o: TiledObject) -> o.name == 'origin');
         final maxWidth = 300;
         questDisplay.text = Quest.format(
             Main.Global.gameState.questState);
         questDisplay.maxWidth = maxWidth;
         final win = hxd.Window.getInstance();
-        questDisplay.x = rootObject.x * Hud.rScale;
-        questDisplay.y = rootObject.y * Hud.rScale;
 
-        final questLayerSprites = TiledParser.findLayer(
-            questLayer, 'sprites');
-        for (spriteObject in questLayerSprites.objects) {
-          Main.Global.uiSpriteBatch.emitSprite(
-              spriteObject.x * Hud.rScale,
-              spriteObject.y * Hud.rScale,
-              'ui/stylized_border_1',
-              null,
-              (p) -> {
-                p.sortOrder = 0;
-                p.batchElement.scale = Hud.rScale;
-              });
-        }
+        final borderSprite = Main.Global.uiSpriteBatch.emitSprite(
+            Main.nativePixelResolution.x - 10 - maxWidth,
+            400,
+            'ui/stylized_border_1');
+        borderSprite.sortOrder = 0;
+        borderSprite.batchElement.scale = Hud.rScale;
+
+        questDisplay.x = borderSprite.batchElement.x;
+        questDisplay.y = borderSprite.batchElement.y + 15;
       }
     }
 
