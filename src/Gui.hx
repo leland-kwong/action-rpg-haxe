@@ -208,12 +208,12 @@ class GuiComponents {
               p.sortOrder = GuiComponents
                 .sortOrders
                 .menuItemHighlightBg;
-              p.batchElement.alpha = 0.8;
-              p.batchElement.r = 0.9;
-              p.batchElement.g = 0;
-              p.batchElement.b = 0.5;
-              p.batchElement.scaleX = hoveredNode.width;
-              p.batchElement.scaleY = hoveredNode.height;
+              p.alpha = 0.8;
+              p.r = 0.9;
+              p.g = 0;
+              p.b = 0.5;
+              p.scaleX = hoveredNode.width;
+              p.scaleY = hoveredNode.height;
             });
       }
       
@@ -335,12 +335,12 @@ class GuiComponents {
               p.sortOrder = GuiComponents
                 .sortOrders
                 .menuItemHighlightBg;
-              p.batchElement.alpha = 0.8;
-              p.batchElement.r = 0.9;
-              p.batchElement.g = 0;
-              p.batchElement.b = 0.5;
-              p.batchElement.scaleX = hoveredItem.width;
-              p.batchElement.scaleY = hoveredItem.height;
+              p.alpha = 0.8;
+              p.r = 0.9;
+              p.g = 0;
+              p.b = 0.5;
+              p.scaleX = hoveredItem.width;
+              p.scaleY = hoveredItem.height;
             });
       }
       
