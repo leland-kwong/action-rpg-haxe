@@ -316,14 +316,12 @@ class GuiComponents {
           null,
           (p) -> {
             p.sortOrder = GuiComponents.sortOrders.mainMenuBg;
-
-            final b = p.batchElement;
-            b.alpha = 0.8;
-            b.r = 0;
-            b.g = 0;
-            b.b = 0;
-            b.scaleX = win.width;
-            b.scaleY = win.height;
+            p.alpha = 0.8;
+            p.r = 0;
+            p.g = 0;
+            p.b = 0;
+            p.scaleX = win.width;
+            p.scaleY = win.height;
           });
 
       // render hovered item bg

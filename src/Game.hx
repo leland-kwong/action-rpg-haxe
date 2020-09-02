@@ -248,7 +248,7 @@ class Bullet extends Projectile {
         x + dx - x);
     final sprite = Main.Global.sb.emitSprite(
         x, y, spriteKey, angle, null);
-    sprite.batchElement.scale = 1 - progress;
+    sprite.scale = 1 - progress;
   }
 }
 
@@ -341,7 +341,7 @@ class EnergyBomb extends Projectile {
           x, y, 
           'ui/energy_bomb_ring', 
           null, (p) -> {
-            final b = p.batchElement;
+            final b = p;
             final ringBurstCd = Cooldown.get(cds, 'ringBurst');
             // reduce alpha over time
             b.alpha = ringBurstCd / ringBurstDuration ;
@@ -355,7 +355,7 @@ class EnergyBomb extends Projectile {
         x, y, 
         'ui/energy_bomb_projectile', 
         angle, (p) -> {
-          final b = p.batchElement;
+          final b = p;
           final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
           b.g = v;
           b.b = v / 2;
@@ -671,7 +671,7 @@ class Ai extends Entity {
       if (debugCenter) {
         var spriteEffect = (p) -> {
           final scale = radius * 2;
-          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+          final b: h2d.SpriteBatch.BatchElement = p;
 
           b.alpha = 0.2;
           b.scaleX = scale;
@@ -729,7 +729,7 @@ class Ai extends Entity {
                 duration: duration,
                 effectCallback: (p) -> {
                   final b: h2d.SpriteBatch.BatchElement 
-                    = p.batchElement;
+                    = p;
                   final aliveTime = Main.Global.time 
                     - startTime;
                   final progress = Easing
@@ -755,7 +755,7 @@ class Ai extends Entity {
                 duration: duration,
                 effectCallback: (p) -> {
                   final b: h2d.SpriteBatch.BatchElement 
-                    = p.batchElement;
+                    = p;
                   final aliveTime = Main.Global.time 
                     - startTime;
                   final progress = Easing
@@ -870,7 +870,7 @@ class Ai extends Entity {
         null,
         (p) -> {
           final b: h2d.SpriteBatch.BatchElement = 
-            p.batchElement;
+            p;
 
           // flash enemy white
           if (Cooldown.has(cds, 'hitFlash')) {
@@ -977,10 +977,10 @@ class Aura {
                 'ui/aura_glyph_1',
                 angle);
             p.sortOrder = 2;
-            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.a = 0.4;
+            p.r = 1.25 + 0.25 * colorAdjust;
+            p.g = 1.25 + 0.25 * colorAdjust;
+            p.b = 1.25 + 0.25 * colorAdjust;
+            p.a = 0.4;
           }
 
           {
@@ -989,11 +989,11 @@ class Aura {
                 'ui/aura_glyph_1',
                 angle * -1);
             p.sortOrder = 2;
-            p.batchElement.scale = 0.8;
-            p.batchElement.r = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.g = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.b = 1.25 + 0.25 * colorAdjust;
-            p.batchElement.a = 0.8;
+            p.scale = 0.8;
+            p.r = 1.25 + 0.25 * colorAdjust;
+            p.g = 1.25 + 0.25 * colorAdjust;
+            p.b = 1.25 + 0.25 * colorAdjust;
+            p.a = 0.8;
           }
         }
       }
@@ -1196,7 +1196,7 @@ class Player extends Entity {
             'ui/player_pet_orb',
             null,
             (p) -> {
-              final b = p.batchElement;
+              final b = p;
               final facingX = ref.dx > 0 ? 1 : -1;
               b.scaleX = facingX;
             });
@@ -1643,7 +1643,7 @@ class Player extends Entity {
             effectCallback: (p) -> {
               final progress = (Main.Global.time - startTime) 
                 / trailDuration;
-              final elem = p.batchElement;
+              final elem = p;
               elem.alpha = initialAlpha * (1 - progress);
               elem.scaleX = trailFacingX;
               elem.r = 1.;
@@ -1764,7 +1764,7 @@ class Player extends Entity {
             ref: SpriteBatchSystem.SpriteRef,
             r = 1., g = 1., b = 1., a = 1.) {
 
-          final elem = ref.batchElement;
+          final elem = ref;
 
           elem.r = r;
           elem.g = g;
@@ -1801,7 +1801,7 @@ class Player extends Entity {
             ref.sortOrder = spriteRef.sortOrder + 1;
             setColor(ref, 10, 10, 10);
           } else {
-            final b = spriteRef.batchElement;
+            final b = spriteRef;
             b.scale = 1 + Easing.easeInCirc(progress) * 0.3;
             b.alpha = 1 - Easing.easeInSine(progress);
           }
@@ -1843,7 +1843,7 @@ class Player extends Entity {
               effectCallback: (p) -> {
                 final progress = (Main.Global.time - startTime) 
                   / duration;
-                final elem = p.batchElement;
+                final elem = p;
                 final dx = Math.cos(angle2);
                 final dy = Math.sin(angle2);
                 final v1 = Easing.easeOutQuint(progress);
@@ -1879,7 +1879,7 @@ class Player extends Entity {
                 / torchDuration;
               final v1 = Easing.easeOutQuint(progress);
               final v2 = Easing.easeInQuint(progress);
-              final elem = p.batchElement;
+              final elem = p;
 
               p.sortOrder += sortOffset + 1;
               elem.rotation = angle;
@@ -1902,7 +1902,7 @@ class Player extends Entity {
               final progress = (Main.Global.time - startTime) 
                 / torchDuration;
               final v1 = Easing.easeInQuint(progress);
-              final elem = p.batchElement;
+              final elem = p;
 
               p.sortOrder += sortOffset + 2;
               elem.rotation = angle;
@@ -1969,8 +1969,8 @@ class Player extends Entity {
 
     final currentSprite = core.Anim.getFrame(activeAnim, time);
     function spriteEffect(p: SpriteBatchSystem.SpriteRef) {
-      p.batchElement.scaleX = facingX;
-      p.batchElement.alpha = Utils.withDefault(
+      p.scaleX = facingX;
+      p.alpha = Utils.withDefault(
           Entity.getComponent(this, 'alpha'),
           1);
     }
@@ -2000,7 +2000,7 @@ class Player extends Entity {
 
     function setSpriteColors(
         p, r = 1., g = 1., b = 1., a = 1.) {
-      final e: h2d.SpriteBatch.BatchElement = p.batchElement;
+      final e: h2d.SpriteBatch.BatchElement = p;
 
       e.r = r;
       e.g = g;
@@ -2049,7 +2049,7 @@ class Player extends Entity {
             orbLineAngle,
             (p) -> {
               p.sortOrder += 50.;
-              final b = p.batchElement;
+              final b = p;
               b.scaleX = lineLength;
 
               if (healType == 'LIFE_RESTORE') {
@@ -2072,7 +2072,7 @@ class Player extends Entity {
               ,1.5);
         playerTile.dx = -spriteData.pivot.x * spriteData.sourceSize.w;
         playerTile.dy = dy;
-        final b = spriteRef.batchElement;
+        final b = spriteRef;
         b.t = playerTile;
         b.scaleX = this.facingX;
 
@@ -2444,7 +2444,7 @@ class Game extends h2d.Object {
                   playerTile.setCenterRatio(
                       spriteData.pivot.x,
                       spriteData.pivot.y);
-                  final b = spriteRef.batchElement;
+                  final b = spriteRef;
                   b.t = playerTile;
 
                   return progress < 1;
@@ -2464,7 +2464,7 @@ class Game extends h2d.Object {
                         ,3);
                   playerTile.dx = -spriteData.pivot.x * spriteData.sourceSize.w;
                   playerTile.dy = -spriteData.pivot.y * spriteData.sourceSize.h * progress;
-                  final b = spriteRef.batchElement;
+                  final b = spriteRef;
                   b.t = playerTile;
                   b.r = 999.0;
                   b.g = 999.0;
@@ -2594,7 +2594,7 @@ class Game extends h2d.Object {
                         ref.y + dy * progress,
                         'ui/prop_1_1_shard_1',
                         (time - startedAt) * 14);
-                    spriteRef.batchElement.alpha = 
+                    spriteRef.alpha = 
                       1 - Easing.easeInQuint(progress);
                   }
 
@@ -2606,7 +2606,7 @@ class Game extends h2d.Object {
                         ref.y + dy * progress,
                         'ui/prop_1_1_shard_2',
                         (time - startedAt) * 14);
-                    spriteRef.batchElement.alpha = 
+                    spriteRef.alpha = 
                       1 - Easing.easeInQuint(progress);
                   }
 
@@ -2618,7 +2618,7 @@ class Game extends h2d.Object {
                         ref.y + dy * progress,
                         'ui/prop_1_1_shard_3',
                         (time - startedAt) * 14);
-                    spriteRef.batchElement.alpha = 
+                    spriteRef.alpha = 
                       1 - Easing.easeInQuint(progress);
                   }
 
@@ -2686,7 +2686,7 @@ class Game extends h2d.Object {
                     y,
                     spriteKey);
                 wallSprite.sortOrder = 
-                  wallSprite.batchElement.y + 32.;
+                  wallSprite.y + 32.;
 
                 if (Entity.getComponent(wallRef, 'isObscuring')) {
                   final wallMaskSprite = Main.Global.wmSpriteBatch.emitSprite(
@@ -2706,7 +2706,7 @@ class Game extends h2d.Object {
                       'ui/square_white',
                       null,
                       (p) -> {
-                        final b = p.batchElement;
+                        final b = p;
                         p.sortOrder = 100000 * 1000000;
                         b.alpha = 0.5;
                         b.scale = wallRef.radius * 2;
@@ -2735,23 +2735,19 @@ class Game extends h2d.Object {
         }
       }
 
-      final tg = new h2d.TileGroup(
-          spriteSheetTile,
-          Main.Global.rootScene);
-
       final miniMapPositionsDrawn = [];
 
       final refreshMap = (dt) -> {
         final idsRendered = new Map();
 
-        tg.clear();
-
         for (layerId in orderedLayers) {
           final tileGrid = tileGridByLayerId.get(layerId);
           final hasTile = (cellData) -> 
             cellData != null; 
-          final addTileToTileGroup = (
-              gridX, gridY, cellData: Grid.GridItems) -> {
+          final renderTile = (
+              gridX: Int, 
+              gridY: Int, 
+              cellData: Grid.GridItems) -> {
             if (cellData != null) {
               for (itemId in cellData) {
                 final objectType = mapData.itemTypeById.get(itemId);
@@ -2776,17 +2772,6 @@ class Game extends h2d.Object {
                       objectMeta.spriteKey;
                     }
                   }
-                  final spriteData = Reflect.field(
-                      spriteSheetData,
-                      spriteKey);
-                  final tile = spriteSheetTile.sub(
-                      spriteData.frame.x,
-                      spriteData.frame.y,
-                      spriteData.frame.w,
-                      spriteData.frame.h);
-                  tile.setCenterRatio(
-                      spriteData.pivot.x,
-                      spriteData.pivot.y);
                   final pos = truePositionByItemId.get(itemId);
 
                   final y = {
@@ -2797,10 +2782,11 @@ class Game extends h2d.Object {
                     }
                   }
 
-                  tg.add(
+                  final tileRef = Main.Global.sb.emitSprite(
                       pos.x,
                       y,
-                      tile);
+                      spriteKey);
+                  tileRef.sortOrder = 0;
 
                   final miniMapPosDrawn = Grid2d.get(
                       miniMapPositionsDrawn, pos.x, pos.y) != null;
@@ -2837,11 +2823,7 @@ class Game extends h2d.Object {
               mc.y,
               mc.w + threshold,
               mc.h + threshold,
-              addTileToTileGroup);
-
-#if debugMode
-          Main.Global.logData.numTilesRendered = tg.count();
-#end
+              renderTile);
         }
 
 #if false
@@ -2853,7 +2835,6 @@ class Game extends h2d.Object {
 #end
 
         if (finished) {
-          tg.remove();
           miniMap.remove();
         }
 
@@ -2958,12 +2939,12 @@ class Game extends h2d.Object {
           null,
           (p) -> {
             p.sortOrder = (ref.y / 2) - 1;
-            p.batchElement.scaleX = ref.radius * 2;
-            p.batchElement.r = 0;
-            p.batchElement.g = 0;
-            p.batchElement.b = 0.2;
-            p.batchElement.a = 0.2;
-            p.batchElement.scaleY = ref.radius * 0.5;
+            p.scaleX = ref.radius * 2;
+            p.r = 0;
+            p.g = 0;
+            p.b = 0.2;
+            p.a = 0.2;
+            p.scaleY = ref.radius * 0.5;
           });
 
       final lootDef = Loot.getDef(
@@ -3021,9 +3002,9 @@ class Game extends h2d.Object {
           final alphaFallOff = Math.max(
               0, 1 - Math.pow(cameraDy / cam.h * 2, 3));
           Main.Global.logData.alphaFallOff = alphaFallOff;
-          sprite.batchElement.scaleY = 1.3;
-          sprite.batchElement.scaleX = cfg.radius * 2;
-          sprite.batchElement.a = cfg.alpha * alphaFallOff;
+          sprite.scaleY = 1.3;
+          sprite.scaleX = cfg.radius * 2;
+          sprite.a = cfg.alpha * alphaFallOff;
         }
       }
     };

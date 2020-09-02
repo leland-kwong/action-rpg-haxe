@@ -15,11 +15,10 @@ typedef SpriteSheetData = {
   frames: Dynamic
 };
 
-
-typedef SpriteRef = {
-  var sortOrder: Float;
-  var batchElement: BatchElement;
-};
+class SpriteRef extends BatchElement {
+  public var sortOrder: Float;
+  public var batchElement: BatchElement;
+}
 
 typedef BatchManagerRef = {
   var particles: Array<SpriteRef>;
@@ -170,20 +169,20 @@ class SpriteBatchSystem {
     // to modify the sprite before rendering
     ?effectCallback: EffectCallback) {
 
-    final g = new BatchElement(
+    final spriteRef = new SpriteRef(
         makeTile(
           this.batchManager.spriteSheet,
           this.batchManager.spriteSheetData, 
           spriteKey));
+    spriteRef.batchElement = spriteRef;
     if (angle != null) {
-      g.rotation = angle;
+      spriteRef.rotation = angle;
     }
-    g.x = x;
-    g.y = y;
-    final spriteRef: SpriteRef = {
-      batchElement: g,
-      sortOrder: y,
-    }
+
+    spriteRef.x = x;
+    spriteRef.y = y;
+    spriteRef.sortOrder = y;
+
     if (effectCallback != null) {
       effectCallback(spriteRef);
     }
