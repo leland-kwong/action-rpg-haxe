@@ -90,7 +90,7 @@ class AnimEffect {
         }
 
         if (ref.scale != null) {
-          spriteRef.batchElement.scale = ref.scale;
+          spriteRef.scale = ref.scale;
         }
         nextAnimations.push(ref);
       }
