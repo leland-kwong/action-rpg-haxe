@@ -326,7 +326,7 @@ class Inventory {
           null,
           (p) -> {
             p.sortOrder = 0;
-            p.batchElement.scale = Hud.rScale;
+            p.scale = Hud.rScale;
           });
     }
   }
@@ -452,7 +452,7 @@ class UiGrid {
             y,
             spriteKey);
         ref.sortOrder = 1;
-        ref.batchElement.scale = Hud.rScale;
+        ref.scale = Hud.rScale;
 
         final shouldHighlightSkillTreeButton = 
           objectType == 'hud_passive_skill_tree_button' 
@@ -460,10 +460,10 @@ class UiGrid {
               Main.Global.gameState) > 0;
         if (shouldHighlightSkillTreeButton) {
           final progress = Math.abs(Math.sin(Main.Global.time * 6));
-          ref.batchElement.y -= progress * 6;
-          ref.batchElement.r = 0.5 + 0.5 * progress;
-          ref.batchElement.g = 0.4 + 0.5 * progress;
-          ref.batchElement.b = 0.;
+          ref.y -= progress * 6;
+          ref.r = 0.5 + 0.5 * progress;
+          ref.g = 0.4 + 0.5 * progress;
+          ref.b = 0.;
         }
       }
     }
@@ -539,7 +539,7 @@ class UiGrid {
               y,
               objectMeta.spriteKey);
           ref.sortOrder = 2;
-          ref.batchElement.scale = Hud.rScale;
+          ref.scale = Hud.rScale;
         }
       }
 
@@ -584,11 +584,11 @@ class UiGrid {
           bounds[2] * Hud.rScale,
           objectMeta.spriteKey);
       spriteRef.sortOrder = 1;
-      spriteRef.batchElement.scale = Hud.rScale;
-      spriteRef.batchElement.r = 0.;
-      spriteRef.batchElement.g = 0.;
-      spriteRef.batchElement.b = 0.;
-      spriteRef.batchElement.a = 0.9;
+      spriteRef.scale = Hud.rScale;
+      spriteRef.r = 0.;
+      spriteRef.g = 0.;
+      spriteRef.b = 0.;
+      spriteRef.a = 0.9;
 
       // background sprite 'drop shadow'
       final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
@@ -596,11 +596,11 @@ class UiGrid {
           (bounds[2] + 1) * Hud.rScale,
           objectMeta.spriteKey);
       spriteRef.sortOrder = 1;
-      spriteRef.batchElement.scale = Hud.rScale;
-      spriteRef.batchElement.r = 0.;
-      spriteRef.batchElement.g = 0.;
-      spriteRef.batchElement.b = 0.;
-      spriteRef.batchElement.a = 0.9;
+      spriteRef.scale = Hud.rScale;
+      spriteRef.r = 0.;
+      spriteRef.g = 0.;
+      spriteRef.b = 0.;
+      spriteRef.a = 0.9;
 
       final currentExp = Main.Global.gameState.experienceGained;
       final currentLevel = Config.calcCurrentLevel(
@@ -626,11 +626,11 @@ class UiGrid {
           bounds[2] * Hud.rScale,
           objectMeta.spriteKey);
       spriteRef.sortOrder = 1;
-      spriteRef.batchElement.scale = Hud.rScale;
-      spriteRef.batchElement.scaleX *= 1 - levelProgress;
-      spriteRef.batchElement.r = 1.;
-      spriteRef.batchElement.g = 0.7;
-      spriteRef.batchElement.b = 0.;
+      spriteRef.scale = Hud.rScale;
+      spriteRef.scaleX *= 1 - levelProgress;
+      spriteRef.r = 1.;
+      spriteRef.g = 0.7;
+      spriteRef.b = 0.;
     }
 
     // render hud player level
@@ -715,14 +715,14 @@ class Tooltip {
         'ui/square_white',
         null,
         (p) -> {
-          p.batchElement.scaleX = ttPaddingH + 
+          p.scaleX = ttPaddingH + 
             tooltipTextRef.textWidth / Hud.rScale;
-          p.batchElement.scaleY = ttPaddingV + 
+          p.scaleY = ttPaddingV + 
             tooltipTextRef.textHeight / Hud.rScale;
-          p.batchElement.r = 0;
-          p.batchElement.g = 0;
-          p.batchElement.b = 0;
-          p.batchElement.a = 0.9;
+          p.r = 0;
+          p.g = 0;
+          p.b = 0;
+          p.a = 0.9;
         });
   }
 }
@@ -1198,7 +1198,7 @@ class InventoryDragAndDropPrototype {
             lootDef.spriteKey,
             null,
             (p) -> {
-              final b = p.batchElement;
+              final b = p;
               p.sortOrder = 2;
               b.scale = Hud.rScale;
             });
@@ -1231,7 +1231,7 @@ class InventoryDragAndDropPrototype {
           lootDef.spriteKey,
           (p) -> {
             p.sortOrder = 1;
-            final b = p.batchElement;
+            final b = p;
             b.scale = Hud.rScale;
           });
     } 
@@ -1249,7 +1249,7 @@ class InventoryDragAndDropPrototype {
           (p) -> {
             p.sortOrder = 2;
 
-            final b = p.batchElement;
+            final b = p;
             b.scaleX = width * cellSize;
             b.scaleY = height * cellSize;
             b.alpha = 0.4;
@@ -1286,7 +1286,7 @@ class InventoryDragAndDropPrototype {
           (p) -> {
             p.sortOrder = 4;
 
-            final b = p.batchElement;
+            final b = p;
             b.scale = Hud.rScale;
           });
     }
@@ -1310,7 +1310,7 @@ class InventoryDragAndDropPrototype {
           null,
           (p) -> {
             p.sortOrder = 3;
-            final b = p.batchElement;
+            final b = p;
             b.scaleX = slotDef.width;
             b.scaleY = slotDef.height;
             b.a = 0.6;
@@ -1480,10 +1480,10 @@ class Hud {
             400,
             'ui/stylized_border_1');
         borderSprite.sortOrder = 0;
-        borderSprite.batchElement.scale = Hud.rScale;
+        borderSprite.scale = Hud.rScale;
 
-        questDisplay.x = borderSprite.batchElement.x;
-        questDisplay.y = borderSprite.batchElement.y + 15;
+        questDisplay.x = borderSprite.x;
+        questDisplay.y = borderSprite.y + 15;
       }
     }
 
@@ -1496,8 +1496,8 @@ class Hud {
     // render equipped abilities
     {
       final spriteEffect = (p) -> {
-        p.batchElement.scaleX = rScale * 1.0;
-        p.batchElement.scaleY = rScale * 1.0;
+        p.scaleX = rScale * 1.0;
+        p.scaleY = rScale * 1.0;
       };
       final inventoryEquippedSlots = InventoryDragAndDropPrototype
           .getEquippedAbilities();
