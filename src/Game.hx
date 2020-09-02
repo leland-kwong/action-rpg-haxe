@@ -25,7 +25,7 @@
 using core.Types;
 
 import h2d.Bitmap;
-import Grid.GridRef;
+import Grid;
 import Fonts;
 import Utils;
 import Camera;

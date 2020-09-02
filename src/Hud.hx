@@ -790,7 +790,7 @@ class InventoryDragAndDropPrototype {
         createLootInstanceByType('spiderBots'), 0); 
 
     equipItemToSlot(
-        createLootInstanceByType('basicBlasterEvolved'), 1); 
+        createLootInstanceByType('channelBeam'), 1); 
 
     equipItemToSlot(
         createLootInstanceByType('energy1'), 2); 

@@ -63,13 +63,18 @@ class ChannelBeam {
         );
     final laserTailWidth = laserTailSpriteData.frame.w 
       * laserTailSpriteData.pivot.x;
-    final sprite = Main.Global.sb.emitSprite(
+    final lhScaleY = Utils.rnd(1, 1.15);
+    final lhSprite = Main.Global.sb.emitSprite(
         startPt.x,
         startPt.y,
         'ui/kamehameha_head',
         bounds.angle);
-    final lcx = startPt.x + dx * laserHeadWidth;
-    final lcy = startPt.y + dy * laserHeadWidth;
+    lhSprite.batchElement.scaleY = lhScaleY;
+    // laser center
+    final lcAngle = bounds.angle + (Math.PI / 2);
+    final lcJitter = Utils.rnd(-0.5, 0.5);
+    final lcx = startPt.x + dx * laserHeadWidth + Math.cos(lcAngle) * lcJitter;
+    final lcy = startPt.y + dy * laserHeadWidth + Math.sin(lcAngle) * lcJitter;
     final centerSprite = Main.Global.sb.emitSprite(
         lcx,
         lcy,
