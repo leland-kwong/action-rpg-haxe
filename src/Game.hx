@@ -371,7 +371,7 @@ typedef AiProps = {
 };
 
 class Ai extends Entity {
-  static final hitFlashDuration = 0.06;
+  static final hitFlashDuration = 0.04;
   static final defaultFindTargetFn = (ent: Entity) -> {
     return Entity.NULL_ENTITY;
   };
