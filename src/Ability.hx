@@ -69,7 +69,7 @@ class ChannelBeam {
         startPt.y,
         'ui/kamehameha_head',
         bounds.angle);
-    lhSprite.batchElement.scaleY = lhScaleY;
+    lhSprite.scaleY = lhScaleY;
     // laser center
     final lcAngle = bounds.angle + (Math.PI / 2);
     final lcJitter = Utils.rnd(-0.5, 0.5);
@@ -81,7 +81,7 @@ class ChannelBeam {
         'ui/kamehameha_center_width_1',
         bounds.angle);
     final shaftLength = length - laserHeadWidth - laserTailWidth;
-    centerSprite.batchElement.scaleX = shaftLength;
+    centerSprite.scaleX = shaftLength;
     final tailSprite = Main.Global.sb.emitSprite(
         lcx + dx * (shaftLength + laserTailWidth),
         lcy + dy * (shaftLength + laserTailWidth),
@@ -92,9 +92,9 @@ class ChannelBeam {
     if (hasCollision) {
       final offsetX = -Utils.rnd(0, 1) * 2 * dx;
       final offsetY = -Utils.rnd(0, 1) * 2 * dy;
-      centerSprite.batchElement.scaleX += offsetX;
-      tailSprite.batchElement.x += offsetX;
-      tailSprite.batchElement.y += offsetY;
+      centerSprite.scaleX += offsetX;
+      tailSprite.x += offsetX;
+      tailSprite.y += offsetY;
     }
 
     final isHitTick = Cooldown.has(entityRef.cds, 'hitFlash');
@@ -110,10 +110,10 @@ class ChannelBeam {
             startTime, Main.Global.time, duration);
         final progress = Easing.easeInBack(rawProgress);
         p.sortOrder += 5;
-        p.batchElement.scale = 3 * (1 - progress);
-        p.batchElement.g = 0.5 + 0.5 * (1 - progress);
-        p.batchElement.b = 1 - (progress * 1.5);
-        p.batchElement.a = 1 - progress;
+        p.scale = 3 * (1 - progress);
+        p.g = 0.5 + 0.5 * (1 - progress);
+        p.b = 1 - (progress * 1.5);
+        p.a = 1 - progress;
       }
 
       for (_ in 0...numParticles) {
@@ -121,8 +121,8 @@ class ChannelBeam {
           frames: frames,
           duration: duration,
           startTime: startTime,
-          x: tailSprite.batchElement.x,
-          y: tailSprite.batchElement.y,
+          x: tailSprite.x,
+          y: tailSprite.y,
           dx: Utils.rnd(-1, 1, true) * 20,
           dy: Utils.rnd(-1, 1, true) * 20,
           angle: Utils.rnd(0, 2) * Math.PI,
