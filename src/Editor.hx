@@ -84,12 +84,17 @@ typedef EditorState = {
 };
 typedef EditorRendererRow = {
   tg: EditorTileGroup,
-  o: h2d.Object
+  objectRow: h2d.Object
 };
 typedef EditorRendererLayer = Map<Int, EditorRendererRow>;
 
 typedef ConfigObjectMeta = {
-  spriteKey: String,
+  ?spriteKey: String,
+  ?text: {
+    text: String,
+    ?font: h2d.Font,
+    ?textAlign: h2d.Text.Align,
+  },
   ?type: String,
   ?sharedId: String,
   ?ignoreRender: Bool,
@@ -156,6 +161,7 @@ class EditorTileGroup extends h2d.TileGroup {
 class Editor {
   static final defaultObjectMeta = {
     spriteKey: 'ui/square_white',
+    text: null,
     type: 'UNKNOWN_TYPE',
     sharedId: null,
     ignoreRender: false,
@@ -351,6 +357,26 @@ class Editor {
 
           case _.indexOf('editor-data/hud.eds') != -1 => true: {
             [
+              'ability_slots_group_background' => {
+                spriteKey: 'ui/ui_inventory_ability_slots_group',
+                sharedId: 'ability_slots_group_background'
+              },
+              'ability_slot' => {
+                spriteKey: 'ui/ui_inventory_slot',
+                type: 'INVENTORY_SLOT_INTERACTABLE',
+                text: {
+                  text: 'ability',
+                  textAlign: Center
+                },
+                data: {
+                  allowedCategory: 'ability',
+                }
+              },
+              'ui_inventory_underlay' => {
+                spriteKey: 'ui/ui_inventory_underlay',
+                type: 'INVENTORY_SLOT_INTERACTABLE',
+                sharedId: 'ui_inventory_underlay'
+              },
               'hud_player_level' => {
                 spriteKey: 'ui/hud_player_level',
                 sharedId: 'hud_player_level'
@@ -387,10 +413,6 @@ class Editor {
               'hud_ability_slot' => {
                 spriteKey: 'ui/hud_ability_slot',
               },
-              'ui_inventory_underlay' => {
-                spriteKey: 'ui/ui_inventory_underlay',
-                sharedId: 'ui_inventory_underlay'
-              }
             ];
           }
 
@@ -934,7 +956,7 @@ class Editor {
       final scrollSpeed = 50;
       var oy = itemSize + regionState.scrollY * scrollSpeed;
       final x = Std.int(win.width - itemSize / 2) - sidePadding;
-      final itemSpacing = 10;
+      final itemSpacing = 20;
       final uiRect = new h2d.col.Bounds();
       uiRect.set(
           x - itemSize / 2 - sidePadding,
@@ -1061,7 +1083,7 @@ class Editor {
                     final newObject = new h2d.Object();
                     final newRenderRow = {
                       tg: newTg,
-                      o: newObject
+                      objectRow: newObject
                     }
                     activeRenderLayer.set(rowIndex, newRenderRow);
                     cleanupFns.push(() -> {
@@ -1075,12 +1097,14 @@ class Editor {
                   }
                 };
                 final tg = renderRow.tg;
+                final objRow = renderRow.objectRow;
 
                 // refresh tile row
                 final rowId = '${action.layerId}__${rowIndex}';
                 if (renderRowsRedrawn.get(rowId) == null) {
                   renderRowsRedrawn.set(rowId, true);
                   tg.clear();
+                  objRow.removeChildren(); 
 
                   if (action.layerId == 'layer_marquee_selection') {
                     tg.setDefaultColor(0xffffff, 0.4);
@@ -1096,6 +1120,21 @@ class Editor {
                         .get(itemId);
                       final objectMeta = getConfig().objectMetaByType
                         .get(objectType);
+
+                      final hasText = objectMeta.text != null;
+                      if (hasText) {
+                        final tf = new h2d.Text(
+                            Fonts.primary(),
+                            objRow); 
+                        tf.x = colIndex;
+                        tf.y = rowIndex;
+                        tf.text = objectMeta.text.text;
+                        if (objectMeta.text.textAlign != null) {
+                          tf.textAlign = objectMeta.text.textAlign;
+                        }
+                        tf.setScale(0.25);
+                      }
+
                       final spriteKey = {
                         if (objectMeta.isAutoTile) {
                           final gridRef = editorState.gridByLayerId
@@ -1172,7 +1211,7 @@ class Editor {
             Main.Global.staticScene.addChild(
                 renderRow.tg);
             Main.Global.staticScene.addChild(
-                renderRow.o);
+                renderRow.objectRow);
 
             // move marquee selection relative to mouse position
             if (layerId == 'layer_marquee_selection') {
@@ -1231,22 +1270,26 @@ class Editor {
 
       final Key = hxd.Key;
       final buttonDown = Main.Global.worldMouse.buttonDown;
+      final menuItemRect = new h2d.col.Bounds();
+      final mousePt = new h2d.col.Point(mx, my);
       final menuItemHovered  = Lambda.fold(
           objectTypeMenu,
-          (menuItem, result: { value: String, itemDist: Float }) -> {
-            final d = Utils.distance(mx , my, menuItem.x, menuItem.y);
+          (menuItem, result: { value: String }) -> {
+            menuItemRect.set(
+                menuItem.x - menuItem.width / 2, 
+                menuItem.y - menuItem.height / 2,
+                menuItem.height, 
+                menuItem.width);
 
-            if (d < result.itemDist) {
+            if (menuItemRect.contains(mousePt)) {
               return {
                 value: menuItem.type,
-                itemDist: d
               };
             }
 
             return result;
           }, {
             value: null,
-            itemDist: 50
           });
       final isMenuItemHovered = menuItemHovered.value != null;
       // handle object menu selection
@@ -1791,15 +1834,40 @@ class Editor {
             }
           };
 
-          final spriteKey = getConfig().objectMetaByType
-            .get(menuItem.type)
-            .spriteKey;
           sbs.emitSprite(
               menuItem.x,
               menuItem.y,
-              spriteKey,
+              meta.spriteKey,
               null,
               spriteEffect);
+
+          // render hitbox
+          {
+            final s = sbs.emitSprite(
+                menuItem.x - menuItem.width / 2,
+                menuItem.y - menuItem.height / 2,
+                'ui/square_white');
+            s.batchElement.scaleX = menuItem.width;
+            s.batchElement.scaleY = menuItem.height;
+            s.batchElement.r = 0.;
+            s.batchElement.g = 0.;
+            s.batchElement.b = 0.;
+            s.batchElement.a = 0.1;
+          }
+
+          // render label
+          {
+            final tf = TextPool.get();
+            final f = Fonts.primary().clone();
+            f.resizeTo(14);
+            tf.font = f;
+            tf.x = menuItem.x;
+            tf.y = menuItem.y + menuItem.height / 2;
+            tf.text = menuItem.type;
+            tf.textAlign = Center;
+            tf.textColor = 0xffffff;
+            Main.Global.uiRoot.addChild(tf);
+          }
         }
       }
 

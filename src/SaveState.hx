@@ -59,24 +59,34 @@ class SaveState {
     return fileData == null;
   }
 
-  public static function load<T>(
+  // [ENHANCEMENT] improve return value
+  // We can return an object of:
+  // { data: Dynamic, resolved: Bool, error: Dynamic } 
+  // This will solve the issue where we can't tell if a
+  // null value being returned is the result no file to load
+  // or file was loaded with no data.
+  public static function load(
     keyPath: String,
     fromUrl = false,
-    deserializeFn: (rawData: String) -> Dynamic,
-    onSuccess: (data: Dynamic) -> Void,
-    onError: (error: Dynamic) -> Void
-  ): T {
+    ?deserializeFn: (rawData: String) -> Dynamic,
+    ?onSuccess: (data: Dynamic) -> Void,
+    ?onError: (error: Dynamic) -> Void
+  ): Dynamic {
     try {
       final fullPath = '${baseDir}/${keyPath}';
 
       if (dataCacheByFile.exists(fullPath)) {
         final fromCache = dataCacheByFile.get(fullPath);
-        onSuccess(fromCache);
+        if (onSuccess != null) {
+          onSuccess(fromCache);
+        }
         return fromCache;
       }
 
       if (!FileSystem.exists(fullPath)) {
-        onSuccess(null);
+        if (onSuccess != null) {
+          onSuccess(null);
+        }
         return null;
       }
 
@@ -88,11 +98,15 @@ class SaveState {
       }
 
       dataCacheByFile.set(fullPath, deserialized);
-      onSuccess(deserialized);
+      if (onSuccess != null) {
+        onSuccess(deserialized);
+      }
       return deserialized;
     }
     catch (error: Dynamic) {
-      onError(error);
+      if (onError != null) {
+        onError(error);
+      }
       return error;
     }
 

@@ -345,22 +345,33 @@ class Inventory {
       return;
     }
 
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'inventory');
-    final backgroundLayer = TiledParser
-      .findLayer(inventoryLayerRef, 'background');
-    final bgObjects = backgroundLayer.objects;
+    final hudLayoutData: Editor.EditorState = SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false);
 
-    // render inventory background
-    for (ref in bgObjects) {
-      final cx = ref.x;
-      final cy = ref.y;
+    if (hudLayoutData == null) {
+      return;
+    }
+
+    final inventoryLayerGrid = hudLayoutData.gridByLayerId.get(
+        'layer_2');
+    final uiBackgroundObjects = [
+      'ability_slots_group_background',
+      'ui_inventory_underlay',
+    ];
+    for (objectId in uiBackgroundObjects) {
+      final bounds = inventoryLayerGrid.itemCache.get(
+          objectId);
+      final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
+      final objectMeta = editorConfig.objectMetaByType.get(
+          objectId);
+
+      final cx = bounds[0];
+      final cy = bounds[2];
       Main.Global.uiSpriteBatch.emitSprite(
           cx * Hud.rScale,
           cy * Hud.rScale,
-          ref.name, 
+          objectMeta.spriteKey, 
           null,
           (p) -> {
             p.sortOrder = 0;
@@ -378,12 +389,11 @@ class UiGrid {
   static var state = {
     hoveredId: NULL_HOVERED_ID,
   };
-  static final hudLayoutFile = 'editor-data/hud.eds';
   static var tfPlayerLevel: h2d.Text;
 
   public static function loadHudLayout(): Editor.EditorState {
     return SaveState.load(
-        hudLayoutFile,
+        Hud.HUD_LAYOUT_FILE,
         false,
         null,
         (_) -> {},
@@ -408,7 +418,7 @@ class UiGrid {
 
     for (grid in hudLayoutRef.gridByLayerId) {
       for (objectId => bounds in grid.itemCache) {
-        final editorConfig = Editor.getConfig(hudLayoutFile);
+        final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
         final objectType = hudLayoutRef.itemTypeById.get(objectId);
         final objectMeta = editorConfig.objectMetaByType.get(objectType);
         final bm = Main.Global.uiSpriteBatch.batchManager;
@@ -465,7 +475,7 @@ class UiGrid {
       return;
     }
 
-    final editorConfig = Editor.getConfig(hudLayoutFile);
+    final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
     final hudLayoutRef = loadHudLayout();
     final orderedLayers = hudLayoutRef.layerOrderById;
 
@@ -475,7 +485,7 @@ class UiGrid {
       final grid = hudLayoutRef.gridByLayerId.get(cockpitLayer);
 
       for (objectId => bounds in grid.itemCache) {
-        final editorConfig = Editor.getConfig(hudLayoutFile);
+        final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
         final objectType = hudLayoutRef.itemTypeById.get(objectId);
         final objectMeta = editorConfig.objectMetaByType.get(objectType);
         final x = bounds[0] * Hud.rScale;
@@ -565,7 +575,7 @@ class UiGrid {
           resourceBars: SortedHudResourceBars) {
         for (i in 0...numSegments) {
           final objectId = resourceBars[i];
-          final editorConfig = Editor.getConfig(hudLayoutFile);
+          final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
           final objectType = hudLayoutRef.itemTypeById.get(objectId);
           final objectMeta = editorConfig
             .objectMetaByType
@@ -828,47 +838,66 @@ class InventoryDragAndDropPrototype {
     equipItemToSlot(
         createLootInstanceByType('spiderBots'), 0); 
 
-    // equipItemToSlot(
-    //     createLootInstanceByType('basicBlasterEvolved'), 0); 
-
     equipItemToSlot(
         createLootInstanceByType('basicBlasterEvolved'), 1); 
 
     equipItemToSlot(
-        createLootInstanceByType('moveSpeedAura'), 2); 
+        createLootInstanceByType('basicBlasterEvolved'), 2); 
+
+    equipItemToSlot(
+        createLootInstanceByType('moveSpeedAura'), 3); 
   }
 
   static function getEquipmentSlotDefinitions() {
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json); 
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'inventory');
-    final interactRef = TiledParser
-      .findLayer(
-          inventoryLayerRef, 'interactable');
-    final equipmentSlots = Lambda.filter(
-        interactRef.objects,
-        (o) -> o.type == 'equipment_slot');  
+    final slotGap = 1 * Hud.rScale;
+    final abilitySlot1 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: 151 * Hud.rScale,
+      y: 32 * Hud.rScale,
+      width: 22 * Hud.rScale,
+      height: 22 * Hud.rScale,
+    };
+    final abilitySlot2 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: abilitySlot1.x + abilitySlot1.width + slotGap,
+      y: abilitySlot1.y,
+      width: abilitySlot1.width,
+      height: abilitySlot1.height,
+    };
+    final abilitySlot3 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: abilitySlot2.x + abilitySlot2.width + slotGap,
+      y: abilitySlot2.y,
+      width: abilitySlot1.width,
+      height: abilitySlot1.height,
+    };
+    final abilitySlot4 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: abilitySlot3.x + abilitySlot3.width + slotGap,
+      y: abilitySlot3.y,
+      width: abilitySlot1.width,
+      height: abilitySlot1.height,
+    };
 
-    return Lambda.map(
-        equipmentSlots, (slot) -> {
-          final allowedCategory = Lambda.find(
-              slot.properties, 
-              (prop: {
-                name: String,
-                value: String
-              }) -> prop.name == 'allowedCategory')
-            .value;
+    return [
+      abilitySlot1,
+      abilitySlot2,
+      abilitySlot3,
+      abilitySlot4
+    ];
+  }
 
-          return {
-            equippedItemId: NULL_PICKUP_ID,
-            allowedCategory: allowedCategory,
-            x: slot.x * Hud.rScale,
-            y: slot.y * Hud.rScale,
-            width: slot.width * Hud.rScale,
-            height: slot.height * Hud.rScale
-          }
-        });
+  static final INVENTORY_RECT = {
+    equippedItemId: NULL_PICKUP_ID,
+    allowedCategory: 'any',
+    x: 256 * Hud.rScale,
+    y: 32 * Hud.rScale,
+    width: 192 * Hud.rScale,
+    height: 160 * Hud.rScale
   }
 
   static function toSlotSize(value) {
@@ -876,6 +905,14 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function update(dt) {
+    final hudLayoutData: Editor.EditorState = SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false);
+
+    if (hudLayoutData == null) {
+      return;
+    }
+
     if (state.slotHovered) {
       Main.Global.worldMouse.hoverState = 
         Main.HoverState.Ui;
@@ -891,28 +928,21 @@ class InventoryDragAndDropPrototype {
         state.interactSlots = [];
         state.slotHovered = false;
       } else if (state.interactSlots.length == 0) {
-        final tiledInteractables = {
-          final hudLayoutRef = TiledParser.loadFile(
-              hxd.Res.ui_hud_layout_json); 
-          final inventoryLayerRef = TiledParser
-            .findLayer(hudLayoutRef, 'inventory');
-          final interactRef = TiledParser
-            .findLayer(
-                inventoryLayerRef, 'interactable');
-          interactRef.objects; 
-        }
+        final interactableSlots: Array<Dynamic> = 
+          getEquipmentSlotDefinitions()
+              .concat([INVENTORY_RECT]);
 
         state.interactSlots = Lambda.map(
-            tiledInteractables, 
+            interactableSlots,
             (ti) -> {
               final interact = new h2d.Interactive(
-                  ti.width * Hud.rScale,
-                  ti.height * Hud.rScale,
+                  ti.width,
+                  ti.height,
                   Main.Global.uiRoot);
               
               interact.propagateEvents = true;
-              interact.x = ti.x * Hud.rScale;
-              interact.y = ti.y * Hud.rScale;
+              interact.x = ti.x;
+              interact.y = ti.y;
 
               interact.onOver = (ev: hxd.Event) -> {
                 state.slotHovered = true;
@@ -974,27 +1004,15 @@ class InventoryDragAndDropPrototype {
       final cx = mouseSlotX + halfWidth;
       final cy = mouseSlotY + halfHeight;
       final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
-      final slotDefinition = {
-        final hudLayoutRef = TiledParser.loadFile(
-            hxd.Res.ui_hud_layout_json); 
-        final inventoryLayerRef = TiledParser
-          .findLayer(hudLayoutRef, 'inventory');
-        final interactRef = TiledParser
-          .findLayer(
-              inventoryLayerRef, 'interactable');
-        Lambda.find(
-            interactRef.objects,
-            (o) -> o.name == 'inventory_slots');
-      }
       final pickedUpItemBounds = new h2d.col.Bounds();
       pickedUpItemBounds.set(
           mouseSlotX, mouseSlotY, w, h);
       final inventoryBounds = new h2d.col.Bounds();
       inventoryBounds.set(
-          slotDefinition.x * Hud.rScale, 
-          slotDefinition.y * Hud.rScale, 
-          slotDefinition.width * Hud.rScale, 
-          slotDefinition.height * Hud.rScale);
+          INVENTORY_RECT.x, 
+          INVENTORY_RECT.y, 
+          INVENTORY_RECT.width, 
+          INVENTORY_RECT.height);
 
       // check collision with equipment slots
       final handleEquipmentSlots = () -> {
@@ -1006,7 +1024,12 @@ class InventoryDragAndDropPrototype {
               distance: Float
             }, index) -> {
               final colSlot = new h2d.col.Bounds();
-              colSlot.set(slot.x, slot.y, slot.width, slot.height);
+              colSlot.set(
+                  slot.x, 
+                  slot.y, 
+                  slot.width, 
+                  slot.height);
+
               final colSlotCenter = colSlot.getCenter();
               final colPickedUp = new h2d.col.Bounds();
               colPickedUp.set(
@@ -1087,8 +1110,8 @@ class InventoryDragAndDropPrototype {
       };
 
       // translate position so so the grid's 0,0 is relative to the slotDefinition
-      final tcx = cx - toSlotSize(slotDefinition.x);
-      final tcy = cy - toSlotSize(slotDefinition.y);
+      final tcx = cx - INVENTORY_RECT.x;
+      final tcy = cy - INVENTORY_RECT.y;
       final canPlace = isInBounds && 
         Lambda.count(
           Grid.getItemsInRect(
@@ -1198,6 +1221,14 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function render(time) {
+    final hudLayoutData: Editor.EditorState = SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false);
+
+    if (hudLayoutData == null) {
+      return;
+    }
+
     if (!Main.Global.uiState.inventory.enabled) {
       return;
     }
@@ -1232,18 +1263,6 @@ class InventoryDragAndDropPrototype {
     }
 
     // render inventory items
-    final slotDefinition = {
-      final hudLayoutRef = TiledParser.loadFile(
-          hxd.Res.ui_hud_layout_json); 
-      final inventoryLayerRef = TiledParser
-        .findLayer(hudLayoutRef, 'inventory');
-      final interactRef = TiledParser
-        .findLayer(
-            inventoryLayerRef, 'interactable');
-      Lambda.find(
-          interactRef.objects,
-          (o) -> o.name == 'inventory_slots');
-    }
     for (itemId => bounds in state.invGrid.itemCache) {
       final lootInst = state.itemsById.get(itemId);
       final lootDef = Loot.getDef(lootInst.type);
@@ -1252,8 +1271,8 @@ class InventoryDragAndDropPrototype {
       final screenCx = (bounds[0] + width / 2) * cellSize;
       final screenCy = (bounds[2] + height / 2) * cellSize;
       // translate position to inventory position
-      final invCx = screenCx + toSlotSize(slotDefinition.x);
-      final invCy = screenCy + toSlotSize(slotDefinition.y);
+      final invCx = screenCx + INVENTORY_RECT.x;
+      final invCy = screenCy + INVENTORY_RECT.y;
 
       Main.Global.uiSpriteBatch.emitSprite(
           invCx,
@@ -1321,6 +1340,7 @@ class InventoryDragAndDropPrototype {
           });
     }
 
+    // render hovered inventory ability slot
     final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
     final nearestAbilitySlot = state.nearestAbilitySlot;
     if (nearestAbilitySlot.slotDefinition != null
@@ -1330,17 +1350,18 @@ class InventoryDragAndDropPrototype {
       final canEquip = lootDef.category == 
         nearestAbilitySlot.slotDefinition.allowedCategory ||
         state.pickedUpItemId == NULL_PICKUP_ID;
+      final slotDef = nearestAbilitySlot.slotDefinition;
 
       Main.Global.uiSpriteBatch.emitSprite(
-          nearestAbilitySlot.slotDefinition.x, 
-          nearestAbilitySlot.slotDefinition.y,
+          slotDef.x, 
+          slotDef.y,
           'ui/square_white',
           null,
           (p) -> {
             p.sortOrder = 3;
             final b = p.batchElement;
-            b.scaleX = nearestAbilitySlot.slotDefinition.width;
-            b.scaleY = nearestAbilitySlot.slotDefinition.height;
+            b.scaleX = slotDef.width;
+            b.scaleY = slotDef.height;
             b.a = 0.6;
 
             if (canEquip) {
@@ -1357,6 +1378,7 @@ class InventoryDragAndDropPrototype {
 }
 
 class Hud {
+  public static final HUD_LAYOUT_FILE = 'editor-data/hud.eds';
   public static var rScale = 4;
   static var mapData: TiledMapData;
   static var aiNameText: h2d.Text;
@@ -1539,12 +1561,6 @@ class Hud {
     if (ps == null) {
       return;
     }
-
-    final hudLayer = TiledParser
-      .findLayer(uiLayoutRef, 'hud');
-    final hudEquippedAbilitySlots = TiledParser
-      .findLayer(hudLayer, 'equipped_ability_slots')
-      .objects;
 
     // render equipped abilities
     {

@@ -480,9 +480,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/hud_ability_slot_1.png</key>
-            <key type="filename">aseprite_exports/ui/hud_ability_slot_2.png</key>
-            <key type="filename">aseprite_exports/ui/hud_ability_slot_3.png</key>
+            <key type="filename">aseprite_exports/ui/hud_ability_slot.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster_evolved.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_burst_charge.png</key>
@@ -493,6 +491,7 @@
             <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_movespeed_aura.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
+            <key type="filename">aseprite_exports/ui/ui_inventory_slot.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -1123,10 +1122,25 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/ui_inventory_ability_slots_group.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>1,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>25,8,49,15</rect>
+                <key>scale9Paddings</key>
+                <rect>25,8,49,15</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/ui_inventory_underlay.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0,1</point_f>
+                <point_f>1,0</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>
