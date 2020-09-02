@@ -2286,6 +2286,52 @@ class Game extends h2d.Object {
               y: y });
       }
 
+      final miniMapScale = 1/6;
+      final miniMap = {
+        final miniMapMargin = 10;
+        final miniMapSize = 200;
+        final root = new h2d.Object(Main.Global.uiRoot);
+        final mask = new h2d.Mask(
+            miniMapSize, 
+            miniMapSize, 
+            root);
+        final bg = new h2d.Graphics(root);
+        bg.beginFill(0x000000, 0.1);
+        bg.drawRect(
+            0, 0, miniMapSize, miniMapSize);
+        final borderWidth = Hud.rScale;
+        // draw borders
+        bg.beginFill(0xfffffff, 0);
+        bg.lineStyle(4, 0xffffff);
+        bg.drawRect(0, 0, miniMapSize, miniMapSize);
+        
+
+        final g = new h2d.Graphics(mask);
+        g.alpha = 0.6;
+        root.x = Main.nativePixelResolution.x 
+          - miniMapMargin 
+          - miniMapSize;
+        root.y = miniMapMargin;
+
+        Main.Global.updateHooks.push((dt) -> {
+          root.visible = Main.Global.uiState.hud.enabled
+            && !Main.Global.uiState.inventory.enabled;
+
+          final camera = Main.Global.mainCamera; 
+          g.x = -camera.x * miniMapScale + miniMapSize / 2;
+          g.y = -camera.y * miniMapScale + miniMapSize / 2;
+
+          if (finished) {
+            root.remove();
+          }
+
+          return !finished;
+        });
+
+        g;
+      }
+
+      // process each map object
       for (layerId in orderedLayers) {
         final grid = mapData.gridByLayerId.get(layerId);
         final tileGrid = tileGridByLayerId.get(layerId); 
@@ -2297,6 +2343,7 @@ class Game extends h2d.Object {
           final x = bounds[0];
           final y = bounds[2];
 
+          // generate game objects
           switch(objectType) {
             case 'enemySpawnPoint': {
               new EnemySpawner(
@@ -2692,7 +2739,9 @@ class Game extends h2d.Object {
           spriteSheetTile,
           Main.Global.rootScene);
 
-      final refreshTileGroup = (dt) -> {
+      final miniMapPositionsDrawn = [];
+
+      final refreshMap = (dt) -> {
         final idsRendered = new Map();
 
         tg.clear();
@@ -2752,6 +2801,24 @@ class Game extends h2d.Object {
                       pos.x,
                       y,
                       tile);
+
+                  final miniMapPosDrawn = Grid2d.get(
+                      miniMapPositionsDrawn, pos.x, pos.y) != null;
+                  if (!miniMapPosDrawn) {
+                    Grid2d.set(
+                        miniMapPositionsDrawn, pos.x, pos.y, true);
+                    // predraw minimap
+                    switch(objectMeta.type) {
+                      case 'traversableSpace': {
+                        miniMap.beginFill(0xfffffff);
+                        miniMap.drawRect(
+                            pos.x * miniMapScale, 
+                            y * miniMapScale, 
+                            cellSize * miniMapScale, 
+                            cellSize * miniMapScale);
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2787,11 +2854,12 @@ class Game extends h2d.Object {
 
         if (finished) {
           tg.remove();
+          miniMap.remove();
         }
 
         return !finished;
       }
-      Main.Global.renderHooks.push(refreshTileGroup);
+      Main.Global.renderHooks.push(refreshMap);
 
     }
 

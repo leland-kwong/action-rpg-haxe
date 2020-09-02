@@ -17,6 +17,25 @@ typedef GridRef = {
   var pruneEmptyCell: Bool;
 }
 
+typedef Grid2dRef = Array<Array<Dynamic>>;
+
+class Grid2d {
+  public static function get(grid: Grid2dRef, x, y) {
+    final row = grid[y];
+    return row != null ? row[x] : null;
+  }
+
+  public static function set<T>(grid: Grid2dRef, x, y, value: T) {
+    final row = grid[y];
+    if (row == null) {
+      grid[y] = []; 
+      set(grid, x, y, value);
+      return;
+    }
+    row[x] = value;
+  }
+}
+
 class Grid {
   // snaps to the center of a cell
   public static function snapPosition(
