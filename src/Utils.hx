@@ -145,7 +145,7 @@ class Utils {
 
   // runs each async callback and exits whenever
   // any error occurs
-  public static  function asyncParallel(
+  public static function asyncParallel(
       asyncFns: Array<(
         _onSuccess: (value: Dynamic) -> Void, 
         _onError: (err: Dynamic) -> Void
