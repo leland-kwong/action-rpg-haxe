@@ -128,7 +128,7 @@ class PassiveSkillTree {
           0,
           0,
           'ui/square_white');
-      final elem = ref.batchElement;
+      final elem = ref;
       ref.sortOrder = baseSortOrder;
       elem.scaleX = win.width;
       elem.scaleY = win.height;
@@ -408,9 +408,9 @@ class PassiveSkillTree {
 
         function setSelectedColor(
             spriteRef: SpriteBatchSystem.SpriteRef) {
-          spriteRef.batchElement.r = 0.4;
-          spriteRef.batchElement.r = 0.5;
-          spriteRef.batchElement.r = 0.6;
+          spriteRef.r = 0.4;
+          spriteRef.r = 0.5;
+          spriteRef.r = 0.6;
         }
 
         final pointCounterTf = {
@@ -440,14 +440,13 @@ class PassiveSkillTree {
         Main.Global.renderHooks.push(function renderTree(time: Float) {
           final hasUnusedPoints = calcNumUnusedPoints(sessionRef) > 0;
 
-          function runHoverAnimation(
-              batchElement: h2d.SpriteBatch.BatchElement) {
+          function runHoverAnimation(s: SpriteBatchSystem.SpriteRef) {
             final duration = 0.2;
             final aliveTime = Main.Global.time 
               - state.hoveredNode.startedAt;
             final progress = Math.min(1, aliveTime / duration);
             final v = hoverEasing(progress);
-            batchElement.scale = Utils.clamp(
+           s.scale = Utils.clamp(
                 state.renderScale * v, 
                 state.renderScale * 0.8, 
                 state.renderScale * 1.2);
@@ -467,7 +466,7 @@ class PassiveSkillTree {
                   sx,
                   sy,
                   objectMeta.spriteKey);
-              final b = spriteRef.batchElement;
+              final b = spriteRef;
 
               spriteRef.sortOrder = baseSortOrder + layerIndex;
 
@@ -541,7 +540,7 @@ class PassiveSkillTree {
                   'ui/passive_skill_tree__node_size_${nodeSize}_selected_state');
               spriteRef.sortOrder = baseSortOrder + 1;
 
-              final b = spriteRef.batchElement;
+              final b = spriteRef;
 
               if (isHoveredNode) {
                 runHoverAnimation(b);
@@ -706,7 +705,7 @@ class PassiveSkillTree {
                 (x + state.translate.x) * state.renderScale,
                 (y + state.translate.y) * state.renderScale,
                 'ui/square_white');
-            final b = ref.batchElement;
+            final b = ref;
 
             ref.sortOrder = baseSortOrder + 100;
             b.scale = state.renderScale;
