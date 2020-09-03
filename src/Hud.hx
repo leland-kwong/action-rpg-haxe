@@ -163,12 +163,16 @@ class Inventory {
 
         // add success
         if (canFit) {
-          InventoryDragAndDropPrototype.addItemToInventory(
-              x * cellSize + (sw / 2) * cellSize, 
-              y * cellSize + (sh / 2) * cellSize, 
-              sw * cellSize,
-              sh * cellSize,
-              itemInstance);
+          Session.logAndProcessEvent(
+              Main.Global.gameState, 
+              Session.makeEvent(
+                'INVENTORY_INSERT_ITEM', {
+                  x: x * cellSize + (sw / 2) * cellSize, 
+                  y: y * cellSize + (sh / 2) * cellSize, 
+                  width: sw * cellSize,
+                  height: sh * cellSize,
+                  lootInstance: itemInstance
+                }));
           return true;
         }
       }
@@ -760,22 +764,6 @@ class InventoryDragAndDropPrototype {
 
   static public function getItemById(id: String) {
     return Main.Global.gameState.inventoryState.itemsById.get(id);
-  }
-
-  static public function addItemToInventory(
-      cx: Float, 
-      cy: Float, 
-      slotWidth, slotHeight, lootInstance) {
-    Session.logAndProcessEvent(
-        Main.Global.gameState, 
-        Session.makeEvent(
-          'INVENTORY_INSERT_ITEM', {
-            x: cx, 
-            y: cy, 
-            width: slotWidth, 
-            height: slotHeight, 
-            lootInstance: lootInstance
-          })); 
   }
 
   static public function equipItemToSlot(
