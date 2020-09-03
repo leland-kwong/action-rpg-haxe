@@ -21,7 +21,11 @@ typedef SessionRef = {
   // level can be derived from this
   experienceGained: Int,
   questState: Quest.QuestStateByName,
-  inventoryState: Dynamic,
+  inventoryState: {
+    equippedAbilitiesById: haxe.ds.Vector<String>,
+    itemsById: Map<String, Loot.LootInstance>,
+    invGrid: Grid.GridRef
+  },
   passiveSkillTreeState: {
     nodeSelectionStateById: 
       Map<String, Bool>
@@ -263,6 +267,27 @@ class Session {
             Quest.conditionsByName);
       }
 
+      case {
+        type: 'INVENTORY_INSERT_ITEM',
+        data: d
+      }: {
+        final cx = d.x;
+        final cy = d.y;
+        final width = d.width;
+        final height = d.height; 
+        final lootInstance = d.lootInstance;
+        final inventoryState = ref.inventoryState;
+
+        Grid.setItemRect(
+            inventoryState.invGrid, 
+            cx, 
+            cy, 
+            width, 
+            height, 
+            lootInstance.id);
+        inventoryState.itemsById.set(lootInstance.id, lootInstance);
+      }
+
       default: {
         throw 'invalid session event ${ev.type}';
       }
@@ -305,13 +330,24 @@ class Session {
       return newState;
     }
 
+    final NULL_PICKUP_ID = Hud
+      .InventoryDragAndDropPrototype
+      .NULL_PICKUP_ID;
+
     return {
       gameId: 'game_${id}',
       slotId: slotId,
       sessionId: id,
       experienceGained: 0,
       questState: Quest.createNewState(),
-      inventoryState: 'UNKNOWN_INVENTORY_STATE',
+      inventoryState: {
+        invGrid: Grid.create(16),
+        equippedAbilitiesById: new haxe.ds.Vector(3),
+        itemsById: [
+          NULL_PICKUP_ID => Loot.createInstance(
+              ['nullItem'], NULL_PICKUP_ID)
+        ],
+      },
       passiveSkillTreeState: {
         // includes root node which is always selected
         nodeSelectionStateById: [
@@ -339,7 +375,7 @@ class Session {
   }
 
   public static function logAndProcessEvent(
-      ref, 
+      ref: SessionRef, 
       event: SessionEvent,
       ?onSuccess,
       ?onError,

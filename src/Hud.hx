@@ -140,20 +140,20 @@ class Inventory {
     final maxRow = Std.int(INVENTORY_RECT.height / slotSize / Hud.rScale);
     final maxY = maxRow - 1;
     final maxX = maxCol - 1;
-    final cellSize = InventoryDragAndDropPrototype
-      .state.invGrid.cellSize;
+    final cellSize = Main.Global.gameState.inventoryState.invGrid.cellSize;
 
     // look for nearest empty cell and put item in if available
     for (y in 0...maxRow) {
       for (x in 0...maxCol) {
         final cx = x + Math.floor(sw / 2);
         final cy = y + Math.floor(sh / 2);
+        trace(cx - Math.floor(sw / 2));
         final filledSlots = Grid.getItemsInRect(
-            InventoryDragAndDropPrototype.state.invGrid, 
-            x * cellSize + (sw / 2) * cellSize / Hud.rScale, 
-            y * cellSize + (sh / 2) * cellSize / Hud.rScale, 
-            Std.int(sw * cellSize / Hud.rScale),
-            Std.int(sh * cellSize / Hud.rScale));
+            Main.Global.gameState.inventoryState.invGrid, 
+            x * cellSize + (sw / 2) * cellSize, 
+            y * cellSize + (sh / 2) * cellSize, 
+            Std.int(sw * cellSize),
+            Std.int(sh * cellSize));
         final canFit = Lambda.count(
             filledSlots) == 0
           && cx - Math.floor(sw / 2) >= 0
@@ -733,8 +733,8 @@ class Tooltip {
  */
 class InventoryDragAndDropPrototype {
   
-  static final slotSize = 16 * Hud.rScale;
-  static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
+  static final slotSize = 16;
+  public static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
   static public final state = {
     equippedAbilitiesById: new haxe.ds.Vector<String>(3),
     itemsById: [
@@ -743,7 +743,7 @@ class InventoryDragAndDropPrototype {
     ],
     invGrid: Grid.create(16),
     initialized: false,
-    debugGrid: Grid.create(16 * Hud.rScale),
+    debugGrid: Grid.create(16),
     pickedUpItemId: NULL_PICKUP_ID,
     interactSlots: new Array<h2d.Interactive>(),
     nearestAbilitySlot: {
@@ -759,22 +759,23 @@ class InventoryDragAndDropPrototype {
   }
 
   static public function getItemById(id: String) {
-    return state.itemsById.get(id);
+    return Main.Global.gameState.inventoryState.itemsById.get(id);
   }
 
   static public function addItemToInventory(
       cx: Float, 
       cy: Float, 
       slotWidth, slotHeight, lootInstance) {
-     
-    Grid.setItemRect(
-        state.invGrid, 
-        cx / Hud.rScale, 
-        cy / Hud.rScale, 
-        Std.int(slotWidth / Hud.rScale), 
-        Std.int(slotHeight / Hud.rScale), 
-        lootInstance.id);
-    state.itemsById.set(lootInstance.id, lootInstance);
+    Session.logAndProcessEvent(
+        Main.Global.gameState, 
+        Session.makeEvent(
+          'INVENTORY_INSERT_ITEM', {
+            x: cx, 
+            y: cy, 
+            width: slotWidth, 
+            height: slotHeight, 
+            lootInstance: lootInstance
+          })); 
   }
 
   static public function equipItemToSlot(
@@ -782,7 +783,7 @@ class InventoryDragAndDropPrototype {
       index) {
 
     state.equippedAbilitiesById[index] = lootInst.id;
-    state.itemsById.set(lootInst.id, lootInst);
+    Main.Global.gameState.inventoryState.itemsById.set(lootInst.id, lootInst);
 
   }
 
@@ -926,7 +927,7 @@ class InventoryDragAndDropPrototype {
       final pickedUpId = Utils.withDefault(
           state.pickedUpItemId,
           NULL_PICKUP_ID);
-      final lootInst = state.itemsById.get(pickedUpId);
+      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(pickedUpId);
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
           Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
@@ -953,8 +954,8 @@ class InventoryDragAndDropPrototype {
        */
       final halfWidth = (w / 2);
       final halfHeight = (h / 2);
-      final rectOriginX = mx - halfWidth;
-      final rectOriginY = my - halfHeight;
+      final rectOriginX = mx / Hud.rScale - halfWidth;
+      final rectOriginY = my / Hud.rScale - halfHeight;
       final mouseSlotX = Math.round(rectOriginX / slotSize) * slotSize;
       final mouseSlotY = Math.round(rectOriginY / slotSize) * slotSize;
       final cx = mouseSlotX + halfWidth;
@@ -965,10 +966,10 @@ class InventoryDragAndDropPrototype {
           mouseSlotX, mouseSlotY, w, h);
       final inventoryBounds = new h2d.col.Bounds();
       inventoryBounds.set(
-          INVENTORY_RECT.x, 
-          INVENTORY_RECT.y, 
-          INVENTORY_RECT.width, 
-          INVENTORY_RECT.height);
+          INVENTORY_RECT.x / Hud.rScale, 
+          INVENTORY_RECT.y / Hud.rScale, 
+          INVENTORY_RECT.width  / Hud.rScale, 
+          INVENTORY_RECT.height / Hud.rScale);
 
       // check collision with equipment slots
       final handleEquipmentSlots = () -> {
@@ -981,16 +982,16 @@ class InventoryDragAndDropPrototype {
             }, index) -> {
               final colSlot = new h2d.col.Bounds();
               colSlot.set(
-                  slot.x, 
-                  slot.y, 
-                  slot.width, 
-                  slot.height);
+                  slot.x / Hud.rScale, 
+                  slot.y / Hud.rScale, 
+                  slot.width  / Hud.rScale, 
+                  slot.height / Hud.rScale);
 
               final colSlotCenter = colSlot.getCenter();
               final colPickedUp = new h2d.col.Bounds();
               colPickedUp.set(
-                  mx - pickedUpItem.slotWidth / 2, 
-                  my - pickedUpItem.slotHeight / 2, 
+                  mx / Hud.rScale - pickedUpItem.slotWidth / 2, 
+                  my / Hud.rScale - pickedUpItem.slotHeight / 2, 
                   pickedUpItem.slotWidth, 
                   pickedUpItem.slotHeight);
               final colPickedUpCenter = colPickedUp.getCenter();
@@ -1066,16 +1067,16 @@ class InventoryDragAndDropPrototype {
       };
 
       // translate position so so the grid's 0,0 is relative to the slotDefinition
-      final tcx = cx - INVENTORY_RECT.x;
-      final tcy = cy - INVENTORY_RECT.y;
+      final tcx = cx - INVENTORY_RECT.x / Hud.rScale;
+      final tcy = cy - INVENTORY_RECT.y / Hud.rScale;
       final canPlace = isInBounds && 
         Lambda.count(
           Grid.getItemsInRect(
-            state.invGrid,
-            tcx / Hud.rScale,
-            tcy / Hud.rScale,
-            Std.int(w / Hud.rScale),
-            Std.int(h / Hud.rScale))) <= 1;
+            Main.Global.gameState.inventoryState.invGrid,
+            tcx,
+            tcy,
+            Std.int(w),
+            Std.int(h))) <= 1;
 
       if (Main.Global.worldMouse.clicked) {
         final currentlyPickedUpItem = state.pickedUpItemId;
@@ -1090,13 +1091,13 @@ class InventoryDragAndDropPrototype {
 
           final itemIdAtPosition = getFirstKey(
               Grid.getItemsInRect(
-                state.invGrid,
+                Main.Global.gameState.inventoryState.invGrid,
                 tcx,
                 tcy,
                 w, h).keys());
 
           Grid.removeItem(
-              state.invGrid,
+              Main.Global.gameState.inventoryState.invGrid,
               itemIdAtPosition);
 
           state.pickedUpItemId = itemIdAtPosition;
@@ -1105,7 +1106,7 @@ class InventoryDragAndDropPrototype {
         final shouldPlace = hasPickedUp && canPlace;
         if (shouldPlace) {
           Grid.setItemRect(
-              state.invGrid,
+              Main.Global.gameState.inventoryState.invGrid,
               tcx,
               tcy,
               w, h,
@@ -1147,7 +1148,7 @@ class InventoryDragAndDropPrototype {
 
       if (shouldDropItem) {
         final playerRef = Entity.getById('PLAYER');
-        final lootInst = state.itemsById
+        final lootInst = Main.Global.gameState.inventoryState.itemsById
           .get(itemId);
         final lootDef = Loot.getDef(lootInst.type);
         final dropRadius = Std.int(
@@ -1159,7 +1160,7 @@ class InventoryDragAndDropPrototype {
             playerRef.x + Utils.irnd(-dropRadius, dropRadius, true), 
             playerRef.y + Utils.irnd(-dropRadius, dropRadius, true), 
             lootInst);
-        state.itemsById.remove(state.pickedUpItemId);
+        Main.Global.gameState.inventoryState.itemsById.remove(state.pickedUpItemId);
         state.pickedUpItemId = NULL_PICKUP_ID;
 
         final restoreStateOnMouseRelease = (dt) -> {
@@ -1189,10 +1190,10 @@ class InventoryDragAndDropPrototype {
       return;
     }
 
-    final cellSize = state.invGrid.cellSize;
+    final cellSize = Main.Global.gameState.inventoryState.invGrid.cellSize;
 
     final renderEquippedItem = (itemId, abilitySlot) -> {
-      final equippedLootInst = state.itemsById.get(
+      final equippedLootInst = Main.Global.gameState.inventoryState.itemsById.get(
          itemId);
 
       if (equippedLootInst != null) {
@@ -1219,13 +1220,13 @@ class InventoryDragAndDropPrototype {
     }
 
     // render inventory items
-    for (itemId => bounds in state.invGrid.itemCache) {
-      final lootInst = state.itemsById.get(itemId);
+    for (itemId => bounds in Main.Global.gameState.inventoryState.invGrid.itemCache) {
+      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(itemId);
       final lootDef = Loot.getDef(lootInst.type);
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
-      final screenCx = (bounds[0] + width / 2) * cellSize;
-      final screenCy = (bounds[2] + height / 2) * cellSize;
+      final screenCx = (bounds[0] + width / 2) * cellSize * Hud.rScale;
+      final screenCy = (bounds[2] + height / 2) * cellSize * Hud.rScale;
       // translate position to inventory position
       final invCx = screenCx + INVENTORY_RECT.x;
       final invCy = screenCy + INVENTORY_RECT.y;
@@ -1276,7 +1277,7 @@ class InventoryDragAndDropPrototype {
 
     // render picked up item
     if (state.pickedUpItemId != NULL_PICKUP_ID) {
-      final lootInst = state.itemsById.get(state.pickedUpItemId);
+      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(state.pickedUpItemId);
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
           Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
@@ -1302,7 +1303,7 @@ class InventoryDragAndDropPrototype {
     final nearestAbilitySlot = state.nearestAbilitySlot;
     if (nearestAbilitySlot.slotDefinition != null
         && hasPickedUp) {
-      final lootInst = state.itemsById.get(state.pickedUpItemId);
+      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(state.pickedUpItemId);
       final lootDef = Loot.getDef(lootInst.type);
       final canEquip = lootDef.category == 
         nearestAbilitySlot.slotDefinition.allowedCategory ||
