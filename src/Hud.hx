@@ -150,10 +150,10 @@ class Inventory {
         final cy = y + Math.floor(sh / 2);
         final filledSlots = Grid.getItemsInRect(
             InventoryDragAndDropPrototype.state.invGrid, 
-            x * cellSize + (sw / 2) * cellSize, 
-            y * cellSize + (sh / 2) * cellSize, 
-            sw * cellSize,
-            sh * cellSize);
+            x * cellSize + (sw / 2) * cellSize / Hud.rScale, 
+            y * cellSize + (sh / 2) * cellSize / Hud.rScale, 
+            Std.int(sw * cellSize / Hud.rScale),
+            Std.int(sh * cellSize / Hud.rScale));
         final canFit = Lambda.count(
             filledSlots) == 0
           && cx - Math.floor(sw / 2) >= 0
@@ -741,9 +741,8 @@ class InventoryDragAndDropPrototype {
       NULL_PICKUP_ID => Loot.createInstance(
           ['nullItem'], NULL_PICKUP_ID)
     ],
-
+    invGrid: Grid.create(16),
     initialized: false,
-    invGrid: Grid.create(16 * Hud.rScale),
     debugGrid: Grid.create(16 * Hud.rScale),
     pickedUpItemId: NULL_PICKUP_ID,
     interactSlots: new Array<h2d.Interactive>(),
@@ -764,11 +763,17 @@ class InventoryDragAndDropPrototype {
   }
 
   static public function addItemToInventory(
-      cx, cy, slotWidth, slotHeight, lootInstance) {
+      cx: Float, 
+      cy: Float, 
+      slotWidth, slotHeight, lootInstance) {
      
     Grid.setItemRect(
         state.invGrid, 
-        cx, cy, slotWidth, slotHeight, lootInstance.id);
+        cx / Hud.rScale, 
+        cy / Hud.rScale, 
+        Std.int(slotWidth / Hud.rScale), 
+        Std.int(slotHeight / Hud.rScale), 
+        lootInstance.id);
     state.itemsById.set(lootInstance.id, lootInstance);
   }
 
@@ -1067,10 +1072,10 @@ class InventoryDragAndDropPrototype {
         Lambda.count(
           Grid.getItemsInRect(
             state.invGrid,
-            tcx,
-            tcy,
-            w,
-            h)) <= 1;
+            tcx / Hud.rScale,
+            tcy / Hud.rScale,
+            Std.int(w / Hud.rScale),
+            Std.int(h / Hud.rScale))) <= 1;
 
       if (Main.Global.worldMouse.clicked) {
         final currentlyPickedUpItem = state.pickedUpItemId;
@@ -1244,14 +1249,15 @@ class InventoryDragAndDropPrototype {
       final cy = bounds[2] + height / 2;
 
       Main.Global.uiSpriteBatch.emitSprite(
-          (cx - width / 2) * cellSize, (cy - height / 2) * cellSize,
+          (cx - width / 2) * cellSize * Hud.rScale, 
+          (cy - height / 2) * cellSize * Hud.rScale,
           'ui/square_white',
           (p) -> {
             p.sortOrder = 2;
 
             final b = p;
-            b.scaleX = width * cellSize;
-            b.scaleY = height * cellSize;
+            b.scaleX = width * cellSize * Hud.rScale;
+            b.scaleY = height * cellSize * Hud.rScale;
             b.alpha = 0.4;
 
             if (itemId == 'item_can_place') {
