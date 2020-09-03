@@ -138,7 +138,7 @@ class Grid {
       cy: Float, 
       w, 
       h,
-      filterFn = null) {
+      filterFn = null): GridItems {
     var xMin = Math.floor(
         Math.round(cx - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(
