@@ -147,7 +147,6 @@ class Inventory {
       for (x in 0...maxCol) {
         final cx = x + Math.floor(sw / 2);
         final cy = y + Math.floor(sh / 2);
-        trace(cx - Math.floor(sw / 2));
         final filledSlots = Grid.getItemsInRect(
             Main.Global.gameState.inventoryState.invGrid, 
             x * cellSize + (sw / 2) * cellSize, 
@@ -851,6 +850,10 @@ class InventoryDragAndDropPrototype {
     return Math.ceil(value / 16) * slotSize;
   }
 
+  static function hasPickedUp() {
+    return state.pickedUpItemId != NULL_PICKUP_ID;
+  }
+
   public static function update(dt) {
     final hudLayoutData: Editor.EditorState = SaveState.load(
         Hud.HUD_LAYOUT_FILE,
@@ -950,7 +953,6 @@ class InventoryDragAndDropPrototype {
       final mouseSlotY = Math.round(rectOriginY / slotSize) * slotSize;
       final cx = mouseSlotX + halfWidth;
       final cy = mouseSlotY + halfHeight;
-      final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
       final pickedUpItemBounds = new h2d.col.Bounds();
       pickedUpItemBounds.set(
           mouseSlotX, mouseSlotY, w, h);
@@ -1011,7 +1013,7 @@ class InventoryDragAndDropPrototype {
         if (nearestAbilitySlot.slotDefinition != null) {
           final canEquip = lootDef.category == 
             nearestAbilitySlot.slotDefinition.allowedCategory ||
-            state.pickedUpItemId == NULL_PICKUP_ID;
+            !hasPickedUp();
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
@@ -1076,6 +1078,7 @@ class InventoryDragAndDropPrototype {
       if (Main.Global.worldMouse.clicked) {
         final currentlyPickedUpItem = state.pickedUpItemId;
         final currentlyPickedUpInstance = state.pickedUpInstance;
+        final shouldPlace = hasPickedUp() && canPlace;
 
         // pickup current item at position
         if (canPlace) {
@@ -1113,7 +1116,6 @@ class InventoryDragAndDropPrototype {
         }
 
         // place currently held item to position
-        final shouldPlace = hasPickedUp && canPlace;
         if (shouldPlace) {
           trace('place item');
           Session.logAndProcessEvent(
@@ -1148,8 +1150,7 @@ class InventoryDragAndDropPrototype {
     }
 
     final itemId = state.pickedUpItemId;
-    final hasPickedUp = itemId != NULL_PICKUP_ID;
-    final canDropItem = hasPickedUp && 
+    final canDropItem = hasPickedUp() && 
       (Main.Global.worldMouse.hoverState == 
        Main.HoverState.None);
 
@@ -1295,7 +1296,7 @@ class InventoryDragAndDropPrototype {
     } 
 
     // render picked up item
-    if (state.pickedUpItemId != NULL_PICKUP_ID) {
+    if (hasPickedUp()) {
       final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
@@ -1318,15 +1319,14 @@ class InventoryDragAndDropPrototype {
     }
 
     // render hovered inventory ability slot
-    final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
     final nearestAbilitySlot = state.nearestAbilitySlot;
     if (nearestAbilitySlot.slotDefinition != null
-        && hasPickedUp) {
+        && hasPickedUp()) {
       final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final canEquip = lootDef.category == 
         nearestAbilitySlot.slotDefinition.allowedCategory ||
-        state.pickedUpItemId == NULL_PICKUP_ID;
+        !hasPickedUp();
       final slotDef = nearestAbilitySlot.slotDefinition;
 
       Main.Global.uiSpriteBatch.emitSprite(
