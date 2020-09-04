@@ -739,16 +739,18 @@ class InventoryDragAndDropPrototype {
   
   static final slotSize = 16;
   public static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
+  static final NULL_LOOT_INSTANCE = Loot.createInstance(
+      ['nullItem'], NULL_PICKUP_ID);
   static public final state = {
     equippedAbilitiesById: new haxe.ds.Vector<String>(3),
     itemsById: [
-      NULL_PICKUP_ID => Loot.createInstance(
-          ['nullItem'], NULL_PICKUP_ID)
+      NULL_PICKUP_ID => NULL_LOOT_INSTANCE
     ],
     invGrid: Grid.create(16),
     initialized: false,
     debugGrid: Grid.create(16),
     pickedUpItemId: NULL_PICKUP_ID,
+    pickedUpInstance: NULL_LOOT_INSTANCE,
     interactSlots: new Array<h2d.Interactive>(),
     nearestAbilitySlot: {
       slotDefinition: null,
@@ -915,7 +917,7 @@ class InventoryDragAndDropPrototype {
       final pickedUpId = Utils.withDefault(
           state.pickedUpItemId,
           NULL_PICKUP_ID);
-      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(pickedUpId);
+      final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
           Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
@@ -1019,6 +1021,11 @@ class InventoryDragAndDropPrototype {
             state.pickedUpItemId = Utils.withDefault(
                 originallyEquipped,
                 NULL_PICKUP_ID);
+            state.pickedUpInstance = Main.Global
+              .gameState
+              .inventoryState
+              .itemsById
+              .get(state.pickedUpItemId);
           }
         }
 
@@ -1068,7 +1075,9 @@ class InventoryDragAndDropPrototype {
 
       if (Main.Global.worldMouse.clicked) {
         final currentlyPickedUpItem = state.pickedUpItemId;
+        final currentlyPickedUpInstance = state.pickedUpInstance;
 
+        // pickup current item at position
         if (canPlace) {
           final getFirstKey = (keys: Iterator<GridKey>) -> {
             for (k in keys) {
@@ -1084,21 +1093,39 @@ class InventoryDragAndDropPrototype {
                 tcy,
                 w, h).keys());
 
-          Grid.removeItem(
-              Main.Global.gameState.inventoryState.invGrid,
-              itemIdAtPosition);
-
+          // grab the data for client-side before it gets
+          // oficially removed from the inventory because
+          // we'll need it when dropping the item back down
           state.pickedUpItemId = itemIdAtPosition;
+          state.pickedUpInstance = Main.Global
+            .gameState
+            .inventoryState
+            .itemsById
+            .get(itemIdAtPosition);
+
+          if (itemIdAtPosition != NULL_PICKUP_ID) {
+            Session.logAndProcessEvent(
+                Main.Global.gameState,
+                Session.makeEvent(
+                  'INVENTORY_REMOVE_ITEM',
+                  itemIdAtPosition));
+          }
         }
 
+        // place currently held item to position
         final shouldPlace = hasPickedUp && canPlace;
         if (shouldPlace) {
-          Grid.setItemRect(
-              Main.Global.gameState.inventoryState.invGrid,
-              tcx,
-              tcy,
-              w, h,
-              currentlyPickedUpItem);
+          trace('place item');
+          Session.logAndProcessEvent(
+              Main.Global.gameState,
+              Session.makeEvent(
+                'INVENTORY_INSERT_ITEM', {
+                  x: tcx,
+                  y: tcy,
+                  width: w, 
+                  height: h,
+                  lootInstance: currentlyPickedUpInstance
+                }));
         }
       }
 
@@ -1136,8 +1163,7 @@ class InventoryDragAndDropPrototype {
 
       if (shouldDropItem) {
         final playerRef = Entity.getById('PLAYER');
-        final lootInst = Main.Global.gameState.inventoryState.itemsById
-          .get(itemId);
+        final lootInst = state.pickedUpInstance;
         final lootDef = Loot.getDef(lootInst.type);
         final dropRadius = Std.int(
             Utils.clamp(
@@ -1150,6 +1176,11 @@ class InventoryDragAndDropPrototype {
             lootInst);
         Main.Global.gameState.inventoryState.itemsById.remove(state.pickedUpItemId);
         state.pickedUpItemId = NULL_PICKUP_ID;
+        state.pickedUpInstance = Main.Global
+          .gameState
+          .inventoryState
+          .itemsById
+          .get(state.pickedUpItemId);
 
         final restoreStateOnMouseRelease = (dt) -> {
           if (Main.Global.worldMouse.buttonDown == -1) {
@@ -1265,7 +1296,7 @@ class InventoryDragAndDropPrototype {
 
     // render picked up item
     if (state.pickedUpItemId != NULL_PICKUP_ID) {
-      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(state.pickedUpItemId);
+      final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
           Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
@@ -1291,7 +1322,7 @@ class InventoryDragAndDropPrototype {
     final nearestAbilitySlot = state.nearestAbilitySlot;
     if (nearestAbilitySlot.slotDefinition != null
         && hasPickedUp) {
-      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(state.pickedUpItemId);
+      final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final canEquip = lootDef.category == 
         nearestAbilitySlot.slotDefinition.allowedCategory ||

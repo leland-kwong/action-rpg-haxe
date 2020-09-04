@@ -219,6 +219,9 @@ class Session {
     return oldLevel < newLevel;
   }
 
+  // this function should be pure and not
+  // access external state like querying for
+  // entities.
   public static function processEvent(
       ref: SessionRef,
       ev: SessionEvent) {
@@ -286,6 +289,16 @@ class Session {
             height, 
             lootInstance.id);
         inventoryState.itemsById.set(lootInstance.id, lootInstance);
+      }
+
+      case {
+        type: 'INVENTORY_REMOVE_ITEM',
+        data: itemId
+      }: {
+        Grid.removeItem(
+            ref.inventoryState.invGrid,
+            itemId);
+        ref.inventoryState.itemsById.remove(itemId);
       }
 
       default: {
