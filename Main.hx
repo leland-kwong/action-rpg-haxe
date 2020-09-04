@@ -151,7 +151,6 @@ class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
   var acc = 0.0;
-  var background: h2d.Graphics;
   public static final nativePixelResolution = {
     // TODO this should be based on
     // the actual screen's resolution
