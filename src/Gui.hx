@@ -455,6 +455,8 @@ class GuiComponents {
 }
 
 class Gui {
+  public static final margin = 10;
+
   static var tempTf: h2d.Text;
 
   public static function init() {

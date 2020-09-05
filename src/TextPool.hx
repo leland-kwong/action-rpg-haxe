@@ -19,6 +19,9 @@ class TextPool {
 
     for (inst in instances) {
       inst.text = '';
+      inst.textAlign = Left;
+      inst.font = Fonts.primary();
+      inst.textColor = 0xffffff;
     }
 
 #if debugMode

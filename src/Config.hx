@@ -1,6 +1,7 @@
 import Session;
 
 class Config {
+  public static final version = '0.12';
   static final maxLevel = 20; 
   public static final levelExpRequirements = {
     final xpDiff = 20;

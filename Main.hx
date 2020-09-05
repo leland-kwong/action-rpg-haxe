@@ -441,8 +441,7 @@ class Main extends hxd.App {
       Global.mainCamera = Camera.create();      
 
 #if debugMode
-      var font = hxd.res.DefaultFont.get();
-      setupDebugInfo(font);
+      setupDebugInfo(Fonts.debug());
 #end
 
       Gui.init();
@@ -587,9 +586,8 @@ class Main extends hxd.App {
           'stats: ${formattedStats}',
           'log: ${Json.stringify(Global.logData, null, '  ')}'
         ].join('\n');
-        final debugUiMargin = 10;
-        debugText.x = debugUiMargin;
-        debugText.y = debugUiMargin;
+        debugText.x = Gui.margin;
+        debugText.y = Gui.margin;
         debugText.text = text;
         Global.logData.maxParticles = Math.max(
             Global.logData.maxParticles,
@@ -605,6 +603,16 @@ class Main extends hxd.App {
       core.Anim.AnimEffect
         .update(frameDt);
       SpriteBatchSystem.updateAll(frameDt);
+
+      // version info
+      {
+        final tf = TextPool.get();
+        final win = hxd.Window.getInstance();
+        tf.font = Fonts.debug();
+        tf.text = 'build ${Config.version}';
+        tf.x = win.width - tf.textWidth - Gui.margin;
+        tf.y = win.height - tf.textHeight - Gui.margin;
+      }
 
     } catch (error: Dynamic) {
       HaxeUtils.handleError(

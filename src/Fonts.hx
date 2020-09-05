@@ -21,4 +21,8 @@ class Fonts {
   public static function title() {
     return getFont(hxd.Res.orbitron_title);
   }
+
+  public static function debug() {
+    return hxd.res.DefaultFont.get(); 
+  }
 }
