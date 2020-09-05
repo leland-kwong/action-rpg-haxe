@@ -2856,7 +2856,6 @@ class Game extends h2d.Object {
         (mapData) -> {
           try {
             processMap(levelFile, mapData);
-            Experiment.init();
           } catch(err) {
             HaxeUtils.handleError('load level error')(err);
           }
