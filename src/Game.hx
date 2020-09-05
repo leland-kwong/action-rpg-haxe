@@ -1,7 +1,31 @@
+/*
+   * [ ] TODO: [HIGH PRIORITY]: Add an api for triggering damage to each entity within a given area. Right now we're using a bullet with a low lifetime to do this which is very hacky.
+   * [ ] TODO: Add small amount of squash/stretch when an entity takes a hit
+   * [ ] TODO: Add support for rectangular collisions on entities. This is
+         especially important for walls but also useful for npcs that don't
+         exactly fit within the shape of a circle.
+   * [ ] TODO: Enemies should go after player when they take a hit and are 
+         in line of sight.
+   * [ ] TODO: Make pets follow player if they are 
+         too far away from player. If they are a screen's distance
+         away from player, teleport them nearby to player. This will
+         also help prevent them from getting stuck in certain situations.
+   * [ ] TODO: Add some basic pathfinding for ai (maybe flowfield?) so they're
+         not getting stuck when trying to walk towards player even though
+         they're clearly within vision. This can happen if there is a 
+         long island in between the player and ai but the ai can clearly walk
+         around that island. This will also improve their ability to
+         maneuver around corners.
+   * [ ] TODO: Adjust level_1 start point so that theres more open space at the
+               teleportation point to give player freedom of movement. This is
+               a ux thing so that player doesn't get frustrated early because
+               they couldn't move around at the beginning.
+*/
+
 using core.Types;
 
 import h2d.Bitmap;
-import Grid.GridRef;
+import Grid;
 import Fonts;
 import Utils;
 import Camera;
@@ -45,26 +69,36 @@ class Colors {
 }
 
 class Projectile extends Entity {
-  var damage = 1;
-  var lifeTime = 5.0;
-  var collidedWith: Entity;
+  public var damage = 1;
+  public var lifeTime = 5.0;
+  var collidedWith: Array<Entity> = [];
   var cFilter: EntityFilter;
+  public var maxNumHits = 1;
+  var numHits = 0;
+  final speedModifier: EntityStats.EventObject;
+  // the entity that this was created from
+  public var source: Entity;
 
   public function new(
     x1: Float, y1: Float, x2: Float, y2: Float,
     speed = 0.0,
     radius = 10,
-    collisionFilter,
-    nSegments: Int = null
+    collisionFilter
   ) {
     super({
       x: x1,
       y: y1,
       radius: radius,
-      weight: 0.0,
     });
     type = 'PROJECTILE';
-    this.speed = speed;
+    stats = EntityStats.create({
+      label: '@projectile',
+      currentHealth: 1.,
+    });
+    speedModifier = {
+      type: 'MOVESPEED_MODIFIER',
+      value: speed
+    };
     forceMultiplier = 0.0;
     cFilter = collisionFilter;
 
@@ -82,13 +116,21 @@ class Projectile extends Entity {
   }
 
   public override function update(dt: Float) {
+    if (source == null) {
+      throw new haxe.Exception(
+          'source prop missing for $this');
+    }
+
     super.update(dt);
 
-    lifeTime -= dt;
-    collidedWith = null;
+    EntityStats.addEvent(
+        stats, speedModifier);
+    collidedWith = [];
 
-    if (lifeTime <= 0) {
-      health = 0;
+    final alivePercent = Easing.progress(
+        createdAt, Main.Global.time, lifeTime);
+    if (alivePercent >= 1) {
+      Entity.destroy(id);
     }
 
     for (id in neighbors) {
@@ -98,14 +140,37 @@ class Projectile extends Entity {
         var min = radius + a.radius * 1.0;
         var conflict = d < min;
         if (conflict) {
-          collidedWith = a;
-          break;
+          collidedWith.push(a);
+
+          numHits += 1;
+
+          if (numHits >= maxNumHits) {
+            break;
+          }
         }
       }
     }
   }
 }
 
+// query all entities within the area of effect (aoe)
+class LineProjectile extends Projectile {
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    final damageEvent: EntityStats.EventObject = {
+      type: 'DAMAGE_RECEIVED',
+      value: {
+        baseDamage: damage,
+        sourceStats: source.stats
+      }
+    };
+    for (ent in collidedWith) {
+      EntityStats.addEvent(
+          ent.stats, damageEvent);
+    }
+  } 
+}
 
 class Bullet extends Projectile {
   static var onHitFrames = [
@@ -120,50 +185,183 @@ class Bullet extends Projectile {
   ];
   var launchSoundPlayed = false;
   var spriteKey: String;
+  public var explodeWhenExpired = false;
+  public var playSound = true;
+  public var explosionScale = 1.;
 
   public function new(
     x1, y1, x2, y2, speed, 
     _spriteKey, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
-    lifeTime = 2.0;
+    lifeTime = 2.;
     spriteKey = _spriteKey;
-  }
-
-  public override function onRemove() {
-    core.Anim.AnimEffect.add({
-      frames: onHitFrames,
-      startTime: Main.Global.time,
-      duration: 0.15,
-      x: x,
-      y: y
-    }); 
   }
 
   public override function update(dt: Float) {
     super.update(dt);
 
-    if (!launchSoundPlayed) {
+    if (playSound && !launchSoundPlayed) {
       launchSoundPlayed = true;
 
       SoundFx.bulletBasic();
     }
 
-    if (collidedWith != null) {
-      health = 0;
-      collidedWith.damageTaken += damage;
+    if (collidedWith.length > 0) {
+      Entity.destroy(id);
+
+      final baseDamage = 1;
+      final damageEvent: EntityStats.EventObject = {
+        type: 'DAMAGE_RECEIVED',
+        value: {
+          baseDamage: baseDamage,
+          sourceStats: source.stats
+        }
+      };
+      for (ent in collidedWith) {
+        EntityStats.addEvent(
+            ent.stats, damageEvent);
+      }
+    }
+
+    if (isDone() && 
+        explodeWhenExpired ||
+        (!explodeWhenExpired && collidedWith.length > 0)) {
+      core.Anim.AnimEffect.add({
+        frames: onHitFrames,
+        startTime: Main.Global.time,
+        duration: 0.15,
+        x: x,
+        y: y,
+        z: 10,
+        scale: explosionScale
+      }); 
     }
   }
 
   public override function render(time: Float) {
+    final progress = Easing.easeInExpo(
+        Easing.progress(
+          createdAt, time, lifeTime));
     final angle = Math.atan2(
         y + dy - y,
         x + dx - x);
-    Main.Global.sb.emitSprite(
-        x, y, spriteKey, angle, null, 1);
+    final sprite = Main.Global.sb.emitSprite(
+        x, y, spriteKey, angle, null);
+    sprite.scale = 1 - progress;
   }
 }
 
+class EnergyBomb extends Projectile {
+  final initialSpeed = 250.;
+  var launchSoundPlayed = false;
+
+  public function new(
+    x1, y1, x2, y2, cFilter
+  ) {
+    super(x1, y1, x2, y2, 
+        0.0, 8, cFilter);
+    radius = 4;
+    lifeTime = 1.5;
+  }
+
+  public override function update(dt: Float) {
+    super.update(dt);
+
+    final moveDuration = 2.;
+    final progress = Easing.easeOutExpo(
+        (Main.Global.time - createdAt) / moveDuration);
+    EntityStats.addEvent(
+        stats, {
+          type: 'MOVESPEED_MODIFIER',
+          value: (1 - progress) * initialSpeed
+        });
+
+    if (!launchSoundPlayed) {
+      launchSoundPlayed = true;
+
+      // TODO: add sound
+    }
+
+    if (collidedWith.length > 0) {
+      Entity.destroy(id);
+    }
+
+    // Trigger cluster explosion
+    // Launches an explosion at the point of impact,
+    // and several more in random locations near point
+    // of impact 
+    if (isDone()) {
+      for (i in 0...5) {
+        final explosionStart = Main.Global.time + i * 0.025;
+        Main.Global.updateHooks.push((dt) -> {
+          if (Main.Global.time < explosionStart) {
+            return true;
+          }
+
+          final offsetRange = 20;
+          final x2 = x + (i == 0 
+            ? 0 
+            : Utils.irnd(-offsetRange, offsetRange, true));
+          final y2 = y + (i == 0 
+            ? 0 
+            : Utils.irnd(-offsetRange, offsetRange, true));
+          final ref = new Bullet(
+              x2, y2, 
+              x2, y2,
+              0, 
+              'ui/placeholder',
+              cFilter);
+          ref.explodeWhenExpired = true;
+          ref.source = this.source;
+          ref.maxNumHits = 999999;
+          ref.explosionScale = 1.6;
+          ref.playSound = false;
+          ref.radius = 20;
+          ref.lifeTime = 0;
+          Main.Global.rootScene
+            .addChild(ref);
+
+          return false;
+        });
+      } 
+    }
+  }
+
+  public override function render(time: Float) {
+
+    {
+      final ringBurstDuration = 0.4;
+
+      if (!Cooldown.has(cds, 'ringBurst')) {
+        Cooldown.set(cds, 'ringBurst', ringBurstDuration);
+      }
+
+      Main.Global.sb.emitSprite(
+          x, y, 
+          'ui/energy_bomb_ring', 
+          null, (p) -> {
+            final b = p;
+            final ringBurstCd = Cooldown.get(cds, 'ringBurst');
+            // reduce alpha over time
+            b.alpha = ringBurstCd / ringBurstDuration ;
+            // increase scale over time
+            b.scale = (ringBurstDuration - ringBurstCd) * 5;
+          });
+    }
+
+    final angle = time * Math.PI * 8;
+    Main.Global.sb.emitSprite(
+        x, y, 
+        'ui/energy_bomb_projectile', 
+        angle, (p) -> {
+          final b = p;
+          final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
+          b.g = v;
+          b.b = v / 2;
+        });
+  }
+}
 
 typedef EntityFilter = (ent: Entity) -> Bool;
 
@@ -173,49 +371,25 @@ typedef AiProps = {
 };
 
 class Ai extends Entity {
-  static var healthBySize = [
-    1 => 5,
-    2 => 10,
-    3 => 30,
-    4 => 50,
-  ];
-  static var speedBySize = [
-    1 => 90.0,
-    2 => 60.0,
-    3 => 40.0,
-    4 => 100.0,
-  ];
-  static var attackRangeByType = [
-    1 => 30,
-    2 => 120,
-    3 => 80,
-    4 => 13,
-  ];
+  static final hitFlashDuration = 0.04;
+  static final defaultFindTargetFn = (ent: Entity) -> {
+    return Entity.NULL_ENTITY;
+  };
   static final defaultAttackTargetFilterFn: EntityFilter = 
     (ent) -> {
       return ent.type == 'PLAYER' 
         || ent.type == 'OBSTACLE';
     };
-  final attackTypeBySpecies = [
-    1 => 'attack_bullet',
-    2 => 'attack_bullet',
-    3 => 'attack_bullet',
-    4 => 'attack_self_detonate',
-  ];
-  static var spriteSheet: h2d.Tile;
-  static var spriteSheetData: Dynamic;
 
-  var font: h2d.Font = Main.Global.fonts.primary;
+  var font: h2d.Font = Fonts.primary();
   var damage = 0;
   public var follow: Entity;
   public var canSeeTarget = true;
   var spawnDuration: Float = 0.1;
-  var size: Int;
   var debugCenter = false;
   var idleAnim: core.Anim.AnimRef;
   var runAnim: core.Anim.AnimRef;
   var activeAnim: core.Anim.AnimRef;
-  var facingDir = 1;
   public var sightRange = 200;
   public var attackTarget: Entity;
   var findTargetFn: (self: Entity) -> Entity;
@@ -223,34 +397,35 @@ class Ai extends Entity {
     defaultAttackTargetFilterFn;
 
   public function new(
-      props: AiProps, size, 
-      findTargetFn, ?attackTargetFilterFn) {
+      props: AiProps, 
+      ?findTargetFn, 
+      ?attackTargetFilterFn) {
     super(props);
-    neighborCheckInterval = 10;
     traversableGrid = Main.Global.traversableGrid;
+    final aiType = props.aiType;
 
     cds = new Cooldown();
-    Entity.setComponent(this, 'aiType', props.aiType);
-
-    if (spriteSheet == null) {
-      spriteSheet = hxd.Res.sprite_sheet_png.toTile();
-      spriteSheetData = Utils.loadJsonFile(
-          hxd.Res.sprite_sheet_json).frames;
+#if debugMode
+    if (!Config.enemyStats.exists(props.aiType)) {
+      throw new haxe.Exception('invalid aiType `${props.aiType}`');
     }
+#end
+    Entity.setComponent(this, 'aiType', props.aiType);
+    Entity.setComponent(this, 'neighborQueryThreshold', 10);
+    Entity.setComponent(this, 'neighborCheckInterval', 10);
+    Entity.setComponent(this, 'rarity', Utils.irnd(0, 2));
 
-    type = 'ENEMY';
     status = 'UNTARGETABLE';
-    speed = 0.0;
-    health = healthBySize[size];
+    final initialHealth = Config
+      .enemyStats.get(props.aiType).health;
     stats = EntityStats.create({
-      maxHealth: health,
-      currentHealth: health,
-      maxEnergy: 0,
+      currentHealth: initialHealth,
       currentEnergy: 0,
       energyRegeneration: 0
     });
     avoidOthers = true;
-    this.findTargetFn = findTargetFn;
+    this.findTargetFn = Utils.withDefault(
+        findTargetFn, defaultFindTargetFn);
     if (attackTargetFilterFn != null) {
       this.attackTargetFilterFn = attackTargetFilterFn;
     }
@@ -259,12 +434,32 @@ class Ai extends Entity {
       sightRange = props.sightRange;
     }
 
-    cds = new Cooldown();
-    this.size = size;
-
     Cooldown.set(cds, 'recentlySummoned', spawnDuration);
 
-    if (size == 1) {
+    if (aiType == 'npcTestDummy') {
+      idleAnim = {
+        frames: [
+          'ui/npc_test_dummy'
+        ],
+        duration: 1,
+        startTime: Main.Global.time
+      };
+
+      runAnim = idleAnim;
+      onDone = (self: Entity) -> {
+        // respawn itself
+        haxe.Timer.delay(() -> {
+          new Ai({
+            x: this.x,
+            y: this.y,
+            aiType: Entity.getComponent(this, 'aiType'),
+            radius: this.radius
+          });
+        }, 400);
+      }
+    }
+
+    if (aiType == 'bat') {
       var idleFrames = [
         'enemy-1_animation/idle-0',
         'enemy-1_animation/idle-1',
@@ -277,15 +472,23 @@ class Ai extends Entity {
         'enemy-1_animation/idle-8',
         'enemy-1_animation/idle-9',
       ];
+
+      final timeOffset = Utils.irnd(0, 100) / 100;
+ 
       idleAnim = {
         frames: idleFrames,
         duration: 1,
-        startTime: Main.Global.time,
+        startTime: Main.Global.time + timeOffset,
       }
-      runAnim = idleAnim;
+
+      runAnim = {
+        frames: idleFrames,
+        duration: 0.5,
+        startTime: Main.Global.time + timeOffset,
+      };
     }
 
-    if (size == 2) {
+    if (aiType == 'botMage') {
       var idleFrames = [
         'enemy-2_animation/idle-0',
         'enemy-2_animation/idle-1',
@@ -309,7 +512,7 @@ class Ai extends Entity {
       }
     }
 
-    if (size == 3) {
+    if (aiType == 'introLevelBoss') {
       idleAnim = {
         frames: [
         'intro_boss_animation/idle-0',
@@ -334,7 +537,7 @@ class Ai extends Entity {
       };
     }
 
-    if (size == 4) {
+    if (aiType == 'spiderBot') {
       idleAnim = {
         frames: [
         'spider_bot_animation/idle-0',
@@ -358,24 +561,37 @@ class Ai extends Entity {
   }
 
   public override function update(dt) {
+    // damage render effect
+    {
+      var c = activeAnim;
+
+      if (stats.damageTaken > 0) {
+        Cooldown.set(cds, 'hitFlash', hitFlashDuration);
+      }
+    }
+
+    super.update(dt);
+
     dx = 0.0;
     dy = 0.0;
-
-    Cooldown.update(cds, dt);
 
     follow = findTargetFn(this);
     var origX = x;
     var origY = y;
+    final aiMeta = Config.enemyStats.get(
+        Entity.getComponent(this, 'aiType'));
 
     if (!Cooldown.has(cds, 'recentlySummoned')) {
       status = 'TARGETABLE';
-      speed = speedBySize[size];
+      EntityStats.addEvent(
+          stats,
+          aiMeta.speed);
     }
 
     if (follow != null && !Cooldown.has(cds, 'attack')) {
       // distance to keep from destination
       var threshold = follow.radius + 5;
-      var attackRange = attackRangeByType[size];
+      var attackRange = aiMeta.attackRange;
       var dFromTarget = Utils.distance(x, y, follow.x, follow.y);
       // exponential drop-off as agent approaches destination
       var speedAdjust = Math.max(
@@ -397,21 +613,18 @@ class Ai extends Entity {
           var d = Utils.distance(pt.x, pt.y, ept.x, ept.y);
 
           if (o.forceMultiplier > 0) {
-            var separation = Math.sqrt(speed / 4);
+            var separation = Math.sqrt(stats.moveSpeed / 4);
             var min = pt.radius + ept.radius + separation;
             var isColliding = d < min;
             if (isColliding) {
               var conflict = min - d;
               var adjustedConflict = Math.min(
-                  conflict, conflict * 15 / speed);
+                  conflict, conflict * 15 / stats.moveSpeed);
               var a = Math.atan2(ept.y - pt.y, ept.x - pt.x);
-              var w = pt.weight / (pt.weight + ept.weight);
               // immobile entities have a stronger influence (obstacles such as walls, etc...)
               var multiplier = ept.forceMultiplier;
-              var avoidX = Math.cos(a) * adjustedConflict 
-                * w * multiplier;
-              var avoidY = Math.sin(a) * adjustedConflict 
-                * w * multiplier;
+              var avoidX = Math.cos(a) * adjustedConflict * multiplier;
+              var avoidY = Math.sin(a) * adjustedConflict * multiplier;
 
               dx -= avoidX;
               dy -= avoidY;
@@ -458,7 +671,7 @@ class Ai extends Entity {
       if (debugCenter) {
         var spriteEffect = (p) -> {
           final scale = radius * 2;
-          final b: h2d.SpriteBatch.BatchElement = p.batchElement;
+          final b: h2d.SpriteBatch.BatchElement = p;
 
           b.alpha = 0.2;
           b.scaleX = scale;
@@ -477,7 +690,7 @@ class Ai extends Entity {
     if (!Cooldown.has(cds, 'recentlySummoned') && attackTarget != null) {
       final isValidTarget = attackTargetFilterFn(attackTarget);
       if (!Cooldown.has(cds, 'attack') && isValidTarget) {
-        final attackType = attackTypeBySpecies[size];
+        final attackType = aiMeta.attackType;
 
         switch (attackType) {
           case 'attack_bullet': {
@@ -496,6 +709,7 @@ class Ai extends Entity {
                 100.0,
                 'ui/bullet_enemy_large',
                 attackTargetFilterFn);
+            b.source = this;
             Main.Global.rootScene.addChild(b);
           }
 
@@ -515,7 +729,7 @@ class Ai extends Entity {
                 duration: duration,
                 effectCallback: (p) -> {
                   final b: h2d.SpriteBatch.BatchElement 
-                    = p.batchElement;
+                    = p;
                   final aliveTime = Main.Global.time 
                     - startTime;
                   final progress = Easing
@@ -541,7 +755,7 @@ class Ai extends Entity {
                 duration: duration,
                 effectCallback: (p) -> {
                   final b: h2d.SpriteBatch.BatchElement 
-                    = p.batchElement;
+                    = p;
                   final aliveTime = Main.Global.time 
                     - startTime;
                   final progress = Easing
@@ -554,8 +768,16 @@ class Ai extends Entity {
               });
             }
 
-            health = 0;
-            attackTarget.damageTaken += 2;
+            Entity.destroy(id);
+            final damageEvent: EntityStats.EventObject = {
+              type: 'DAMAGE_RECEIVED',
+              value: {
+                baseDamage: 2,
+                sourceStats: Entity.getById('PLAYER').stats
+              }
+            };
+            EntityStats.addEvent(
+                attackTarget.stats, damageEvent);
             final aoeSize = 30; // diameter
             // deal damage to other nearby enemies
             final nearbyEntities = Grid.getItemsInRect(
@@ -566,10 +788,13 @@ class Ai extends Entity {
 
               if (entityRef != attackTarget 
                   && attackTargetFilterFn(entityRef)) {
-                entityRef.damageTaken += 2;
+                EntityStats.addEvent(
+                    attackTarget.stats, damageEvent);
               }
             }
           }
+
+          case 'no_attack': {}
 
           default: {
 #if !production
@@ -580,23 +805,13 @@ class Ai extends Entity {
       }
     }
 
-    // damage render effect
-    {
-      var c = activeAnim;
-
-      if (damageTaken > 0) {
-        Cooldown.set(cds, 'hitFlash', 0.02);
-        health -= damageTaken;
-        damageTaken = 0;
-      }
-    }
-
     attackTarget = null;
 
     if (isDone()) {
       switch (deathAnimationStyle) {
         case 'default': {
           // trigger death animation
+
           final startTime = Main.Global.time;
           final frames = [
             'destroy_animation/default-0',
@@ -631,60 +846,160 @@ class Ai extends Entity {
         default: {}
       }
 
-      final canDropLoot = type == 'ENEMY';
-      if (canDropLoot) {
-        final numItemsToDrop = Utils.rollValues([
-            0, 0, 0, 0, 1, 1, 2
-        ]);
-
-        for (_ in 0...numItemsToDrop) {
-          final lootInstance = Loot.createInstance([
-              Loot.lootDefinitions[0].type, 
-              Loot.lootDefinitions[1].type, 
-              Loot.lootDefinitions[2].type, 
-          ]);
-          Game.createLootEntity(
-              x + Utils.irnd(5, 10, true), 
-              y + Utils.irnd(5, 10, true), 
-              lootInstance);
-        }
-      }
-
       // log enemy kill action
       if (type == 'ENEMY') {
         final enemyType = Entity.getComponent(
             this, 'aiType');
-        Main.Global.questActions.push(
-            Quest.createAction(
-              'ENEMY_KILL', 
-              'intro_level',
-              { enemyType: enemyType }));
+
+        Session.logAndProcessEvent(
+            Main.Global.gameState, 
+            Session.makeEvent('ENEMY_KILLED', {
+              enemyType: enemyType
+            }));
       }
     }
-
-    super.update(dt);
   }
 
   public override function render(time: Float) {
     final currentFrameName = core.Anim.getFrame(
         activeAnim, time);
 
-    Main.Global.sb.emitSprite(
+    final sprite = Main.Global.sb.emitSprite(
         x, y,
         currentFrameName,
         null,
         (p) -> {
           final b: h2d.SpriteBatch.BatchElement = 
-            p.batchElement;
+            p;
 
+          // flash enemy white
           if (Cooldown.has(cds, 'hitFlash')) {
-            b.r = 2.75;
-            b.g = 2.75;
-            b.b = 2.5;
+            b.r = 150;
+            b.g = 150;
+            b.b = 150;
           }
 
           b.scaleX = facingDir * 1;
         });
+
+    final shouldHighlight = Main.Global.hoveredEntity.id == id;
+    if (shouldHighlight) {
+      Entity.renderOutline(
+          sprite.sortOrder - 1, currentFrameName, this);
+    }
+  }
+}
+
+class Aura {
+  static final instancesByFollowId = new Map();
+
+  public static function create(
+      followId, 
+      filterTypes: Map<String, Bool>) {
+    final lifeTime = 0.5;
+    final fromCache = instancesByFollowId.get(followId);
+    final isCached = fromCache != null;
+    final auraRadius = 100;
+    final inst = isCached
+      ? fromCache 
+      : new Entity({
+        x: 0,
+        y: 0,
+        type: 'moveSpeedAura',
+        components: [
+          'aiType' => 'aura',
+          'neighborQueryThreshold' => auraRadius,
+          'neighborCheckInterval' => 20,
+          'isDynamic' => true,
+          'checkNeighbors' => true,
+        ]
+      });
+    Entity.setComponent(inst, 'lifeTime', lifeTime); 
+
+    if (isCached) {
+      return;
+    }
+
+    inst.stats = EntityStats.create({
+      label: 'moveSpeedAura',
+      currentHealth: 1.
+    });
+    instancesByFollowId.set(followId, inst);
+
+    function sub(curVal: Float, dt: Float) {
+      return curVal - dt;
+    }
+
+    Main.Global.updateHooks.push(function auraUpdate(dt) {
+      final lifeTime = Entity.setWith(inst, 'lifeTime',
+          sub, dt);
+
+      if (lifeTime <= 0 || inst.isDone()) {
+        instancesByFollowId.remove(followId);
+        Entity.destroy(inst.id);
+        return false;
+      }
+
+      Main.Global.logData.auraNeighborCount = inst.neighbors.length;
+      final follow = Entity.getById(followId);
+      inst.x = follow.x;
+      inst.y = follow.y;
+      final modifier: EntityStats.EventObject = {
+        type: 'MOVESPEED_MODIFIER',
+        value: 200
+      };
+
+      for (id in inst.neighbors) {
+        final entityRef = Entity.getById(id);
+        if (filterTypes.exists(entityRef.type)) {  
+          final stats = entityRef.stats;
+          EntityStats.addEvent(
+              stats,
+              modifier);
+        }
+      }
+
+      return true;
+    });
+
+    Main.Global.renderHooks.push(function auraRender(time) {
+      for (id in inst.neighbors) {
+        final entityRef = Entity.getById(id);
+        if (filterTypes.exists(entityRef.type)) {  
+          final x = entityRef.x;
+          final y = entityRef.y;
+          final colorAdjust = Math.sin(Main.Global.time);
+          final angle = Math.sin(Main.Global.time) * 4;
+
+          {
+            final p = Main.Global.sb.emitSprite(
+                x, y,
+                'ui/aura_glyph_1',
+                angle);
+            p.sortOrder = 2;
+            p.r = 1.25 + 0.25 * colorAdjust;
+            p.g = 1.25 + 0.25 * colorAdjust;
+            p.b = 1.25 + 0.25 * colorAdjust;
+            p.a = 0.4;
+          }
+
+          {
+            final p = Main.Global.sb.emitSprite(
+                x, y,
+                'ui/aura_glyph_1',
+                angle * -1);
+            p.sortOrder = 2;
+            p.scale = 0.8;
+            p.r = 1.25 + 0.25 * colorAdjust;
+            p.g = 1.25 + 0.25 * colorAdjust;
+            p.b = 1.25 + 0.25 * colorAdjust;
+            p.a = 0.8;
+          }
+        }
+      }
+
+      return Entity.exists(inst.id);
+    });
   }
 }
 
@@ -698,34 +1013,33 @@ class Player extends Entity {
   var abilityEvents: Array<{
     type: String,
     startPoint: h2d.col.Point,
-    endPoint: h2d.col.Point
+    endPoint: h2d.col.Point,
+    ?targetId: Entity.EntityId
   }>;
   var facingX = 1;
+  var facingY = 1;
 
   public function new(x, y, s2d: h2d.Scene) {
     super({
       x: x,
       y: y,
       radius: 6,
-      weight: 1.0,
       id: 'PLAYER'
     });
-    cds = new Cooldown();
     type = 'PLAYER';
-    health = 1000;
-    speed = 200.0;
     forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
     obstacleGrid = Main.Global.obstacleGrid;
+    Entity.setComponent(this, 'neighborQueryThreshold', 100);
 
     rootScene = s2d;
     stats = EntityStats.create({
       maxHealth: 100,
-      maxEnergy: 100,
+      maxEnergy: 40,
       currentHealth: 100.0,
-      currentEnergy: 100.0,
-      energyRegeneration: 10,
-      pickupRadius: 40 // per second
+      currentEnergy: 40.0,
+      energyRegeneration: 3, // per second
+      pickupRadius: 40 
     });
 
     var runFrames = [
@@ -775,6 +1089,128 @@ class Player extends Entity {
       duration: 0.3,
       startTime: Main.Global.time
     };
+
+    // create orb companion
+    {
+      final initialOffsetX = 5;
+      final ref = new Entity({
+        x: x - initialOffsetX,
+        y: y,
+        radius: 5,
+        id: 'PLAYER_PET_ORB'
+      });
+      ref.stats = EntityStats.create({
+        currentHealth: 1,
+      });
+
+      final yOffset = 0;
+      final MODE_FOLLOW = 'follow';
+      final MODE_WANDER = 'wander';
+      final state = {
+        mode: MODE_WANDER,
+        idleDuration: 0.,
+        prevMove: {
+          x: 0.,
+          y: 0.
+        },
+      };
+      var prevPlayerX = -1.;
+      var prevPlayerY = -1.;
+
+      Main.Global.updateHooks.push((dt) -> {
+        state.mode = MODE_WANDER;
+
+        final py = this.y + yOffset;
+        final pSpeed = this.stats.moveSpeed;
+        final distFromPos = Utils.distance(
+            ref.x, ref.y,
+            state.prevMove.x, state.prevMove.y);
+        final speedDistThreshold = 20;
+        final accel = distFromPos < speedDistThreshold
+          ? -ref.stats.moveSpeed * 0.2
+          : pSpeed * 0.1;
+        final hasPlayerChangedPosition = 
+          prevPlayerX != this.x
+            || prevPlayerY != py;
+
+        if (hasPlayerChangedPosition 
+            || Cooldown.has(this.cds, 'recoveringFromAbility')) {
+          state.mode = MODE_FOLLOW;
+          state.idleDuration = 0;
+        }
+
+        final newSpeed = Utils.clamp(
+            ref.stats.moveSpeed + accel,
+            0,
+            pSpeed);
+        EntityStats.addEvent(
+            ref.stats, {
+              type: 'MOVESPEED_MODIFIER',
+              value: newSpeed
+            });
+
+        if (state.mode == MODE_FOLLOW) {
+          prevPlayerX = this.x;
+          prevPlayerY = py;
+          state.prevMove.x = prevPlayerX;
+          state.prevMove.y = prevPlayerY;
+        }
+
+        if (state.mode == MODE_WANDER) {
+          state.idleDuration += dt;
+        } 
+
+        if (state.mode == MODE_WANDER 
+            && state.idleDuration > 1
+            && !Cooldown.has(cds, 'petOrbWander')) {
+          Cooldown.set(cds, 'petOrbWander', Utils.irnd(2, 3));
+          final wanderDist = 50;
+          final randX = this.x + Utils.irnd(-wanderDist, wanderDist, true);
+          final randY = py + Utils.irnd(-wanderDist, wanderDist, true);
+
+          state.prevMove.x = randX;
+          state.prevMove.y = randY;
+        }
+
+        final angleToPos = Math.atan2(
+            state.prevMove.y - ref.y,
+            state.prevMove.x - ref.x);
+
+        ref.dx = Math.cos(angleToPos);
+        ref.dy = Math.sin(angleToPos);
+
+        return !this.isDone();
+      });
+
+      function shadowSpriteEffect(p) {
+        p.sortOrder = 2.;
+      }
+
+      ref.renderFn = (ref, time) -> {
+        final timeOffset = 1.5;
+        final yOffset = Math.sin(time + timeOffset) * 2;
+
+        Main.Global.sb.emitSprite(
+            ref.x,
+            ref.y + yOffset,
+            'ui/player_pet_orb',
+            null,
+            (p) -> {
+              final b = p;
+              final facingX = ref.dx > 0 ? 1 : -1;
+              b.scaleX = facingX;
+            });
+
+        Main.Global.sb.emitSprite(
+            ref.x,
+            ref.y,
+            'ui/player_pet_orb_shadow',
+            null,
+            shadowSpriteEffect);
+      };
+
+      ref;
+    }
   }
 
   function movePlayer() {
@@ -801,6 +1237,10 @@ class Player extends Entity {
       facingX = dx > 0 ? 1 : -1;
     }
 
+    if (dy != 0) {
+      facingY = dy > 0 ? 1 : -1;
+    }
+
     var magnitude = Math.sqrt(dx * dx + dy * dy);
     var dxNormalized = magnitude == 0 
       ? dx : (dx / magnitude);
@@ -809,36 +1249,58 @@ class Player extends Entity {
 
     dx = dxNormalized;
     dy = dyNormalized;
+    EntityStats.addEvent(
+        stats, {
+          type: 'MOVESPEED_MODIFIER',
+          value: 100,
+        });
   }
 
   public override function update(dt) {
     super.update(dt);
-    Cooldown.update(cds, dt);
     abilityEvents = [];
+
+    PassiveSkillTree.eachSelectedNode(
+        Main.Global.gameState,
+        function updatePlayerStats(nodeMeta) {
+          final modifier = nodeMeta.data.statModifier;
+
+          if (modifier != null) {
+            EntityStats.addEvent(
+                stats,
+                modifier);
+          }
+        });
 
     dx = 0;
     dy = 0;
 
     // collision avoidance
-    if (neighbors != null) {
-      for (entityId in neighbors) {
-        final entity = Entity.getById(entityId);
+    for (entityId in neighbors) {
+      final entity = Entity.getById(entityId);
 
-        if (entity.type == 'FRIENDLY_AI') {
-          continue;
-        }
+      if (entity.type == 'FRIENDLY_AI') {
+        continue;
+      }
 
-        final r2 = entity.avoidanceRadius;
-        final a = Math.atan2(y - entity.y, x - entity.x);
-        final d = Utils.distance(entity.x, entity.y, x, y);
-        final min = radius + r2;
-        final isColliding = d < min;
+      final r2 = entity.avoidanceRadius;
+      final a = Math.atan2(y - entity.y, x - entity.x);
+      final d = Utils.distance(entity.x, entity.y, x, y);
+      final min = radius + r2;
+      final isColliding = d < min;
 
-        if (isColliding) {
-          final conflict = (min - d);
+      if (isColliding) {
+        final conflict = (min - d);
 
-          x += Math.cos(a) * conflict; 
-          y += Math.sin(a) * conflict; 
+        x += Math.cos(a) * conflict; 
+        y += Math.sin(a) * conflict; 
+      }
+
+      if (entity.type == 'OBSTACLE') {
+        final isBehind = y < entity.y;
+        if (isBehind) {
+          Entity.setComponent(this, 'isObscured', true);
+          Entity.setComponent(entity, 'isObscuring', true);
         }
       }
     }
@@ -849,22 +1311,31 @@ class Player extends Entity {
       movePlayer();
     }
 
-    {
-      if (damageTaken > 0) {
-        EntityStats.addEvent(
-            Entity.getById('PLAYER').stats, 
-            { type: 'DAMAGE_RECEIVED', 
-              value: damageTaken });
-        damageTaken = 0;
+    final equippedAbilities = Hud.InventoryDragAndDropPrototype
+      .getEquippedAbilities();
+    final lootDefsByType = [
+      for (lootId in equippedAbilities) {
+        final lootInst = Hud.InventoryDragAndDropPrototype
+          .getItemById(lootId);
+        final def = Loot.getDef(lootInst.type);
+
+        lootInst.type => def;
       }
+    ];
+
+    if (lootDefsByType.exists('moveSpeedAura')) {
+      Aura.create(this.id, [
+          'FRIENDLY_AI' => true,
+          'PLAYER' => true
+      ]);
     }
   }
 
   public function useAbility() {
-    final hoverState = Main.Global.worldMouse.hoverState;
-    final preventAbilityUse = Cooldown.has(cds, 'recoveringFromAbility') 
-        || hoverState == Main.HoverState.LootHoveredCanPickup
-        || hoverState == Main.HoverState.Ui;
+    final preventAbilityUse = 
+         Cooldown.has(cds, 'recoveringFromAbility') 
+      || Cooldown.has(cds, 'playerCanPickupItem') 
+      || Main.Global.hasUiItemsEnabled();
 
     if (preventAbilityUse) {
       return;
@@ -882,15 +1353,23 @@ class Player extends Entity {
       Main.Global.worldMouse.buttonDown];
     final x2 = Main.Global.rootScene.mouseX;
     final y2 = Main.Global.rootScene.mouseY;
+    // player's pivot is at their feet, this adjusts the
+    // ability launch point to be roughly at player's torso
+    final yCenterOffset = -10;
+    final startY = y + yCenterOffset;
+    final launchOffset = 12;
+    final angle = Math.atan2(y2 - startY, x2 - x);
+    final x1 = x + Math.cos(angle) * launchOffset;
+    final y1 = startY + Math.sin(angle) * launchOffset;
+    final x1_1 = x + Math.cos(angle) * launchOffset * 1.1;
+    final y1_1 = startY + Math.sin(angle) * launchOffset * 1.1;
+
     final actionDx = Math.cos(Math.atan2(y2 - y, x2 - x));
 
     if (actionDx != 0) {
       facingX = actionDx > 0 ? 1 : -1;
     }
 
-    var yCenterOffset = -8;
-    var startY = y + yCenterOffset;
-    var launchOffset = 12;
     final equippedAbilities = Hud.InventoryDragAndDropPrototype
       .getEquippedAbilities();
 
@@ -906,7 +1385,7 @@ class Player extends Entity {
     var energyCost = lootDef.energyCost;
     var hasEnoughEnergy = energyCost 
       <= Entity.getById('PLAYER').stats.currentEnergy;
-    final cooldownKey = 'ability__${lootDef.type}';
+    final cooldownKey = 'ability__${lootInst.type}';
     var isUnavailable = Cooldown.has(cds, cooldownKey) 
       || !hasEnoughEnergy;
 
@@ -914,232 +1393,93 @@ class Player extends Entity {
       return;
     }
 
-    // TODO: add `actionSpeed` prop which is different from ability cooldown
-    Cooldown.set(cds, 'recoveringFromAbility', lootDef.cooldown);
+    attackAnim.startTime = Main.Global.time;
+
+    Cooldown.set(cds, 'recoveringFromAbility', lootDef.actionSpeed);
     Cooldown.set(cds, cooldownKey, lootDef.cooldown);
+    EntityStats.addEvent(
+        Entity.getById('PLAYER').stats, 
+        { type: 'ENERGY_SPEND',
+          value: energyCost });
 
-    switch lootDef.type {
+    switch lootInst.type {
       case 'basicBlaster': {
-        attackAnim.startTime = Main.Global.time;
-
-        var angle = Math.atan2(y2 - startY, x2 - x);
-        var x1 = x + Math.cos(angle) * launchOffset;
-        var y1 = startY + Math.sin(angle) * launchOffset;
-        var b = new Bullet(
+        final ref = new Bullet(
             x1,
             y1,
-            x2,
-            y2,
+            x1_1,
+            y1_1,
             250.0,
             'ui/bullet_player_basic',
             (ent) -> (
               ent.type == 'ENEMY' || 
-              ent.type == 'OBSTACLE')
-            );
-        Main.Global.rootScene.addChild(b);
+              ent.type == 'OBSTACLE' ||
+              ent.type == 'INTERACTABLE_PROP'));
+        ref.lifeTime = 1.2;
+        ref.source = this;
+      }
 
-        EntityStats.addEvent(
-            Entity.getById('PLAYER').stats, 
-            { type: 'ENERGY_SPEND',
-              value: energyCost });
+      case 'basicBlasterEvolved': {
+        final collisionFilter = (ent) -> (
+            ent.type == 'ENEMY' || 
+            ent.type == 'OBSTACLE' ||
+            ent.type == 'INTERACTABLE_PROP');
+        for (_angle in [
+          angle,
+          angle - Math.PI / 10,
+          angle + Math.PI / 10,
+        ]) {
+          final ref = new Bullet(
+              x + Math.cos(_angle) * launchOffset,
+              startY + Math.sin(_angle) * launchOffset,
+              x + Math.cos(_angle) * launchOffset * 1.1,
+              startY + Math.sin(_angle) * launchOffset * 1.1,
+              250.0,
+              'ui/bullet_player_basic',
+              collisionFilter);
+          final isSideShot = _angle != angle;
+          ref.lifeTime = isSideShot 
+            ? 0.7 
+            : 1.;
+          ref.source = this;
+        }
       }
 
       case 'channelBeam': {
-        final tempState = Main.Global.tempState;
-        final tickKey = 'kamehamehaChanneling';
-        // handle beam channel ticks
-        {
-          final baseTickAmount = 0.3;
-          final tickRate = .01;
-          if (Cooldown.has(cds, tickKey)) {
-            final curTick = Utils.withDefault(
-                tempState.get(tickKey), 0);
-            tempState.set(tickKey, Math.min(1, curTick + tickRate));
-          } else {
-            tempState.set(tickKey, baseTickAmount);
-          }
-          Cooldown.set(cds, tickKey, 0.05);
-        }
+        // push render event
+        final targetId = Ability.ChannelBeam
+          .run(this, function collisionFilter(id: Entity.EntityId) {
+            final type = Entity.getById(id).type;
+            return switch(type) {
+              case 
+                  'ENEMY' 
+                | 'OBSTACLE' 
+                | 'INTERACTABLE_PROP': 
+                true;
 
-        final additionalLength = 40 * Math.max(1, tempState.get(tickKey) * 2);
-        final maxLength = 60 + additionalLength; 
-        Main.Global.logData.laserMaxLength = maxLength;
-        final laserCenterSpriteData = Reflect.field(
-            Main.Global.sb.batchManager.spriteSheetData,
-            'ui/kamehameha_center_width_1'
-            );
-        final beamThickness = 
-          laserCenterSpriteData.frame.h;
-        final laserTailSpriteData = Reflect.field(
-          Main.Global.sb.batchManager.spriteSheetData,
-          'ui/kamehameha_tail');
-        final angle = Math.atan2(y2 - startY, x2 - x);
-        final vx = Math.cos(angle);
-        final vy = Math.sin(angle);
-        // initial launch point
-        final x1 = x + vx * launchOffset;
-        final y1 = startY + vy * launchOffset;
-        final laserTailX1 = x1 + vx * maxLength;
-        final laserTailY1 = y1 + vy * maxLength;
-
-        var dynamicWorldGrid = Main.Global.dynamicWorldGrid;
-        var worldCellSize = dynamicWorldGrid.cellSize;
-        var cellSize = 3;
-        var startGridX = Math.floor(x1 / cellSize);
-        var startGridY = Math.floor(y1 / cellSize);
-        var targetGridX = Math.floor(laserTailX1 / cellSize);
-        var targetGridY = Math.floor(laserTailY1 / cellSize);
-        var startPt = new h2d.col.Point(x1, y1);
-        var endPt = new h2d.col.Point(laserTailX1, laserTailY1);
-        var centerLine = new h2d.col.Line(startPt, endPt);
-        var debug = {
-          startPos: false,
-          queryRects: false,
-          endPos: false,
-        };
-
-        if (debug.startPos) {
-          // TODO: should be moved to a render method
-          Main.Global.sb.emitSprite(
-            laserTailX1, laserTailY1,
-            'ui/square_white',
-            null,
-            (p) -> {
-              final scale = 10;
-              final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
-              b.scaleX = scale;
-            }
-          );
-        }
-
-        var adjustedEndPt = endPt;
-
-        Utils.bresenhamLine(
-            startGridX, startGridY, targetGridX, 
-            targetGridY, (ctx, x, y, i) -> {
-
-            var worldX = Math.round(x * cellSize);
-            var worldY = Math.round(y * cellSize);
-
-            if (debug.queryRects) {
-              // TODO: should be moved to a render method
-              Main.Global.sb.emitSprite(
-                worldX,
-                worldY,
-                'ui/square_white',
-                null,
-                (p) -> {
-                  final scale = cellSize;
-                  final b: h2d.SpriteBatch.BatchElement = p.batchElement;
-
-                  b.scaleX = scale;
-                  b.scaleY = scale; 
-                }
-              );
-            }
-
-            var items = Grid.getItemsInRect(
-                dynamicWorldGrid, worldX, worldY, 
-                worldCellSize, worldCellSize);
-            var staticWorld = Main.Global.obstacleGrid;
-            var obsWorldCellSize = beamThickness + 16;
-            var obstacles = Grid.getItemsInRect(
-              staticWorld, worldX, worldY, 
-              obsWorldCellSize, obsWorldCellSize);
-
-            var checkCollisions = (items: Map<String, String>) -> {
-              for (entityId in items) {
-                var item = Entity.getById(entityId);
-
-                if (item.type == 'PLAYER' 
-                    || item.type == 'FRIENDLY_AI') {
-                  return false;
-                }
-
-                var colCircle = new h2d.col.Circle(
-                    item.x, item.y, item.radius);
-                // var colPt = new h2d.col.Point(item.x, item.y);
-                var intersectionPoint = Collision
-                  .beamCircleIntersectTest(
-                      startPt, 
-                      endPt,
-                      colCircle,
-                      beamThickness);
-                var isIntersecting = intersectionPoint != endPt;
-
-                // TODO add support for more accurate intersection point for line -> rectangle
-                // We can figure out the edge that the beam touches and then find the intersection
-                // point at the rectangle edge and the beam's center line.
-
-                if (isIntersecting) {
-                  var circleCol = new h2d.col.Circle(
-                      item.x, item.y, item.radius);
-                  var trueIntersectionPts = circleCol
-                    .lineIntersect(centerLine.p1, centerLine.p2);
-                  // intersection point
-                  var p = intersectionPoint;
-
-                  var laserHitCdKey = 'kamehamehaHit';
-                  if (!Cooldown.has(item.cds, laserHitCdKey)) {
-                    final cooldownReduction = -tempState.get(tickKey) * 0.1;
-                    Cooldown.set(
-                        item.cds, 
-                        laserHitCdKey, 
-                        0.2 + cooldownReduction);
-                    item.damageTaken += Utils.irnd(
-                        lootDef.minDamage, 
-                        lootDef.maxDamage);
-                  }
-
-                  adjustedEndPt = p;
-
-                  if (debug.endPos) {
-                    // TODO: should be moved to a render method
-                    Main.Global.sb.emitSprite(
-                      x1,
-                      y1,
-                      'ui/square_white',
-                      null,
-                      (p) -> {
-                        final scale = 10;
-
-                        p.batchElement.scaleX = scale;
-                        p.batchElement.scaleY = scale;
-                      }
-                    );
-
-                    // TODO: should be moved to a render method
-                    Main.Global.sb.emitSprite(
-                      p.x,
-                      p.y,
-                      'ui/square_white',
-                      null,
-                      (p) -> {
-                        final scale = 10;
-
-                        p.batchElement.scaleX = scale;
-                        p.batchElement.scaleY = scale;
-                      }
-                    );
-                  };
-                }
-
-                return isIntersecting;
-              }
-
-              return false;
-            }
-
-            return !checkCollisions(obstacles) 
-              && !checkCollisions(items);
-          }
-        );
+              default: false;
+            };
+          });
+        final beamBounds = Ability.ChannelBeam.getBeamBounds();
+        final dx = Math.cos(beamBounds.angle);
+        final dy = Math.sin(beamBounds.angle);
+        final startPt = new h2d.col.Point(
+            this.x + dx * launchOffset,
+            this.y + (dy * launchOffset) + yCenterOffset);
+        final targetRef = Entity.getById(targetId);
+        final endPt = Entity.isNullId(targetId) 
+          ? new h2d.col.Point(
+              startPt.x + dx * Ability.ChannelBeam.maxLength,
+              startPt.y + dy * Ability.ChannelBeam.maxLength)
+          : new h2d.col.Point(
+              targetRef.x,
+              targetRef.y);
 
         abilityEvents.push({
           type: 'KAMEHAMEHA',
           startPoint: startPt,
-          endPoint: adjustedEndPt,
+          endPoint: endPt,
+          targetId: targetId
         });
       }
 
@@ -1223,9 +1563,392 @@ class Player extends Entity {
             y: y + Utils.irnd(-lo, lo),
             radius: 8,
             aiType: 'spiderBot',
-          }, 4, findNearestTarget, attackTargetFilterFn);
+          }, findNearestTarget, attackTargetFilterFn);
           botRef.type = 'FRIENDLY_AI';
           botRef.deathAnimationStyle = 'none';
+        }
+      }
+
+      case 'energyBomb': {
+        final collisionFilter = (ent) -> (
+            ent.type == 'ENEMY' || 
+            ent.type == 'OBSTACLE' ||
+            ent.type == 'INTERACTABLE_PROP');
+        var b = new EnergyBomb(
+            x1,
+            y1,
+            x1_1,
+            y1_1,
+            collisionFilter);
+        b.source = this;
+        Main.Global.rootScene.addChild(b);
+      }
+
+      case 'heal1': {
+        EntityStats.addEvent(
+            Entity.getById('PLAYER').stats,
+            { type: 'LIFE_RESTORE',
+              value: 15,
+              duration: 4,
+              createdAt: Main.Global.time });
+      }
+
+      case 'energy1': {
+        EntityStats.addEvent(
+            Entity.getById('PLAYER').stats,
+            { type: 'ENERGY_RESTORE',
+              value: 8,
+              duration: 3,
+              createdAt: Main.Global.time });
+      }
+
+      case 'burstCharge': {
+        final state = {
+          isDashComplete: false,
+        };
+        final oldPos = {
+          x: this.x,
+          y: this.y
+        };
+        final startTime = Main.Global.time;
+        final startTime = Main.Global.time;
+        final duration = 0.4;
+        final startedAt = Main.Global.time;
+        final angle = Math.atan2(
+            y2 - this.y,
+            x2 - this.x);
+        final maxDist = Utils.clamp(
+            Utils.distance(
+              this.x, this.y, x2, y2),
+            0,
+            100);
+        final dx = Math.cos(angle);
+        final dy = Math.sin(angle);
+        final randOffset = Utils.irnd(0, 10);
+        final trailFacingX = this.facingX;
+        final trailDuration = 0.4;
+
+        function renderTrail(
+            percentDist: Float, 
+            initialAlpha: Float,
+            spriteKey) {
+          core.Anim.AnimEffect.add({
+            x: this.x,
+            y: this.y,
+            startTime: startTime,
+            duration: trailDuration,
+            frames: [
+              spriteKey
+            ],
+            effectCallback: (p) -> {
+              final progress = (Main.Global.time - startTime) 
+                / trailDuration;
+              final elem = p;
+              elem.alpha = initialAlpha * (1 - progress);
+              elem.scaleX = trailFacingX;
+              elem.r = 1.;
+              elem.g = 20.;
+              elem.b = 20.;
+            }
+          });
+        }
+
+        final duration = .1;
+        final trailFns = [
+            () -> renderTrail(0.0, 0.1, 'player_animation/run-0'),
+            () -> renderTrail(0.2, 0.4, 'player_animation/run-1'),
+            () -> renderTrail(0.3, 0.7, 'player_animation/run-2'),
+            () -> renderTrail(0.5, 0.9, 'player_animation/run-3'),
+            () -> renderTrail(0.8, 1., 'player_animation/run-4')
+        ];
+        for (trailIndex in 0...trailFns.length) {
+          final startedAt = Main.Global.time; 
+
+          Main.Global.updateHooks.push((dt) -> {
+            final timeElapsed = Main.Global.time - startedAt;
+            final triggerAnimationAt = trailIndex * duration / trailFns.length;
+
+            if (timeElapsed >= triggerAnimationAt) {
+              trailFns[trailIndex]();
+              return false;
+            }
+
+            return true;
+          }); 
+        }
+
+        // burst hit offset position
+        final xOffset = 10;
+        final yOffset = -8;
+
+        function isSameSign(a: Float, b: Float) {
+          return (a < 0 && b < 0) ||
+            (a > 0 && b > 0);
+        }
+
+        // handle lunge effect
+        Main.Global.updateHooks.push((dt) -> {
+          final aliveTime = Main.Global.time - startedAt;
+          final progress = aliveTime / duration;
+
+          this.dx = dx;
+          this.dy = dy;
+          final distanceTraveled = Utils.distance(
+              this.x,
+              this.y,
+              oldPos.x,
+              oldPos.y);
+          Entity.setComponent(this, 'alpha', 0.2);
+          
+          final hasCollisions = Entity.getCollisions(
+              this.id, 
+              this.neighbors,
+              (ref) -> {
+                if (ref.type == 'FRIENDLY_AI') {
+                  return false;
+                }
+
+                final angle = Math.atan2(
+                    ref.y - oldPos.y,
+                    ref.x - oldPos.x);
+                final isWithinPath = isSameSign(dx, Math.cos(angle)) &&
+                  isSameSign(dy, Math.sin(angle));
+
+                return isWithinPath;
+              }).length > 0;
+
+          state.isDashComplete = hasCollisions 
+            || distanceTraveled >= maxDist
+            || progress >= 1;
+
+          if (state.isDashComplete) {
+            Entity.setComponent(this, 'alpha', 1);
+
+            final hitX = this.x + dx * launchOffset;
+            final hitY = this.y + dy * launchOffset;
+            final ref = new Bullet(
+              hitX,
+              hitY,
+              hitX,
+              hitY,
+              0,
+              'ui/placeholder',
+              (ent) -> {
+                return ent.type == 'ENEMY' ||
+                  ent.type == 'INTERACTABLE_PROP';
+              }
+            );
+
+            ref.source = this;
+            ref.maxNumHits = 999999;
+            // ref.explosionScale = 1.6;
+            ref.playSound = false;
+            ref.radius = 20;
+            ref.lifeTime = 0.1;
+            ref.damage = 3;
+
+            return false;
+          } else {
+            EntityStats.addEvent(
+                this.stats, {
+                  type: 'MOVESPEED_MODIFIER',
+                  value: 500
+                });
+          }
+
+          return true;
+        });
+
+
+        function setColor(
+            ref: SpriteBatchSystem.SpriteRef,
+            r = 1., g = 1., b = 1., a = 1.) {
+
+          final elem = ref;
+
+          elem.r = r;
+          elem.g = g;
+          elem.b = b;
+          elem.a = a;
+        }
+
+        Main.Global.renderHooks.push((time) -> {
+          final duration = 0.35;
+          final aliveTime = Main.Global.time - startedAt;
+          final progress = (aliveTime) 
+            / duration;
+          final endX = this.x;
+          final endY = this.y;
+
+          if (!state.isDashComplete) {
+            return true;
+          }
+
+          final posV = Easing.easeInCirc(progress);
+          final facingX = dx > 0 ? 1 : -1;
+          final spriteRef = Main.Global.sb.emitSprite(
+              endX + xOffset * facingX + dx * randOffset * posV, 
+              endY + yOffset + dy * randOffset * posV,
+              'ui/melee_burst');
+          spriteRef.sortOrder = y + 10;
+
+          if (aliveTime < 0.2) {
+            final ref = Main.Global.sb.emitSprite(
+              endX + xOffset * facingX + dx * randOffset * posV * 0.3, 
+              endY + yOffset + dy * randOffset * posV * 0.3,
+              'ui/melee_burst');
+
+            ref.sortOrder = spriteRef.sortOrder + 1;
+            setColor(ref, 10, 10, 10);
+          } else {
+            final b = spriteRef;
+            b.scale = 1 + Easing.easeInCirc(progress) * 0.3;
+            b.alpha = 1 - Easing.easeInSine(progress);
+          }
+
+          final isAlive = progress < 1;
+
+          return isAlive;
+        });
+      }
+
+      case 'flameTorch': {
+        function triggerAbility(
+            x1: Float,
+            y1: Float,
+            sortOffset: Float,
+            angle) {
+
+          final startTime = Main.Global.time;
+          final numParticles = 10;
+
+          for (i in 
+              -Std.int(numParticles / 2)...Std.int(numParticles / 2)) {
+            final spreadAngle = Math.PI / 6;
+            final angle2 = angle + 
+              i * spreadAngle / numParticles
+              + (Utils.irnd(-4, 4) * Math.PI / 30);
+            final speed = 10 + Utils.irnd(-10, 10);
+            final rotation = Math.PI * (0.25 + Utils.rnd(0, .15));
+            final duration = 0.4 + Utils.rnd(-0.3, 0.3);
+
+            core.Anim.AnimEffect.add({
+              x: x1,
+              y: y1,
+              startTime: startTime,
+              frames: [
+                'ui/square_glow', 
+              ],
+              duration: duration,
+              effectCallback: (p) -> {
+                final progress = (Main.Global.time - startTime) 
+                  / duration;
+                final elem = p;
+                final dx = Math.cos(angle2);
+                final dy = Math.sin(angle2);
+                final v1 = Easing.easeOutQuint(progress);
+                final v2 = Easing.easeInQuint(progress);
+                final gravity = 9;
+
+                p.sortOrder = y1 + sortOffset + 2;
+                elem.alpha = 1 - Easing.easeInQuint(progress);
+                elem.scale = 2 * (1 - Easing.easeInQuint(progress));
+                elem.x += dx * -1 * speed * v1;
+                elem.y += dy * -1 * speed * v1 + (gravity * v2);
+                elem.rotation = rotation;
+
+                elem.g = Math.max(0.4, 1 - v2 / 1.5);
+                elem.b = 1 - v2 * 2;
+              }
+            });
+
+          }
+
+          // render torch
+          final torchDuration = 0.2;
+          core.Anim.AnimEffect.add({
+            x: x1,
+            y: y1,
+            startTime: startTime,
+            frames: [
+              'ui/flame_torch', 
+            ],
+            duration: torchDuration,
+            effectCallback: (p) -> {
+              final progress = (Main.Global.time - startTime) 
+                / torchDuration;
+              final v1 = Easing.easeOutQuint(progress);
+              final v2 = Easing.easeInQuint(progress);
+              final elem = p;
+
+              p.sortOrder += sortOffset + 1;
+              elem.rotation = angle;
+              // elem.scaleY = 1 - v2;
+              elem.scaleX = 1 - v2;
+              elem.alpha = 1 - v2;
+            }
+          });
+
+          // muzzle flash
+          core.Anim.AnimEffect.add({
+            x: x1,
+            y: y1,
+            startTime: startTime,
+            frames: [
+              'ui/circle_gradient', 
+            ],
+            duration: torchDuration,
+            effectCallback: (p) -> {
+              final progress = (Main.Global.time - startTime) 
+                / torchDuration;
+              final v1 = Easing.easeInQuint(progress);
+              final elem = p;
+
+              p.sortOrder += sortOffset + 2;
+              elem.rotation = angle;
+              elem.scaleY = 1 - v1;
+              elem.scaleX = 1 - v1;
+              elem.alpha = 1 - v1;
+            }
+          });
+        }
+
+        final angle = Math.atan2(
+            y1_1 - y1,
+            x1_1 - x1);
+
+        triggerAbility(
+            x1_1,
+            y1_1,
+            yCenterOffset * -1,
+            angle);
+
+        // final hitList = new Map();
+
+        final collisionFilter = (e: Entity) -> {
+          return switch (e.type) {
+            case 
+                'ENEMY'
+              | 'INTERACTABLE_PROP': {
+                true;
+              }
+
+            default: false;
+          }
+        };
+
+        for (_ in 0...1) {
+          final hitRef = new LineProjectile(
+              x1,
+              y1,
+              x1_1,
+              y1_1,
+              400,
+              10,
+              collisionFilter);
+          hitRef.source = this;
+          hitRef.maxNumHits = 9999;
+          hitRef.lifeTime = 0.05;
         }
       }
     }
@@ -1243,88 +1966,147 @@ class Player extends Entity {
         activeAnim = idleAnim;
       }
     }
-    Main.Global.sb.emitSprite(
+
+    final currentSprite = core.Anim.getFrame(activeAnim, time);
+    function spriteEffect(p: SpriteBatchSystem.SpriteRef) {
+      p.scaleX = facingX;
+      p.alpha = Utils.withDefault(
+          Entity.getComponent(this, 'alpha'),
+          1);
+    }
+    final baseSprite = Main.Global.sb.emitSprite(
       x, y,
-      core.Anim.getFrame(activeAnim, time),
+      currentSprite,
       null,
-      (p) -> {
-        p.batchElement.scaleX = facingX;
-      }
+      spriteEffect
     );
+
+    final obscuredSilhouetteSprite = 
+      Main.Global.oeSpriteBatch.emitSprite(
+          x, y,
+          currentSprite,
+          null,
+          spriteEffect);
+
+    // render heal animation
+    final isPlayerRestoringHealth = Lambda.exists(
+        stats.recentEvents,
+        (ev) -> ev.type == 'LIFE_RESTORE');
+    final isPlayerRestoringEnergy = Lambda.exists(
+        stats.recentEvents,
+        (ev) -> ev.type == 'ENERGY_RESTORE');
+    final isPlayerHealing = isPlayerRestoringHealth
+      || isPlayerRestoringEnergy;
+
+    function setSpriteColors(
+        p, r = 1., g = 1., b = 1., a = 1.) {
+      final e: h2d.SpriteBatch.BatchElement = p;
+
+      e.r = r;
+      e.g = g;
+      e.b = b;
+      e.a = a;
+    };
+
+    function healAnimation(healType, timeOffset) {
+      final sb = Main.Global.sb;
+      final spriteData = SpriteBatchSystem.getSpriteData(
+          sb.batchManager.spriteSheetData,
+          currentSprite);
+      final orbSpriteData = SpriteBatchSystem.getSpriteData(
+          sb.batchManager.spriteSheetData,
+          'ui/player_pet_orb');
+      final animDuration = 1.;
+      final orbSpriteRef = Entity.getById('PLAYER_PET_ORB');
+
+      // draw scan lines
+      final numLines = 3;
+      for (i in 0...numLines) {
+        final tOffset = animDuration / numLines * i + timeOffset;
+        final progress = ((time + tOffset) % animDuration) / animDuration;
+        final yOffset = spriteData.pivot.y * spriteData.frame.h * (1 - progress);
+        final orbSpriteY = orbSpriteRef.y
+          - orbSpriteData.sourceSize.h 
+          * orbSpriteData.pivot.y
+          + (orbSpriteData.sourceSize.h / 2);
+        final orbSpriteX = orbSpriteRef.x;
+        final y2 = y + (1 - spriteData.pivot.y);
+        final dy = -spriteData.pivot.y 
+          * spriteData.sourceSize.h 
+          * progress;
+        final lineLength = Utils.distance(
+            orbSpriteX,
+            orbSpriteY,
+            x,
+            y2 + dy);
+        final orbLineAngle = Math.atan2(
+          (y2 + dy) - orbSpriteY,
+          x - orbSpriteX);
+        sb.emitSprite(
+            orbSpriteX,
+            orbSpriteY,
+            'ui/square_white',
+            orbLineAngle,
+            (p) -> {
+              p.sortOrder += 50.;
+              final b = p;
+              b.scaleX = lineLength;
+
+              if (healType == 'LIFE_RESTORE') {
+                setSpriteColors(p, 0.6, 4., 0.8, 0.4);
+              }
+
+              if (healType == 'ENERGY_RESTORE') {
+                setSpriteColors(p, 0.6, 0.8, 4., 0.4);
+              }
+            });
+
+        final spriteRef = sb.emitSprite(
+            x,
+            y2,
+            'ui/placeholder'); 
+        final playerTile = sb.batchManager.spriteSheet
+          .sub(spriteData.frame.x
+              ,spriteData.frame.y + yOffset
+              ,spriteData.frame.w
+              ,1.5);
+        playerTile.dx = -spriteData.pivot.x * spriteData.sourceSize.w;
+        playerTile.dy = dy;
+        final b = spriteRef;
+        b.t = playerTile;
+        b.scaleX = this.facingX;
+
+
+        if (healType == 'LIFE_RESTORE') {
+          setSpriteColors(spriteRef, 0.7, 4., 0.8, 0.9);
+        }
+
+        if (healType == 'ENERGY_RESTORE') {
+          setSpriteColors(spriteRef, 1.3, 1.7, 2., 0.9);
+        }
+      }
+    }
+
+    if (isPlayerRestoringHealth) {
+      healAnimation('LIFE_RESTORE', 0);
+    }
+
+    if (isPlayerRestoringEnergy) {
+      healAnimation('ENERGY_RESTORE', 0.25);
+    }
 
     for (e in abilityEvents) {
       switch(e) {
         case { type: 'KAMEHAMEHA', 
           startPoint: startPt, 
-          endPoint: endPt 
+          endPoint: endPt,
+          targetId: tid
         }: {
-
-          final laserHeadSpriteData = Reflect.field(
-              Main.Global.sb.batchManager.spriteSheetData,
-              'ui/kamehameha_head'
-              );
-          final laserHeadWidth = laserHeadSpriteData.frame.w;
-          final tickPercent = Main.Global.tempState.get(
-                'kamehamehaChanneling');
-          final yScale = tickPercent + Utils.irnd(0, 1) * 0.125;
-          
-          // laser head
-          final angle = Math.atan2(
-              endPt.y - startPt.y,
-              endPt.x - startPt.x);
-          final vx = Math.cos(angle);
-          final vy = Math.sin(angle);
-
-          {
-            Main.Global.sb.emitSprite(
-                startPt.x, startPt.y,
-                'ui/kamehameha_head',
-                angle,
-                (p) -> {
-                  p.batchElement.scaleY = yScale;
-                });
-          }
-
-          {
-            var lcx = startPt.x + (vx * laserHeadWidth);
-            var lcy = startPt.y + (vy * laserHeadWidth);
-            var beamCallback = (p) -> {
-              final b: h2d.SpriteBatch.BatchElement = 
-                p.batchElement;
-
-              b.scaleX = Math.round(
-                  Utils.distance(lcx, lcy, endPt.x, endPt.y));
-              b.scaleY = yScale; 
-            };
-
-            // laser center
-            final angle = Math.atan2(
-                endPt.y - lcy,
-                endPt.x - lcx);
-
-            Main.Global.sb.emitSprite(
-                lcx, lcy,
-                'ui/kamehameha_center_width_1',
-                angle,
-                beamCallback);
-          }
-
-          // laser tail
-          {
-            final angle = Math.atan2(
-                endPt.y - endPt.y + vy,
-                endPt.x - endPt.x + vx);
-
-            Main.Global.sb.emitSprite(
-                endPt.x, endPt.y,
-                'ui/kamehameha_tail',
-                angle,
-                (p) -> {
-                  p.batchElement.scaleX = 1 + 
-                    Utils.irnd(0, 1) * 0.25;
-                  p.batchElement.scaleY = yScale; 
-                });
-          }
+          Ability.ChannelBeam.renderLaser(
+              Entity.getById('PLAYER'),
+              startPt,
+              endPt,
+              Entity.getById(tid));
         }
 
         default: {}
@@ -1334,7 +2116,9 @@ class Player extends Entity {
 }
 
 class MapObstacle extends Entity {
-  var meta: core.Types.TiledObject;
+  var meta: {
+    spriteKey: String
+  } = null;
 
   public function new(props: EntityProps, meta) {
     super(props);
@@ -1345,7 +2129,7 @@ class MapObstacle extends Entity {
 
   public override function render(_) {
     Main.Global.sb.emitSprite(
-      x, y, meta.name);
+      x, y, meta.spriteKey);
   }
 }
 
@@ -1353,7 +2137,7 @@ class MapObstacle extends Entity {
 class EnemySpawner extends Entity {
   static final enemyTypes = [
     'bat',
-    'botMage',
+    'botMage'
   ];
 
   static final sizeByEnemyType = [
@@ -1376,11 +2160,16 @@ class EnemySpawner extends Entity {
       radius: 0
     });
     enemiesLeftToSpawn = numEnemies;
-    cds = new Cooldown();
+    type = 'ENEMY_INVISIBLE_SPAWNER';
     this.parent = parent;
     this.x = x;
     this.y = y;
     this.findTarget = findTarget;
+
+    stats = EntityStats.create({
+      label: '@EnemySpawner',
+      currentHealth: 1.,
+    });
   }
 
   public override function update(dt: Float) {
@@ -1402,11 +2191,9 @@ class EnemySpawner extends Entity {
 
     final isDone = enemiesLeftToSpawn <= 0;
     if (isDone) {
-      health = 0;
+      Entity.destroy(this.id);
       return;
     } 
-
-    Cooldown.update(cds, dt);
 
     if (Cooldown.has(cds, 'recentlySpawned')) {
       return;
@@ -1416,138 +2203,669 @@ class EnemySpawner extends Entity {
     enemiesLeftToSpawn -= 1;
 
     final enemyType = Utils.rollValues(enemyTypes);
-    var size = sizeByEnemyType[enemyType];
-    var radius = 3 + size * 6;
-    var posRange = 20;
-    var e = new Ai({
+    final size = sizeByEnemyType[enemyType];
+    final radius = 3 + size * 6;
+    final posRange = 20;
+    new Ai({
       x: x + Utils.irnd(-posRange, posRange),
       y: y + Utils.irnd(-posRange, posRange),
       radius: radius,
       aiType: enemyType,
-      weight: 1.0,
-    }, size, findTarget);
-    parent.addChildAt(e, 0);
-  }
-}
-
-class MapData {
-  static var cache: MapDataRef;
-  static var previousTiledRes: hxd.res.Resource;
-
-  static public function create(tiledRes: hxd.res.Resource) {
-    if (previousTiledRes == tiledRes) {
-      return cache;
-    }
-
-    // parse Tiled json file
-    var mapData:TiledMapData = haxe.Json.parse(
-        hxd.Res.level_intro_json.entry.getText());
-    var layersByName: Map<String, Dynamic> = new Map();
-    var mapLayers: Array<Dynamic> = mapData.layers;
-
-    for (l in mapLayers) {
-      layersByName.set(l.name, l);
-    }
-
-    return {
-      data: mapData,
-      layersByName: layersByName
-    };
+      type: 'ENEMY'
+    }, findTarget);
   }
 }
 
 class Game extends h2d.Object {
-  public var level = 2;
-  var mousePointer: h2d.Object;
-  var mousePointerSprite: h2d.Graphics;
   var mapRef: GridRef;
   var MOUSE_POINTER_RADIUS = 5.0;
-
-  function calcNumEnemies(level: Int) {
-    return level * Math.round(level /2);
-  }
-
-  public function isGameOver() {
-    final playerRef = Entity.getById('player');
-
-    return playerRef.health <= 0;
-  }
-
-  public function isLevelComplete() {
-    final numEnemies = Lambda.count(
-        Entity.ALL_BY_ID, 
-        (e) -> e.type == 'ENEMY');
-
-    return numEnemies == 0;
-  }
-
-  public function cleanupLevel() {
-    // reset game state
-    for (entityRef in Entity.ALL_BY_ID) {
-      entityRef.health = 0;
-    }
-
-    mousePointer.remove();
-  }
+  var finished = false;
 
   override function onRemove() {
-    cleanupLevel();
+    // reset game state
+    for (entityRef in Entity.ALL_BY_ID) {
+      Entity.destroy(entityRef.id);
+      entityRef.renderFn = null;
+      entityRef.onDone = null;
+      entityRef.type = 'ENTITY_CLEANUP';
+    }
+
+    finished = true;
   }
 
   public function newLevel(s2d: h2d.Scene) {
-    level += 1;
+    final processMap = (
+        fileName, 
+        mapData: Editor.EditorState) -> {
 
-    {
-      final parsedTiledMap = MapData.create(
-          hxd.Res.level_intro_json);
-      final layersByName = parsedTiledMap.layersByName;
-      final objectsRects: Array<core.Types.TiledObject> = 
-        layersByName.get('objects').objects;
-      final enemySpawnPoints = Lambda
-        .filter(objectsRects, (item) -> {
-          return item.type == 'enemySpawnPoint';
-        });
+      final editorConfig = Editor.getConfig(fileName);
+      final cellSize = 16;
       final spawnerFindTargetFn = (_) -> {
         return Entity.getById('PLAYER');
       }
+      final spriteSheetTile =
+        hxd.Res.sprite_sheet_png.toTile();
+      final spriteSheetData = Utils.loadJsonFile(
+          hxd.Res.sprite_sheet_json).frames;
+      final layersToIgnore = [
+        'layer_prefab',
+        'layer_marquee_selection'
+      ];
+      final orderedLayers = Lambda.filter(
+          mapData.layerOrderById,
+          (layerId) -> {
+            return !Lambda.exists(
+                layersToIgnore, 
+                (l) -> l == layerId);
+          });
+      final tileGridByLayerId = {
+        final tileGrids = new Map();
 
-      Lambda.foreach(
-          enemySpawnPoints, 
-          (point) -> {
-            new EnemySpawner(
-                point.x,
-                point.y,
-                5,
-                s2d,
-                spawnerFindTargetFn);
+        for (layerId in orderedLayers) {
+          tileGrids.set(layerId, Grid.create(cellSize));
+        }
 
-            return true;
-          });  
+        tileGrids;
+      };
+      final traversableGrid = Grid.create(cellSize);
+      Main.Global.traversableGrid = traversableGrid;
+      final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
+
+      final addToTileGrid = (
+          tileGrid, x: Int, y: Int, itemId) -> {
+        Grid.setItemRect(
+            tileGrid,
+            x, 
+            y,
+            tileGrid.cellSize,
+            tileGrid.cellSize,
+            itemId);
+        truePositionByItemId.set(
+            itemId, 
+            { x: x, 
+              y: y });
+      }
+
+      final miniMapScale = 1/6;
+      final miniMap = {
+        final miniMapMargin = 10;
+        final miniMapSize = 200;
+        final root = new h2d.Object(Main.Global.uiRoot);
+        final mask = new h2d.Mask(
+            miniMapSize, 
+            miniMapSize, 
+            root);
+        final bg = new h2d.Graphics(root);
+        bg.beginFill(0x000000, 0.1);
+        bg.drawRect(
+            0, 0, miniMapSize, miniMapSize);
+        final borderWidth = Hud.rScale;
+        // draw borders
+        bg.beginFill(0xfffffff, 0);
+        bg.lineStyle(4, 0xffffff);
+        bg.drawRect(0, 0, miniMapSize, miniMapSize);
+        
+
+        final g = new h2d.Graphics(mask);
+        g.alpha = 0.6;
+        root.x = Main.nativePixelResolution.x 
+          - miniMapMargin 
+          - miniMapSize;
+        root.y = miniMapMargin;
+
+        Main.Global.updateHooks.push((dt) -> {
+          root.visible = Main.Global.uiState.hud.enabled
+            && !Main.Global.uiState.inventory.enabled;
+
+          final camera = Main.Global.mainCamera; 
+          g.x = -camera.x * miniMapScale + miniMapSize / 2;
+          g.y = -camera.y * miniMapScale + miniMapSize / 2;
+
+          if (finished) {
+            root.remove();
+          }
+
+          return !finished;
+        });
+
+        g;
+      }
+
+      // process each map object
+      for (layerId in orderedLayers) {
+        final grid = mapData.gridByLayerId.get(layerId);
+        final tileGrid = tileGridByLayerId.get(layerId); 
+
+        for (itemId => bounds in grid.itemCache) {
+          final objectType = mapData.itemTypeById.get(itemId);
+          final objectMeta = editorConfig.objectMetaByType
+            .get(objectType);
+          final x = bounds[0];
+          final y = bounds[2];
+
+          // generate game objects
+          switch(objectType) {
+            case 'enemySpawnPoint': {
+              new EnemySpawner(
+                  x,
+                  y,
+                  5,
+                  Main.Global.rootScene,
+                  spawnerFindTargetFn);
+            } 
+
+            case 'intro_level_boss': {
+              final e = new Ai({
+                x: x,
+                y: y,
+                radius: 30,
+                sightRange: 150,
+                aiType: 'introLevelBoss',
+                type: 'ENEMY'
+              }, (_) -> Entity.getById('PLAYER'));
+              Main.Global.rootScene.addChildAt(e, 0);
+            }
+
+            case 'npc_test_dummy': {
+              new Ai({
+                x: x,
+                y: y,
+                aiType: 'npcTestDummy',
+                type: 'ENEMY',
+                radius: 6
+              });
+            }
+
+            case 'pillar': {
+              final spriteKey = objectMeta.spriteKey;
+              final spriteData = Reflect.field(
+                  spriteSheetData,
+                  spriteKey);
+              final radius = Std.int(
+                  spriteData.sourceSize.w / 2);
+              final ref = new MapObstacle({
+                id: 'mapObstacle_${itemId}',
+                x: x,
+                y: y,
+                radius: radius,
+                avoidanceRadius: radius + 3
+              }, objectMeta);
+              final initialHealth = 10000;
+              ref.stats = EntityStats.create({
+                currentHealth: initialHealth,
+              });
+            }
+
+            case 'player': {
+              final cameraPanDuration = 0.9;
+              final animDuration = 1.0;
+              final cameraStartTime = Main.Global.time;
+              final startedAt = Main.Global.time + cameraPanDuration * 0.3;
+
+              function panCameraToPlayer(dt) {
+                final progress = (Main.Global.time - cameraStartTime) 
+                  / cameraPanDuration;
+                final v = Easing.easeOutExpo(progress);
+                final initialX = x - 30;
+                final dx = x - initialX;
+                final initialY = y - 10;
+                final dy = y - initialY;
+
+                Camera.follow(
+                    Main.Global.mainCamera, {
+                      x: initialX + (dx * v),
+                      y: initialY + (dy * v),
+                    });
+
+                return progress < 1;
+              }
+              Main.Global.updateHooks
+                .push(panCameraToPlayer);
+
+              // materializing animation
+              {
+                final sb = Main.Global.sb;
+                final spriteData = SpriteBatchSystem.getSpriteData(
+                    sb.batchManager.spriteSheetData,
+                    'player_animation/idle-0');
+
+                Main.Global.renderHooks.push((time) -> {
+                  final progress = (time - startedAt) / animDuration;
+                  final yOffset = spriteData.frame.h * (1 - progress);
+                  final spriteRef = sb.emitSprite(
+                      x,
+                      y + (1 - spriteData.pivot.y) * yOffset,
+                      'ui/placeholder'); 
+                  final playerTile = sb.batchManager.spriteSheet
+                    .sub(spriteData.frame.x
+                        ,spriteData.frame.y + yOffset
+                        ,spriteData.frame.w
+                        ,spriteData.frame.h * progress);
+                  playerTile.setCenterRatio(
+                      spriteData.pivot.x,
+                      spriteData.pivot.y);
+                  final b = spriteRef;
+                  b.t = playerTile;
+
+                  return progress < 1;
+                });
+
+                Main.Global.renderHooks.push((time) -> {
+                  final progress = (time - startedAt) / animDuration;
+                  final yOffset = spriteData.frame.h * (1 - progress);
+                  final spriteRef = sb.emitSprite(
+                      x,
+                      y + (1 - spriteData.pivot.y) * yOffset,
+                      'ui/placeholder'); 
+                  final playerTile = sb.batchManager.spriteSheet
+                    .sub(spriteData.frame.x
+                        ,spriteData.frame.y + yOffset
+                        ,spriteData.frame.w
+                        ,3);
+                  playerTile.dx = -spriteData.pivot.x * spriteData.sourceSize.w;
+                  playerTile.dy = -spriteData.pivot.y * spriteData.sourceSize.h * progress;
+                  final b = spriteRef;
+                  b.t = playerTile;
+                  b.r = 999.0;
+                  b.g = 999.0;
+                  b.b = 999.0;
+
+                  return progress < 1;
+                });
+              }
+
+              final makePlayerAfterAnimation = (dt: Float) -> {
+                final progress = (Main.Global.time - startedAt) 
+                  / animDuration;
+
+                if (progress > 1) {
+                  final playerRef = new Player(
+                      x,
+                      y,
+                      Main.Global.rootScene);
+                  Main.Global.rootScene.addChild(playerRef);
+                  Camera.follow(
+                      Main.Global.mainCamera, 
+                      playerRef);
+
+                  return false;
+                }
+
+                return true;
+              };
+              Main.Global.updateHooks
+                .push(makePlayerAfterAnimation);
+            }
+
+            case 'teleporter': {
+              addToTileGrid(tileGrid, x, y, itemId);
+
+              // add traversable areas
+              Grid.setItemRect(
+                  traversableGrid,
+                  x,
+                  y,
+                  tileGrid.cellSize * 2,
+                  tileGrid.cellSize * 3,
+                  'teleporter_traversable_rect_${itemId}_1');
+
+              {
+                final width = 9;
+                final height = 2;
+                Grid.setItemRect(
+                    traversableGrid,
+                    x + (3 * cellSize),
+                    y + 2,
+                    tileGrid.cellSize * width,
+                    tileGrid.cellSize * 2,
+                    'teleporter_traversable_rect_${itemId}_2');
+              }
+
+              {
+                // add teleporter pillars for layering
+                final refLeft = new Entity({
+                  x: x - 30,
+                  y: y + 27,
+                  type: 'teleporterPillar'
+                });
+                refLeft.stats = EntityStats.create({
+                  currentHealth: 1.
+                });
+
+                refLeft.renderFn = (ref, _) -> {
+                  Main.Global.sb.emitSprite(
+                      ref.x,
+                      ref.y,
+                      'ui/teleporter_pillar_left'); 
+                };
+
+                final refRight = new Entity({
+                  x: refLeft.x + 55,
+                  y: refLeft.y,
+                  type: 'teleporterPillar'
+                });
+                refRight.stats = EntityStats.create({
+                  currentHealth: 1.
+                });
+
+                refRight.renderFn = (ref, _) -> {
+                  Main.Global.sb.emitSprite(
+                      ref.x,
+                      ref.y,
+                      'ui/teleporter_pillar_right'); 
+                };
+              }
+            }
+
+            case 'prop_1_1': {
+              final ref = new Entity({
+                x: x,
+                y: y,
+                radius: 5,
+              });
+              ref.renderFn = (ref, time) -> {
+                final sprite = Main.Global.sb.emitSprite(
+                    ref.x,
+                    ref.y,
+                    objectMeta.spriteKey);
+                if (Main.Global.hoveredEntity.id == ref.id) {
+                  Entity.renderOutline(
+                      sprite.sortOrder - 1,
+                      objectMeta.spriteKey,
+                      ref);
+                }
+
+              }
+              final shatterAnimation = (ref) -> {
+                final startedAt = Main.Global.time;
+                final duration = 0.5;
+                final angle1 = -Math.PI / 2.5 + Utils.rnd(-1, 1, true);
+                final angle2 = Math.PI + Utils.rnd(-1, 1, true);
+                final angle3 = Math.PI * 2 + Utils.rnd(-1, 1, true);
+                final dist = 30;
+                Main.Global.renderHooks.push((time) -> {
+                  final progress = (time - startedAt) / duration;
+
+                  {
+                    final dx = Math.cos(angle1) * dist;
+                    final dy = Math.sin(angle1) * dist;
+                    final spriteRef = Main.Global.sb.emitSprite(
+                        ref.x + dx * progress,
+                        ref.y + dy * progress,
+                        'ui/prop_1_1_shard_1',
+                        (time - startedAt) * 14);
+                    spriteRef.alpha = 
+                      1 - Easing.easeInQuint(progress);
+                  }
+
+                  {
+                    final dx = Math.cos(angle2) * dist;
+                    final dy = Math.sin(angle2) * dist;
+                    final spriteRef = Main.Global.sb.emitSprite(
+                        ref.x + dx * progress,
+                        ref.y + dy * progress,
+                        'ui/prop_1_1_shard_2',
+                        (time - startedAt) * 14);
+                    spriteRef.alpha = 
+                      1 - Easing.easeInQuint(progress);
+                  }
+
+                  {
+                    final dx = Math.cos(angle3) * dist;
+                    final dy = Math.sin(angle3) * dist;
+                    final spriteRef = Main.Global.sb.emitSprite(
+                        ref.x + dx * progress,
+                        ref.y + dy * progress,
+                        'ui/prop_1_1_shard_3',
+                        (time - startedAt) * 14);
+                    spriteRef.alpha = 
+                      1 - Easing.easeInQuint(progress);
+                  }
+
+                  return progress < 1;
+                });
+
+              };
+              ref.onDone = shatterAnimation;
+              ref.type = 'INTERACTABLE_PROP';
+              ref.stats = EntityStats.create({
+                label: '@prop_1_1',
+                currentHealth: 1.,
+              });
+              Main.Global.rootScene.addChild(ref);
+            }
+
+            case 'tile_2': {
+              final wallRef = new Entity({
+                x: x,
+                y: y + 32,
+                radius: 8,
+                type: 'OBSTACLE'
+              });
+              final initialHealth = 1000000;
+              wallRef.stats = EntityStats.create({
+                label: '@prop_1_1',
+                currentHealth: 1000000.,
+              });
+              wallRef.forceMultiplier = 3.0;
+              addToTileGrid(tileGrid, x, y, itemId);
+              final gridX = Std.int((x - (tileGrid.cellSize / 2)) 
+                  / tileGrid.cellSize);
+              final gridY = Std.int((y - (tileGrid.cellSize / 2)) 
+                  / tileGrid.cellSize);
+              final hasTile = (cellData: Grid.GridItems) -> {
+                if (cellData == null) {
+                  return false;
+                }
+
+                for (itemId in cellData) {
+                  final oType2 = mapData.itemTypeById.get(itemId);
+                  if (oType2 == objectType) {
+                    return true;
+                  }
+                }
+
+                return false;
+              };
+              wallRef.renderFn = (ref, time) -> {
+                final shouldAutoTile = objectMeta.isAutoTile;
+                final spriteKey = {
+                  if (shouldAutoTile) {
+                    final tileValue = AutoTile.getValue(
+                        tileGrid, gridX, gridY, 
+                        hasTile, 1, objectMeta.autoTileCorner);
+
+                    final sprite = 'ui/${objectType}_${tileValue}';
+                    sprite;
+                  } else {
+                    objectMeta.spriteKey;
+                  }
+                }
+                final wallSprite = Main.Global.sb.emitSprite(
+                    x,
+                    y,
+                    spriteKey);
+                wallSprite.sortOrder = 
+                  wallSprite.y + 32.;
+
+                if (Entity.getComponent(wallRef, 'isObscuring')) {
+                  final wallMaskSprite = Main.Global.wmSpriteBatch.emitSprite(
+                      x,
+                      y,
+                      spriteKey);
+                }
+                
+                final debugWallCollision = false;
+                if (debugWallCollision) {
+                  final grid = Main.Global.obstacleGrid;
+                  final bounds = grid.itemCache
+                    .get(wallRef.id);
+                  Main.Global.sb.emitSprite(
+                      bounds[0] * grid.cellSize,
+                      bounds[2] * grid.cellSize,
+                      'ui/square_white',
+                      null,
+                      (p) -> {
+                        final b = p;
+                        p.sortOrder = 100000 * 1000000;
+                        b.alpha = 0.5;
+                        b.scale = wallRef.radius * 2;
+                        b.b = 0.;
+                      });
+                }
+              };
+            }
+
+            // everything else is treated as a tile 
+            default: {
+              final gridRow = y;
+
+              addToTileGrid(tileGrid, x, y, itemId);
+              if (objectMeta.type == 'traversableSpace') {
+                Grid.setItemRect(
+                    traversableGrid,
+                    x, 
+                    y, 
+                    tileGrid.cellSize,
+                    tileGrid.cellSize,
+                    itemId);
+              } 
+            }
+          }
+        }
+      }
+
+      final miniMapPositionsDrawn = [];
+      final hasTile = (cellData) -> 
+        cellData != null; 
+
+      final refreshMap = (dt) -> {
+        final idsRendered = new Map();
+
+        for (layerId in orderedLayers) {
+          final tileGrid = tileGridByLayerId.get(layerId);
+          final renderTile = (
+              gridX: Int, 
+              gridY: Int, 
+              cellData: Grid.GridItems) -> {
+            if (cellData != null) {
+              for (itemId in cellData) {
+                final objectType = mapData.itemTypeById.get(itemId);
+                final objectMeta = editorConfig
+                  .objectMetaByType
+                  .get(objectType);
+
+                if (!idsRendered.exists(itemId) 
+                    && objectMeta.type != 'obstacleWall') {
+                  idsRendered.set(itemId, true);
+
+                  final shouldAutoTile = objectMeta.isAutoTile;
+                  final spriteKey = {
+                    if (shouldAutoTile) {
+                      final tileValue = AutoTile.getValue(
+                          tileGrid, gridX, gridY, 
+                          hasTile, 1, objectMeta.autoTileCorner);
+
+                      final sprite = 'ui/${objectType}_${tileValue}';
+                      sprite;
+                    } else {
+                      objectMeta.spriteKey;
+                    }
+                  }
+                  final pos = truePositionByItemId.get(itemId);
+
+                  final y = {
+                    if (objectMeta.alias == 'alien_propulsion_booster') {
+                      pos.y + Math.sin(Main.Global.time / 1) * 3;
+                    } else {
+                      pos.y;
+                    }
+                  }
+
+                  final tileRef = Main.Global.sb.emitSprite(
+                      pos.x,
+                      y,
+                      spriteKey);
+                  // we can safely set all tiles to a sortOrder of 0
+                  // since we're adding tiles row-wise which means
+                  // they'll all be sorted naturally anyway
+                  tileRef.sortOrder = -1;
+
+                  final miniMapPosDrawn = Grid2d.get(
+                      miniMapPositionsDrawn, pos.x, pos.y) != null;
+                  if (!miniMapPosDrawn) {
+                    Grid2d.set(
+                        miniMapPositionsDrawn, pos.x, pos.y, true);
+                    // predraw minimap
+                    switch(objectMeta.type) {
+                      case 'traversableSpace': {
+                        miniMap.beginFill(0xfffffff);
+                        miniMap.drawRect(
+                            pos.x * miniMapScale, 
+                            y * miniMapScale, 
+                            cellSize * miniMapScale, 
+                            cellSize * miniMapScale);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          };
+          final mc = Main.Global.mainCamera;
+          // Pretty large overdraw right now because some 
+          // objects that are really large can get clipped too
+          // early (ie: teleporter). We can fix this by splitting 
+          // large objects into multiple sprites or rendering
+          // those objects separately
+          final threshold = 200;
+
+          Grid.eachCellInRect(
+              tileGrid,
+              mc.x, 
+              mc.y,
+              mc.w + threshold,
+              mc.h + threshold,
+              renderTile);
+        }
+
+#if false
+        Debug.traversableAreas(
+            traversableGrid,
+            spriteSheetTile,
+            spriteSheetData,
+            tg);
+#end
+
+        if (finished) {
+          miniMap.remove();
+        }
+
+        return !finished;
+      }
+      Main.Global.renderHooks.push(refreshMap);
+
     }
 
+    // final levelFile = 'editor-data/dummy_level.eds';
+    final levelFile = 'editor-data/level_1.eds';
+    SaveState.load(
+        levelFile,
+        false,
+        null,
+        (mapData) -> {
+          try {
+            processMap(levelFile, mapData);
+            Experiment.init();
+          } catch(err) {
+            HaxeUtils.handleError('load level error')(err);
+          }
 
-    // intro_boss
-    {
-      var parsedTiledMap = MapData.create(
-          hxd.Res.level_intro_json);
-      var layersByName = parsedTiledMap.layersByName;
-      var mapObjects: Array<Dynamic> = 
-        layersByName.get('objects').objects;
-      var miniBossPos: Dynamic = Lambda.find(
-          mapObjects, 
-          (item) -> item.name == 'mini_boss_position');
-      var size = 3;
-
-      var e = new Ai({
-        x: miniBossPos.x,
-        y: miniBossPos.y,
-        radius: 30,
-        sightRange: 150,
-        aiType: 'introLevelBoss',
-        weight: 1.0,
-      }, size, (_) -> Entity.getById('PLAYER'));
-      Main.Global.rootScene.addChildAt(e, 0);
-    }
+          return;
+        }, 
+        (err) -> {
+          trace('[load level failure]', err.stack);
+        });
   }
 
   // triggers a side-effect to change `canSeeTarget`
@@ -1592,11 +2910,29 @@ class Game extends h2d.Object {
     Main.Global.updateHooks.push(lootDropAnimation);
 
     lootRef.type = 'LOOT';
+    lootRef.stats = EntityStats.create({
+      label: '@LOOT',
+      maxHealth: 1,
+      currentHealth: 1.,
+    });
     // instance-specific data such as the rolled rng values
     // as well as the loot type so we can look it up in the
     // loot definition table
     Entity.setComponent(lootRef, 'lootInstance', 
         lootInstance);
+    final radius1 = Utils.rnd(0.5, 1);
+    final radius2 = Utils.rnd(0.5, 2);
+    final radius3 = Utils.rnd(0.5, 2);
+    final timeOffset1 = Utils.rnd(-20, 20) * Utils.rnd(1, 3);
+    final timeOffset2 = Utils.rnd(-20, 20) * Utils.rnd(1, 3);
+    final timeOffset3 = Utils.rnd(-20, 20) * Utils.rnd(1, 3);
+    final xOffset1 = Utils.irnd(-10, 10);
+    final xOffset2 = Utils.irnd(-10, 10);
+    final xOffset3 = Utils.irnd(-10, 10);
+    final yOffset1 = Utils.irnd(-40, 0);
+    final yOffset2 = Utils.irnd(-40, 0);
+    final yOffset3 = Utils.irnd(-40, 0);
+
     lootRef.renderFn = (ref, time: Float) -> {
       // drop shadow
       Main.Global.sb.emitSprite(
@@ -1605,196 +2941,250 @@ class Game extends h2d.Object {
           'ui/square_white',
           null,
           (p) -> {
-            p.sortOrder = ref.y - 1;
-            p.batchElement.scaleX = ref.radius * 2;
-            p.batchElement.r = 0;
-            p.batchElement.g = 0;
-            p.batchElement.b = 0.2;
-            p.batchElement.a = 0.2;
-            p.batchElement.scaleY = ref.radius * 0.5;
+            p.sortOrder = (ref.y / 2) - 1;
+            p.scaleX = ref.radius * 2;
+            p.r = 0;
+            p.g = 0;
+            p.b = 0.2;
+            p.a = 0.2;
+            p.scaleY = ref.radius * 0.5;
           });
 
-      final lootRenderFn = (p: SpriteRef) -> {
-        p.sortOrder = ref.y - 1;
-
-        if (Main.Global.hoveredEntity.id == 
-            ref.id) {
-          final hoverStart = Main.Global
-            .hoveredEntity.hoverStart;
-          p.batchElement.y = ref.y - 
-            Math.abs(
-                Math.sin(time * 2 - hoverStart)) * 2;
-          p.batchElement.b = 0;
-          p.batchElement.r = 0;
-          p.batchElement.g = 1;
-        }
-      };
-      Main.Global.sb.emitSprite(
+      final lootDef = Loot.getDef(
+            Entity.getComponent(ref, 'lootInstance').type);
+      final spriteKey = lootDef.spriteKey;
+      final sprite = Main.Global.sb.emitSprite(
           ref.x,
           ref.y,
-          Loot.getDef(
-            Entity.getComponent(ref, 'lootInstance').type).spriteKey,
-          null,
-          lootRenderFn);
+          spriteKey);
+      sprite.sortOrder = ref.y / 2;
+
+      if (Main.Global.hoveredEntity.id == ref.id) {
+        Entity.renderOutline(
+            sprite.sortOrder - 0.1,
+            spriteKey,
+            ref);
+      }
+
+      if (lootDef.rarity == Loot.Rarity.Legendary) {
+        final lightBeamConfigs = [
+          // main beam
+          {
+            radius: ref.radius * 1.2,
+            x: ref.x - ref.radius * 1.2,
+            y: ref.y,
+            alpha: 0.9 + 0.1 * Math.sin(Main.Global.time * 1.5)
+          },
+          {
+            radius: radius1,
+            x: ref.x + xOffset1,
+            y: ref.y + yOffset1,
+            alpha: Math.sin((Main.Global.time + timeOffset1))
+          },
+          {
+            radius: radius2,
+            x: ref.x + xOffset2,
+            y: ref.y + yOffset2,
+            alpha: Math.sin((Main.Global.time + timeOffset2))
+          },
+          {
+            radius: radius3,
+            x: ref.x + xOffset3,
+            y: ref.y + yOffset3,
+            alpha: Math.sin((Main.Global.time + timeOffset3))
+          },
+        ];
+
+        for (cfg in lightBeamConfigs) {
+          final sprite = Main.Global.sb.emitSprite(
+              cfg.x,
+              cfg.y,
+              'ui/loot_effect_legendary_gradient');
+          final cam = Main.Global.mainCamera;
+          final cameraDy = Math.abs(cfg.y - cam.y);
+          final alphaFallOff = Math.max(
+              0, 1 - Math.pow(cameraDy / cam.h * 2, 3));
+          Main.Global.logData.alphaFallOff = alphaFallOff;
+          sprite.scaleY = 1.3;
+          sprite.scaleX = cfg.radius * 2;
+          sprite.a = cfg.alpha * alphaFallOff;
+        }
+      }
     };
   }
 
+  public static function makeBackground() {
+    final Global = Main.Global;
+    final s2d = Global.mainBackground;
+    final g = new h2d.Graphics(s2d);
+    final scale = Global.resolutionScale;
+    final bgBaseColor = 0x1f1f1f;
+    
+    g.beginFill(bgBaseColor);
+    g.drawRect(
+        0, 0, 
+        s2d.width * scale, 
+        s2d.height * scale);
+
+    final p = new hxd.Perlin();
+    final width = 1920 + 40;
+    final height = 1080 + 40;
+
+    final makeStars = () -> {
+      final divisor = 6;
+      final xMax = Std.int((width) / scale / divisor);
+      final yMax = Std.int((height) / scale / divisor);
+      final seed = Utils.irnd(0, 100);
+      final starSizes = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2];
+      for (x in 0...xMax) {
+        for (y in 0...yMax) {
+          final v = p.perlin(seed, x / yMax, y / xMax, 10);
+          final color = 0xffffff;
+          g.beginFill(color, Math.abs(v) * 1.5);
+          g.drawCircle(
+              x * divisor + Utils.irnd(-10, 10, true), 
+              y * divisor + Utils.irnd(-10, 10, true), 
+              Utils.rollValues(starSizes) / 4,
+              6);
+        }
+      }
+    }
+
+    final makeNebulaClouds = () -> {
+      final colorOptions = [
+        0xd10a7e,
+        0xe43b44,
+        0x1543c1
+      ];
+      final colorA = Utils.rollValues(colorOptions);
+      final colorB = Utils.rollValues(
+          Lambda.filter(
+            colorOptions,
+            (c) -> c != colorA));
+      final divisor = 10;
+      final xMax = Std.int((width) / scale / divisor);
+      final yMax = Std.int((height) / scale / divisor);
+      final seed = Utils.irnd(0, 100);
+      for (x in 0...xMax) {
+        for (y in 0...yMax) {
+          final v = p.perlin(seed, x / xMax, y / yMax, 15, 0.25);
+          final color = v > 0 ? colorA : colorB;
+          g.beginFill(color, Math.abs(v) / 12);
+          g.drawCircle(
+              x * divisor, 
+              y * divisor, 
+              10,
+              4);
+        }
+      }
+    }
+
+    makeStars();
+    makeNebulaClouds();
+
+    return g;
+  } 
+
   public function new(
-    s2d: h2d.Scene,
-    oldGame: Game
+    s2d: h2d.Scene
   ) {
-    super();
+    super(s2d);
 
     mapRef = Main.Global.obstacleGrid;
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     var spriteSheetData = Main.Global.sb
       .batchManager.spriteSheetData;
 
-    // load map background
-    {
-      var bgData = Reflect.field(
-          spriteSheetData, 
-          'ui/level_intro');
-      var tile = spriteSheet.sub(
-        bgData.frame.x,
-        bgData.frame.y,
-        bgData.frame.w,
-        bgData.frame.h
-      );
-      var bmp = new h2d.Bitmap(tile, s2d);
-    }
-
-    var parsedTiledMap = MapData.create(
-        hxd.Res.level_intro_json);
-    var layersByName = parsedTiledMap.layersByName;
-    var mapObjects: Array<Dynamic> = 
-      layersByName.get('objects').objects;
-    var playerStartPos: Dynamic = Lambda.find(
-        mapObjects, 
-        (item) -> item.name == 'player_start');
-
     Main.Global.rootScene = s2d;
-
-    // setup traversible grid
-    {
-      var traversableRects: Array<Dynamic> = 
-        layersByName.get('traversable').objects;
-      var updateTraversableGrid = (item: TiledObject) -> {
-        Grid.setItemRect(
-          Main.Global.traversableGrid,
-          (item.x + item.width / 2),
-          (item.y + item.height / 2),
-          item.width,
-          item.height,
-          Std.string(item.id)
-        );
-        return true;
-      }
-      Lambda.foreach(traversableRects, updateTraversableGrid);
-
-      var debugTraversalGrid = false;
-      if (debugTraversalGrid) {
-        // debug traversable positions
-        var traversableGridItems = Main.Global
-          .traversableGrid.itemCache;
-        var g = new h2d.Graphics(Main.Global.debugScene);
-        g.beginFill(Game.Colors.yellow, 0.3);
-        var cellSize = Main.Global.traversableGrid.cellSize;
-        for (key => item in traversableGridItems) {
-          var xMin = item[0] * cellSize;
-          var xMax = item[1] * cellSize;
-          var yMin = item[2] * cellSize;
-          var yMax = item[3] * cellSize;
-          var width = xMax - xMin;
-          var height = yMax - yMin;
-
-          g.drawRect(xMin, yMin, width, height);
-        }
-      }
-    }
-
-    // AGENDA: setup map pillars
-    // setup environment obstacle colliders
-    {
-      final objectsRects: Array<core.Types.TiledObject> = 
-        layersByName.get('objects').objects;
-      final pillarObjects = Lambda
-        .filter(objectsRects, (item) -> {
-          return item.type == 'mapObject';
-        });
-      Lambda.foreach(pillarObjects, (item) -> {
-        final spriteKey = item.name;
-        final spriteData: SpriteBatchSystem.SpriteData = 
-          Reflect.field(
-              spriteSheetData, 
-              spriteKey);
-        final cx = item.x + item.width / 2;
-        final pivotYOffset = Math.round(
-            spriteData.pivot.y * spriteData.sourceSize.h);
-        final cy = item.y - item.height
-          + pivotYOffset;
-        final radius = Std.int((item.width - 2) / 2);
-        new MapObstacle({
-          id: 'mapObstacle_${item.id}',
-          x: cx,
-          y: cy,
-          radius: radius,
-          avoidanceRadius: radius + 3
-        }, item);
-        return true;
-      });
-    }
-
-    s2d.addChild(this);
-    if (oldGame != null) {
-      oldGame.cleanupLevel();
-    }
-    final playerRef = new Player(
-      playerStartPos.x,
-      playerStartPos.y - 6,
-      s2d
-    );
-    s2d.addChild(playerRef);
-    Camera.follow(
-        Main.Global.mainCamera, 
-        playerRef);
 
     var font: h2d.Font = hxd.res.DefaultFont.get().clone();
     font.resizeTo(24);
 
-    // mouse pointer
-    mousePointer = new h2d.Object(this);
-    mousePointerSprite = new h2d.Graphics(mousePointer);
-    mousePointerSprite.beginFill(0xffda3d, 0.3);
-    mousePointerSprite.drawCircle(0, 0, MOUSE_POINTER_RADIUS);
+    final background = makeBackground();
+    final cleanupWhenFinished = (dt) -> {
+      if (finished) {
+        background.remove();
+      }
+
+      return !finished;
+    }
+    Main.Global.updateHooks
+      .push(cleanupWhenFinished);
+
+    newLevel(Main.Global.rootScene);
+
+    Main.Global.updateHooks.push(this.update);
+    Main.Global.renderHooks.push(this.render);
   }
 
-  public function update(s2d: h2d.Scene, dt: Float) {
+  public function update(dt: Float) {
+    // IMPORTANT: This must update before the player
+    // so that we can intercept certain click states
+    Hud.update(dt);
+
+    final s2d = Main.Global.rootScene;
+
+    if (!Main.Global.isNextFrame) {
+      return !finished;
+    }
+
     var isReady = mapRef != null;
 
     if (!isReady) {
-      return;
+      return !finished;
     }
 
-    // reset list before next loop
+    // reset before next loop
+    for (entityRef in Main.Global.entitiesToRender) {
+      Entity.setComponent(entityRef, 'isObscured', false);
+      Entity.setComponent(entityRef, 'isObscuring', false);
+    }
     Main.Global.entitiesToRender = [];
-
-    EntityStats.update(
-        Entity.getById('PLAYER').stats,
-        dt);
 
     Cooldown.update(SoundFx.globalCds, dt);
 
     var groupIndex = 0;
     for (a in Entity.ALL_BY_ID) {
-
       // cleanup entity
       if (a.isDone()) {
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(Main.Global.obstacleGrid, a.id);
         Grid.removeItem(Main.Global.lootColGrid, a.id);
-        a.remove();
+
+        final numItemsToDrop = switch(a.type) {
+          case 'INTERACTABLE_PROP': 
+            Utils.rollValues([
+                0, 0, 0, 0, 0, 1
+            ]);
+          case 'ENEMY' 
+            if (Entity.getComponent(a, 'aiType') != 'npcTestDummy'): 
+            Utils.rollValues([
+                0, 0, 0, 0, 1, 1, 2
+            ]);
+          default: 0;
+        }
+
+        if (numItemsToDrop > 0) {
+          for (_ in 0...numItemsToDrop) {
+            final lootPool = [
+              for (type => def in Loot.lootDefinitions) {
+                if (def.category == 'ability') {
+                  type;
+                }
+              }
+            ];
+            final lootInstance = Loot.createInstance(lootPool);
+            Game.createLootEntity(
+                a.x + Utils.irnd(5, 10, true), 
+                a.y + Utils.irnd(5, 10, true), 
+                lootInstance);
+          }
+        }
+
+        if (a.onDone != null) {
+          a.onDone(a);
+        }
         continue;
       }
 
@@ -1804,18 +3194,29 @@ class Game extends h2d.Object {
         groupIndex = 0;
       }
 
-      final isDynamic = a.type == 'ENEMY'
-        || a.type == 'FRIENDLY_AI'
-        || a.type == 'PROJECTILE'
-        || a.type == 'PLAYER';
+      final isDynamic = Entity.getComponent(a, 'isDynamic', false) ||
+        switch(a.type) {
+          case 
+              'ENEMY'
+            | 'FRIENDLY_AI'
+            | 'PROJECTILE'
+            | 'PLAYER': {
+              true;
+            };
+
+          default: false;
+        };
+
       final isMoving = a.dx != 0 || a.dy != 0;
-      final hasTakenDamage = a.damageTaken > 0;
+      final hasTakenDamage = a.stats.damageTaken > 0;
       final isCheckTick = (Main.Global.tickCount + groupIndex) % 
-        a.neighborCheckInterval == 0;
+        Entity.getComponent(a, 'neighborCheckInterval') == 0;
       final shouldFindNeighbors = {
         final isRecentlySummoned =  Cooldown.has(
             a.cds, 'recentlySummoned');
-        final isActive = isMoving || hasTakenDamage;
+        final isActive = isMoving 
+          || hasTakenDamage
+          || Entity.getComponent(a, 'checkNeighbors', false);
 
         isDynamic && (
             isRecentlySummoned
@@ -1824,9 +3225,10 @@ class Game extends h2d.Object {
 
       if (shouldFindNeighbors) {
         var neighbors: Array<String> = [];
-        var nRange = 10;
-        var height = a.radius * 2 + nRange;
-        var width = height;
+        final queryThreshold = Entity.getComponent(
+            a, 'neighborQueryThreshold');
+        var height = a.radius * 2 + queryThreshold;
+        var width = height + queryThreshold;
         var dynamicNeighbors = Grid.getItemsInRect(
             Main.Global.dynamicWorldGrid, a.x, a.y, width, height
             );
@@ -1869,11 +3271,13 @@ class Game extends h2d.Object {
         }
       }
 
+      // update collision worlds
       switch (a) {
         case 
           { type: 'PLAYER' } 
         | { type: 'ENEMY' } 
-        | { type: 'FRIENDLY_AI' }: {
+        | { type: 'FRIENDLY_AI' }
+        | { type: 'INTERACTABLE_PROP' }: {
           Grid.setItemRect(
               Main.Global.dynamicWorldGrid,
               a.x,
@@ -1903,6 +3307,7 @@ class Game extends h2d.Object {
         default: {}
       }
 
+      Cooldown.update(a.cds, dt);
       a.update(dt);
 
       final shouldRender = {
@@ -1921,10 +3326,7 @@ class Game extends h2d.Object {
       }
     }
 
-    mousePointer.x = s2d.mouseX;
-    mousePointer.y = s2d.mouseY;
-
-    Hud.UiGrid.update(dt);
+    return !finished;
   }
 
   public function render(time: Float) {
@@ -1932,6 +3334,8 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
-    Hud.UiGrid.render(time);
+    Hud.render(time);
+
+    return !finished;
   }
 }

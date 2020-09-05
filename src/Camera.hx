@@ -1,4 +1,5 @@
 typedef CameraRef = {
+  // pivot is centered to camera
   var x: Float;
   var y: Float;
   var w: Int;

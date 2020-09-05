@@ -16,6 +16,7 @@ typedef AnimRef = {
   var ?y: Float;
   var ?z: Float;
   var ?angle: Float;
+  var ?scale: Float;
   var ?effectCallback: SpriteBatchSystem.EffectCallback;
 }
 
@@ -77,13 +78,20 @@ class AnimEffect {
       final dy = ref.dy == null ? 0 : ref.dy;
 
       if (isAlive) {
-        Main.Global.sb.emitSprite(
+        final spriteRef = Main.Global.sb.emitSprite(
             ref.x + dx * progress,
             ref.y + dy * progress,
             core.Anim.getFrame(ref, time),
             ref.angle,
-            ref.effectCallback,
-            ref.z);
+            ref.effectCallback);
+
+        if (ref.z != null) {
+          spriteRef.sortOrder += ref.z;
+        }
+
+        if (ref.scale != null) {
+          spriteRef.scale = ref.scale;
+        }
         nextAnimations.push(ref);
       }
     }

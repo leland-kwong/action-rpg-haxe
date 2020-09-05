@@ -1,15 +1,20 @@
 # Notes
 
-## Dev server
+## Software Development
+
+### Dev server
+
 This will build all assets (art, maps, sprite sheets) and then compile the game.
 
 `npm start`
 
-## Production build
+### Production build
 
 `npm run productionBuild`
 
-## Music ideas
+## Game Design
+
+### Music ideas
 
 Electric guitar themed, capcom style
 
@@ -17,11 +22,8 @@ Electric guitar themed, capcom style
 [un squadron remix](https://ocremix.org/remix/OCR00277)
 [megaman soccer](https://ocremix.org/remix/OCR02922)
 
-## Core game mechanic (hook)
+### Story & Concepts
 
-Kill lots of enemies, collect loot, upgrade gear, upgrade abilities.
+#### Player's orb companion
 
-### Player experience
-
-- [ ] ability to `pull` enemies by triggering aggro after hitting them. An enemy will be aggro'd when it gets hit and can see the player.
-- [ ] once an enemy is aggro'd it will follow the target until the target moves out of sight. Once that happens, the enemy will move until the last known target's position.
+The player can have more than one orb and uses these orbs to power different abilities.

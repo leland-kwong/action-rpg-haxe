@@ -10,5 +10,7 @@
 -cp src
 
 -js temp/repl-haxe.js
+# libraries
+-lib heaps
 -main Repl
 -debug

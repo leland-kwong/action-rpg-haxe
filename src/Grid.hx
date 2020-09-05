@@ -17,6 +17,25 @@ typedef GridRef = {
   var pruneEmptyCell: Bool;
 }
 
+typedef Grid2dRef = Array<Array<Dynamic>>;
+
+class Grid2d {
+  public static function get(grid: Grid2dRef, x, y) {
+    final row = grid[y];
+    return row != null ? row[x] : null;
+  }
+
+  public static function set<T>(grid: Grid2dRef, x, y, value: T) {
+    final row = grid[y];
+    if (row == null) {
+      grid[y] = []; 
+      set(grid, x, y, value);
+      return;
+    }
+    row[x] = value;
+  }
+}
+
 class Grid {
   // snaps to the center of a cell
   public static function snapPosition(
@@ -114,7 +133,12 @@ class Grid {
   }
 
   public static function getItemsInRect(
-      ref: GridRef, cx: Float, cy: Float, w, h) {
+      ref: GridRef, 
+      cx: Float, 
+      cy: Float, 
+      w, 
+      h,
+      filterFn = null): GridItems {
     var xMin = Math.floor(
         Math.round(cx - (w / 2)) / ref.cellSize);
     var xMax = Math.ceil(
@@ -130,7 +154,13 @@ class Grid {
         var cellData = getCell(ref, x, y);
         if (cellData != null) {
           for (it in cellData) {
-            items[it] = it;
+            final shouldAdd = filterFn != null
+              ? filterFn(it)
+              : true;
+
+            if (shouldAdd) {
+              items[it] = it;
+            }
           }
         }
       }

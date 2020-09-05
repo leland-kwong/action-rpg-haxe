@@ -12,189 +12,173 @@ import sys.io.File;
 #end
 
 class SaveState {
-  static var saveDir = 'external-assets';
+  public static final dataCacheByFile: 
+    Map<String, Dynamic> = new Map();
+  public static function invalidateCache() {
+    dataCacheByFile.clear();
+  }
+  public static final baseDir = 'external-assets';
+
+  public static function filePath(file) {
+    return '${baseDir}/${file}';
+  }
 
   public static function save(
-    data: Dynamic,
-    keyPath: String,
-    persistUrl: Null<String>,
-    onSuccess: (res: Null<Dynamic>) -> Void,
-    onError: (e: Dynamic) -> Void
-  ) {
-    var serializer = new Serializer();
-    serializer.serialize(data);
-    var serialized = serializer.toString();
+      data: Dynamic,
+      file: String,
+      serializeFn,
+      onSuccess: (res: Dynamic) -> Void,
+      onError: (e: Dynamic) -> Void) {
 
     try {
-    #if jsMode
-      if (persistUrl != null) {
-        var fetch = js.Browser.window.fetch;
+      final keypath = file.split('/');
+      final saveDir = keypath.slice(0, -1).join('/');
+      final fullSaveDir = '${baseDir}/${saveDir}';
 
-        fetch(
-          new js.html.Request(persistUrl),
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: haxe.Json.stringify({
-              data: serialized,
-              file: keyPath
-            })
-          }
-        )
-        .then(onSuccess)
-        .catchError(onError);
+      if (!FileSystem.exists(fullSaveDir)) {
+        FileSystem.createDirectory(fullSaveDir);
       }
-      else {
-        var ls = Browser.getLocalStorage();
-        ls.setItem(keyPath, serialized);
-        onSuccess(null);
-      }
-    #else
-      if (!FileSystem.exists(saveDir)) {
-        FileSystem.createDirectory(saveDir);
-      }
-      File.saveContent('${saveDir}/${keyPath}', serialized);
-    #end
+      final serialized = {
+        if (serializeFn != null) {
+          serializeFn(data);
+        } else {
+          haxe.Serializer.run(data);
+        }
+      };
+      final fullPath = '${baseDir}/${file}';
+      File.saveContent(fullPath, serialized);
+      dataCacheByFile.set(fullPath, data);
+      onSuccess(data);
     }
     catch (err: Dynamic) {
       onError(err);
     }
   }
 
+  public static function noData(fileData) {
+    return fileData == null;
+  }
+
+  // [ENHANCEMENT] improve return value
+  // We can return an object of:
+  // { data: Dynamic, resolved: Bool, error: Dynamic } 
+  // This will solve the issue where we can't tell if a
+  // null value being returned is the result no file to load
+  // or file was loaded with no data.
   public static function load(
     keyPath: String,
     fromUrl = false,
-    onSuccess: (data: Dynamic) -> Void,
-    onError: (error: Dynamic) -> Void
-  ): Void {
+    ?deserializeFn: (rawData: String) -> Dynamic,
+    ?onSuccess: (data: Dynamic) -> Void,
+    ?onError: (error: Dynamic) -> Void
+  ): Dynamic {
     try {
+      final fullPath = '${baseDir}/${keyPath}';
 
-    #if jsMode
-    if (fromUrl) {
-      var fetch = js.Browser.window.fetch;
-
-      fetch(new js.html.Request(keyPath))
-        .then(res -> res.json())
-        .then((res: {ok: Bool, data: Null<String>, error: Null<String>}) -> {
-          if (res.ok) {
-            return res.data;
-          }
-          else {
-            throw res.error;
-          }
-        })
-        .then((data) -> {
-          if (data == null) {
-            onSuccess(null);
-            return;
-          }
-
-          var unserializer = new Unserializer(data);
-          onSuccess(unserializer.unserialize());
-        })
-        .catchError(onError);
-    }
-    else {
-      var ls = Browser.getLocalStorage();
-      var s = ls.getItem(keyPath);
-
-      if (s == null) {
-        onSuccess(null);
-        return;
+      if (dataCacheByFile.exists(fullPath)) {
+        final fromCache = dataCacheByFile.get(fullPath);
+        if (onSuccess != null) {
+          onSuccess(fromCache);
+        }
+        return fromCache;
       }
-
-      var unserializer = new Unserializer(s);
-
-      onSuccess(unserializer.unserialize());
-    }
-    #else
-    {
-      var fullPath = '${saveDir}/${keyPath}';
 
       if (!FileSystem.exists(fullPath)) {
-        onSuccess(null);
-        return;
+        if (onSuccess != null) {
+          onSuccess(null);
+        }
+        return null;
       }
 
-      var s = File.getContent(fullPath);
-      var unserializer = new Unserializer(s);
+      final s = File.getContent(fullPath);
+      final deserialized = if (deserializeFn == null) {
+        haxe.Unserializer.run(s);
+      } else {
+        deserializeFn(s);
+      }
 
-      onSuccess(unserializer.unserialize());
-    }
-    #end
-
+      dataCacheByFile.set(fullPath, deserialized);
+      if (onSuccess != null) {
+        onSuccess(deserialized);
+      }
+      return deserialized;
     }
     catch (error: Dynamic) {
-      onError(error);
+      if (onError != null) {
+        onError(error);
+      }
+      return error;
     }
+
+    return null;
   }
 
   public static function delete(keyPath: String) {
-    #if jsMode
-    {
-      var ls = Browser.getLocalStorage();
-      ls.removeItem(keyPath);
-
-      /**
-        TODO:
-        Add support for deleting via http request (dev-server)
-      **/
-    }
-    #else
-    {
-      FileSystem.deleteFile('${saveDir}/${keyPath}');
-    }
-    #end
+    final fullPath = '${baseDir}/${keyPath}';
+    dataCacheByFile.remove(fullPath);
+    FileSystem.deleteFile(fullPath);
   }
 
   public static function tests() {
-    var rand = '${Math.random() * 1000}'.substring(4);
-    var keyPath = 'test_game_state--${rand}.sav';
+    var keyPath = 'test_game_state.sav';
 
     #if debugMode {
       // TODO this test is currently not properly deleting the state afterwards
-      // assert('[SaveState] save and load', (hasPassed) -> {
-      //   var data = [
-      //     'foo' => 0,
-      //     'bar' => 1
-      //   ];
+      assert('[SaveState] save and load', (hasPassed) -> {
+        var data = {
+          foo: 1,
+          bar: 2
+        };
 
-      //   function onError(e) {
-      //     trace(e);
-      //     hasPassed(false);
-      //   }
+        function onError(e) {
+          trace(e);
+          hasPassed(false);
+        }
 
-      //   SaveState.save(data, keyPath, null, (_) -> {
-      //     SaveState.load(keyPath, false, (s: Map<String, Int>) -> {
-      //       var isEqualState = [for (k in s.keys()) k]
-      //         .foreach((k) -> {
-      //           data[k] == s[k];
-      //         });
+        SaveState.save(data, keyPath, null, (_) -> {
+          function isEqualState(data, s) {
+            return [for (k in Reflect.fields(s)) k]
+              .foreach((k) -> {
+                Reflect.field(data, k) == Reflect.field(s, k);
+              });
+          }
 
-      //       hasPassed(isEqualState);
-      //     }, onError);
-      //   }, onError);
-      // }, () -> {
-      //   SaveState.delete(keyPath);
-      // });
+          var asyncPassed = false;
+          SaveState.load(
+              keyPath, 
+              false, 
+              null,
+              (s: Dynamic) -> {
+            asyncPassed = isEqualState(data, s);
+          }, onError);
 
-      // assert('[SaveState] delete state', (hasPassed) -> {
-      //   function onError(e) {
-      //     trace(e);
-      //     hasPassed(false);
-      //   }
+          final synchronousValue = SaveState.load(
+              keyPath, false, null,
+              (_) -> {}, onError);
 
-      //   SaveState.save({
-      //     foo: 'foo'
-      //   }, keyPath, null, (_) -> {
-      //     SaveState.delete(keyPath);
-      //     SaveState.load(keyPath, (s) -> {
-      //       hasPassed(s == null);
-      //     }, onError);
-      //   }, onError);
-      // });
+          hasPassed(
+              asyncPassed
+              && isEqualState(data, synchronousValue));
+        }, onError);
+      }, () -> {
+        SaveState.delete(keyPath);
+      });
+
+      assert('[SaveState] delete state', (hasPassed) -> {
+        function onError(e) {
+          trace(e);
+          hasPassed(false);
+        }
+
+        SaveState.save({
+          foo: 'foo'
+        }, keyPath, null, (_) -> {
+          SaveState.delete(keyPath);
+          SaveState.load(keyPath, false, null, (s) -> {
+            hasPassed(s == null);
+          }, onError);
+        }, onError);
+      });
     }
     #end
   }

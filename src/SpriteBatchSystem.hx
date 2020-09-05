@@ -11,27 +11,39 @@ typedef SpriteData = {
 	pivot: {x:Float,y:Float}
 };
 
-typedef SpriteRef = {
-  var sortOrder: Float;
-  var batchElement: BatchElement;
+typedef SpriteSheetData = {
+  frames: Dynamic
 };
+
+class SpriteRef extends BatchElement {
+  public var sortOrder: Float;
+  public var createdAt: Float;
+  public var done = true;
+  public var effectCallback: EffectCallback;
+  public var state: Dynamic;
+}
 
 typedef BatchManagerRef = {
   var particles: Array<SpriteRef>;
+  var nextParticles: Array<SpriteRef>;
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
-  var spriteSheetData: Dynamic;
+  var spriteSheetData: SpriteSheetData;
 };
 
 class BatchManager {
-  static public function init(scene: h2d.Scene) {
-    var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
+  static public function init(
+      parent: h2d.Object,
+      spriteSheetPng: hxd.res.Image,
+      spriteSheetJson: hxd.res.Resource) {
+    var spriteSheet = spriteSheetPng.toTile();
     var system: BatchManagerRef = {
       particles: [],
+      nextParticles: [],
       spriteSheetData: Utils.loadJsonFile(
-          hxd.Res.sprite_sheet_json).frames,
+          spriteSheetJson),
       spriteSheet: spriteSheet,
-      batch: new h2d.SpriteBatch(spriteSheet, scene),
+      batch: new h2d.SpriteBatch(spriteSheet, parent),
     };
     system.batch.hasRotationScale = true;
     return system;
@@ -55,18 +67,23 @@ class BatchManager {
 
     // reset for next cycle
     s.batch.clear();
-    s.particles = [];
+    s.particles = s.nextParticles;
+    s.nextParticles = [];
   }
 
   static public function render(
       s: BatchManagerRef, 
       time: Float) {
 
-    final particles = s.particles;
+    for (p in s.particles) {
+      if (p.effectCallback != null) {
+        p.effectCallback(p);
+      }
+    }
 
     // sort by y-position or custom sort value
     // draw order is lowest -> highest
-    particles.sort((a, b) -> {
+    s.particles.sort((a, b) -> {
       var sortA = a.sortOrder;
       var sortB = b.sortOrder;
 
@@ -81,8 +98,11 @@ class BatchManager {
       return 0;
     });
 
-    for (p in particles) {
-      s.batch.add(p.batchElement);
+    for (p in s.particles) {
+      s.batch.add(p);
+      if (!p.done) {
+        s.nextParticles.push(p);
+      }
     }
   }
 }
@@ -92,20 +112,33 @@ class SpriteBatchSystem {
   public static final tileCache: Map<String, h2d.Tile> = new Map();
   public var batchManager: BatchManagerRef;
 
-  public function new(scene: h2d.Scene) {
-    batchManager = BatchManager.init(scene);
+  public function new(
+      parent: h2d.Object,
+      spriteSheetPng: hxd.res.Image,
+      spriteSheetJson: hxd.res.Resource) {
+    batchManager = BatchManager.init(
+        parent,
+        spriteSheetPng,
+        spriteSheetJson);
     instances.push(batchManager);
   }
 
   public static function makeTile(
-      sbs: SpriteBatchSystem, spriteKey: String) {
-    final fromCache = tileCache.get(spriteKey);
+      spriteSheetTile: h2d.Tile,
+      spriteSheetData: SpriteSheetData, 
+      spriteKey: String,
+      useCache = true) {
+
+    final fromCache = useCache 
+      ? tileCache.get(spriteKey)
+      : null;
 
     if (fromCache != null) {
       return fromCache;
     }
 
-    final spriteData = getSpriteData(sbs, spriteKey);
+    final spriteData = getSpriteData(
+        spriteSheetData, spriteKey);
 
     // TODO: Consider using a placeholder sprite (pink box?) instead
     // of crashing so the game can gracefully continue even though
@@ -114,17 +147,29 @@ class SpriteBatchSystem {
       throw 'invalid spriteKey: `${spriteKey}`';
     }
 
-    final tile = sbs.batchManager.spriteSheet.sub(
+    final tile = spriteSheetTile.sub(
         spriteData.frame.x,
         spriteData.frame.y,
         spriteData.frame.w,
         spriteData.frame.h);
 
-    tile.setCenterRatio(
-        spriteData.pivot.x,
-        spriteData.pivot.y);
+    final pivot = Reflect.field(spriteData, 'pivot');
 
-    tileCache.set(spriteKey, tile);
+    if (pivot != null) {
+      tile.setCenterRatio(
+          spriteData.pivot.x,
+          spriteData.pivot.y);
+
+      // this accounts for pivots that generate fractional
+      // values which can happen when a sprite's size is
+      // an odd number
+      tile.dx = Math.round(tile.dx);
+      tile.dy = Math.round(tile.dy);
+    }
+
+    if (useCache) {
+      tileCache.set(spriteKey, tile);
+    }
 
     return tile;
   }
@@ -136,24 +181,22 @@ class SpriteBatchSystem {
     ?angle: Float,
     // a callback for running side effects
     // to modify the sprite before rendering
-    ?effectCallback: EffectCallback,
-    ?z: Float = 0) {
+    ?effectCallback: EffectCallback) {
 
-    final g = new BatchElement(
-        makeTile(this, spriteKey));
+    final spriteRef = new SpriteRef(
+        makeTile(
+          this.batchManager.spriteSheet,
+          this.batchManager.spriteSheetData, 
+          spriteKey));
     if (angle != null) {
-      g.rotation = angle;
+      spriteRef.rotation = angle;
     }
-    g.x = x;
-    g.y = y - z;
-    final zRange = 100;
-    final spriteRef: SpriteRef = {
-      batchElement: g,
-      sortOrder: y * zRange + z,
-    }
-    if (effectCallback != null) {
-      effectCallback(spriteRef);
-    }
+
+    spriteRef.createdAt = Main.Global.time;
+    spriteRef.effectCallback = effectCallback;
+    spriteRef.x = x;
+    spriteRef.y = y;
+    spriteRef.sortOrder = y;
 
     BatchManager.emit(batchManager, spriteRef);
 
@@ -161,11 +204,11 @@ class SpriteBatchSystem {
   }
 
   public static function getSpriteData(
-      s: SpriteBatchSystem,
+      spriteSheetData: SpriteSheetData,
       spriteKey): SpriteData {
 
     return Reflect.field(
-        s.batchManager.spriteSheetData, 
+        spriteSheetData.frames, 
         spriteKey);
   }
 

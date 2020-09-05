@@ -10,11 +10,7 @@ typedef InventoryRef = {
   inventorySlots: Grid.GridRef,
   abilitySlots: Grid.GridRef
 };
-typedef TiledUiProp = {
-  name: String,
-  type: String,
-  value: Dynamic,
-};
+typedef SortedHudResourceBars = Array<String>;
 private typedef EquippableSlotMeta = {
   equippedItemId: String,
   allowedCategory: Loot.LootDefCat,
@@ -25,59 +21,96 @@ private typedef EquippableSlotMeta = {
   height: Int,
 }
 
-class TiledParser {
-  static var cache: Map<
-    hxd.res.Resource, TiledMapData> = 
-    new Map();
-
-  public static function loadFile(
-      res: hxd.res.Resource): TiledMapData {
-
-    final fromCache = cache.get(res);
-
-    if (fromCache != null) {
-      return fromCache;
-    }
-
-    final data = haxe.Json.parse(res.entry.getText());
-    cache.set(res, data);
-
-    return data;
-  }
-
-  public static function findLayer(
-      layerRef: TiledLayer, 
-      name): TiledLayer {
-
-    return Lambda.find(
-        layerRef.layers, 
-        (layer: TiledLayer) -> layer.name == name);
-  }
-}
-
 class UiStateManager {
-  static var listeners = [];
+  public static function noopCompleteCallback(_, _) {
+  }
 
-  public static function send(action: UiAction) {
+  public static function send(
+      action: UiAction,
+      ?onCompleteCalback: (
+        successValue: Dynamic, 
+        error: Dynamic) -> Void) {
+    final onComplete = Utils.withDefault(
+        onCompleteCalback, 
+        noopCompleteCallback);
     final uiState = Main.Global.uiState;
 
     switch(action) {
       case { type: 'INVENTORY_TOGGLE' }: {
         final s = uiState.inventory;
 
-        if (!s.opened) {
-          s.opened = true;
-          final closeInventory = () -> {
-            s.opened = false;
-          };
-          Stack.push(
-              Main.Global.escapeStack, 
-              'close inventory',
-              closeInventory);
-        } else {
-          Stack.pop(Main.Global.escapeStack);
-        } 
+        if (!s.enabled) {
+          Main.Global.clearUi((field) -> field != 'hud');
+        }
+
+        s.enabled = !s.enabled;
       }
+
+      case { type: 'PASSIVE_SKILL_TREE_TOGGLE' }: {
+        final s = uiState.passiveSkillTree;
+
+        if (!s.enabled) {
+          Main.Global.clearUi((field) -> field != 'hud');
+        }
+
+        s.enabled = !s.enabled;
+      }
+
+      case { 
+        type: 'START_GAME',
+        data: gameState
+      }: {
+        Main.Global.gameState = gameState;
+        Main.Global.clearUi((field) -> {
+          return field != 'hud';
+        });
+
+        Main.Global.replaceScene( 
+            () -> {
+              final gameInstance = new Game(Main.Global.rootScene); 
+              return () -> gameInstance.remove();
+            });
+
+        Hud.InventoryDragAndDropPrototype
+          .addTestItems();
+
+        Session.logAndProcessEvent(
+            gameState,
+            Session.makeEvent(
+              'GAME_LOADED'));
+      }
+
+      case { 
+        type: 'DELETE_GAME',
+        data: gameId
+      }: {
+        try {
+          Session.deleteGame(gameId); 
+          onComplete(null, null);
+        } catch (err) {
+          onComplete(null, err);
+        }
+      }
+
+      case { 
+        type: 'SWITCH_SCENE',
+        data: sceneName
+      }: {
+        final Global = Main.Global;
+        Main.Global.clearUi((field) -> true);
+
+        Global.replaceScene(() -> {
+          return  switch(sceneName) {
+            case 'experiment': Experiment.init();
+            case 'editor': Editor.init();
+            case 'exit': Main.onGameExit();
+            default: {
+              throw 'home screen menu case not handled';
+            };
+          }
+        });
+      }
+
       default: {
         throw 'invalid ui action ${action.type}';
       }
@@ -92,37 +125,22 @@ class Inventory {
   // pixel art's resolution (480 x 270)
   public static function inventorySlotAutoAddItem(
       itemInstance: Loot.LootInstance): Bool {
-
-    final slotDefinition = {
-      final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json); 
-      final inventoryLayerRef = TiledParser
-        .findLayer(hudLayoutRef, 'inventory');
-      final interactRef = TiledParser
-        .findLayer(
-            inventoryLayerRef, 'interactable');
-      Lambda.find(
-          interactRef.objects,
-          (o) -> o.name == 'inventory_slots');
-    }
-    final slotSize: Int = Lambda.find(
-        slotDefinition.properties, 
-        (p: TiledUiProp) -> p.name == 'slotSize').value;
+    final slotSize = 16;
     // convert item dimensions to slot units 
     final lootDef = Loot.getDef(itemInstance.type);
     final spriteData = SpriteBatchSystem.getSpriteData(
-        Main.Global.uiSpriteBatch,
+        Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
         lootDef.spriteKey);
     final pixelWidth = spriteData.sourceSize.w;
     final pixelHeight = spriteData.sourceSize.h;
     final sw = Math.ceil(pixelWidth / slotSize);
     final sh = Math.ceil(pixelHeight / slotSize);
-    final maxCol = Std.int(slotDefinition.width / slotSize);
-    final maxRow = Std.int(slotDefinition.height / slotSize);
+    final INVENTORY_RECT = InventoryDragAndDropPrototype.INVENTORY_RECT;
+    final maxCol = Std.int(INVENTORY_RECT.width / slotSize / Hud.rScale);
+    final maxRow = Std.int(INVENTORY_RECT.height / slotSize / Hud.rScale);
     final maxY = maxRow - 1;
     final maxX = maxCol - 1;
-    final cellSize = InventoryDragAndDropPrototype
-      .state.invGrid.cellSize;
+    final cellSize = Main.Global.gameState.inventoryState.invGrid.cellSize;
 
     // look for nearest empty cell and put item in if available
     for (y in 0...maxRow) {
@@ -130,11 +148,11 @@ class Inventory {
         final cx = x + Math.floor(sw / 2);
         final cy = y + Math.floor(sh / 2);
         final filledSlots = Grid.getItemsInRect(
-            InventoryDragAndDropPrototype.state.invGrid, 
+            Main.Global.gameState.inventoryState.invGrid, 
             x * cellSize + (sw / 2) * cellSize, 
             y * cellSize + (sh / 2) * cellSize, 
-            sw * cellSize,
-            sh * cellSize);
+            Std.int(sw * cellSize),
+            Std.int(sh * cellSize));
         final canFit = Lambda.count(
             filledSlots) == 0
           && cx - Math.floor(sw / 2) >= 0
@@ -144,12 +162,16 @@ class Inventory {
 
         // add success
         if (canFit) {
-          InventoryDragAndDropPrototype.addItemToInventory(
-              x * cellSize + (sw / 2) * cellSize, 
-              y * cellSize + (sh / 2) * cellSize, 
-              sw * cellSize,
-              sh * cellSize,
-              itemInstance);
+          Session.logAndProcessEvent(
+              Main.Global.gameState, 
+              Session.makeEvent(
+                'INVENTORY_INSERT_ITEM', {
+                  x: x * cellSize + (sw / 2) * cellSize, 
+                  y: y * cellSize + (sh / 2) * cellSize, 
+                  width: sw * cellSize,
+                  height: sh * cellSize,
+                  lootInstance: itemInstance
+                }));
           return true;
         }
       }
@@ -187,11 +209,6 @@ class Inventory {
         Main.Global.hoveredEntity.hoverStart = Main.Global.time;
       }
 
-      if (entityRef.type == 'LOOT') {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.LootHovered;
-      }
-
       final hoveredId = Main.Global.hoveredEntity.id;
       final lootRef = Entity.getById(hoveredId);
       final playerRef = Entity.getById('PLAYER');
@@ -203,14 +220,23 @@ class Inventory {
       final playerCanPickupItem = isPickupMode && 
         distFromPlayer <= playerRef.stats.pickupRadius;
       if (playerCanPickupItem) {
+        final cds = Entity.getById('PLAYER').cds;
+
         if (Main.Global.worldMouse.buttonDown == 0) {
-          Main.Global.worldMouse.hoverState = 
-            Main.HoverState.LootHoveredCanPickup;
+          Cooldown.set(
+              cds,
+              'playerCanPickupItem',
+              4/100);
         }
 
         final pickupItemButtonClicked = 
           Main.Global.worldMouse.clicked;
         if (pickupItemButtonClicked) {
+          Cooldown.set(
+              cds,
+              'playerCanPickupItem',
+              0);
+
           final size = lootRef.radius * 2;
           final addSuccess = Inventory
             .inventorySlotAutoAddItem(
@@ -267,133 +293,371 @@ class Inventory {
   }
 
   public static function render(time: Float) {
-    final globalState = Main.Global.uiState.inventory;
+    final inventorState = Main.Global.uiState.inventory;
 
-    if (!globalState.opened) {
+    if (!inventorState.enabled) {
       return;
     }
 
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'inventory');
-    final backgroundLayer = TiledParser
-      .findLayer(inventoryLayerRef, 'background');
-    final bgObjects = backgroundLayer.objects;
+    final hudLayoutData: Editor.EditorState = SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false);
 
-    // render inventory background
-    for (ref in bgObjects) {
-      final cx = ref.x;
-      final cy = ref.y;
+    if (hudLayoutData == null) {
+      return;
+    }
+
+    final inventoryLayerGrid = hudLayoutData.gridByLayerId.get(
+        'layer_2');
+    final uiBackgroundObjects = [
+      'ability_slots_group_background',
+      'ui_inventory_underlay',
+    ];
+    for (objectId in uiBackgroundObjects) {
+      final bounds = inventoryLayerGrid.itemCache.get(
+          objectId);
+      final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
+      final objectMeta = editorConfig.objectMetaByType.get(
+          objectId);
+
+      final cx = bounds[0];
+      final cy = bounds[2];
       Main.Global.uiSpriteBatch.emitSprite(
           cx * Hud.rScale,
           cy * Hud.rScale,
-          ref.name, 
+          objectMeta.spriteKey, 
           null,
           (p) -> {
             p.sortOrder = 0;
-            p.batchElement.scale = Hud.rScale;
+            p.scale = Hud.rScale;
           });
     }
   }
 }
 
+// handles interaction elements
 class UiGrid {
   static var colGrid = Grid.create(1);
   static final iList: Array<h2d.Interactive> = [];
+  static final NULL_HOVERED_ID = 'NULL_HOVERED_ID';
+  static var state = {
+    hoveredId: NULL_HOVERED_ID,
+  };
+  static var tfPlayerLevel: h2d.Text;
 
-  public static function update(dt: Float) {
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'hud');
-    final interactLayer = TiledParser
-      .findLayer(inventoryLayerRef, 'interactable');
-    final objects = interactLayer.objects;
-    final isInteractInitialized = iList.length != 0;
-
-    for (ref in objects) {
-      final cx = (ref.x + ref.width / 2) * Hud.rScale;
-      final cy = (ref.y - ref.height / 2) * Hud.rScale;
-      final width = ref.width * Hud.rScale;
-      final height = ref.height * Hud.rScale;
-
-      if (Main.Global.uiState.hud.enabled 
-          && !isInteractInitialized) {
-        final iRef = new h2d.Interactive(
-            width,
-            height,
-            Main.Global.uiRoot);
-        iRef.x = ref.x * Hud.rScale;
-        iRef.y = (ref.y - ref.height) * Hud.rScale;
-
-        final props = Utils.withDefault(ref.properties, []);
-        for (p in props) {
-          switch(p: TiledUiProp) {
-            case { name: 'onClick' }: {
-              iRef.onClick = (e: hxd.Event) -> {
-                UiStateManager.send({
-                  type: p.value
-                });
-              }
-            }
-            default: {}
-          }
-        }
-        
-        iList.push(iRef); 
-      }
-
-      Grid.setItemRect(
-          colGrid,
-          cx, 
-          cy, 
-          width,
-          height,
-          Std.string(ref.id));
-    }
+  public static function loadHudLayout(): Editor.EditorState {
+    return SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false,
+        null,
+        (_) -> {},
+        (_) -> {});
   }
 
-  public static function render(time: Float) {
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'hud');
-    final interactLayer = TiledParser
-      .findLayer(inventoryLayerRef, 'interactable');
-    final objects = interactLayer.objects;
-    final hoveredId = Lambda.find(
-        Grid.getItemsInRect(
-          colGrid,
-          Main.Global.uiRoot.mouseX,
-          Main.Global.uiRoot.mouseY,
-          1, 1),
-        (_) -> true);
+  public static function update(dt: Float) {
+    if (!Main.Global.uiState.hud.enabled) {
+      return;
+    }
 
-    for (ref in objects) {
-      final cx = ref.x + ref.width / 2;
-      final cy = ref.y - ref.height / 2;
-      Main.Global.uiSpriteBatch.emitSprite(
-          cx * Hud.rScale,
-          cy * Hud.rScale,
-          ref.name, 
-          null,
-          (p) -> {
-            p.batchElement.scale = Hud.rScale;
+    final hudLayoutRef = loadHudLayout();
+    if (hudLayoutRef == null) {
+      return;
+    }
 
-            switch(ref.name) {
-              case 'ui/hud_inventory_button': {
-                final isHovered = hoveredId == 
-                  Std.string(ref.id);
-                if (isHovered) {
-                  p.batchElement.r = 0.0;
-                  p.batchElement.g = 0.9;
-                  p.batchElement.b = 1;
+    final isInteractInitialized = iList.length != 0;
+
+    if (isInteractInitialized) {
+      return;
+    }
+
+    for (grid in hudLayoutRef.gridByLayerId) {
+      for (objectId => bounds in grid.itemCache) {
+        final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
+        final objectType = hudLayoutRef.itemTypeById.get(objectId);
+        final objectMeta = editorConfig.objectMetaByType.get(objectType);
+        final bm = Main.Global.uiSpriteBatch.batchManager;
+        final spriteData = SpriteBatchSystem.getSpriteData(
+            bm.spriteSheetData,
+            objectMeta.spriteKey);
+        final ss = spriteData.sourceSize;
+        final width  = ss.w * Hud.rScale;
+        final height = ss.h * Hud.rScale;
+        final x = bounds[0] * Hud.rScale;
+        final y = bounds[2] * Hud.rScale;
+
+        if (Main.Global.uiState.hud.enabled 
+            && objectMeta.type == 'UI_ELEMENT') {
+          final iRef = new h2d.Interactive(
+              width,
+              height,
+              Main.Global.uiRoot);
+          iRef.x = x;
+          iRef.y = y;
+
+          iRef.onOver = (e: hxd.Event) -> {
+            state.hoveredId = objectId;
+          };
+
+          iRef.onOut = (e: hxd.Event) -> {
+            state.hoveredId = NULL_HOVERED_ID;
+          };
+
+          for (p in Reflect.fields(objectMeta.data)) {
+            final value = Reflect.field(objectMeta.data, p);
+            switch(p) {
+              case 'onClick': {
+                iRef.onClick = (e: hxd.Event) -> {
+                  UiStateManager.send({
+                    type: value
+                  });
                 }
               }
               default: {}
             }
-          });
+          }
+
+          iList.push(iRef); 
+        }
+      }
+    }
+  }
+
+  public static function render(time: Float) {
+    final ps = Entity.getById('PLAYER').stats;
+
+    if (ps == null || !Main.Global.uiState.hud.enabled) {
+      return;
+    }
+
+    final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
+    final hudLayoutRef = loadHudLayout();
+    final orderedLayers = hudLayoutRef.layerOrderById;
+
+    // render hud buttons
+    {
+      final cockpitLayer = 'layer_1';
+      final grid = hudLayoutRef.gridByLayerId.get(cockpitLayer);
+
+      for (objectId => bounds in grid.itemCache) {
+        final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
+        final objectType = hudLayoutRef.itemTypeById.get(objectId);
+        final objectMeta = editorConfig.objectMetaByType.get(objectType);
+        final x = bounds[0] * Hud.rScale;
+        final y = bounds[2] * Hud.rScale;
+        final hoverSprite = objectMeta.data.hoverSprite;
+        final isHovered = state.hoveredId == objectId;
+        final spriteKey = (isHovered
+            && hoverSprite != null)
+          ? hoverSprite
+          : objectMeta.spriteKey;
+        final ref = Main.Global.uiSpriteBatch.emitSprite(
+            x,
+            y,
+            spriteKey);
+        ref.sortOrder = 1;
+        ref.scale = Hud.rScale;
+
+        final shouldHighlightSkillTreeButton = 
+          objectType == 'hud_passive_skill_tree_button' 
+          && PassiveSkillTree.calcNumUnusedPoints(
+              Main.Global.gameState) > 0;
+        if (shouldHighlightSkillTreeButton) {
+          final progress = Math.abs(Math.sin(Main.Global.time * 6));
+          ref.y -= progress * 6;
+          ref.r = 0.5 + 0.5 * progress;
+          ref.g = 0.4 + 0.5 * progress;
+          ref.b = 0.;
+        }
+      }
+    }
+
+    // render hud resource bars
+    {
+      final resourceBarsLayer = 'layer_2';
+      final grid = 
+        hudLayoutRef.gridByLayerId.get(resourceBarsLayer);
+      final sortedHealthBars: 
+        SortedHudResourceBars = [];
+      final sortedEnergyBars: 
+        SortedHudResourceBars = [];
+
+      for (objectId in grid.itemCache.keys()) {
+        final objectType = hudLayoutRef.itemTypeById.get(objectId);
+        final isHealthBarNode = objectType == 'cockpit_health_bar_node';
+        final isEnergyBarNode = objectType == 'cockpit_energy_bar_node';
+
+        if (isHealthBarNode || isEnergyBarNode) {
+          if (isHealthBarNode) {
+            sortedHealthBars.push(objectId);
+          }
+
+          if (isEnergyBarNode) {
+            sortedEnergyBars.push(objectId);
+          }
+        }
+      }
+
+      function sortByX(idA, idB, flip = false) {
+        final boundsA = grid.itemCache.get(idA);
+        final xA = boundsA[0];
+        final boundsB = grid.itemCache.get(idB);
+        final xB = boundsB[0];
+
+        if (flip) {
+          if (xA > xB) {
+            return -1;
+          }
+
+          if (xA < xB) {
+            return 1;
+          }
+        } else {
+          if (xA < xB) {
+            return -1;
+          }
+
+          if (xA > xB) {
+            return 1;
+          }
+        }
+
+        return 0;
+      }
+
+      function renderResourceBar(
+          numSegments,
+          resourceBars: SortedHudResourceBars) {
+        for (i in 0...numSegments) {
+          final objectId = resourceBars[i];
+          final editorConfig = Editor.getConfig(Hud.HUD_LAYOUT_FILE);
+          final objectType = hudLayoutRef.itemTypeById.get(objectId);
+          final objectMeta = editorConfig
+            .objectMetaByType
+            .get(objectType);
+          final bounds = grid.itemCache.get(objectId);
+          final x = bounds[0] * Hud.rScale;
+          final y = bounds[2] * Hud.rScale;
+          final ref = Main.Global.uiSpriteBatch.emitSprite(
+              x,
+              y,
+              objectMeta.spriteKey);
+          ref.sortOrder = 2;
+          ref.scale = Hud.rScale;
+        }
+      }
+
+      {
+        final healthRemaining =
+          ps.currentHealth / ps.maxHealth;
+        final numSegments = Math.ceil(
+            healthRemaining * sortedHealthBars.length);
+
+        sortedHealthBars.sort(
+            (a, b) -> sortByX(a, b, true));
+        renderResourceBar(numSegments, sortedHealthBars);
+      }
+
+      {
+        final energyRemaining =
+          ps.currentEnergy / ps.maxEnergy;
+        final numSegments = Math.ceil(
+            energyRemaining * sortedEnergyBars.length);
+
+        sortedEnergyBars.sort(
+            (a, b) -> sortByX(a, b));
+        renderResourceBar(numSegments, sortedEnergyBars);
+      }
+    }
+
+    // render hud experience progress
+    {
+      final experienceProgressLayer = 'layer_2';
+      final grid = 
+        hudLayoutRef.gridByLayerId.get(experienceProgressLayer);
+      final objectId = 'hud_experience_progress';
+      final bounds = grid.itemCache.get(objectId); 
+      final objectType = hudLayoutRef.itemTypeById.get(objectId);
+      final objectMeta = editorConfig
+        .objectMetaByType
+        .get(objectType);
+
+      // background sprite
+      final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * Hud.rScale,
+          bounds[2] * Hud.rScale,
+          objectMeta.spriteKey);
+      spriteRef.sortOrder = 1;
+      spriteRef.scale = Hud.rScale;
+      spriteRef.r = 0.;
+      spriteRef.g = 0.;
+      spriteRef.b = 0.;
+      spriteRef.a = 0.9;
+
+      // background sprite 'drop shadow'
+      final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * Hud.rScale,
+          (bounds[2] + 1) * Hud.rScale,
+          objectMeta.spriteKey);
+      spriteRef.sortOrder = 1;
+      spriteRef.scale = Hud.rScale;
+      spriteRef.r = 0.;
+      spriteRef.g = 0.;
+      spriteRef.b = 0.;
+      spriteRef.a = 0.9;
+
+      final currentExp = Main.Global.gameState.experienceGained;
+      final currentLevel = Config.calcCurrentLevel(
+          currentExp);
+      final nextLevel = currentLevel + 1;
+      final currentLevelExpRequirement = Config.levelExpRequirements[currentLevel];
+      final nextLevelExpRequirement = Config.levelExpRequirements[nextLevel];
+      final expDiffBetweenCurrentAndNextLevel = nextLevelExpRequirement 
+        - currentLevelExpRequirement;
+      final expUntilNextLevel = nextLevelExpRequirement - currentExp;
+      final levelProgress = expUntilNextLevel 
+        / expDiffBetweenCurrentAndNextLevel;
+
+      Main.Global.logData.levelInfo = [
+        currentLevel, 
+        currentExp,
+        expUntilNextLevel,
+        Config.levelExpRequirements.slice(0, 5)];
+
+      // experience progress sprite
+      final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
+          bounds[0] * Hud.rScale,
+          bounds[2] * Hud.rScale,
+          objectMeta.spriteKey);
+      spriteRef.sortOrder = 1;
+      spriteRef.scale = Hud.rScale;
+      spriteRef.scaleX *= 1 - levelProgress;
+      spriteRef.r = 1.;
+      spriteRef.g = 0.7;
+      spriteRef.b = 0.;
+    }
+
+    // render hud player level
+    {
+      final playerLevelLayer = 'layer_2';
+      final grid = 
+        hudLayoutRef.gridByLayerId.get(playerLevelLayer);
+      final objectId = 'hud_player_level';
+      final bounds = grid.itemCache.get(objectId); 
+      final objectType = hudLayoutRef.itemTypeById.get(objectId);
+      final objectMeta = editorConfig
+        .objectMetaByType
+        .get(objectType);
+
+      final tfPlayerLevel = TextPool.get();
+      tfPlayerLevel.font = Fonts.title();
+      Main.Global.uiRoot.addChild(tfPlayerLevel);
+      tfPlayerLevel.text = Std.string(
+          Config.calcCurrentLevel(
+            Main.Global.gameState.experienceGained) + 1);
+      tfPlayerLevel.x = bounds[0] * Hud.rScale;
+      tfPlayerLevel.y = bounds[2] * Hud.rScale - tfPlayerLevel.textHeight / 2;
+      tfPlayerLevel.textAlign = Center;
+      tfPlayerLevel.textColor = 0xffffff;
     }
   }
 }
@@ -405,7 +669,7 @@ class Tooltip {
     final initialized = tooltipTextRef != null;
 
     if (!initialized) {
-      final font = Main.Global.fonts.primary.clone();
+      final font = Fonts.primary().clone();
       tooltipTextRef = new h2d.Text(
           font);
     }
@@ -454,14 +718,14 @@ class Tooltip {
         'ui/square_white',
         null,
         (p) -> {
-          p.batchElement.scaleX = ttPaddingH + 
+          p.scaleX = ttPaddingH + 
             tooltipTextRef.textWidth / Hud.rScale;
-          p.batchElement.scaleY = ttPaddingV + 
+          p.scaleY = ttPaddingV + 
             tooltipTextRef.textHeight / Hud.rScale;
-          p.batchElement.r = 0;
-          p.batchElement.g = 0;
-          p.batchElement.b = 0;
-          p.batchElement.a = 0.9;
+          p.r = 0;
+          p.g = 0;
+          p.b = 0;
+          p.a = 0.9;
         });
   }
 }
@@ -472,20 +736,27 @@ class Tooltip {
  */
 class InventoryDragAndDropPrototype {
   
-  static final slotSize = 16 * Hud.rScale;
-  static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
+  static final slotSize = 16;
+  public static final NULL_PICKUP_ID = 'NO_ITEM_PICKED_UP';
+  static final NULL_LOOT_INSTANCE = Loot.createInstance(
+      ['nullItem'], NULL_PICKUP_ID);
   static public final state = {
     equippedAbilitiesById: new haxe.ds.Vector<String>(3),
     itemsById: [
-      NULL_PICKUP_ID => Loot.createInstance(
-          ['nullItem'], NULL_PICKUP_ID)
+      NULL_PICKUP_ID => NULL_LOOT_INSTANCE
     ],
-
+    invGrid: Grid.create(16),
     initialized: false,
-    invGrid: Grid.create(16 * Hud.rScale),
-    debugGrid: Grid.create(16 * Hud.rScale),
+    debugGrid: Grid.create(16),
     pickedUpItemId: NULL_PICKUP_ID,
-    interactSlots: new Array<h2d.Interactive>()
+    pickedUpInstance: NULL_LOOT_INSTANCE,
+    interactSlots: new Array<h2d.Interactive>(),
+    nearestAbilitySlot: {
+      slotDefinition: null,
+      slotIndex: -1,
+      distance: Math.POSITIVE_INFINITY
+    },
+    slotHovered: false
   };
 
   static public function getEquippedAbilities() {
@@ -493,16 +764,7 @@ class InventoryDragAndDropPrototype {
   }
 
   static public function getItemById(id: String) {
-    return state.itemsById.get(id);
-  }
-
-  static public function addItemToInventory(
-      cx, cy, slotWidth, slotHeight, lootInstance) {
-     
-    Grid.setItemRect(
-        state.invGrid, 
-        cx, cy, slotWidth, slotHeight, lootInstance.id);
-    state.itemsById.set(lootInstance.id, lootInstance);
+    return Main.Global.gameState.inventoryState.itemsById.get(id);
   }
 
   static public function equipItemToSlot(
@@ -510,119 +772,134 @@ class InventoryDragAndDropPrototype {
       index) {
 
     state.equippedAbilitiesById[index] = lootInst.id;
-    state.itemsById.set(lootInst.id, lootInst);
+    Main.Global.gameState.inventoryState.itemsById.set(lootInst.id, lootInst);
 
   }
 
   static public function addTestItems() {
-    {
-      final slotX = 0 * slotSize;
-      final slotY = 4 * slotSize;
-      final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[0].type
-      ]);
-      equipItemToSlot(lootInstance, 0); 
-    }
+    final createLootInstanceByType = (type: Loot.LootDefType) -> {
+      return Loot.createInstance([type]);
+    };
 
-    {
-      final slotX = 3 * slotSize;
-      final slotY = 5 * slotSize;
-      final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[1].type
-      ]);
-      equipItemToSlot(lootInstance, 1); 
-    }
+    equipItemToSlot(
+        createLootInstanceByType('spiderBots'), 0); 
 
-    {
-      final slotX = 1 * slotSize;
-      final slotY = 8 * slotSize;
-      final lootInstance = Loot.createInstance([
-          Loot.lootDefinitions[2].type
-      ]);
-      equipItemToSlot(lootInstance, 2); 
-    }
+    equipItemToSlot(
+        createLootInstanceByType('channelBeam'), 1); 
+
+    equipItemToSlot(
+        createLootInstanceByType('energy1'), 2); 
+
+    equipItemToSlot(
+        createLootInstanceByType('moveSpeedAura'), 3); 
   }
 
   static function getEquipmentSlotDefinitions() {
-    final hudLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json); 
-    final inventoryLayerRef = TiledParser
-      .findLayer(hudLayoutRef, 'inventory');
-    final interactRef = TiledParser
-      .findLayer(
-          inventoryLayerRef, 'interactable');
-    final equipmentSlots = Lambda.filter(
-        interactRef.objects,
-        (o) -> o.type == 'equipment_slot');  
+    final slotGap = 1 * Hud.rScale;
+    final abilitySlot1 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: 151 * Hud.rScale,
+      y: 32 * Hud.rScale,
+      width: 22 * Hud.rScale,
+      height: 22 * Hud.rScale,
+    };
+    final abilitySlot2 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: abilitySlot1.x + abilitySlot1.width + slotGap,
+      y: abilitySlot1.y,
+      width: abilitySlot1.width,
+      height: abilitySlot1.height,
+    };
+    final abilitySlot3 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: abilitySlot2.x + abilitySlot2.width + slotGap,
+      y: abilitySlot2.y,
+      width: abilitySlot1.width,
+      height: abilitySlot1.height,
+    };
+    final abilitySlot4 = {
+      equippedItemId: NULL_PICKUP_ID,
+      allowedCategory: 'ability',
+      x: abilitySlot3.x + abilitySlot3.width + slotGap,
+      y: abilitySlot3.y,
+      width: abilitySlot1.width,
+      height: abilitySlot1.height,
+    };
 
-    return Lambda.map(
-        equipmentSlots, (slot) -> {
-          final allowedCategory = Lambda.find(
-              slot.properties, 
-              (prop: {
-                name: String,
-                value: String
-              }) -> prop.name == 'allowedCategory')
-            .value;
+    return [
+      abilitySlot1,
+      abilitySlot2,
+      abilitySlot3,
+      abilitySlot4
+    ];
+  }
 
-          return {
-            equippedItemId: NULL_PICKUP_ID,
-            allowedCategory: allowedCategory,
-            x: slot.x * Hud.rScale,
-            y: slot.y * Hud.rScale,
-            width: slot.width * Hud.rScale,
-            height: slot.height * Hud.rScale
-          }
-        });
+  public static final INVENTORY_RECT = {
+    equippedItemId: NULL_PICKUP_ID,
+    allowedCategory: 'any',
+    x: 256 * Hud.rScale,
+    y: 32 * Hud.rScale,
+    width: 192 * Hud.rScale,
+    height: 160 * Hud.rScale
   }
 
   static function toSlotSize(value) {
     return Math.ceil(value / 16) * slotSize;
   }
 
+  static function hasPickedUp() {
+    return state.pickedUpItemId != NULL_PICKUP_ID;
+  }
+
   public static function update(dt) {
+    final hudLayoutData: Editor.EditorState = SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false);
+
+    if (hudLayoutData == null) {
+      return;
+    }
+
+    if (state.slotHovered) {
+      Main.Global.worldMouse.hoverState = 
+        Main.HoverState.Ui;
+    }
+
     // handle interact slots
     {
       // cleanup
-      if (!Main.Global.uiState.inventory.opened) {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.None;
+      if (!Main.Global.uiState.inventory.enabled) {
         for (interact in state.interactSlots) {
           interact.remove();
         }
         state.interactSlots = [];
+        state.slotHovered = false;
       } else if (state.interactSlots.length == 0) {
-        final tiledInteractables = {
-          final hudLayoutRef = TiledParser.loadFile(
-              hxd.Res.ui_hud_layout_json); 
-          final inventoryLayerRef = TiledParser
-            .findLayer(hudLayoutRef, 'inventory');
-          final interactRef = TiledParser
-            .findLayer(
-                inventoryLayerRef, 'interactable');
-          interactRef.objects; 
-        }
+        final interactableSlots: Array<Dynamic> = 
+          getEquipmentSlotDefinitions()
+              .concat([INVENTORY_RECT]);
 
         state.interactSlots = Lambda.map(
-            tiledInteractables, 
+            interactableSlots,
             (ti) -> {
               final interact = new h2d.Interactive(
-                  ti.width * Hud.rScale,
-                  ti.height * Hud.rScale,
+                  ti.width,
+                  ti.height,
                   Main.Global.uiRoot);
               
               interact.propagateEvents = true;
-              interact.x = ti.x * Hud.rScale;
-              interact.y = ti.y * Hud.rScale;
+              interact.x = ti.x;
+              interact.y = ti.y;
 
               interact.onOver = (ev: hxd.Event) -> {
-                Main.Global.worldMouse.hoverState = 
-                  Main.HoverState.Ui;
+                state.slotHovered = true;
               }
 
               interact.onOut = (ev: hxd.Event) -> {
-                Main.Global.worldMouse.hoverState = 
-                  Main.HoverState.None;
+                state.slotHovered = false;
               }
 
               interact;
@@ -630,7 +907,7 @@ class InventoryDragAndDropPrototype {
       }
     }
 
-    if (!Main.Global.uiState.inventory.opened) {
+    if (!Main.Global.uiState.inventory.enabled) {
       return;
     }
 
@@ -643,10 +920,10 @@ class InventoryDragAndDropPrototype {
       final pickedUpId = Utils.withDefault(
           state.pickedUpItemId,
           NULL_PICKUP_ID);
-      final lootInst = state.itemsById.get(pickedUpId);
+      final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
-          Main.Global.uiSpriteBatch,
+          Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
           lootDef.spriteKey);
       final slotWidth = toSlotSize(spriteData.sourceSize.w);
       final slotHeight = toSlotSize(spriteData.sourceSize.h);
@@ -670,34 +947,21 @@ class InventoryDragAndDropPrototype {
        */
       final halfWidth = (w / 2);
       final halfHeight = (h / 2);
-      final rectOriginX = mx - halfWidth;
-      final rectOriginY = my - halfHeight;
+      final rectOriginX = mx / Hud.rScale - halfWidth;
+      final rectOriginY = my / Hud.rScale - halfHeight;
       final mouseSlotX = Math.round(rectOriginX / slotSize) * slotSize;
       final mouseSlotY = Math.round(rectOriginY / slotSize) * slotSize;
       final cx = mouseSlotX + halfWidth;
       final cy = mouseSlotY + halfHeight;
-      final hasPickedUp = state.pickedUpItemId != NULL_PICKUP_ID;
-      final slotDefinition = {
-        final hudLayoutRef = TiledParser.loadFile(
-            hxd.Res.ui_hud_layout_json); 
-        final inventoryLayerRef = TiledParser
-          .findLayer(hudLayoutRef, 'inventory');
-        final interactRef = TiledParser
-          .findLayer(
-              inventoryLayerRef, 'interactable');
-        Lambda.find(
-            interactRef.objects,
-            (o) -> o.name == 'inventory_slots');
-      }
       final pickedUpItemBounds = new h2d.col.Bounds();
       pickedUpItemBounds.set(
           mouseSlotX, mouseSlotY, w, h);
       final inventoryBounds = new h2d.col.Bounds();
       inventoryBounds.set(
-          slotDefinition.x * Hud.rScale, 
-          slotDefinition.y * Hud.rScale, 
-          slotDefinition.width * Hud.rScale, 
-          slotDefinition.height * Hud.rScale);
+          INVENTORY_RECT.x / Hud.rScale, 
+          INVENTORY_RECT.y / Hud.rScale, 
+          INVENTORY_RECT.width  / Hud.rScale, 
+          INVENTORY_RECT.height / Hud.rScale);
 
       // check collision with equipment slots
       final handleEquipmentSlots = () -> {
@@ -709,12 +973,17 @@ class InventoryDragAndDropPrototype {
               distance: Float
             }, index) -> {
               final colSlot = new h2d.col.Bounds();
-              colSlot.set(slot.x, slot.y, slot.width, slot.height);
+              colSlot.set(
+                  slot.x / Hud.rScale, 
+                  slot.y / Hud.rScale, 
+                  slot.width  / Hud.rScale, 
+                  slot.height / Hud.rScale);
+
               final colSlotCenter = colSlot.getCenter();
               final colPickedUp = new h2d.col.Bounds();
               colPickedUp.set(
-                  mx - pickedUpItem.slotWidth / 2, 
-                  my - pickedUpItem.slotHeight / 2, 
+                  mx / Hud.rScale - pickedUpItem.slotWidth / 2, 
+                  my / Hud.rScale - pickedUpItem.slotHeight / 2, 
                   pickedUpItem.slotWidth, 
                   pickedUpItem.slotHeight);
               final colPickedUpCenter = colPickedUp.getCenter();
@@ -744,39 +1013,7 @@ class InventoryDragAndDropPrototype {
         if (nearestAbilitySlot.slotDefinition != null) {
           final canEquip = lootDef.category == 
             nearestAbilitySlot.slotDefinition.allowedCategory ||
-            state.pickedUpItemId == NULL_PICKUP_ID;
-
-          final highlightSlotToEquip = (time) -> {
-            Main.Global.uiSpriteBatch.emitSprite(
-                nearestAbilitySlot.slotDefinition.x, 
-                nearestAbilitySlot.slotDefinition.y,
-                'ui/square_white',
-                null,
-                (p) -> {
-                  p.sortOrder = 3;
-                  final b = p.batchElement;
-                  b.scaleX = nearestAbilitySlot.slotDefinition.width;
-                  b.scaleY = nearestAbilitySlot.slotDefinition.height;
-                  b.a = 0.6;
-
-                  if (canEquip) {
-                    b.b = 0;
-                    // show red to indicate not-allowed
-                  } else {
-                    b.r = 214 / 255;
-                    b.g = 0;
-                    b.b = 0;
-                  }
-                });
-
-            return false;
-          };
-
-          if (hasPickedUp) {
-            Main.Global.renderHooks.push(
-                highlightSlotToEquip);
-          }
-
+            !hasPickedUp();
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
@@ -786,8 +1023,15 @@ class InventoryDragAndDropPrototype {
             state.pickedUpItemId = Utils.withDefault(
                 originallyEquipped,
                 NULL_PICKUP_ID);
+            state.pickedUpInstance = Main.Global
+              .gameState
+              .inventoryState
+              .itemsById
+              .get(state.pickedUpItemId);
           }
         }
+
+        state.nearestAbilitySlot = nearestAbilitySlot;
       };
 
       handleEquipmentSlots();
@@ -820,20 +1064,23 @@ class InventoryDragAndDropPrototype {
       };
 
       // translate position so so the grid's 0,0 is relative to the slotDefinition
-      final tcx = cx - toSlotSize(slotDefinition.x);
-      final tcy = cy - toSlotSize(slotDefinition.y);
+      final tcx = cx - INVENTORY_RECT.x / Hud.rScale;
+      final tcy = cy - INVENTORY_RECT.y / Hud.rScale;
       final canPlace = isInBounds && 
         Lambda.count(
           Grid.getItemsInRect(
-            state.invGrid,
+            Main.Global.gameState.inventoryState.invGrid,
             tcx,
             tcy,
-            w,
-            h)) <= 1;
+            Std.int(w),
+            Std.int(h))) <= 1;
 
       if (Main.Global.worldMouse.clicked) {
         final currentlyPickedUpItem = state.pickedUpItemId;
+        final currentlyPickedUpInstance = state.pickedUpInstance;
+        final shouldPlace = hasPickedUp() && canPlace;
 
+        // pickup current item at position
         if (canPlace) {
           final getFirstKey = (keys: Iterator<GridKey>) -> {
             for (k in keys) {
@@ -844,26 +1091,43 @@ class InventoryDragAndDropPrototype {
 
           final itemIdAtPosition = getFirstKey(
               Grid.getItemsInRect(
-                state.invGrid,
+                Main.Global.gameState.inventoryState.invGrid,
                 tcx,
                 tcy,
                 w, h).keys());
 
-          Grid.removeItem(
-              state.invGrid,
-              itemIdAtPosition);
-
+          // grab the data for client-side before it gets
+          // oficially removed from the inventory because
+          // we'll need it when dropping the item back down
           state.pickedUpItemId = itemIdAtPosition;
+          state.pickedUpInstance = Main.Global
+            .gameState
+            .inventoryState
+            .itemsById
+            .get(itemIdAtPosition);
+
+          if (itemIdAtPosition != NULL_PICKUP_ID) {
+            Session.logAndProcessEvent(
+                Main.Global.gameState,
+                Session.makeEvent(
+                  'INVENTORY_REMOVE_ITEM',
+                  itemIdAtPosition));
+          }
         }
 
-        final shouldPlace = hasPickedUp && canPlace;
+        // place currently held item to position
         if (shouldPlace) {
-          Grid.setItemRect(
-              state.invGrid,
-              tcx,
-              tcy,
-              w, h,
-              currentlyPickedUpItem);
+          trace('place item');
+          Session.logAndProcessEvent(
+              Main.Global.gameState,
+              Session.makeEvent(
+                'INVENTORY_INSERT_ITEM', {
+                  x: tcx,
+                  y: tcy,
+                  width: w, 
+                  height: h,
+                  lootInstance: currentlyPickedUpInstance
+                }));
         }
       }
 
@@ -886,8 +1150,7 @@ class InventoryDragAndDropPrototype {
     }
 
     final itemId = state.pickedUpItemId;
-    final hasPickedUp = itemId != NULL_PICKUP_ID;
-    final canDropItem = hasPickedUp && 
+    final canDropItem = hasPickedUp() && 
       (Main.Global.worldMouse.hoverState == 
        Main.HoverState.None);
 
@@ -901,8 +1164,7 @@ class InventoryDragAndDropPrototype {
 
       if (shouldDropItem) {
         final playerRef = Entity.getById('PLAYER');
-        final lootInst = state.itemsById
-          .get(itemId);
+        final lootInst = state.pickedUpInstance;
         final lootDef = Loot.getDef(lootInst.type);
         final dropRadius = Std.int(
             Utils.clamp(
@@ -913,8 +1175,13 @@ class InventoryDragAndDropPrototype {
             playerRef.x + Utils.irnd(-dropRadius, dropRadius, true), 
             playerRef.y + Utils.irnd(-dropRadius, dropRadius, true), 
             lootInst);
-        state.itemsById.remove(state.pickedUpItemId);
+        Main.Global.gameState.inventoryState.itemsById.remove(state.pickedUpItemId);
         state.pickedUpItemId = NULL_PICKUP_ID;
+        state.pickedUpInstance = Main.Global
+          .gameState
+          .inventoryState
+          .itemsById
+          .get(state.pickedUpItemId);
 
         final restoreStateOnMouseRelease = (dt) -> {
           if (Main.Global.worldMouse.buttonDown == -1) {
@@ -931,14 +1198,22 @@ class InventoryDragAndDropPrototype {
   }
 
   public static function render(time) {
-    if (!Main.Global.uiState.inventory.opened) {
+    final hudLayoutData: Editor.EditorState = SaveState.load(
+        Hud.HUD_LAYOUT_FILE,
+        false);
+
+    if (hudLayoutData == null) {
       return;
     }
 
-    final cellSize = state.invGrid.cellSize;
+    if (!Main.Global.uiState.inventory.enabled) {
+      return;
+    }
+
+    final cellSize = Main.Global.gameState.inventoryState.invGrid.cellSize;
 
     final renderEquippedItem = (itemId, abilitySlot) -> {
-      final equippedLootInst = state.itemsById.get(
+      final equippedLootInst = Main.Global.gameState.inventoryState.itemsById.get(
          itemId);
 
       if (equippedLootInst != null) {
@@ -949,7 +1224,7 @@ class InventoryDragAndDropPrototype {
             lootDef.spriteKey,
             null,
             (p) -> {
-              final b = p.batchElement;
+              final b = p;
               p.sortOrder = 2;
               b.scale = Hud.rScale;
             });
@@ -965,28 +1240,16 @@ class InventoryDragAndDropPrototype {
     }
 
     // render inventory items
-    final slotDefinition = {
-      final hudLayoutRef = TiledParser.loadFile(
-          hxd.Res.ui_hud_layout_json); 
-      final inventoryLayerRef = TiledParser
-        .findLayer(hudLayoutRef, 'inventory');
-      final interactRef = TiledParser
-        .findLayer(
-            inventoryLayerRef, 'interactable');
-      Lambda.find(
-          interactRef.objects,
-          (o) -> o.name == 'inventory_slots');
-    }
-    for (itemId => bounds in state.invGrid.itemCache) {
-      final lootInst = state.itemsById.get(itemId);
+    for (itemId => bounds in Main.Global.gameState.inventoryState.invGrid.itemCache) {
+      final lootInst = Main.Global.gameState.inventoryState.itemsById.get(itemId);
       final lootDef = Loot.getDef(lootInst.type);
       final width = bounds[1] - bounds[0];
       final height = bounds[3] - bounds[2];
-      final screenCx = (bounds[0] + width / 2) * cellSize;
-      final screenCy = (bounds[2] + height / 2) * cellSize;
+      final screenCx = (bounds[0] + width / 2) * cellSize * Hud.rScale;
+      final screenCy = (bounds[2] + height / 2) * cellSize * Hud.rScale;
       // translate position to inventory position
-      final invCx = screenCx + toSlotSize(slotDefinition.x);
-      final invCy = screenCy + toSlotSize(slotDefinition.y);
+      final invCx = screenCx + INVENTORY_RECT.x;
+      final invCy = screenCy + INVENTORY_RECT.y;
 
       Main.Global.uiSpriteBatch.emitSprite(
           invCx,
@@ -994,7 +1257,7 @@ class InventoryDragAndDropPrototype {
           lootDef.spriteKey,
           (p) -> {
             p.sortOrder = 1;
-            final b = p.batchElement;
+            final b = p;
             b.scale = Hud.rScale;
           });
     } 
@@ -1007,14 +1270,15 @@ class InventoryDragAndDropPrototype {
       final cy = bounds[2] + height / 2;
 
       Main.Global.uiSpriteBatch.emitSprite(
-          (cx - width / 2) * cellSize, (cy - height / 2) * cellSize,
+          (cx - width / 2) * cellSize * Hud.rScale, 
+          (cy - height / 2) * cellSize * Hud.rScale,
           'ui/square_white',
           (p) -> {
             p.sortOrder = 2;
 
-            final b = p.batchElement;
-            b.scaleX = width * cellSize;
-            b.scaleY = height * cellSize;
+            final b = p;
+            b.scaleX = width * cellSize * Hud.rScale;
+            b.scaleY = height * cellSize * Hud.rScale;
             b.alpha = 0.4;
 
             if (itemId == 'item_can_place') {
@@ -1032,11 +1296,11 @@ class InventoryDragAndDropPrototype {
     } 
 
     // render picked up item
-    if (state.pickedUpItemId != NULL_PICKUP_ID) {
-      final lootInst = state.itemsById.get(state.pickedUpItemId);
+    if (hasPickedUp()) {
+      final lootInst = state.pickedUpInstance;
       final lootDef = Loot.getDef(lootInst.type);
       final spriteData = SpriteBatchSystem.getSpriteData(
-          Main.Global.uiSpriteBatch,
+          Main.Global.uiSpriteBatch.batchManager.spriteSheetData,
           lootDef.spriteKey);
       final w = toSlotSize(spriteData.sourceSize.w);
       final h = toSlotSize(spriteData.sourceSize.h);
@@ -1049,91 +1313,169 @@ class InventoryDragAndDropPrototype {
           (p) -> {
             p.sortOrder = 4;
 
-            final b = p.batchElement;
+            final b = p;
             b.scale = Hud.rScale;
+          });
+    }
+
+    // render hovered inventory ability slot
+    final nearestAbilitySlot = state.nearestAbilitySlot;
+    if (nearestAbilitySlot.slotDefinition != null
+        && hasPickedUp()) {
+      final lootInst = state.pickedUpInstance;
+      final lootDef = Loot.getDef(lootInst.type);
+      final canEquip = lootDef.category == 
+        nearestAbilitySlot.slotDefinition.allowedCategory ||
+        !hasPickedUp();
+      final slotDef = nearestAbilitySlot.slotDefinition;
+
+      Main.Global.uiSpriteBatch.emitSprite(
+          slotDef.x, 
+          slotDef.y,
+          'ui/square_white',
+          null,
+          (p) -> {
+            p.sortOrder = 3;
+            final b = p;
+            b.scaleX = slotDef.width;
+            b.scaleY = slotDef.height;
+            b.a = 0.6;
+
+            if (canEquip) {
+              b.b = 0;
+              // show red to indicate not-allowed
+            } else {
+              b.r = 214 / 255;
+              b.g = 0;
+              b.b = 0;
+            }
           });
     }
   }
 }
 
 class Hud {
+  public static final HUD_LAYOUT_FILE = 'editor-data/hud.eds';
   public static var rScale = 4;
-  static var mapData: TiledMapData;
   static var aiNameText: h2d.Text;
   static var aiHealthBar: h2d.Graphics;
   static final aiHealthBarWidth = 200;
   static var hoveredEntityId: Entity.EntityId;
   static var tooltipTf: h2d.Text;
   static var questDisplay: h2d.Text;
+  static var inactiveAbilitiesSb: SpriteBatchSystem;
+  static var inactiveAbilitiesCooldownGraphics: h2d.Graphics;
 
   public static function init() {
     aiHealthBar = new h2d.Graphics(
         Main.Global.uiRoot);
-    final font = Main.Global.fonts.primary;
+    final font = Fonts.primary();
     aiNameText = new h2d.Text(
         font, 
         Main.Global.uiRoot);
     aiNameText.textAlign = Center;
     aiNameText.textColor = Game.Colors.pureWhite;
 
-    mapData = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-
     questDisplay = new h2d.Text(
-        Main.Global.fonts.primary,
+        Fonts.primary(),
+        Main.Global.uiRoot);
+
+    inactiveAbilitiesSb = new SpriteBatchSystem(
+        Main.Global.inactiveAbilitiesRoot,
+        hxd.Res.sprite_sheet_png,
+        hxd.Res.sprite_sheet_json);
+    inactiveAbilitiesCooldownGraphics = new h2d.Graphics(
         Main.Global.uiRoot);
   }
 
   public static function update(dt: Float) {
-    Main.Global.questState = Lambda.fold(
-        Main.Global.questActions,
-        (a, qs) -> {
-          return Quest.updateQuestState(
-              a,
-              qs,
-              Quest.conditionsByName);
-        }, Main.Global.questState);
-    Main.Global.questActions = [];
+    questDisplay.text = '';
+    aiNameText.text = '';
+    aiHealthBar.clear();
+    Main.Global.worldMouse.hoverState = 
+      Main.HoverState.None;
 
-    Tooltip.update(dt);
+    final uiState = Main.Global.uiState;
+    final enabled = !uiState.passiveSkillTree.enabled
+      && !uiState.mainMenu.enabled;
+    uiState.hud.enabled = enabled;
+
+    if (!enabled) {
+      return;
+    }
+
+    aiNameText.x = Main.Global.uiRoot.width / 2;
+    aiNameText.y = 10;
+    aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
+    aiHealthBar.y = 35;
+
+    final x = Main.Global.rootScene.mouseX;
+    final y = Main.Global.rootScene.mouseY;
+    final threshold = 16;
+    final hoveredMatch = Lambda.fold(
+        Grid.getItemsInRect(
+          Main.Global.dynamicWorldGrid,
+          x, y, threshold, threshold),
+        (entityId, result: {
+          previousDist: Float,
+          matchId: Entity.EntityId
+        }) -> {
+          final entRef = Entity.getById(entityId);
+          final p = new h2d.col.Point(x, y);
+          final c = new h2d.col.Circle(
+              entRef.x, entRef.y, entRef.radius + threshold / 2);
+          final distFromMouse = Utils.distance(
+              x, y, entRef.x, entRef.y);
+          final isMatch = distFromMouse < result.previousDist 
+            && c.contains(p) 
+            && switch(entRef.type) {
+              case 
+                  'ENEMY' 
+                | 'INTERACTABLE_PROP'
+                | 'LOOT':
+                true;
+
+              default: false;
+            };
+
+          if (isMatch) {
+            return {
+              previousDist: distFromMouse,
+              matchId: entityId
+            };
+          }
+
+          return result;
+        }, {
+          previousDist: Math.POSITIVE_INFINITY,
+          matchId: Entity.NULL_ENTITY.id
+        });
+    Main.Global.hoveredEntity.id = hoveredMatch.matchId;
     InventoryDragAndDropPrototype.update(dt);
+    Inventory.update(dt);
+    Tooltip.update(dt);
+    UiGrid.update(dt);
+  }
+
+  public static function render(time: Float) {
+    Tooltip.render(time);
+    InventoryDragAndDropPrototype.render(time);
+    Inventory.render(time);
+    Hud.UiGrid.render(time);
+
+    if (!Main.Global.uiState.hud.enabled) {
+      return;
+    }
 
     // show hovered ai info
     {
       final healthBarHeight = 30;
-      aiNameText.x = Main.Global.uiRoot.width / 2;
-      aiNameText.y = 10;
-      aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
-      aiHealthBar.y = 35;
-
-      final x = Main.Global.rootScene.mouseX;
-      final y = Main.Global.rootScene.mouseY;
-      final hoveredEntityId = Utils.withDefault(
-          Lambda.find(
-            Grid.getItemsInRect(
-              Main.Global.dynamicWorldGrid,
-              x, y, 5, 5),
-            (entityId) -> {
-              final entRef = Entity.getById(entityId);
-              final p = new h2d.col.Point(x, y);
-              final c = new h2d.col.Circle(entRef.x, entRef.y, entRef.radius);
-              final distFromMouse = Utils.distance(
-                  x, y, entRef.x, entRef.y);
-              final isMatch = c.contains(p) &&
-                entRef.type == 'ENEMY';
-
-              return isMatch;
-            }),
-          Entity.NULL_ENTITY.id);
-      Main.Global.hoveredEntity.id = 
-        hoveredEntityId;
-      if (!Entity.isNullId(hoveredEntityId)) {
-        Main.Global.worldMouse.hoverState = 
-          Main.HoverState.Enemy;
-        final entRef = Entity.getById(
+      final hoveredEntityId = Main.Global.hoveredEntity.id;
+      final entRef = Entity.getById(
           hoveredEntityId);
+      if (entRef.type == 'ENEMY') {
         aiNameText.text = Entity.getComponent(entRef, 'aiType');
-        final healthPctRemain = entRef.health / 
+        final healthPctRemain = entRef.stats.currentHealth / 
           entRef.stats.maxHealth;
         aiHealthBar.clear();
         aiHealthBar.lineStyle(4, Game.Colors.black);
@@ -1147,27 +1489,28 @@ class Hud {
             0, 0, 
             healthPctRemain * aiHealthBarWidth, 
             healthBarHeight);
-      } else {
-        aiNameText.text = '';
-        aiHealthBar.clear();
-      }
+      } 
     }
-
-  }
-
-  public static function render(time: Float) {
-    Tooltip.render(time);
-    InventoryDragAndDropPrototype.render(time);
 
     // render quest statuses
     {
-      final maxWidth = 300;
-      questDisplay.text = Quest.format(
-          Main.Global.questState);
-      questDisplay.maxWidth = maxWidth;
-      final win = hxd.Window.getInstance();
-      questDisplay.x = win.width - maxWidth;
-      questDisplay.y = 500;
+      if (!Main.Global.uiState.inventory.enabled) {
+        final maxWidth = 300;
+        questDisplay.text = Quest.format(
+            Main.Global.gameState.questState);
+        questDisplay.maxWidth = maxWidth;
+        final win = hxd.Window.getInstance();
+
+        final borderSprite = Main.Global.uiSpriteBatch.emitSprite(
+            Main.nativePixelResolution.x - 10 - maxWidth,
+            400,
+            'ui/stylized_border_1');
+        borderSprite.sortOrder = 0;
+        borderSprite.scale = Hud.rScale;
+
+        questDisplay.x = borderSprite.x;
+        questDisplay.y = borderSprite.y + 15;
+      }
     }
 
     var ps = Entity.getById('PLAYER').stats;
@@ -1176,108 +1519,96 @@ class Hud {
       return;
     }
 
-    final uiLayoutRef = TiledParser.loadFile(
-        hxd.Res.ui_hud_layout_json);
-    final hudLayer = TiledParser
-      .findLayer(uiLayoutRef, 'hud');
-    final cockpitUnderlay = TiledParser
-      .findLayer(hudLayer, 'cockpit_underlay')
-      .objects[0];
-    final healthBars = TiledParser
-      .findLayer(hudLayer, 'health_bars')
-      .objects;
-    final energyBars = TiledParser
-      .findLayer(hudLayer, 'energy_bars')
-      .objects;
-    final inventoryLayerRef = TiledParser
-      .findLayer(uiLayoutRef, 'inventory');
-    final hudEquippedAbilitySlots = TiledParser
-      .findLayer(hudLayer, 'equipped_ability_slots')
-      .objects;
-    final barsCallback = (p) -> {
-      p.sortOrder = 1.0;
-      p.batchElement.scaleX = rScale * 1.0;
-      p.batchElement.scaleY = rScale * 1.0;
-    }
-
-    {
-      Main.Global.uiSpriteBatch.emitSprite(
-          (cockpitUnderlay.x + 
-           cockpitUnderlay.width / 2) * rScale,
-          (cockpitUnderlay.y - 
-           cockpitUnderlay.height / 2) * rScale,
-          'ui/cockpit_underlay',
-          null,
-          (p) -> {
-            p.sortOrder = 0.0;
-            p.batchElement.scaleX = rScale * 1.0;
-            p.batchElement.scaleY = rScale * 1.0;
-          });
-    }
-
-    {
-      var healthRemaining = 
-        ps.currentHealth / ps.maxHealth;
-      var numSegments = Math.ceil(
-          healthRemaining * healthBars.length);
-      var indexAdjust = 
-        healthBars.length - numSegments;
-
-      for (i in 0...numSegments) {
-        var item = healthBars[i + indexAdjust];
-
-        Main.Global.uiSpriteBatch.emitSprite(
-            (item.x + item.width / 2) * rScale,
-            (item.y - item.height / 2) * rScale,
-            'ui/cockpit_resource_bar_health',
-            null, 
-            barsCallback);
-      }
-    }
-
-    {
-      var energyRemaining = 
-        ps.currentEnergy / ps.maxEnergy;
-      var numSegments = Math.ceil(
-          energyRemaining * energyBars.length);
-
-      for (i in 0...numSegments) {
-        var item = energyBars[i];
-
-        Main.Global.uiSpriteBatch.emitSprite(
-            (item.x + item.width / 2) * rScale,
-            (item.y - item.height / 2) * rScale,
-            'ui/cockpit_resource_bar_energy',
-            null,
-            barsCallback);
-      }
-    }
-
     // render equipped abilities
     {
       final spriteEffect = (p) -> {
-        p.batchElement.scaleX = rScale * 1.0;
-        p.batchElement.scaleY = rScale * 1.0;
+        p.scaleX = rScale * 1.0;
+        p.scaleY = rScale * 1.0;
       };
       final inventoryEquippedSlots = InventoryDragAndDropPrototype
           .getEquippedAbilities();
 
-      for (i in 0...inventoryEquippedSlots.length) {
-        final lootId = inventoryEquippedSlots[i];
+      inactiveAbilitiesCooldownGraphics.clear();
 
-        if (lootId != null) {
-          final hudSlot = hudEquippedAbilitySlots[i];
-          final cx = (hudSlot.x + hudSlot.width / 2) * Hud.rScale;
-          final cy = (hudSlot.y + hudSlot.height / 2) * Hud.rScale;
-          final lootInst = InventoryDragAndDropPrototype
-            .getItemById(lootId); 
-          final lootDef = Loot.getDef(lootInst.type);
+      final hudAbilitySlotLayerId = 'layer_1';
+      final editorState = UiGrid.loadHudLayout();
+      final grid = editorState.gridByLayerId.get(hudAbilitySlotLayerId);
+      final slotIds = [
+        for (objectId => bounds in grid.itemCache) {
+          final type = editorState.itemTypeById.get(objectId);
 
-          Main.Global.uiSpriteBatch.emitSprite(
+          if (type == 'hud_ability_slot') {
+            {
+              id: objectId,
+              bounds: bounds
+            };
+          }
+        }
+      ];
+
+      slotIds.sort(function byXPos(a, b) {
+        final xA = a.bounds[0];
+        final xB = b.bounds[0];
+
+        return switch ([xA, xB]) {
+          case xA < xB => true: -1;
+          case xA > xB => true: 1;
+          default: 0;
+        }
+      });
+      
+      // render hud equipped abilities
+      for (slotIndex in 0...slotIds.length) {
+        final slotInfo = slotIds[slotIndex];
+        final type = editorState.itemTypeById.get(slotInfo.id);
+
+        final lootId = inventoryEquippedSlots[slotIndex];
+
+        if (lootId == null) {
+          continue;
+        }
+
+        final cx = (slotInfo.bounds[0]) * Hud.rScale;
+        final cy = (slotInfo.bounds[2]) * Hud.rScale;
+        final lootInst = InventoryDragAndDropPrototype
+          .getItemById(lootId); 
+        final lootDef = Loot.getDef(lootInst.type);
+        final playerRef = Entity.getById('PLAYER');
+        final cooldownLeft = Cooldown.get(
+            playerRef.cds,
+            'ability__${lootInst.type}');
+        final isCoolingDown = cooldownLeft > 0;
+
+        if (isCoolingDown) {
+          // draw pie chart for cooldown
+          {
+            final angleStart = 0 + 3 * Math.PI / 2;
+            final progress = 1 - (cooldownLeft / lootDef.cooldown);
+            final angleLength = Math.PI * 2 * progress;
+            final g = inactiveAbilitiesCooldownGraphics;
+
+            g.beginFill(0xfffffff, 0.6);
+            g.drawPie(
+                cx,
+                cy,
+                30,
+                angleStart,
+                angleLength);
+          }
+
+          final ref = inactiveAbilitiesSb.emitSprite(
               cx, cy,
               lootDef.spriteKey,
               null,
               spriteEffect);
+          ref.sortOrder = 1;
+        } else {
+          final ref = Main.Global.uiSpriteBatch.emitSprite(
+              cx, cy,
+              lootDef.spriteKey,
+              null,
+              spriteEffect);
+          ref.sortOrder = 1; 
         }
       }
     }

@@ -2,15 +2,24 @@ typedef LootDefType = String;
 
 typedef LootDefCat = String;
 
+enum Rarity {
+  Normal;
+  Magical;
+  Rare;
+  Legendary;
+}
+
 typedef LootDef = {
   name: String,
-  type: LootDefType,
-  energyCost: Int,
+  energyCost: Float,
   cooldown: Float,
+  actionSpeed: Float,
   category: LootDefCat,
   minDamage: Int,
   maxDamage: Int,
   spriteKey: String,
+  ?damageMultiplier: Float,
+  ?rarity: Rarity
 };
 
 // loot that was generated via rng
@@ -20,65 +29,139 @@ typedef LootInstance = {
 };
 
 class Loot {
-  public static final lootDefinitions: Array<LootDef> = [
-  {
-    name: 'Basic Blaster',
-    type: 'basicBlaster',
-    category: 'ability',
-    energyCost: 2,
-    cooldown: 1 / 10,
-    minDamage: 1,
-    maxDamage: 1,
-    spriteKey: 'ui/loot__ability_basic_blaster',
-  },
-  {
-    name: 'Spider Bots',
-    type: 'spiderBots',
-    category: 'ability',
-    energyCost: 2,
-    cooldown: 1 / 5,
-    minDamage: 1,
-    maxDamage: 1,
-    spriteKey: 'ui/loot__ability_spider_bots'
-  },
-  {
-    name: 'Laser Beam',
-    type: 'channelBeam',
-    category: 'ability',
-    cooldown: 0.0001,
-    energyCost: 2,
-    minDamage: 1,
-    maxDamage: 3,
-    spriteKey: 'ui/loot__ability_channel_beam'
-  },
-  {
-    name: 'Green Arrow Socketable',
-    type: 'greenArrowSocketable',
-    category: 'socketable',
-    cooldown: 0,
-    energyCost: 0,
-    minDamage: 0,
-    maxDamage: 0,
-    spriteKey: 'ui/loot__socketable_green_arrow_up'
-  },
-  {
-    name: 'Null Item',
-    type: 'nullItem',
-    category: 'nullCategory',
-    cooldown: 0,
-    energyCost: 0,
-    minDamage: 0,
-    maxDamage: 0,
-    spriteKey: 'ui/placeholder'
-  },
+  // IMPORTANT: 
+  // Once we ship the game, we must be careful about modifying the keys
+  // because this lookup table will affect loot from previous versions as well.
+  public static final lootDefinitions: Map<LootDefType, LootDef> = [
+    /*
+       Ability ideas
+       
+       * teleportation
+         Teleports the player to the target location
+     */
+    'basicBlaster' => {
+      name: 'Basic Blaster',
+      category: 'ability',
+      energyCost: 2,
+      cooldown: 0,
+      actionSpeed: 1/10,
+      minDamage: 1,
+      maxDamage: 1,
+      spriteKey: 'ui/loot__ability_basic_blaster',
+    },
+    'basicBlasterEvolved' => {
+      name: 'Basic Blaster Evolved',
+      category: 'ability',
+      energyCost: 3,
+      cooldown: 0,
+      actionSpeed: 1/10,
+      minDamage: 1,
+      maxDamage: 1,
+      spriteKey: 'ui/loot__ability_basic_blaster_evolved',
+      rarity: Legendary
+    },
+    'spiderBots' => {
+      name: 'Spider Bots',
+      category: 'ability',
+      energyCost: 2,
+      cooldown: 0,
+      actionSpeed: 2 / 10,
+      minDamage: 1,
+      maxDamage: 1,
+      spriteKey: 'ui/loot__ability_spider_bots'
+    },
+    // TODO: Make beam have both an initial energy cost at
+    // initial use and then a lower channeling cost. This
+    // way you can still burst with the ability while
+    // still gaining the benefits of a channeling when
+    // desired.
+    'channelBeam' => {
+      name: 'Laser Beam',
+      category: 'ability',
+      cooldown: 0,
+      actionSpeed: 1/200,
+      energyCost: .125,
+      minDamage: 1,
+      maxDamage: 3,
+      spriteKey: 'ui/loot__ability_channel_beam'
+    },
+    'energyBomb' => {
+      name: 'Energy Bomb',
+      category: 'ability',
+      cooldown: 0.3,
+      actionSpeed: 0.15,
+      energyCost: 4,
+      minDamage: 3,
+      maxDamage: 5,
+      spriteKey: 'ui/loot__ability_energy_bomb'
+    },
+    'flameTorch' => {
+      name: 'Flame Torch',
+      category: 'ability',
+      cooldown: 0,
+      actionSpeed: 0.25,
+      energyCost: 0,
+      minDamage: 3,
+      maxDamage: 5,
+      spriteKey: 'ui/loot__ability_flame_torch'
+    },
+    'burstCharge' => {
+      name: 'Burst Charge',
+      category: 'ability',
+      cooldown: 0.3,
+      actionSpeed: 0.15,
+      energyCost: 3,
+      minDamage: 3,
+      maxDamage: 5,
+      spriteKey: 'ui/loot__ability_burst_charge'
+    },
+    // TODO: Add support for charges
+    // where the ability builds charges as you
+    // kill enemies.
+    'heal1' => {
+      name: 'Basic Heal',
+      category: 'ability',
+      cooldown: 0.3,
+      actionSpeed: 0,
+      energyCost: 0,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_heal_1'
+    },
+    'energy1' => {
+      name: 'Basic Energy Restore',
+      category: 'ability',
+      cooldown: 0.3,
+      actionSpeed: 0,
+      energyCost: 0,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_energy_1'
+    },
+    'moveSpeedAura' => {
+      name: 'Burst Of Speed (aura)',
+      category: 'ability',
+      cooldown: 0,
+      actionSpeed: 0,
+      energyCost: 0,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_movespeed_aura'
+    },
+    'nullItem' => {
+      name: 'Null Item',
+      category: 'nullCategory',
+      cooldown: 0,
+      actionSpeed: 0,
+      energyCost: 0,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/placeholder'
+    },
   ];
 
-  static final defs: Map<LootDefType, LootDef> = [
-    for (def in lootDefinitions) def.type => def
-  ];
-
-  public static function getDef(type): LootDef {
-    return defs.get(type);
+  public static function getDef(type: LootDefType): LootDef {
+    return lootDefinitions.get(type);
   }
 
   public static function createInstance(
@@ -86,11 +169,11 @@ class Loot {
       ?explicitId: String): LootInstance {
 
     final rolledType = Utils.rollValues(typesToRoll);
-    final id = explicitId != null ? 
+    final instanceId = explicitId != null ? 
       explicitId : Utils.uid();
 
     return {
-      id: id,
+      id: instanceId,
       type: rolledType
     };
   }
