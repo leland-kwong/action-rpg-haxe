@@ -515,6 +515,9 @@ class Main extends hxd.App {
               Global.mainCamera,
               Global.rootScene.width,
               Global.rootScene.height);
+          Camera.setZoom(
+              Global.mainCamera,
+              Global.resolutionScale);
 
           // update scenes to move relative to camera
           final cam_center_x = -Global.mainCamera.x 

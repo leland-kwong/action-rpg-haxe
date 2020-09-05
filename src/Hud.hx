@@ -705,23 +705,24 @@ class Tooltip {
     final ttWorldPos = Camera.toScreenPos(
         Main.Global.mainCamera, 
         lootRef.x, lootRef.y);
-    tooltipTextRef.x = ttWorldPos[0] * Hud.rScale;
-    tooltipTextRef.y = (ttWorldPos[1] - 25) * Hud.rScale;
+    tooltipTextRef.x = ttWorldPos[0];
+    tooltipTextRef.y = (ttWorldPos[1]) - (lootRef.radius + 10) 
+      * Main.Global.mainCamera.zoom;
 
     // tooltip background
     final ttPaddingH = 5;
     final ttPaddingV = 2;
-    Main.Global.sb.emitSprite(
-        lootRef.x - (ttPaddingH / 2) - 
-        tooltipTextRef.textWidth / 2 / Hud.rScale,
-        lootRef.y - (ttPaddingV / 2) - 25,
+    Main.Global.uiSpriteBatch.emitSprite(
+        tooltipTextRef.x - (ttPaddingH / 2) - 
+        tooltipTextRef.textWidth / 2,
+        tooltipTextRef.y - (ttPaddingV / 2),
         'ui/square_white',
         null,
         (p) -> {
           p.scaleX = ttPaddingH + 
-            tooltipTextRef.textWidth / Hud.rScale;
+            tooltipTextRef.textWidth;
           p.scaleY = ttPaddingV + 
-            tooltipTextRef.textHeight / Hud.rScale;
+            tooltipTextRef.textHeight;
           p.r = 0;
           p.g = 0;
           p.b = 0;
