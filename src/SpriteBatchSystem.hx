@@ -17,10 +17,15 @@ typedef SpriteSheetData = {
 
 class SpriteRef extends BatchElement {
   public var sortOrder: Float;
+  public var createdAt: Float;
+  public var done = true;
+  public var effectCallback: EffectCallback;
+  public var state: Dynamic;
 }
 
 typedef BatchManagerRef = {
   var particles: Array<SpriteRef>;
+  var nextParticles: Array<SpriteRef>;
   var batch: h2d.SpriteBatch;
   var spriteSheet: h2d.Tile;
   var spriteSheetData: SpriteSheetData;
@@ -28,16 +33,17 @@ typedef BatchManagerRef = {
 
 class BatchManager {
   static public function init(
-      scene: h2d.Scene,
+      parent: h2d.Object,
       spriteSheetPng: hxd.res.Image,
       spriteSheetJson: hxd.res.Resource) {
     var spriteSheet = spriteSheetPng.toTile();
     var system: BatchManagerRef = {
       particles: [],
+      nextParticles: [],
       spriteSheetData: Utils.loadJsonFile(
           spriteSheetJson),
       spriteSheet: spriteSheet,
-      batch: new h2d.SpriteBatch(spriteSheet, scene),
+      batch: new h2d.SpriteBatch(spriteSheet, parent),
     };
     system.batch.hasRotationScale = true;
     return system;
@@ -61,16 +67,22 @@ class BatchManager {
 
     // reset for next cycle
     s.batch.clear();
-    s.particles = [];
+    s.particles = s.nextParticles;
+    s.nextParticles = [];
   }
 
   static public function render(
       s: BatchManagerRef, 
       time: Float) {
 
+    for (p in s.particles) {
+      if (p.effectCallback != null) {
+        p.effectCallback(p);
+      }
+    }
+
     // sort by y-position or custom sort value
     // draw order is lowest -> highest
-
     s.particles.sort((a, b) -> {
       var sortA = a.sortOrder;
       var sortB = b.sortOrder;
@@ -88,6 +100,9 @@ class BatchManager {
 
     for (p in s.particles) {
       s.batch.add(p);
+      if (!p.done) {
+        s.nextParticles.push(p);
+      }
     }
   }
 }
@@ -98,11 +113,11 @@ class SpriteBatchSystem {
   public var batchManager: BatchManagerRef;
 
   public function new(
-      scene: h2d.Scene,
+      parent: h2d.Object,
       spriteSheetPng: hxd.res.Image,
       spriteSheetJson: hxd.res.Resource) {
     batchManager = BatchManager.init(
-        scene,
+        parent,
         spriteSheetPng,
         spriteSheetJson);
     instances.push(batchManager);
@@ -177,13 +192,11 @@ class SpriteBatchSystem {
       spriteRef.rotation = angle;
     }
 
+    spriteRef.createdAt = Main.Global.time;
+    spriteRef.effectCallback = effectCallback;
     spriteRef.x = x;
     spriteRef.y = y;
     spriteRef.sortOrder = y;
-
-    if (effectCallback != null) {
-      effectCallback(spriteRef);
-    }
 
     BatchManager.emit(batchManager, spriteRef);
 

@@ -449,7 +449,6 @@ class Main extends hxd.App {
       Gui.GuiComponents.mainMenu();
       Hud.init();
       PassiveSkillTree.init();
-
     } catch (error: Dynamic) {
       HaxeUtils.handleError(
           '[update error]',
@@ -528,7 +527,6 @@ class Main extends hxd.App {
               Global.particleScene,
               Global.obstacleMaskScene,
               Global.obscuredEntitiesScene,
-              Global.debugScene
           ]) {
             scene.x = cam_center_x;
             scene.y = cam_center_y;
