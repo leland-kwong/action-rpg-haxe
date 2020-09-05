@@ -24,6 +24,12 @@ enum HoverState {
 typedef VoidFn = () -> Void;
 
 class Global {
+  public static var time = 0.0;
+  public static var isNextFrame = true;
+  public static var tickCount = 0.;
+  public static var resolutionScale = 4;
+  public static var logData: Dynamic = {};
+  
   public static var mainBackground: h2d.Scene;
   public static var rootScene: h2d.Scene;
   public static var particleScene: h2d.Scene;
@@ -52,11 +58,6 @@ class Global {
   public static var wmSpriteBatch: SpriteBatchSystem;
   public static var oeSpriteBatch: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
-  public static var time = 0.0;
-  public static var isNextFrame = true;
-
-  public static var tickCount = 0.;
-  public static var resolutionScale = 4;
 
   // for convenience, not sure if this is performant enough
   // for us to use for everything
@@ -69,7 +70,6 @@ class Global {
     Array<(dt: Float) -> Bool> = [];
 
   public static var mainPhase: MainPhase = null;
-  public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
   public static var uiState = {
     mainMenu: {
