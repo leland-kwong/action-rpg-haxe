@@ -61,10 +61,9 @@ class Global {
   public static final hooks = {
     update: new Array<(dt: Float) -> Bool>(),
     render: new Array<(time: Float) -> Bool>(),
+    // handles input device events
+    input: new Array<(dt: Float) -> Bool>(),
   }
-  // handles input device events
-  public static var inputHooks: 
-    Array<(dt: Float) -> Bool> = [];
 
   public static var mainPhase: MainPhase = null;
   public static var entitiesToRender: Array<Entity> = [];
@@ -222,7 +221,7 @@ class Main extends hxd.App {
     try {
       hxd.Res.initEmbed();
       Global.mainPhase = MainPhase.Init;
-      Global.inputHooks.push(handleGlobalHotkeys);
+      Global.hooks.input.push(handleGlobalHotkeys);
 
       // setup global scene objects
       {
@@ -514,14 +513,14 @@ class Main extends hxd.App {
       // frame.
       {
         final nextHooks = [];
-        for (update in Global.inputHooks) {
+        for (update in Global.hooks.input) {
           final shouldKeepAlive = update(frameTime);
 
           if (shouldKeepAlive) {
             nextHooks.push(update); 
           }
         }
-        Global.inputHooks = nextHooks;
+        Global.hooks.input = nextHooks;
       }
 
       if (debugText != null) {
@@ -542,7 +541,7 @@ class Main extends hxd.App {
           numAnimations: core.Anim.AnimEffect
             .nextAnimations.length,
           numUpdateHooks: Global.hooks.update.length,
-          numInputHooks: Global.inputHooks.length,
+          numInputHooks: Global.hooks.input.length,
           numRenderHooks: Global.hooks.render.length,
         }
         final formattedStats = Json.stringify(stats, null, '  ');
