@@ -1470,7 +1470,7 @@ class Hud {
     final threshold = 16;
     final hoveredMatch = Lambda.fold(
         Grid.getItemsInRect(
-          Main.Global.dynamicWorldGrid,
+          Main.Global.grid.dynamicWorld,
           x, y, threshold, threshold),
         (entityId, result: {
           previousDist: Float,

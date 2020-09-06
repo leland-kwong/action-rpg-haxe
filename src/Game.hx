@@ -781,7 +781,7 @@ class Ai extends Entity {
             final aoeSize = 30; // diameter
             // deal damage to other nearby enemies
             final nearbyEntities = Grid.getItemsInRect(
-                Main.Global.dynamicWorldGrid,
+                Main.Global.grid.dynamicWorld,
                 x, y, aoeSize, aoeSize);
             for (entityId in nearbyEntities) {
               final entityRef = Entity.getById(entityId);
@@ -1540,7 +1540,7 @@ class Player extends Entity {
                 Main.Global.tickCount + tickOffset) % queryInterval == 0;
             cachedQuery = shouldRefreshQuery
               ? Grid.getItemsInRect(
-                  Main.Global.dynamicWorldGrid,
+                  Main.Global.grid.dynamicWorld,
                   botRef.x,
                   botRef.y,
                   seekRange,
@@ -3327,7 +3327,7 @@ class Game extends h2d.Object {
         var height = a.radius * 2 + queryThreshold;
         var width = height + queryThreshold;
         var dynamicNeighbors = Grid.getItemsInRect(
-            Main.Global.dynamicWorldGrid, a.x, a.y, width, height
+            Main.Global.grid.dynamicWorld, a.x, a.y, width, height
             );
         var obstacleNeighbors = Grid.getItemsInRect(
             Main.Global.grid.obstacle, a.x, a.y, width, height
@@ -3376,7 +3376,7 @@ class Game extends h2d.Object {
         | { type: 'FRIENDLY_AI' }
         | { type: 'INTERACTABLE_PROP' }: {
           Grid.setItemRect(
-              Main.Global.dynamicWorldGrid,
+              Main.Global.grid.dynamicWorld,
               a.x,
               a.y,
               a.radius * 2,
