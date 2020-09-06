@@ -794,7 +794,6 @@ class InventoryDragAndDropPrototype {
   static final NULL_LOOT_INSTANCE = Loot.createInstance(
       ['nullItem'], NULL_PICKUP_ID);
   static public final state = {
-    initialized: false,
     debugGrid: Grid.create(16),
     pickedUpItemId: NULL_PICKUP_ID,
     pickedUpInstance: NULL_LOOT_INSTANCE,
@@ -968,10 +967,6 @@ class InventoryDragAndDropPrototype {
 
     if (!Main.Global.uiState.inventory.enabled) {
       return;
-    }
-
-    if (!state.initialized) {
-      state.initialized = true;
     }
 
     // handle slot interactions
