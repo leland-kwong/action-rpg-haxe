@@ -7,11 +7,11 @@ class Experiment {
     final scale = 4;
     final G = Main.Global;
     final sb = new SpriteBatchSystem(
-        G.staticScene,
+        G.scene.staticScene,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
 
-    G.staticScene.scaleMode = ScaleMode.Zoom(scale);
+    G.scene.staticScene.scaleMode = ScaleMode.Zoom(scale);
 
     function particleEffect(p: SpriteBatchSystem.SpriteRef) {
       final duration = 1.5;

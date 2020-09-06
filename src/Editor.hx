@@ -601,7 +601,7 @@ class Editor {
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     final loadPath = getConfig().activeFile;
-    final s2d = Main.Global.staticScene;
+    final s2d = Main.Global.scene.staticScene;
     // custom transformation function to
     // modify the saved data.
     final migrateState = (state: EditorState) -> {
@@ -1211,9 +1211,9 @@ class Editor {
           });
           for (rowIndex in rowIndices) {
             final renderRow = rRows.get(rowIndex);
-            Main.Global.staticScene.addChild(
+            Main.Global.scene.staticScene.addChild(
                 renderRow.tg);
-            Main.Global.staticScene.addChild(
+            Main.Global.scene.staticScene.addChild(
                 renderRow.objectRow);
 
             // move marquee selection relative to mouse position
@@ -1727,10 +1727,10 @@ class Editor {
         }
       }
 
-      Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
+      Main.Global.scene.staticScene.scaleMode = ScaleMode.Zoom(
           localState.zoom);
-      Main.Global.staticScene.x = editorState.translate.x;
-      Main.Global.staticScene.y = editorState.translate.y;
+      Main.Global.scene.staticScene.x = editorState.translate.x;
+      Main.Global.scene.staticScene.y = editorState.translate.y;
 
       localState.isDragStart = initialLocalState().isDragStart;
       localState.isDragEnd = initialLocalState().isDragEnd;

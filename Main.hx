@@ -30,6 +30,7 @@ class SceneGroup {
   public var particle: h2d.Scene;
   public var obstacleMask: h2d.Scene;
   public var obscuredEntities: h2d.Scene;
+  public var staticScene: h2d.Scene;
 
   public function new(sevents: hxd.SceneEvents): Void {
     mainBackground = {
@@ -71,6 +72,12 @@ class SceneGroup {
           Global.resolutionScale);
       s;
     }
+
+    staticScene = {
+      final s = new h2d.Scene();
+      sevents.addScene(s);
+      s;
+    }
   }
 }
 
@@ -83,7 +90,6 @@ class Global {
   
   public static var scene: SceneGroup = null;
   public static var rootScene: h2d.Scene;
-  public static var staticScene: h2d.Scene;
 
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
@@ -210,7 +216,7 @@ class Main extends hxd.App {
       super.render(e);
       Global.scene.particle.render(e);
       Global.scene.obscuredEntities.render(e);
-      Global.staticScene.render(e);
+      Global.scene.staticScene.render(e);
       Global.scene.inactiveAbilitiesRoot.render(e);
       Global.scene.uiRoot.render(e);
 
@@ -273,10 +279,6 @@ class Main extends hxd.App {
         Global.rootScene = s2d;
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
-
-        // used for experimental projects
-        Global.staticScene = new h2d.Scene();
-        sevents.addScene(Global.staticScene);
 
         // setup sprite batch systems
         Global.sb = new SpriteBatchSystem(
