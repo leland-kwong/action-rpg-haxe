@@ -33,26 +33,28 @@ typedef Dialog = {
   ?choices: Array<DialogChoice>
 };
 
-class GuiComponents {
-  static final sortOrders = {
-    mainMenuBg: 1000,
-    menuItemHighlightBg: 1001,
-  };
-
-  static var dialogBoxParent: h2d.Object;
-  public static function DialogBox(
-      x: Float, y: Float, 
+class DialogBox {
+  public static function create(
+      worldX: Float, 
+      worldY: Float, 
       dialog: Dialog) {
 
     final padding = 10;
     final maxWidth = 400;
-    final parent = if (dialogBoxParent == null) {
-      new h2d.Object(Main.Global.uiRoot);
-    } else {
-      dialogBoxParent;
-    }
-    parent.x = x;
-    parent.y = y - 5 - padding;
+    final parent = new h2d.Object(Main.Global.uiRoot);
+
+    Main.Global.updateHooks.push((dt) -> {
+      final bounds = parent.getBounds(parent);
+      final pos = Camera.toScreenPos(
+          Main.Global.mainCamera, 
+          worldX, 
+          worldY);
+
+      parent.x = pos[0];
+      parent.y = pos[1] - 5 - padding - bounds.height;
+
+      return parent.parent != null;
+    });
 
     // character name display
     final ctf = {
@@ -129,9 +131,6 @@ class GuiComponents {
     }
 
     final bounds = parent.getBounds(parent);
-
-    parent.y -= bounds.height;
-
     final background = new h2d.Graphics();
     parent.addChildAt(background, 0);
     background.beginFill(0x000000);
@@ -152,13 +151,20 @@ class GuiComponents {
     return parent;
   }
 
-  public static function DialogBoxDestroy(
+  public static function destroy(
       ref: h2d.Object) {
     if (ref == null) {
       return;
     }
     ref.remove();
   }
+}
+
+class GuiComponents {
+  static final sortOrders = {
+    mainMenuBg: 1000,
+    menuItemHighlightBg: 1001,
+  };
 
   public static function savedGameSlots(
       fetchGamesList) {

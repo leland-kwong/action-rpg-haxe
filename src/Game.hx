@@ -2742,23 +2742,19 @@ class Game extends h2d.Object {
               i.onClick = (e) -> {
                 state.showDialog = !state.showDialog;
 
-                Gui.GuiComponents
-                  .DialogBoxDestroy(state.dialogRef);
+                Gui.DialogBox.destroy(state.dialogRef);
 
                 if (state.showDialog) {
-                  final pos = Camera.toScreenPos(
-                      Main.Global.mainCamera, 
-                      npcRef.x + i.x, 
-                      npcRef.y + i.y);
-
                   // Entity.debugBox(
                   //     npcRef.x + i.x, 
                   //     npcRef.y + i.y, 
                   //     i.width, 
                   //     i.height);
 
-                  state.dialogRef = Gui.GuiComponents.DialogBox(
-                      pos[0], pos[1], {
+                  state.dialogRef = Gui.DialogBox.create(
+                      npcRef.x + i.x,
+                      npcRef.y + i.y,
+                      {
                         characterName: 'haku, bounty provider',
                         text: 'Choose a bounty quest:',
                         choices: [
