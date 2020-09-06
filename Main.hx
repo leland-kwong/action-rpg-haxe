@@ -77,6 +77,8 @@ class Global {
           enabled: true
         }
       });
+  // enables/disables home menu toggling so pressing
+  // escape doesn't open it under certain conditions
   public static var uiHomeMenuEnabled = true;
 
   public static var hoveredEntity = {

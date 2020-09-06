@@ -89,27 +89,29 @@ class UiStateManager {
       }
 
       case { type: 'UI_MAIN_MENU_TOGGLE' }: {
-        final fieldsToCheck = Lambda.filter(
-            Reflect.fields(Main.Global.uiState),
-            field -> field != 'hud');
-        final areOtherUiEnabled = Lambda.exists(
-            fieldsToCheck, 
-            (field) -> {
-              final state = Reflect.field(Main.Global.uiState, field);
-              return state.enabled;
+        if (Main.Global.uiHomeMenuEnabled) { 
+          final fieldsToCheck = Lambda.filter(
+              Reflect.fields(Main.Global.uiState),
+              field -> field != 'hud');
+          final areOtherUiEnabled = Lambda.exists(
+              fieldsToCheck, 
+              (field) -> {
+                final state = Reflect.field(Main.Global.uiState, field);
+                return state.enabled;
+              });
+
+          if (areOtherUiEnabled) {
+            Main.Global.uiState = defaultUiState;
+          } else {
+            final enabled = 
+              Main.Global.uiState.mainMenu.enabled;
+
+            Main.Global.uiState = nextUiState(defaultUiState, {
+              mainMenu: {
+                enabled: !enabled          
+              },
             });
-
-        if (areOtherUiEnabled) {
-          Main.Global.uiState = defaultUiState;
-        } else {
-          final enabled = 
-            Main.Global.uiState.mainMenu.enabled;
-
-          Main.Global.uiState = nextUiState(defaultUiState, {
-            mainMenu: {
-              enabled: !enabled          
-            },
-          });
+          }
         }
       }
 
