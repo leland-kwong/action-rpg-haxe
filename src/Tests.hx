@@ -10,6 +10,7 @@ class Tests {
     Gui.tests();
     HaxeUtils.tests();
     Session.unitTests();
+    Entity.unitTests();
     //core.Anim.test();
 #end
 

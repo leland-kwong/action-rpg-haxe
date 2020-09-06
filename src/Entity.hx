@@ -430,4 +430,39 @@ class Entity extends h2d.Object {
 
     return sprite;
   };
+
+  public static function unitTests() {
+    TestUtils.assert(
+        'de-allocate entity',
+        (passed) -> {
+          final ref = new Entity({
+            x: 0,
+            y: 0,
+          });
+          final id = ref.id;
+
+          Entity.deAlloc(id);
+
+          passed(
+              !Entity.exists(id)
+              && !Entity.ALL_BY_ID.exists(id)
+              && ref.parent == null
+              && ref.isDone());
+        });
+
+    TestUtils.assert(
+        'entities have unique ids between instances',
+        (passed) -> {
+          final ref1 = new Entity({
+            x: 0,
+            y: 0,
+          });
+          final ref2 = new Entity({
+            x: 0,
+            y: 0
+          });
+
+          passed(ref1.id != ref2.id);
+        });
+  }
 }
