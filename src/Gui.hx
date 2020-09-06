@@ -19,6 +19,8 @@ class GuiNode extends h2d.Interactive {
   };
 }
 
+typedef DialogInstanceId = String;
+
 typedef DialogChoice = {
   text: String,
   action: {
@@ -27,21 +29,35 @@ typedef DialogChoice = {
   }
 }
 
-typedef Dialog = {
+typedef Dialog = () -> {
   characterName: String,
   text: String,
   ?choices: Array<DialogChoice>
 };
 
 class DialogBox {
+  public static var instancesById 
+    = new Map<String, h2d.Object>();
+
   public static function create(
       worldX: Float, 
       worldY: Float, 
-      dialog: Dialog) {
+      calcNextDialog: Dialog,
+      id: DialogInstanceId) {
 
+#if debugMode 
+    if (instancesById.exists(id)) {
+      throw new haxe.Exception(
+          'dialog instance with id `${id}` already exists');
+    }
+#end
+    final dialog = calcNextDialog();
     final padding = 10;
     final maxWidth = 400;
     final parent = new h2d.Object(Main.Global.uiRoot);
+
+    instancesById.set(id, parent);
+    Main.Global.uiState.dialogBox.enabled = true;
 
     Main.Global.updateHooks.push((dt) -> {
       final bounds = parent.getBounds(parent);
@@ -52,6 +68,12 @@ class DialogBox {
 
       parent.x = pos[0];
       parent.y = pos[1] - 5 - padding - bounds.height;
+
+      final globalEnabled = Main.Global.uiState.dialogBox.enabled;
+      if (!globalEnabled) {
+        destroy(id);
+        return false;
+      }
 
       return parent.parent != null;
     });
@@ -82,11 +104,12 @@ class DialogBox {
     }
 
     // dialog options
-    if (dialog.choices != null) {
+    final choices = dialog.choices;
+    if (choices != null) {
       var offsetY = dtf.y + dtf.textHeight;
 
-      for (i in 0...dialog.choices.length) {
-        final choice = dialog.choices[i];
+      for (i in 0...choices.length) {
+        final choice = choices[i];
         final tf = new h2d.Text(Fonts.primary(), parent);
         final alpha = 0.8;
         final textColor = 0xffffff;
@@ -116,6 +139,13 @@ class DialogBox {
               Session.makeEvent(
                 choice.action.type,
                 choice.action.data));
+
+          destroy(id);
+          // recreate instance
+          // so that we can get the latest
+          // dialog
+          create(
+              worldX, worldY, calcNextDialog, id);
         }
 
         interact.onOver = (e) -> {
@@ -148,15 +178,21 @@ class DialogBox {
         maxWidth + padding * 2,
         ctf.textHeight);
 
-    return parent;
+    return id;
   }
 
   public static function destroy(
-      ref: h2d.Object) {
-    if (ref == null) {
+      id: DialogInstanceId) {
+    if (!instancesById.exists(id)) {
       return;
     }
-    ref.remove();
+
+    instancesById.get(id)
+      .remove();
+    instancesById.remove(id);
+
+    final globalEnabled = Lambda.count(instancesById) > 0;
+    Main.Global.uiState.dialogBox.enabled = globalEnabled;
   }
 }
 

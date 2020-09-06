@@ -312,10 +312,21 @@ class Session {
          - opens up a merchant ui
        */
       case {
-        type: 'NEW_QUEST_GRANTED',
-        data: d
+        type: 'ACTIVATE_QUEST',
+        data: questName
       }: {
-        final choice: Gui.DialogChoice = d;
+        try {
+          final questAction = Quest.createAction(
+              'ACTIVATE_QUEST', 
+              'intro_level',
+              { questName: questName });
+          ref.questState = Quest.updateState(
+              questAction,
+              ref.questState,
+              Quest.conditionsByName);
+        } catch (err) {
+          HaxeUtils.handleError(null)(err);
+        }
       }
 
       default: {

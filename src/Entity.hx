@@ -354,6 +354,7 @@ class Entity extends h2d.Object {
     return getById(id) != NULL_ENTITY;
   }
 
+  // marks the entity for cleanup on the next update 
   public static function destroy(id: EntityId) {
     final ref = Entity.getById(id);
     EntityStats.addEvent(
@@ -361,6 +362,17 @@ class Entity extends h2d.Object {
         EntityStats.destroyEvent,
         false,
         true);
+  }
+
+  // immediately cleans up the entity and removes
+  // all references
+  public static function deAlloc(id: EntityId) {
+    final a = Entity.getById(id);
+    a.remove();
+    Entity.ALL_BY_ID.remove(a.id);
+    Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
+    Grid.removeItem(Main.Global.obstacleGrid, a.id);
+    Grid.removeItem(Main.Global.lootColGrid, a.id);
   }
 
   public static function getById(

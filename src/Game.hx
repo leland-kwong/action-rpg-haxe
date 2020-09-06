@@ -2224,10 +2224,7 @@ class Game extends h2d.Object {
   override function onRemove() {
     // reset game state
     for (entityRef in Entity.ALL_BY_ID) {
-      Entity.destroy(entityRef.id);
-      entityRef.renderFn = null;
-      entityRef.onDone = null;
-      entityRef.type = 'ENTITY_CLEANUP';
+      Entity.deAlloc(entityRef.id);
     }
 
     finished = true;
@@ -2724,15 +2721,18 @@ class Game extends h2d.Object {
                 x: x, 
                 y: y,
                 type: 'NPC',
+                stats: EntityStats.create({
+                  currentHealth: 1
+                }),
                 radius: Std.int(spriteData.sourceSize.w / 2)
               });
+              Main.Global.rootScene.addChild(npcRef);
+
               final state = {
                 hovered: false,
                 showDialog: false,
-                dialogRef: null
               };
-              Main.Global.rootScene.addChild(npcRef);
-
+              final dialogId = 'questNpc';
               final i = new h2d.Interactive(
                   spriteData.sourceSize.w,
                   spriteData.sourceSize.h,
@@ -2740,49 +2740,55 @@ class Game extends h2d.Object {
               i.x = -spriteData.pivot.x * spriteData.sourceSize.w;
               i.y = -spriteData.pivot.y * spriteData.sourceSize.h;
               i.onClick = (e) -> {
-                state.showDialog = !state.showDialog;
-
-                Gui.DialogBox.destroy(state.dialogRef);
-
-                if (state.showDialog) {
-                  // Entity.debugBox(
-                  //     npcRef.x + i.x, 
-                  //     npcRef.y + i.y, 
-                  //     i.width, 
-                  //     i.height);
-
-                  state.dialogRef = Gui.DialogBox.create(
+                if (!Main.Global.uiState.dialogBox.enabled) {
+                  Main.Global.clearUi((field) -> {
+                    return field != 'hud';
+                  });
+                  Gui.DialogBox.create(
                       npcRef.x + i.x,
                       npcRef.y + i.y,
-                      {
-                        characterName: 'haku, bounty provider',
-                        text: 'Choose a bounty quest:',
-                        choices: [
-                        {
-                          text: Quest.conditionsByName['aggressiveBats']
-                            .defaultState
-                            .description,
-                          action: {
-                            type: 'NEW_QUEST_GRANTED',
-                            data: 'aggressiveBats'
+                      () -> {
+                        final choices = Lambda.fold([
+                            'testQuest',
+                            'aggressiveBats'
+                        ], (questName, result: Array<Gui.DialogChoice>) -> {
+                          final questState = Main.Global.gameState
+                            .questState[questName];
+                          if (!questState.active) {
+                            result.push({
+                              text: Quest.conditionsByName[questName]
+                                .defaultState
+                                .description,
+                              action: {
+                                type: 'ACTIVATE_QUEST',
+                                data: questName
+                              }
+                            });
                           }
-                        },
-                        {
-                          text: Quest.conditionsByName['destroyBoss']
-                            .defaultState
-                            .description,
-                          action: {
-                            type: 'NEW_QUEST_GRANTED',
-                            data: 'destroyBoss'
-                          }
-                        }
-                        ]
-                      });
+
+                          return result;
+                        }, []);
+
+                        return {
+                          characterName: 'haku, bounty provider',
+                          text: choices.length > 0 
+                            ? 'Choose a bounty quest:'
+                            : 'No more quests available.',
+                          choices: choices
+                        };
+                      },
+                      dialogId);
+                } else {
+
+                  Gui.DialogBox.destroy(dialogId);
+
                 }
               }
+
               i.onOver = (e) -> {
                 state.hovered = true;
               }
+
               i.onOut = (e) -> {
                 state.hovered = false;
               }
@@ -2797,7 +2803,6 @@ class Game extends h2d.Object {
                       objectMeta.spriteKey,
                       npcRef);
                 }
-
               };
             }
 
@@ -3231,22 +3236,16 @@ class Game extends h2d.Object {
     for (a in Entity.ALL_BY_ID) {
       // cleanup entity
       if (a.isDone()) {
-        a.remove();
-        Entity.ALL_BY_ID.remove(a.id);
-        Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
-        Grid.removeItem(Main.Global.obstacleGrid, a.id);
-        Grid.removeItem(Main.Global.lootColGrid, a.id);
-
         final numItemsToDrop = switch(a.type) {
           case 'INTERACTABLE_PROP': 
             Utils.rollValues([
                 0, 0, 0, 0, 0, 1
             ]);
-          case 'ENEMY' 
-            if (Entity.getComponent(a, 'aiType') != 'npcTestDummy'): 
-            Utils.rollValues([
-                0, 0, 0, 0, 1, 1, 2
-            ]);
+            case 'ENEMY' 
+              if (Entity.getComponent(a, 'aiType') != 'npcTestDummy'): 
+                Utils.rollValues([
+                    0, 0, 0, 0, 1, 1, 2
+                ]);
           default: 0;
         }
 
@@ -3270,6 +3269,8 @@ class Game extends h2d.Object {
         if (a.onDone != null) {
           a.onDone(a);
         }
+
+        Entity.deAlloc(a.id);
         continue;
       }
 

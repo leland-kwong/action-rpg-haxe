@@ -83,6 +83,9 @@ class Global {
     },
     passiveSkillTree: {
       enabled: false
+    },
+    dialogBox: {
+      enabled: false
     }
   }
   public static var uiHomeMenuEnabled = true;
