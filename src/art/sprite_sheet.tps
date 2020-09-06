@@ -480,6 +480,41 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/gravity_field_core.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_blue.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_green.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_orange.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_red.png</key>
+            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_root.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>6,6,13,13</rect>
+                <key>scale9Paddings</key>
+                <rect>6,6,13,13</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/gravity_field_particle.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>2,2,4,4</rect>
+                <key>scale9Paddings</key>
+                <rect>2,2,4,4</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/hud_ability_slot.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_basic_blaster_evolved.png</key>
@@ -673,6 +708,21 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/npc_quest_provider.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.875</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>3,6,5,12</rect>
+                <key>scale9Paddings</key>
+                <rect>3,6,5,12</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/npc_test_dummy.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -760,25 +810,6 @@
                 <rect>0,6,1,13</rect>
                 <key>scale9Paddings</key>
                 <rect>0,6,1,13</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_blue.png</key>
-            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_green.png</key>
-            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_orange.png</key>
-            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_red.png</key>
-            <key type="filename">aseprite_exports/ui/passive_skill_tree__node_root.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>6,6,13,13</rect>
-                <key>scale9Paddings</key>
-                <rect>6,6,13,13</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

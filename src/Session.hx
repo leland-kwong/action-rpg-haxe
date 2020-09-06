@@ -5,8 +5,11 @@ import sys.thread.Thread;
 import sys.FileSystem;
 import sys.io.File;
 
+typedef EventType = String;
+typedef EventDetail = Dynamic;
+
 typedef SessionEvent = {
-  type: String,
+  type: EventType,
   data: Dynamic,
   time: Float
 };
@@ -301,6 +304,20 @@ class Session {
         ref.inventoryState.itemsById.remove(itemId);
       }
 
+      /*
+         Possible choice actions:
+
+         - grant a new quest and updates the quest state
+         - grant a quest reward and updates the quest state
+         - opens up a merchant ui
+       */
+      case {
+        type: 'NEW_QUEST_GRANTED',
+        data: d
+      }: {
+        final choice: Gui.DialogChoice = d;
+      }
+
       default: {
         throw 'invalid session event ${ev.type}';
       }
@@ -377,8 +394,8 @@ class Session {
   }
 
   public static function makeEvent(
-      eventType: String,
-      ?eventDetail: Dynamic): SessionEvent {
+      eventType: EventType,
+      ?eventDetail: EventDetail): SessionEvent {
 
     return {
       type: eventType,

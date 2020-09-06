@@ -27,7 +27,7 @@ class Global {
   public static var time = 0.0;
   public static var isNextFrame = true;
   public static var tickCount = 0.;
-  public static var resolutionScale = 4;
+  public static var resolutionScale = 4.;
   public static var logData: Dynamic = {};
   
   public static var mainBackground: h2d.Scene;
@@ -479,7 +479,7 @@ class Main extends hxd.App {
       var frameDt = 0.;
       var numUpdates = 0;
 
-      TextPool.resetAll();
+      TextManager.resetAll();
 
       // run while there is remaining frames to simulate
       while (hasRemainingUpdateFrames(acc, frameTime)
@@ -609,7 +609,7 @@ class Main extends hxd.App {
 
       // version info
       {
-        final tf = TextPool.get();
+        final tf = TextManager.get();
         final win = hxd.Window.getInstance();
         tf.font = Fonts.debug();
         tf.text = 'build ${Config.version}';

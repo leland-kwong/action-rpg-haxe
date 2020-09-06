@@ -2716,6 +2716,95 @@ class Game extends h2d.Object {
               };
             }
 
+            case 'npc_quest_provider': {
+              final spriteData = SpriteBatchSystem.getSpriteData(
+                  Main.Global.sb.batchManager.spriteSheetData,
+                  objectMeta.spriteKey);
+              final npcRef = new Entity({
+                x: x, 
+                y: y,
+                type: 'NPC',
+                radius: Std.int(spriteData.sourceSize.w / 2)
+              });
+              final state = {
+                hovered: false,
+                showDialog: false,
+                dialogRef: null
+              };
+              Main.Global.rootScene.addChild(npcRef);
+
+              final i = new h2d.Interactive(
+                  spriteData.sourceSize.w,
+                  spriteData.sourceSize.h,
+                  npcRef); 
+              i.x = -spriteData.pivot.x * spriteData.sourceSize.w;
+              i.y = -spriteData.pivot.y * spriteData.sourceSize.h;
+              i.onClick = (e) -> {
+                state.showDialog = !state.showDialog;
+
+                Gui.GuiComponents
+                  .DialogBoxDestroy(state.dialogRef);
+
+                if (state.showDialog) {
+                  final pos = Camera.toScreenPos(
+                      Main.Global.mainCamera, 
+                      npcRef.x + i.x, 
+                      npcRef.y + i.y);
+
+                  // Entity.debugBox(
+                  //     npcRef.x + i.x, 
+                  //     npcRef.y + i.y, 
+                  //     i.width, 
+                  //     i.height);
+
+                  state.dialogRef = Gui.GuiComponents.DialogBox(
+                      pos[0], pos[1], {
+                        characterName: 'haku, bounty provider',
+                        text: 'Choose a bounty quest:',
+                        choices: [
+                        {
+                          text: Quest.conditionsByName['aggressiveBats']
+                            .defaultState
+                            .description,
+                          action: {
+                            type: 'NEW_QUEST_GRANTED',
+                            data: 'aggressiveBats'
+                          }
+                        },
+                        {
+                          text: Quest.conditionsByName['destroyBoss']
+                            .defaultState
+                            .description,
+                          action: {
+                            type: 'NEW_QUEST_GRANTED',
+                            data: 'destroyBoss'
+                          }
+                        }
+                        ]
+                      });
+                }
+              }
+              i.onOver = (e) -> {
+                state.hovered = true;
+              }
+              i.onOut = (e) -> {
+                state.hovered = false;
+              }
+
+              npcRef.renderFn = (ref, time) -> {
+                final sprite = Main.Global.sb.emitSprite(
+                    x, y, objectMeta.spriteKey);
+
+                if (state.hovered) {
+                  Entity.renderOutline(
+                      sprite.sortOrder, 
+                      objectMeta.spriteKey,
+                      npcRef);
+                }
+
+              };
+            }
+
             // everything else is treated as a tile 
             default: {
               final gridRow = y;
@@ -2847,8 +2936,8 @@ class Game extends h2d.Object {
 
     }
 
-    // final levelFile = 'editor-data/dummy_level.eds';
-    final levelFile = 'editor-data/level_1.eds';
+    final levelFile = 'editor-data/dummy_level.eds';
+    // final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,
@@ -3146,6 +3235,7 @@ class Game extends h2d.Object {
     for (a in Entity.ALL_BY_ID) {
       // cleanup entity
       if (a.isDone()) {
+        a.remove();
         Entity.ALL_BY_ID.remove(a.id);
         Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
         Grid.removeItem(Main.Global.obstacleGrid, a.id);
@@ -3285,7 +3375,9 @@ class Game extends h2d.Object {
               a.radius * 2,
               a.id);
         }
-        case { type: 'OBSTACLE' }: {
+        case 
+          { type: 'OBSTACLE' }
+        | { type: 'NPC' }: {
           Grid.setItemRect(
               Main.Global.obstacleGrid,
               a.x,

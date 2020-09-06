@@ -198,8 +198,8 @@ class Editor {
   public static function getConfig(
       // activeFile = 'editor-data/level_1.eds'
       // activeFile = 'editor-data/passive_skill_tree.eds'
-      // activeFile = 'editor-data/dummy_level.eds'
-      activeFile = 'editor-data/hud.eds'
+      activeFile = 'editor-data/dummy_level.eds'
+      // activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,
@@ -229,6 +229,9 @@ class Editor {
                 [
                   'pillar' => {
                     spriteKey: 'ui/pillar',
+                  },
+                  'npc_quest_provider' => {
+                    spriteKey: 'ui/npc_quest_provider',
                   },
                   'player' => {
                     spriteKey: 'player_animation/idle-0',
@@ -1852,7 +1855,7 @@ class Editor {
 
           // render label
           {
-            final tf = TextPool.get();
+            final tf = TextManager.get();
             final f = Fonts.primary().clone();
             f.resizeTo(14);
             tf.font = f;

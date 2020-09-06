@@ -648,7 +648,7 @@ class UiGrid {
         .objectMetaByType
         .get(objectType);
 
-      final tfPlayerLevel = TextPool.get();
+      final tfPlayerLevel = TextManager.get();
       tfPlayerLevel.font = Fonts.title();
       Main.Global.uiRoot.addChild(tfPlayerLevel);
       tfPlayerLevel.text = Std.string(

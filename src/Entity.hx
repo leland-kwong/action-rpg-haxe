@@ -72,12 +72,6 @@ class Cooldown {
   }
 }
 
-/*
-   TODO: Dissasociate Entity from h2d.Object.
-   Instead, the Entity class should just be standalone so
-   we don't inherit all the unecessary fields from h2d.Object
-   which also will make serialization easier.
- */
 class Entity extends h2d.Object {
   static final defaultComponents: Map<String, Dynamic> = [
     'neighborQueryThreshold' => 10,
@@ -411,4 +405,16 @@ class Entity extends h2d.Object {
     }
   }
 
+  public static function debugBox(
+      x, y, 
+      width, height) {
+
+    final sprite = Main.Global.sb.emitSprite(
+        x, y,
+        'ui/square_white');
+    sprite.scaleX = width;
+    sprite.scaleY = height;
+
+    return sprite;
+  };
 }

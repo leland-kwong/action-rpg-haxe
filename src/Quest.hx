@@ -14,9 +14,12 @@ typedef QuestState = {
   ?numKilled: Int
 };
 
-typedef QuestCondition = (
+typedef QuestCondition = {
+  defaultState: QuestState,
+  calc: (
     action: GameAction, 
-    questState: QuestState) -> QuestState;
+    questState: QuestState) -> QuestState
+}
 
 // contains all the quest status data
 typedef QuestStateByName = Map<String, QuestState>;
@@ -29,10 +32,13 @@ class Quest {
         predicate, 
         defaultState): QuestCondition {
 
-      return (action, questState) -> {
-        return predicate(
-            action, 
-            Utils.withDefault(questState, defaultState));
+      return {
+        defaultState: defaultState,
+        calc: (action, questState) -> {
+          return predicate(
+              action, 
+              Utils.withDefault(questState, defaultState));
+        }
       };
     }
 
@@ -62,7 +68,7 @@ class Quest {
 
         return state;
       }, {
-        description: 'find and kill bats',
+        description: 'Find and kill bats',
         numKilled: 0,
         completed: false
       }),
@@ -81,7 +87,7 @@ class Quest {
 
         return state;
       }, {
-        description: 'find and kill the boss',
+        description: 'Find and kill the boss',
         completed: false
       })
     ];
@@ -95,7 +101,7 @@ class Quest {
 
     for (name => cond in conditions) {
       final qs = currentQuestStates.get(name);
-      newQuestState.set(name, cond(action, qs));
+      newQuestState.set(name, cond.calc(action, qs));
     }
 
     return newQuestState;

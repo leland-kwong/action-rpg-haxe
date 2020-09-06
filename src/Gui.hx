@@ -19,11 +19,146 @@ class GuiNode extends h2d.Interactive {
   };
 }
 
+typedef DialogChoice = {
+  text: String,
+  action: {
+    type: Session.EventType,
+    data: Session.EventDetail
+  }
+}
+
+typedef Dialog = {
+  characterName: String,
+  text: String,
+  ?choices: Array<DialogChoice>
+};
+
 class GuiComponents {
   static final sortOrders = {
     mainMenuBg: 1000,
     menuItemHighlightBg: 1001,
   };
+
+  static var dialogBoxParent: h2d.Object;
+  public static function DialogBox(
+      x: Float, y: Float, 
+      dialog: Dialog) {
+
+    final padding = 10;
+    final maxWidth = 400;
+    final parent = if (dialogBoxParent == null) {
+      new h2d.Object(Main.Global.uiRoot);
+    } else {
+      dialogBoxParent;
+    }
+    parent.x = x;
+    parent.y = y - 5 - padding;
+
+    // character name display
+    final ctf = {
+      final tf = new h2d.Text(Fonts.primary(), parent);
+      tf.text = dialog.characterName + '\n';
+      tf.textColor = 0xffffff;
+      tf.x = 0;
+      tf.y = 0;
+      tf.textAlign = Center;
+      tf.maxWidth = maxWidth; 
+      tf;
+    }
+
+    // dialog text
+    final dtf = {
+      final tf = new h2d.Text(Fonts.primary(), parent);
+
+      parent.addChild(tf);
+      tf.text = dialog.text + '\n';
+      tf.textColor = 0xffffff;
+      tf.x = 0;
+      tf.y = ctf.textHeight + 10;
+      tf.maxWidth = maxWidth; 
+      tf;
+    }
+
+    // dialog options
+    if (dialog.choices != null) {
+      var offsetY = dtf.y + dtf.textHeight;
+
+      for (i in 0...dialog.choices.length) {
+        final choice = dialog.choices[i];
+        final tf = new h2d.Text(Fonts.primary(), parent);
+        final alpha = 0.8;
+        final textColor = 0xffffff;
+
+        parent.addChild(tf);
+        tf.text = '> ${choice.text}';
+        tf.textColor = textColor;
+        tf.x = dtf.x;
+        tf.y = offsetY;
+        tf.alpha = alpha;
+
+        offsetY += tf.textHeight;
+
+        final interact = new h2d.Interactive(
+            tf.textWidth,
+            tf.textHeight,
+            parent);
+        parent.addChild(interact);
+        interact.x = tf.x;
+        interact.y = tf.y; 
+        tf.maxWidth = maxWidth; 
+
+        interact.onClick = (e) -> {
+          Main.Global.logData.dialogChoice = choice.action;
+          Session.logAndProcessEvent(
+              Main.Global.gameState,
+              Session.makeEvent(
+                choice.action.type,
+                choice.action.data));
+        }
+
+        interact.onOver = (e) -> {
+          tf.alpha = 1;
+          tf.textColor = 0xffff00;
+        }
+
+        interact.onOut = (e) -> {
+          tf.alpha = alpha;
+          tf.textColor = textColor;
+        }
+      }
+    }
+
+    final bounds = parent.getBounds(parent);
+
+    parent.y -= bounds.height;
+
+    final background = new h2d.Graphics();
+    parent.addChildAt(background, 0);
+    background.beginFill(0x000000);
+    background.drawRect(
+        -padding,
+        -padding,
+        maxWidth + padding * 2,
+        bounds.height + padding * 2);
+
+    // // character name background
+    background.beginFill(0x003366);
+    background.drawRect(
+        -padding,
+        -padding,
+        maxWidth + padding * 2,
+        ctf.textHeight);
+
+    return parent;
+  }
+
+  public static function DialogBoxDestroy(
+      ref: h2d.Object) {
+    if (ref == null) {
+      return;
+    }
+    ref.remove();
+  }
 
   public static function savedGameSlots(
       fetchGamesList) {
