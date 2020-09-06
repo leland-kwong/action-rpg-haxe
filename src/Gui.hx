@@ -360,7 +360,7 @@ class GuiComponents {
 
     refreshInteractNodes();
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       final hoveredGameSlot = Lambda.find(
           gameSlotNodes,
           (i) -> i.isOver());
@@ -475,7 +475,7 @@ class GuiComponents {
       return state.isAlive;
     });
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       final mx = Main.Global.uiRoot.mouseX;
       final my = Main.Global.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
@@ -637,7 +637,7 @@ class Gui {
       isAlive: true
     };
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       tempTf.text = '';
 
       return state.isAlive;

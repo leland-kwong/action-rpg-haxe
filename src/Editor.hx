@@ -2057,7 +2057,7 @@ class Editor {
     cleanupFns.push(() -> backgroundRef.remove());
 
     Main.Global.hooks.update.push(update);
-    Main.Global.renderHooks.push(render);
+    Main.Global.hooks.render.push(render);
 
     return () -> {
       for (fn in cleanupFns) {

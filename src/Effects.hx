@@ -168,7 +168,7 @@ class Effects {
         final lengthAnimDuration = 0.5;
         final startedAt = Main.Global.time;
 
-        Main.Global.renderHooks.push((time) -> {
+        Main.Global.hooks.render.push((time) -> {
           final p = Easing.progress(
               startedAt, Main.Global.time, duration);
           final p2 = Easing.progress(

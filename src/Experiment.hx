@@ -29,7 +29,7 @@ class Experiment {
       p.done = progress >= 1;
     }
 
-    G.renderHooks.push((time) -> {
+    G.hooks.render.push((time) -> {
       final x = 200;
       final y = 100;
 

@@ -59,10 +59,9 @@ class Global {
   public static var uiSpriteBatch: SpriteBatchSystem;
 
   public static final hooks = {
-    update: new Array<(dt: Float) -> Bool>()
+    update: new Array<(dt: Float) -> Bool>(),
+    render: new Array<(time: Float) -> Bool>(),
   }
-  public static var renderHooks: 
-    Array<(dt: Float) -> Bool> = [];
   // handles input device events
   public static var inputHooks: 
     Array<(dt: Float) -> Bool> = [];
@@ -147,14 +146,14 @@ class Main extends hxd.App {
 
       {
         final nextRenderHooks = [];
-        for (hook in Global.renderHooks) {
+        for (hook in Global.hooks.render) {
           final keepAlive = hook(Global.time);
 
           if (keepAlive) {
             nextRenderHooks.push(hook);
           }
         }
-        Global.renderHooks = nextRenderHooks;
+        Global.hooks.render = nextRenderHooks;
       }
 
       core.Anim.AnimEffect
@@ -544,7 +543,7 @@ class Main extends hxd.App {
             .nextAnimations.length,
           numUpdateHooks: Global.hooks.update.length,
           numInputHooks: Global.inputHooks.length,
-          numRenderHooks: Global.renderHooks.length,
+          numRenderHooks: Global.hooks.render.length,
         }
         final formattedStats = Json.stringify(stats, null, '  ');
         final text = [

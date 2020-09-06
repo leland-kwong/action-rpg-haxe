@@ -962,7 +962,7 @@ class Aura {
       return true;
     });
 
-    Main.Global.renderHooks.push(function auraRender(time) {
+    Main.Global.hooks.render.push(function auraRender(time) {
       for (id in inst.neighbors) {
         final entityRef = Entity.getById(id);
         if (filterTypes.exists(entityRef.type)) {  
@@ -1776,7 +1776,7 @@ class Player extends Entity {
           elem.a = a;
         }
 
-        Main.Global.renderHooks.push((time) -> {
+        Main.Global.hooks.render.push((time) -> {
           final duration = 0.35;
           final aliveTime = Main.Global.time - startedAt;
           final progress = (aliveTime) 
@@ -2430,7 +2430,7 @@ class Game extends h2d.Object {
                     sb.batchManager.spriteSheetData,
                     'player_animation/idle-0');
 
-                Main.Global.renderHooks.push((time) -> {
+                Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / animDuration;
                   final yOffset = spriteData.frame.h * (1 - progress);
                   final spriteRef = sb.emitSprite(
@@ -2451,7 +2451,7 @@ class Game extends h2d.Object {
                   return progress < 1;
                 });
 
-                Main.Global.renderHooks.push((time) -> {
+                Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / animDuration;
                   final yOffset = spriteData.frame.h * (1 - progress);
                   final spriteRef = sb.emitSprite(
@@ -2584,7 +2584,7 @@ class Game extends h2d.Object {
                 final angle2 = Math.PI + Utils.rnd(-1, 1, true);
                 final angle3 = Math.PI * 2 + Utils.rnd(-1, 1, true);
                 final dist = 30;
-                Main.Global.renderHooks.push((time) -> {
+                Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / duration;
 
                   {
@@ -2944,7 +2944,7 @@ class Game extends h2d.Object {
 
         return !finished;
       }
-      Main.Global.renderHooks.push(refreshMap);
+      Main.Global.hooks.render.push(refreshMap);
 
     }
 
@@ -3214,7 +3214,7 @@ class Game extends h2d.Object {
     newLevel(Main.Global.rootScene);
 
     Main.Global.hooks.update.push(this.update);
-    Main.Global.renderHooks.push(this.render);
+    Main.Global.hooks.render.push(this.render);
   }
 
   public function update(dt: Float) {

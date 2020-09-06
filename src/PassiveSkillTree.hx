@@ -138,7 +138,7 @@ class PassiveSkillTree {
 
       return !state.shouldCleanup;
     }
-    Main.Global.renderHooks.push(renderBackground);
+    Main.Global.hooks.render.push(renderBackground);
 
     final sessionRef = Main.Global.gameState;
 
@@ -437,7 +437,7 @@ class PassiveSkillTree {
         }
         final hoverEasing = Easing.easeOutElastic;
 
-        Main.Global.renderHooks.push(function renderTree(time: Float) {
+        Main.Global.hooks.render.push(function renderTree(time: Float) {
           final hasUnusedPoints = calcNumUnusedPoints(sessionRef) > 0;
 
           function runHoverAnimation(s: SpriteBatchSystem.SpriteRef) {
@@ -724,7 +724,7 @@ class PassiveSkillTree {
         }
 
         if (debugOptions.renderTreeCollisions) {
-          Main.Global.renderHooks.push(renderTreeCollisions);
+          Main.Global.hooks.render.push(renderTreeCollisions);
         }
 
         Main.Global.hooks.update.push(function update(dt: Float) {
