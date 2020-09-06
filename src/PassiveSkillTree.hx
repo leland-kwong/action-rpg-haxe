@@ -75,7 +75,7 @@ class PassiveSkillTree {
       w: 0,
       h: 0
     };
-    final treeScene = Main.Global.uiRoot;
+    final treeScene = Main.Global.scene.uiRoot;
     final treeRootObj = new h2d.Object(treeScene);
     final NULL_HOVERED_NODE = {
       nodeId: 'NO_HOVERED_NODE',
@@ -138,7 +138,7 @@ class PassiveSkillTree {
 
       return !state.shouldCleanup;
     }
-    Main.Global.renderHooks.push(renderBackground);
+    Main.Global.hooks.render.push(renderBackground);
 
     final sessionRef = Main.Global.gameState;
 
@@ -420,7 +420,7 @@ class PassiveSkillTree {
           tf.textAlign = Center;
           tf.textColor = 0xffffff;
 
-          Main.Global.updateHooks.push((dt) -> {
+          Main.Global.hooks.update.push((dt) -> {
             final win = hxd.Window.getInstance();
             final numAvailablePoints = calcNumAvailablePoints(sessionRef);
             final numUnusedPoints = calcNumUnusedPoints(sessionRef);
@@ -437,7 +437,7 @@ class PassiveSkillTree {
         }
         final hoverEasing = Easing.easeOutElastic;
 
-        Main.Global.renderHooks.push(function renderTree(time: Float) {
+        Main.Global.hooks.render.push(function renderTree(time: Float) {
           final hasUnusedPoints = calcNumUnusedPoints(sessionRef) > 0;
 
           function runHoverAnimation(s: SpriteBatchSystem.SpriteRef) {
@@ -626,7 +626,7 @@ class PassiveSkillTree {
 
           return !state.shouldCleanup;
         }
-        Main.Global.updateHooks.push(handleTreeInteraction);
+        Main.Global.hooks.update.push(handleTreeInteraction);
 
         function handleMouseEvents(e: hxd.Event) {
           final mx = Std.int(treeScene.mouseX);
@@ -724,10 +724,10 @@ class PassiveSkillTree {
         }
 
         if (debugOptions.renderTreeCollisions) {
-          Main.Global.renderHooks.push(renderTreeCollisions);
+          Main.Global.hooks.render.push(renderTreeCollisions);
         }
 
-        Main.Global.updateHooks.push(function update(dt: Float) {
+        Main.Global.hooks.update.push(function update(dt: Float) {
           if (state.shouldCleanup) {
             for (fn in cleanupFns) {
               fn();
@@ -775,7 +775,7 @@ class PassiveSkillTree {
       return true;
     }
 
-    Main.Global.updateHooks
+    Main.Global.hooks.update
       .push(managePassiveSkillTreeVisibility);
   }
 }

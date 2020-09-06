@@ -258,7 +258,7 @@ class Entity extends h2d.Object {
       font.resizeTo(8);
       final tf = new h2d.Text(
           font,
-          Main.Global.particleScene);
+          Main.Global.scene.particle);
       final initialX = x;
       final initialY = y;
       final endX = x + Utils.irnd(-10, 10, true);
@@ -277,7 +277,7 @@ class Entity extends h2d.Object {
 
       final startTime = Main.Global.time;
       final duration = 0.5;
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         final aliveTime = Main.Global.time - startTime;
         final progress = aliveTime / duration;
         final dx = Math.cos(angle) * 5;
@@ -367,12 +367,13 @@ class Entity extends h2d.Object {
   // immediately cleans up the entity and removes
   // all references
   public static function deAlloc(id: EntityId) {
+    destroy(id);
     final a = Entity.getById(id);
     a.remove();
     Entity.ALL_BY_ID.remove(a.id);
-    Grid.removeItem(Main.Global.dynamicWorldGrid, a.id);
-    Grid.removeItem(Main.Global.obstacleGrid, a.id);
-    Grid.removeItem(Main.Global.lootColGrid, a.id);
+    Grid.removeItem(Main.Global.grid.dynamicWorld, a.id);
+    Grid.removeItem(Main.Global.grid.obstacle, a.id);
+    Grid.removeItem(Main.Global.grid.lootCol, a.id);
   }
 
   public static function getById(

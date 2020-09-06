@@ -721,7 +721,7 @@ class Session {
           null,
           'unit_test_temp_game_state');
 
-      Main.Global.updateHooks.push((dt: Float) -> {
+      Main.Global.hooks.update.push((dt: Float) -> {
         for (_ in 0...10) {
           Session.logAndProcessEvent(
               initialRef,

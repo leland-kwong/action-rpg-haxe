@@ -54,11 +54,11 @@ class DialogBox {
     final dialog = calcNextDialog();
     final padding = 10;
     final maxWidth = 400;
-    final parent = new h2d.Object(Main.Global.uiRoot);
+    final parent = new h2d.Object(Main.Global.scene.uiRoot);
 
     instancesById.set(id, parent);
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       final bounds = parent.getBounds(parent);
       final pos = Camera.toScreenPos(
           Main.Global.mainCamera, 
@@ -209,7 +209,7 @@ class GuiComponents {
       isAlive: true
     };
     final win = hxd.Window.getInstance();
-    final root = new h2d.Object(Main.Global.uiRoot);
+    final root = new h2d.Object(Main.Global.scene.uiRoot);
     var gameSlotNodes: GuiNodeList = null;
     var gameDeleteNodes: GuiNodeList = null;
 
@@ -360,7 +360,7 @@ class GuiComponents {
 
     refreshInteractNodes();
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       final hoveredGameSlot = Lambda.find(
           gameSlotNodes,
           (i) -> i.isOver());
@@ -425,7 +425,7 @@ class GuiComponents {
         (o) -> {
           final tf = new h2d.Text(
               font,
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
 
           return tf;
         });
@@ -438,11 +438,11 @@ class GuiComponents {
       }
     }
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 
@@ -475,9 +475,9 @@ class GuiComponents {
       return state.isAlive;
     });
 
-    Main.Global.renderHooks.push((time) -> {
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+    Main.Global.hooks.render.push((time) -> {
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 
@@ -578,7 +578,7 @@ class GuiComponents {
       }
 
       final cleanup = GuiComponents.savedGameSlots(fetchGamesList);
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         if (!state.isAlive) {
           cleanup();
         }
@@ -596,7 +596,7 @@ class GuiComponents {
 
       final cleanup = GuiComponents.mainMenuOptions(options); 
 
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         if (!state.isAlive) {
           cleanup();
         }
@@ -605,7 +605,7 @@ class GuiComponents {
       });
     }
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       final menuEnabled = Main.Global.uiState.mainMenu.enabled;
       final shouldOpen = menuEnabled
         && !state.isAlive;
@@ -637,7 +637,7 @@ class Gui {
       isAlive: true
     };
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       tempTf.text = '';
 
       return state.isAlive;

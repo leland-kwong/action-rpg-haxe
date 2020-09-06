@@ -1,5 +1,8 @@
 # Todos
 
+## Unit tests
+  - [ ] Add unit test for checking memory leaks when creating new game and tearing it down.
+
 ## Bugs
   - [ ] `gameState` can sometimes end up in a bad state which cannot be loaded up next time. Its possible that the thread did not finish processing the most recent event.
 

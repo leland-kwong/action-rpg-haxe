@@ -32,7 +32,7 @@ class ZoomPan {
       activeCircleId: 'c1',
       lockToCircle: true
     };
-    final s2d = Main.Global.staticScene;
+    final s2d = Main.Global.scene.staticScene;
     final g = new h2d.Graphics(s2d);
     final circlesById = [
       'c1' => {
@@ -131,7 +131,7 @@ class ZoomPan {
     }
     s2d.addEventListener(handleZoom);
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       updateCanvas();
       final winMouse = winMousePos();
       Main.Global.logData.mouseToCanvas = {

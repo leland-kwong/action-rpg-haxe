@@ -294,7 +294,7 @@ class EnergyBomb extends Projectile {
     if (isDone()) {
       for (i in 0...5) {
         final explosionStart = Main.Global.time + i * 0.025;
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           if (Main.Global.time < explosionStart) {
             return true;
           }
@@ -401,7 +401,7 @@ class Ai extends Entity {
       ?findTargetFn, 
       ?attackTargetFilterFn) {
     super(props);
-    traversableGrid = Main.Global.traversableGrid;
+    traversableGrid = Main.Global.grid.traversable;
     final aiType = props.aiType;
 
     cds = new Cooldown();
@@ -781,7 +781,7 @@ class Ai extends Entity {
             final aoeSize = 30; // diameter
             // deal damage to other nearby enemies
             final nearbyEntities = Grid.getItemsInRect(
-                Main.Global.dynamicWorldGrid,
+                Main.Global.grid.dynamicWorld,
                 x, y, aoeSize, aoeSize);
             for (entityId in nearbyEntities) {
               final entityRef = Entity.getById(entityId);
@@ -930,7 +930,7 @@ class Aura {
       return curVal - dt;
     }
 
-    Main.Global.updateHooks.push(function auraUpdate(dt) {
+    Main.Global.hooks.update.push(function auraUpdate(dt) {
       final lifeTime = Entity.setWith(inst, 'lifeTime',
           sub, dt);
 
@@ -962,7 +962,7 @@ class Aura {
       return true;
     });
 
-    Main.Global.renderHooks.push(function auraRender(time) {
+    Main.Global.hooks.render.push(function auraRender(time) {
       for (id in inst.neighbors) {
         final entityRef = Entity.getById(id);
         if (filterTypes.exists(entityRef.type)) {  
@@ -1028,8 +1028,8 @@ class Player extends Entity {
     });
     type = 'PLAYER';
     forceMultiplier = 5.0;
-    traversableGrid = Main.Global.traversableGrid;
-    obstacleGrid = Main.Global.obstacleGrid;
+    traversableGrid = Main.Global.grid.traversable;
+    obstacleGrid = Main.Global.grid.obstacle;
     Entity.setComponent(this, 'neighborQueryThreshold', 100);
 
     rootScene = s2d;
@@ -1117,7 +1117,7 @@ class Player extends Entity {
       var prevPlayerX = -1.;
       var prevPlayerY = -1.;
 
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         state.mode = MODE_WANDER;
 
         final py = this.y + yOffset;
@@ -1313,8 +1313,12 @@ class Player extends Entity {
 
     final equippedAbilities = Hud.InventoryDragAndDropPrototype
       .getEquippedAbilities();
-    final lootDefsByType = [
+    final abilitiesByType = [
       for (lootId in equippedAbilities) {
+        if (lootId == null) {
+          continue;
+        }
+
         final lootInst = Hud.InventoryDragAndDropPrototype
           .getItemById(lootId);
         final def = Loot.getDef(lootInst.type);
@@ -1323,7 +1327,7 @@ class Player extends Entity {
       }
     ];
 
-    if (lootDefsByType.exists('moveSpeedAura')) {
+    if (abilitiesByType.exists('moveSpeedAura')) {
       Aura.create(this.id, [
           'FRIENDLY_AI' => true,
           'PLAYER' => true
@@ -1536,7 +1540,7 @@ class Player extends Entity {
                 Main.Global.tickCount + tickOffset) % queryInterval == 0;
             cachedQuery = shouldRefreshQuery
               ? Grid.getItemsInRect(
-                  Main.Global.dynamicWorldGrid,
+                  Main.Global.grid.dynamicWorld,
                   botRef.x,
                   botRef.y,
                   seekRange,
@@ -1664,7 +1668,7 @@ class Player extends Entity {
         for (trailIndex in 0...trailFns.length) {
           final startedAt = Main.Global.time; 
 
-          Main.Global.updateHooks.push((dt) -> {
+          Main.Global.hooks.update.push((dt) -> {
             final timeElapsed = Main.Global.time - startedAt;
             final triggerAnimationAt = trailIndex * duration / trailFns.length;
 
@@ -1687,7 +1691,7 @@ class Player extends Entity {
         }
 
         // handle lunge effect
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           final aliveTime = Main.Global.time - startedAt;
           final progress = aliveTime / duration;
 
@@ -1772,7 +1776,7 @@ class Player extends Entity {
           elem.a = a;
         }
 
-        Main.Global.renderHooks.push((time) -> {
+        Main.Global.hooks.render.push((time) -> {
           final duration = 0.35;
           final aliveTime = Main.Global.time - startedAt;
           final progress = (aliveTime) 
@@ -2236,7 +2240,7 @@ class Game extends h2d.Object {
         mapData: Editor.EditorState) -> {
 
       final editorConfig = Editor.getConfig(fileName);
-      final cellSize = 16;
+      final cellSize = Main.Global.grid.traversable.cellSize;
       final spawnerFindTargetFn = (_) -> {
         return Entity.getById('PLAYER');
       }
@@ -2265,7 +2269,7 @@ class Game extends h2d.Object {
         tileGrids;
       };
       final traversableGrid = Grid.create(cellSize);
-      Main.Global.traversableGrid = traversableGrid;
+      Main.Global.grid.traversable = traversableGrid;
       final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
 
       final addToTileGrid = (
@@ -2287,7 +2291,7 @@ class Game extends h2d.Object {
       final miniMap = {
         final miniMapMargin = 10;
         final miniMapSize = 200;
-        final root = new h2d.Object(Main.Global.uiRoot);
+        final root = new h2d.Object(Main.Global.scene.uiRoot);
         final mask = new h2d.Mask(
             miniMapSize, 
             miniMapSize, 
@@ -2310,7 +2314,7 @@ class Game extends h2d.Object {
           - miniMapSize;
         root.y = miniMapMargin;
 
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           root.visible = Main.Global.uiState.hud.enabled
             && !Main.Global.uiState.inventory.enabled;
 
@@ -2416,7 +2420,7 @@ class Game extends h2d.Object {
 
                 return progress < 1;
               }
-              Main.Global.updateHooks
+              Main.Global.hooks.update
                 .push(panCameraToPlayer);
 
               // materializing animation
@@ -2426,7 +2430,7 @@ class Game extends h2d.Object {
                     sb.batchManager.spriteSheetData,
                     'player_animation/idle-0');
 
-                Main.Global.renderHooks.push((time) -> {
+                Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / animDuration;
                   final yOffset = spriteData.frame.h * (1 - progress);
                   final spriteRef = sb.emitSprite(
@@ -2447,7 +2451,7 @@ class Game extends h2d.Object {
                   return progress < 1;
                 });
 
-                Main.Global.renderHooks.push((time) -> {
+                Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / animDuration;
                   final yOffset = spriteData.frame.h * (1 - progress);
                   final spriteRef = sb.emitSprite(
@@ -2490,7 +2494,7 @@ class Game extends h2d.Object {
 
                 return true;
               };
-              Main.Global.updateHooks
+              Main.Global.hooks.update
                 .push(makePlayerAfterAnimation);
             }
 
@@ -2580,7 +2584,7 @@ class Game extends h2d.Object {
                 final angle2 = Math.PI + Utils.rnd(-1, 1, true);
                 final angle3 = Math.PI * 2 + Utils.rnd(-1, 1, true);
                 final dist = 30;
-                Main.Global.renderHooks.push((time) -> {
+                Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / duration;
 
                   {
@@ -2694,7 +2698,7 @@ class Game extends h2d.Object {
                 
                 final debugWallCollision = false;
                 if (debugWallCollision) {
-                  final grid = Main.Global.obstacleGrid;
+                  final grid = Main.Global.grid.obstacle;
                   final bounds = grid.itemCache
                     .get(wallRef.id);
                   Main.Global.sb.emitSprite(
@@ -2773,7 +2777,7 @@ class Game extends h2d.Object {
                         }, []);
 
                         return {
-                          characterName: 'haku, bounty provider',
+                          characterName: 'Haku, bounty provider',
                           text: choices.length > 0 
                             ? 'Choose a bounty quest:'
                             : 'No more quests available.',
@@ -2940,7 +2944,7 @@ class Game extends h2d.Object {
 
         return !finished;
       }
-      Main.Global.renderHooks.push(refreshMap);
+      Main.Global.hooks.render.push(refreshMap);
 
     }
 
@@ -2968,7 +2972,7 @@ class Game extends h2d.Object {
   public function lineOfSight(entity, x, y, i) {
     final cellSize = mapRef.cellSize;
     final isClearPath = Grid.isEmptyCell(
-        Main.Global.obstacleGrid, x, y);
+        Main.Global.grid.obstacle, x, y);
     final isInSightRange = i * cellSize <= 
       entity.sightRange;
 
@@ -3003,7 +3007,7 @@ class Game extends h2d.Object {
 
       return progress < 1;
     };
-    Main.Global.updateHooks.push(lootDropAnimation);
+    Main.Global.hooks.update.push(lootDropAnimation);
 
     lootRef.type = 'LOOT';
     lootRef.stats = EntityStats.create({
@@ -3111,7 +3115,7 @@ class Game extends h2d.Object {
 
   public static function makeBackground() {
     final Global = Main.Global;
-    final s2d = Global.mainBackground;
+    final s2d = Global.scene.mainBackground;
     final g = new h2d.Graphics(s2d);
     final scale = Global.resolutionScale;
     final bgBaseColor = 0x1f1f1f;
@@ -3186,7 +3190,7 @@ class Game extends h2d.Object {
   ) {
     super(s2d);
 
-    mapRef = Main.Global.obstacleGrid;
+    mapRef = Main.Global.grid.obstacle;
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     var spriteSheetData = Main.Global.sb
       .batchManager.spriteSheetData;
@@ -3204,13 +3208,13 @@ class Game extends h2d.Object {
 
       return !finished;
     }
-    Main.Global.updateHooks
+    Main.Global.hooks.update
       .push(cleanupWhenFinished);
 
     newLevel(Main.Global.rootScene);
 
-    Main.Global.updateHooks.push(this.update);
-    Main.Global.renderHooks.push(this.render);
+    Main.Global.hooks.update.push(this.update);
+    Main.Global.hooks.render.push(this.render);
   }
 
   public function update(dt: Float) {
@@ -3323,10 +3327,10 @@ class Game extends h2d.Object {
         var height = a.radius * 2 + queryThreshold;
         var width = height + queryThreshold;
         var dynamicNeighbors = Grid.getItemsInRect(
-            Main.Global.dynamicWorldGrid, a.x, a.y, width, height
+            Main.Global.grid.dynamicWorld, a.x, a.y, width, height
             );
         var obstacleNeighbors = Grid.getItemsInRect(
-            Main.Global.obstacleGrid, a.x, a.y, width, height
+            Main.Global.grid.obstacle, a.x, a.y, width, height
             );
         for (n in dynamicNeighbors) {
           if (n != a.id) {
@@ -3372,7 +3376,7 @@ class Game extends h2d.Object {
         | { type: 'FRIENDLY_AI' }
         | { type: 'INTERACTABLE_PROP' }: {
           Grid.setItemRect(
-              Main.Global.dynamicWorldGrid,
+              Main.Global.grid.dynamicWorld,
               a.x,
               a.y,
               a.radius * 2,
@@ -3383,7 +3387,7 @@ class Game extends h2d.Object {
           { type: 'OBSTACLE' }
         | { type: 'NPC' }: {
           Grid.setItemRect(
-              Main.Global.obstacleGrid,
+              Main.Global.grid.obstacle,
               a.x,
               a.y,
               a.radius * 2,
@@ -3392,7 +3396,7 @@ class Game extends h2d.Object {
         }
         case { type: 'LOOT' }: {
           Grid.setItemRect(
-              Main.Global.lootColGrid,
+              Main.Global.grid.lootCol,
               a.x,
               a.y,
               a.radius * 2,
