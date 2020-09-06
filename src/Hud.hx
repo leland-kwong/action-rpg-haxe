@@ -1437,7 +1437,7 @@ class Hud {
         Main.Global.scene.uiRoot);
 
     inactiveAbilitiesSb = new SpriteBatchSystem(
-        Main.Global.inactiveAbilitiesRoot,
+        Main.Global.scene.inactiveAbilitiesRoot,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     inactiveAbilitiesCooldownGraphics = new h2d.Graphics(

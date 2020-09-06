@@ -26,14 +26,27 @@ typedef VoidFn = () -> Void;
 class SceneGroup {
   public var mainBackground: h2d.Scene;
   public var uiRoot: h2d.Scene;
+  public var inactiveAbilitiesRoot: h2d.Scene;
 
   public function new(sevents: hxd.SceneEvents): Void {
-    mainBackground = new h2d.Scene();
-    mainBackground.scaleMode = ScaleMode.Zoom(
-        Global.resolutionScale);
+    mainBackground = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
 
-    uiRoot = new h2d.Scene();
-    sevents.addScene(uiRoot);
+    uiRoot = {
+      final s = new h2d.Scene();
+      sevents.addScene(s);
+      s;
+    }
+
+    inactiveAbilitiesRoot = {
+      final s2d = new h2d.Scene();
+      s2d.filter = h2d.filter.ColorMatrix.grayed();
+      s2d;
+    }
   }
 }
 
@@ -180,7 +193,7 @@ class Main extends hxd.App {
       Global.particleScene.render(e);
       Global.obscuredEntitiesScene.render(e);
       Global.staticScene.render(e);
-      Global.inactiveAbilitiesRoot.render(e);
+      Global.scene.inactiveAbilitiesRoot.render(e);
       Global.scene.uiRoot.render(e);
       Global.debugScene.render(e);
 
@@ -243,12 +256,6 @@ class Main extends hxd.App {
         Global.rootScene = s2d;
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
-
-        Global.inactiveAbilitiesRoot = {
-          final s2d = new h2d.Scene();
-          s2d.filter = h2d.filter.ColorMatrix.grayed();
-          s2d;
-        }
 
         Global.particleScene = new h2d.Scene();
         Global.particleScene.scaleMode = ScaleMode.Zoom(
