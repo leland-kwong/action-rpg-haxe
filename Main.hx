@@ -50,8 +50,8 @@ class Global {
   public static final grid = {
     obstacle: Grid.create(16),
     dynamicWorld: Grid.create(16),
+    traversable: Grid.create(16),
   }
-  public static var traversableGrid: GridRef = null;
   public static final lootColGrid: GridRef = 
     Grid.create(8);
   public static var sb: SpriteBatchSystem;

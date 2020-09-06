@@ -401,7 +401,7 @@ class Ai extends Entity {
       ?findTargetFn, 
       ?attackTargetFilterFn) {
     super(props);
-    traversableGrid = Main.Global.traversableGrid;
+    traversableGrid = Main.Global.grid.traversable;
     final aiType = props.aiType;
 
     cds = new Cooldown();
@@ -1028,7 +1028,7 @@ class Player extends Entity {
     });
     type = 'PLAYER';
     forceMultiplier = 5.0;
-    traversableGrid = Main.Global.traversableGrid;
+    traversableGrid = Main.Global.grid.traversable;
     obstacleGrid = Main.Global.grid.obstacle;
     Entity.setComponent(this, 'neighborQueryThreshold', 100);
 
@@ -2240,7 +2240,7 @@ class Game extends h2d.Object {
         mapData: Editor.EditorState) -> {
 
       final editorConfig = Editor.getConfig(fileName);
-      final cellSize = 16;
+      final cellSize = Main.Global.grid.traversable.cellSize;
       final spawnerFindTargetFn = (_) -> {
         return Entity.getById('PLAYER');
       }
@@ -2269,7 +2269,7 @@ class Game extends h2d.Object {
         tileGrids;
       };
       final traversableGrid = Grid.create(cellSize);
-      Main.Global.traversableGrid = traversableGrid;
+      Main.Global.grid.traversable = traversableGrid;
       final truePositionByItemId = new Map<String, {x: Int, y: Int}>();
 
       final addToTileGrid = (
