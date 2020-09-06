@@ -58,7 +58,7 @@ class DialogBox {
 
     instancesById.set(id, parent);
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       final bounds = parent.getBounds(parent);
       final pos = Camera.toScreenPos(
           Main.Global.mainCamera, 
@@ -438,7 +438,7 @@ class GuiComponents {
       }
     }
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
 
       final mx = Main.Global.uiRoot.mouseX;
@@ -578,7 +578,7 @@ class GuiComponents {
       }
 
       final cleanup = GuiComponents.savedGameSlots(fetchGamesList);
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         if (!state.isAlive) {
           cleanup();
         }
@@ -596,7 +596,7 @@ class GuiComponents {
 
       final cleanup = GuiComponents.mainMenuOptions(options); 
 
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         if (!state.isAlive) {
           cleanup();
         }
@@ -605,7 +605,7 @@ class GuiComponents {
       });
     }
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       final menuEnabled = Main.Global.uiState.mainMenu.enabled;
       final shouldOpen = menuEnabled
         && !state.isAlive;

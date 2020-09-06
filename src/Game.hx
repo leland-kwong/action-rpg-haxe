@@ -294,7 +294,7 @@ class EnergyBomb extends Projectile {
     if (isDone()) {
       for (i in 0...5) {
         final explosionStart = Main.Global.time + i * 0.025;
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           if (Main.Global.time < explosionStart) {
             return true;
           }
@@ -930,7 +930,7 @@ class Aura {
       return curVal - dt;
     }
 
-    Main.Global.updateHooks.push(function auraUpdate(dt) {
+    Main.Global.hooks.update.push(function auraUpdate(dt) {
       final lifeTime = Entity.setWith(inst, 'lifeTime',
           sub, dt);
 
@@ -1117,7 +1117,7 @@ class Player extends Entity {
       var prevPlayerX = -1.;
       var prevPlayerY = -1.;
 
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         state.mode = MODE_WANDER;
 
         final py = this.y + yOffset;
@@ -1668,7 +1668,7 @@ class Player extends Entity {
         for (trailIndex in 0...trailFns.length) {
           final startedAt = Main.Global.time; 
 
-          Main.Global.updateHooks.push((dt) -> {
+          Main.Global.hooks.update.push((dt) -> {
             final timeElapsed = Main.Global.time - startedAt;
             final triggerAnimationAt = trailIndex * duration / trailFns.length;
 
@@ -1691,7 +1691,7 @@ class Player extends Entity {
         }
 
         // handle lunge effect
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           final aliveTime = Main.Global.time - startedAt;
           final progress = aliveTime / duration;
 
@@ -2314,7 +2314,7 @@ class Game extends h2d.Object {
           - miniMapSize;
         root.y = miniMapMargin;
 
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           root.visible = Main.Global.uiState.hud.enabled
             && !Main.Global.uiState.inventory.enabled;
 
@@ -2420,7 +2420,7 @@ class Game extends h2d.Object {
 
                 return progress < 1;
               }
-              Main.Global.updateHooks
+              Main.Global.hooks.update
                 .push(panCameraToPlayer);
 
               // materializing animation
@@ -2494,7 +2494,7 @@ class Game extends h2d.Object {
 
                 return true;
               };
-              Main.Global.updateHooks
+              Main.Global.hooks.update
                 .push(makePlayerAfterAnimation);
             }
 
@@ -3007,7 +3007,7 @@ class Game extends h2d.Object {
 
       return progress < 1;
     };
-    Main.Global.updateHooks.push(lootDropAnimation);
+    Main.Global.hooks.update.push(lootDropAnimation);
 
     lootRef.type = 'LOOT';
     lootRef.stats = EntityStats.create({
@@ -3208,12 +3208,12 @@ class Game extends h2d.Object {
 
       return !finished;
     }
-    Main.Global.updateHooks
+    Main.Global.hooks.update
       .push(cleanupWhenFinished);
 
     newLevel(Main.Global.rootScene);
 
-    Main.Global.updateHooks.push(this.update);
+    Main.Global.hooks.update.push(this.update);
     Main.Global.renderHooks.push(this.render);
   }
 

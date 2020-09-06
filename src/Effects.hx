@@ -99,7 +99,7 @@ class Effects {
         final duration = 0.25;
         final startedAt = Main.Global.time;
 
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           final progress = (Main.Global.time - startedAt) / duration;
 
           rootNode.visible = true;
@@ -126,7 +126,7 @@ class Effects {
 
         final duration = 0.8;
         final startedAt = Main.Global.time;
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
 
           final progress = (Main.Global.time - startedAt) / duration;
           final bmpBounds = bmp.getBounds();
@@ -147,7 +147,7 @@ class Effects {
         final duration = 0.3;
         final startedAt = Main.Global.time;
 
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           final progress = (Main.Global.time - startedAt) / duration;
 
           rootNode.visible = true;

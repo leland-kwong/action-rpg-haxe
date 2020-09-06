@@ -420,7 +420,7 @@ class PassiveSkillTree {
           tf.textAlign = Center;
           tf.textColor = 0xffffff;
 
-          Main.Global.updateHooks.push((dt) -> {
+          Main.Global.hooks.update.push((dt) -> {
             final win = hxd.Window.getInstance();
             final numAvailablePoints = calcNumAvailablePoints(sessionRef);
             final numUnusedPoints = calcNumUnusedPoints(sessionRef);
@@ -626,7 +626,7 @@ class PassiveSkillTree {
 
           return !state.shouldCleanup;
         }
-        Main.Global.updateHooks.push(handleTreeInteraction);
+        Main.Global.hooks.update.push(handleTreeInteraction);
 
         function handleMouseEvents(e: hxd.Event) {
           final mx = Std.int(treeScene.mouseX);
@@ -727,7 +727,7 @@ class PassiveSkillTree {
           Main.Global.renderHooks.push(renderTreeCollisions);
         }
 
-        Main.Global.updateHooks.push(function update(dt: Float) {
+        Main.Global.hooks.update.push(function update(dt: Float) {
           if (state.shouldCleanup) {
             for (fn in cleanupFns) {
               fn();
@@ -775,7 +775,7 @@ class PassiveSkillTree {
       return true;
     }
 
-    Main.Global.updateHooks
+    Main.Global.hooks.update
       .push(managePassiveSkillTreeVisibility);
   }
 }

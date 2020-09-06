@@ -321,7 +321,7 @@ class Inventory {
 
               return true;
             };
-            Main.Global.updateHooks.push(
+            Main.Global.hooks.update.push(
                 flyToPlayerThenDestroy);
           }
 
@@ -332,7 +332,7 @@ class Inventory {
             final dx = Utils.irnd(-5, 5, true);
             final startTime = Main.Global.time;
             final duration = 0.4;
-            Main.Global.updateHooks.push((dt: Float) -> {
+            Main.Global.hooks.update.push((dt: Float) -> {
               final progress = (Main.Global.time - startTime) / duration;
               final z = Math.sin(Math.PI * progress) * 15;
               lootRef.x = lootRefOriginalX + progress * dx;
@@ -1247,7 +1247,7 @@ class InventoryDragAndDropPrototype {
           };
           return true;
         }
-        Main.Global.updateHooks.push(
+        Main.Global.hooks.update.push(
             restoreStateOnMouseRelease);
       }
     }

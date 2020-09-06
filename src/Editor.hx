@@ -1386,7 +1386,7 @@ class Editor {
             }
           }
 
-          Main.Global.updateHooks.push((dt) -> {
+          Main.Global.hooks.update.push((dt) -> {
             localState.editorMode = CommandBar;
             input.x = win.width / 2;
             input.y = 10;
@@ -2056,7 +2056,7 @@ class Editor {
     final backgroundRef = Game.makeBackground();
     cleanupFns.push(() -> backgroundRef.remove());
 
-    Main.Global.updateHooks.push(update);
+    Main.Global.hooks.update.push(update);
     Main.Global.renderHooks.push(render);
 
     return () -> {

@@ -58,10 +58,9 @@ class Global {
   public static var oeSpriteBatch: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
 
-  // for convenience, not sure if this is performant enough
-  // for us to use for everything
-  public static var updateHooks: 
-    Array<(dt: Float) -> Bool> = [];
+  public static final hooks = {
+    update: new Array<(dt: Float) -> Bool>()
+  }
   public static var renderHooks: 
     Array<(dt: Float) -> Bool> = [];
   // handles input device events
@@ -385,7 +384,7 @@ class Main extends hxd.App {
             return true;
           }
 
-          Global.updateHooks.push(updateCursorStyle);
+          Global.hooks.update.push(updateCursorStyle);
         }
       }
 
@@ -458,14 +457,14 @@ class Main extends hxd.App {
         // run updateHooks
         {
           final nextHooks = [];
-          for (update in Global.updateHooks) {
+          for (update in Global.hooks.update) {
             final shouldKeepAlive = update(frameTime);
 
             if (shouldKeepAlive) {
               nextHooks.push(update); 
             }
           }
-          Global.updateHooks = nextHooks;
+          Global.hooks.update = nextHooks;
         }
 
         // sync up scenes with the camera
@@ -543,7 +542,7 @@ class Main extends hxd.App {
             Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
             .nextAnimations.length,
-          numUpdateHooks: Global.updateHooks.length,
+          numUpdateHooks: Global.hooks.update.length,
           numInputHooks: Global.inputHooks.length,
           numRenderHooks: Global.renderHooks.length,
         }

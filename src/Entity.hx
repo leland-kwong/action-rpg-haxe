@@ -277,7 +277,7 @@ class Entity extends h2d.Object {
 
       final startTime = Main.Global.time;
       final duration = 0.5;
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         final aliveTime = Main.Global.time - startTime;
         final progress = aliveTime / duration;
         final dx = Math.cos(angle) * 5;

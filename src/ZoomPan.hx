@@ -131,7 +131,7 @@ class ZoomPan {
     }
     s2d.addEventListener(handleZoom);
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       updateCanvas();
       final winMouse = winMousePos();
       Main.Global.logData.mouseToCanvas = {
