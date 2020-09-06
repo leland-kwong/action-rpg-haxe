@@ -2777,7 +2777,7 @@ class Game extends h2d.Object {
                         }, []);
 
                         return {
-                          characterName: 'haku, bounty provider',
+                          characterName: 'Haku, bounty provider',
                           text: choices.length > 0 
                             ? 'Choose a bounty quest:'
                             : 'No more quests available.',
