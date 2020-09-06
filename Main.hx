@@ -27,6 +27,7 @@ class SceneGroup {
   public var mainBackground: h2d.Scene;
   public var uiRoot: h2d.Scene;
   public var inactiveAbilitiesRoot: h2d.Scene;
+  public var particle: h2d.Scene;
 
   public function new(sevents: hxd.SceneEvents): Void {
     mainBackground = {
@@ -47,6 +48,13 @@ class SceneGroup {
       s2d.filter = h2d.filter.ColorMatrix.grayed();
       s2d;
     }
+
+    particle = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
   }
 }
 
@@ -59,7 +67,6 @@ class Global {
   
   public static var scene: SceneGroup = null;
   public static var rootScene: h2d.Scene;
-  public static var particleScene: h2d.Scene;
   public static var obstacleMaskScene: h2d.Scene;
   public static var obscuredEntitiesScene: h2d.Scene;
   public static var staticScene: h2d.Scene;
@@ -187,7 +194,7 @@ class Main extends hxd.App {
       Global.obstacleMaskScene.render(e);
       Global.scene.mainBackground.render(e);
       super.render(e);
-      Global.particleScene.render(e);
+      Global.scene.particle.render(e);
       Global.obscuredEntitiesScene.render(e);
       Global.staticScene.render(e);
       Global.scene.inactiveAbilitiesRoot.render(e);
@@ -253,10 +260,6 @@ class Main extends hxd.App {
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
 
-        Global.particleScene = new h2d.Scene();
-        Global.particleScene.scaleMode = ScaleMode.Zoom(
-            Global.resolutionScale);
-
         {
           Global.obstacleMaskScene = new h2d.Scene();
           Global.obstacleMaskScene.scaleMode = ScaleMode.Zoom(
@@ -272,7 +275,7 @@ class Main extends hxd.App {
 
         // setup sprite batch systems
         Global.sb = new SpriteBatchSystem(
-            Global.particleScene,
+            Global.scene.particle,
             hxd.Res.sprite_sheet_png,
             hxd.Res.sprite_sheet_json);
         {
@@ -496,7 +499,7 @@ class Main extends hxd.App {
             + Math.fround(Global.rootScene.height / 2);
           for (scene in [
               Global.rootScene,
-              Global.particleScene,
+              Global.scene.particle,
               Global.obstacleMaskScene,
               Global.obscuredEntitiesScene,
           ]) {

@@ -258,7 +258,7 @@ class Entity extends h2d.Object {
       font.resizeTo(8);
       final tf = new h2d.Text(
           font,
-          Main.Global.particleScene);
+          Main.Global.scene.particle);
       final initialX = x;
       final initialY = y;
       final endX = x + Utils.irnd(-10, 10, true);
