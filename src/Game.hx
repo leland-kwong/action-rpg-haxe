@@ -2291,7 +2291,7 @@ class Game extends h2d.Object {
       final miniMap = {
         final miniMapMargin = 10;
         final miniMapSize = 200;
-        final root = new h2d.Object(Main.Global.uiRoot);
+        final root = new h2d.Object(Main.Global.scene.uiRoot);
         final mask = new h2d.Mask(
             miniMapSize, 
             miniMapSize, 

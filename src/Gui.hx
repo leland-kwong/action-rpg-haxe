@@ -54,7 +54,7 @@ class DialogBox {
     final dialog = calcNextDialog();
     final padding = 10;
     final maxWidth = 400;
-    final parent = new h2d.Object(Main.Global.uiRoot);
+    final parent = new h2d.Object(Main.Global.scene.uiRoot);
 
     instancesById.set(id, parent);
 
@@ -209,7 +209,7 @@ class GuiComponents {
       isAlive: true
     };
     final win = hxd.Window.getInstance();
-    final root = new h2d.Object(Main.Global.uiRoot);
+    final root = new h2d.Object(Main.Global.scene.uiRoot);
     var gameSlotNodes: GuiNodeList = null;
     var gameDeleteNodes: GuiNodeList = null;
 
@@ -425,7 +425,7 @@ class GuiComponents {
         (o) -> {
           final tf = new h2d.Text(
               font,
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
 
           return tf;
         });
@@ -441,8 +441,8 @@ class GuiComponents {
     Main.Global.hooks.update.push((dt) -> {
       Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 
@@ -476,8 +476,8 @@ class GuiComponents {
     });
 
     Main.Global.hooks.render.push((time) -> {
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 

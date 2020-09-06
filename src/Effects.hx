@@ -4,7 +4,7 @@ class Effects {
 
     final renderBackground = false;
     if (renderBackground) {
-      final g = new h2d.Graphics(Main.Global.uiRoot);
+      final g = new h2d.Graphics(Main.Global.scene.uiRoot);
       g.beginFill(0x99999);
       g.drawRect(
           0, 0, win.width, win.height);
@@ -38,7 +38,7 @@ class Effects {
     final totalWidth = Gui.calcTextWidth(
         Fonts.title(), textBlocks.join(''));
     final rootNode = new h2d.Object();
-    Main.Global.uiRoot.addChildAt(rootNode, 0);
+    Main.Global.scene.uiRoot.addChildAt(rootNode, 0);
     final bmp = new h2d.Bitmap(
         SpriteBatchSystem.makeTile(
           Main.Global.uiSpriteBatch.batchManager.spriteSheet,
@@ -115,7 +115,7 @@ class Effects {
       }
 
       function triggerShine(onComplete) {
-        final shine = new h2d.Graphics(Main.Global.uiRoot);
+        final shine = new h2d.Graphics(Main.Global.scene.uiRoot);
         final mask = new h2d.filter.Mask(textRoot, true, true);
         previousShine = shine;
         shine.lineStyle(50, 0xffffff);

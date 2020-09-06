@@ -444,7 +444,7 @@ class UiGrid {
           final iRef = new h2d.Interactive(
               width,
               height,
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
           iRef.x = x;
           iRef.y = y;
 
@@ -704,7 +704,7 @@ class UiGrid {
 
       final tfPlayerLevel = TextManager.get();
       tfPlayerLevel.font = Fonts.title();
-      Main.Global.uiRoot.addChild(tfPlayerLevel);
+      Main.Global.scene.uiRoot.addChild(tfPlayerLevel);
       tfPlayerLevel.text = Std.string(
           Config.calcCurrentLevel(
             Main.Global.gameState.experienceGained) + 1);
@@ -737,7 +737,7 @@ class Tooltip {
       return;
     }
 
-    Main.Global.uiRoot.addChild(tooltipTextRef);
+    Main.Global.scene.uiRoot.addChild(tooltipTextRef);
     tooltipTextRef.textAlign = Center;
     final lootType = Entity.getComponent(
         entityRef, 
@@ -948,7 +948,7 @@ class InventoryDragAndDropPrototype {
               final interact = new h2d.Interactive(
                   ti.width,
                   ti.height,
-                  Main.Global.uiRoot);
+                  Main.Global.scene.uiRoot);
               
               interact.propagateEvents = true;
               interact.x = ti.x;
@@ -987,8 +987,8 @@ class InventoryDragAndDropPrototype {
         slotWidth: slotWidth,
         slotHeight: slotHeight,
       };
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final w = pickedUpItem.slotWidth;
       final h = pickedUpItem.slotHeight;
       /*
@@ -1360,8 +1360,8 @@ class InventoryDragAndDropPrototype {
           lootDef.spriteKey);
       final w = toSlotSize(spriteData.sourceSize.w);
       final h = toSlotSize(spriteData.sourceSize.h);
-      final x = Main.Global.uiRoot.mouseX;
-      final y = Main.Global.uiRoot.mouseY;
+      final x = Main.Global.scene.uiRoot.mouseX;
+      final y = Main.Global.scene.uiRoot.mouseY;
 
       Main.Global.uiSpriteBatch.emitSprite(
           x, y,
@@ -1424,24 +1424,24 @@ class Hud {
 
   public static function init() {
     aiHealthBar = new h2d.Graphics(
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
     final font = Fonts.primary();
     aiNameText = new h2d.Text(
         font, 
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
     aiNameText.textAlign = Center;
     aiNameText.textColor = Game.Colors.pureWhite;
 
     questDisplay = new h2d.Text(
         Fonts.primary(),
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
 
     inactiveAbilitiesSb = new SpriteBatchSystem(
         Main.Global.inactiveAbilitiesRoot,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     inactiveAbilitiesCooldownGraphics = new h2d.Graphics(
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
   }
 
   public static function update(dt: Float) {
@@ -1460,7 +1460,7 @@ class Hud {
       return;
     }
 
-    aiNameText.x = Main.Global.uiRoot.width / 2;
+    aiNameText.x = Main.Global.scene.uiRoot.width / 2;
     aiNameText.y = 10;
     aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
     aiHealthBar.y = 35;

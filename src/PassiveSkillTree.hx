@@ -75,7 +75,7 @@ class PassiveSkillTree {
       w: 0,
       h: 0
     };
-    final treeScene = Main.Global.uiRoot;
+    final treeScene = Main.Global.scene.uiRoot;
     final treeRootObj = new h2d.Object(treeScene);
     final NULL_HOVERED_NODE = {
       nodeId: 'NO_HOVERED_NODE',

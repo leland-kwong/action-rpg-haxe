@@ -24,14 +24,16 @@ enum HoverState {
 typedef VoidFn = () -> Void;
 
 class SceneGroup {
-  public var mainBackground = {
-    final scene = new h2d.Scene();
-    scene.scaleMode = ScaleMode.Zoom(
-        Global.resolutionScale);
-    scene;
-  }
+  public var mainBackground: h2d.Scene;
+  public var uiRoot: h2d.Scene;
 
-  public function new(): Void {
+  public function new(sevents: hxd.SceneEvents): Void {
+    mainBackground = new h2d.Scene();
+    mainBackground.scaleMode = ScaleMode.Zoom(
+        Global.resolutionScale);
+
+    uiRoot = new h2d.Scene();
+    sevents.addScene(uiRoot);
   }
 }
 
@@ -141,7 +143,7 @@ class Main extends hxd.App {
     // debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
-    Global.uiRoot.addChild(debugText);
+    Global.scene.uiRoot.addChild(debugText);
   }
 
   public static function onGameExit() {
@@ -179,7 +181,7 @@ class Main extends hxd.App {
       Global.obscuredEntitiesScene.render(e);
       Global.staticScene.render(e);
       Global.inactiveAbilitiesRoot.render(e);
-      Global.uiRoot.render(e);
+      Global.scene.uiRoot.render(e);
       Global.debugScene.render(e);
 
     } catch (error: Dynamic) {
@@ -237,13 +239,10 @@ class Main extends hxd.App {
 
       // setup global scene objects
       {
-        Global.scene = new SceneGroup();
+        Global.scene = new SceneGroup(sevents);
         Global.rootScene = s2d;
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
-
-        Global.uiRoot = new h2d.Scene();
-        sevents.addScene(Global.uiRoot);
 
         Global.inactiveAbilitiesRoot = {
           final s2d = new h2d.Scene();
@@ -292,7 +291,7 @@ class Main extends hxd.App {
           batch.colorAdd = new h3d.Vector(1, 1, 1, 1);
         }
         Global.uiSpriteBatch = new SpriteBatchSystem(
-            Global.uiRoot,
+            Global.scene.uiRoot,
             hxd.Res.sprite_sheet_png,
             hxd.Res.sprite_sheet_json);
       }
@@ -306,7 +305,7 @@ class Main extends hxd.App {
         final rootInteract = new h2d.Interactive(
             nativePixelResolution.x,
             nativePixelResolution.y,
-            Global.uiRoot);
+            Global.scene.uiRoot);
 
         rootInteract.propagateEvents = true;
         rootInteract.enableRightButton = true;

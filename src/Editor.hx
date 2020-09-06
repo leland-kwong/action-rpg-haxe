@@ -597,7 +597,7 @@ class Editor {
     final spriteSheetData = Utils.loadJsonFile(
         hxd.Res.sprite_sheet_json);
     final sbs = new SpriteBatchSystem(
-        Main.Global.uiRoot,
+        Main.Global.scene.uiRoot,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     final loadPath = getConfig().activeFile;
@@ -1004,8 +1004,8 @@ class Editor {
         return !finished;
       }
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
 
       updateObjectMetaList();
       localState.editorUiRegion = {
@@ -1234,8 +1234,8 @@ class Editor {
                 .get('layer_marquee_selection');
               final cellSize = Std.int(
                   localState.snapGridSize * localState.zoom);
-              final mx = Main.Global.uiRoot.mouseX;
-              final my = Main.Global.uiRoot.mouseY;
+              final mx = Main.Global.scene.uiRoot.mouseX;
+              final my = Main.Global.scene.uiRoot.mouseY;
               final snappedMousePos = snapToGrid(
                   (mx - editorState.translate.x * localState.zoom),
                   (my - editorState.translate.y * localState.zoom),
@@ -1319,7 +1319,7 @@ class Editor {
           final previousEditorMode = localState.editorMode;
           final input = new h2d.TextInput(
               Fonts.primary(),
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
           final win = hxd.Window.getInstance();
           final state = {
             isDone: false
@@ -1566,8 +1566,8 @@ class Editor {
                   itemId);
               final activeGrid = editorState.gridByLayerId
                 .get(localState.activeLayerId);
-              final mx = Main.Global.uiRoot.mouseX;
-              final my = Main.Global.uiRoot.mouseY;
+              final mx = Main.Global.scene.uiRoot.mouseX;
+              final my = Main.Global.scene.uiRoot.mouseY;
               final tx = localState.translate.x * localState.zoom;
               final ty = localState.translate.y * localState.zoom;
               final zoom = localState.zoom;
@@ -1746,8 +1746,8 @@ class Editor {
       final activeGrid = editorState.gridByLayerId
         .get(localState.activeLayerId);
       final cellSize = activeGrid.cellSize;
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final zoom = localState.zoom;
       final translate = editorState.translate;
       final snapGridSize = localState.snapGridSize;
@@ -1864,7 +1864,7 @@ class Editor {
             tf.text = menuItem.type;
             tf.textAlign = Center;
             tf.textColor = 0xffffff;
-            Main.Global.uiRoot.addChild(tf);
+            Main.Global.scene.uiRoot.addChild(tf);
           }
         }
       }
