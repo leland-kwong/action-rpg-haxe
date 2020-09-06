@@ -420,9 +420,14 @@ class Entity extends h2d.Object {
 
   public static function debugBox(
       x, y, 
-      width, height) {
+      width, 
+      height,
+      ?batch: SpriteBatchSystem) {
 
-    final sprite = Main.Global.sb.emitSprite(
+    final sb = batch == null
+      ? Main.Global.sb
+      : batch;
+    final sprite = sb.emitSprite(
         x, y,
         'ui/square_white');
     sprite.scaleX = width;

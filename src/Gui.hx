@@ -55,16 +55,40 @@ class DialogBox {
     final padding = 10;
     final maxWidth = 400;
     final parent = new h2d.Object(Main.Global.scene.uiRoot);
+    final getPos = () ->  Camera.toScreenPos(
+        Main.Global.mainCamera, 
+        worldX, 
+        worldY);
+    final fullScreenCloseButton = {
+      final pos = getPos();
+      final i = new h2d.Interactive(
+        0, 0, parent);
+      i.cursor = hxd.Cursor.Default;
+
+      Main.Global.hooks.update.push(function autoResize(dt) {
+        final res = Main.nativePixelResolution;
+        // readjust position to be 0,0 at screen coords
+        i.x = -parent.x;
+        i.y = -parent.y;
+        i.width = res.x;
+        i.height = res.y;
+
+        return parent.parent != null;
+      });
+
+      i.onClick = (e) -> {
+        Hud.UiStateManager.send({
+          type: 'UI_CLEAR_ALL'
+        });
+      }
+      i;
+    }
 
     instancesById.set(id, parent);
 
     Main.Global.hooks.update.push((dt) -> {
       final bounds = parent.getBounds(parent);
-      final pos = Camera.toScreenPos(
-          Main.Global.mainCamera, 
-          worldX, 
-          worldY);
-
+      final pos = getPos();
       parent.x = pos[0];
       parent.y = pos[1] - 5 - padding - bounds.height;
 
@@ -102,7 +126,7 @@ class DialogBox {
       tf;
     }
 
-    // dialog options
+    // dialog interactive choices
     final choices = dialog.choices;
     if (choices != null) {
       var offsetY = dtf.y + dtf.textHeight;

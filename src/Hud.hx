@@ -115,6 +115,10 @@ class UiStateManager {
         }
       }
 
+      case { type: 'UI_CLEAR_ALL' }: {
+        Main.Global.uiState = defaultUiState; 
+      }
+
       case { 
         type: 'START_GAME',
         data: gameState
