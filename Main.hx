@@ -71,23 +71,12 @@ class Global {
 
   public static var mainPhase: MainPhase = null;
   public static var entitiesToRender: Array<Entity> = [];
-  public static var uiState = {
-    mainMenu: {
-      enabled: true
-    },
-    hud: {
-      enabled: true
-    },
-    inventory: {
-      enabled: false
-    },
-    passiveSkillTree: {
-      enabled: false
-    },
-    dialogBox: {
-      enabled: false
-    }
-  }
+  public static var uiState = Hud.UiStateManager.nextUiState(
+      Hud.UiStateManager.defaultUiState, {
+        mainMenu: {
+          enabled: true
+        }
+      });
   public static var uiHomeMenuEnabled = true;
 
   public static var hoveredEntity = {
@@ -106,30 +95,6 @@ class Global {
     } 
 
     sceneCleanupFn = getNextScene();
-  }
-
-  public static function clearUi(
-      shouldClear: (field: String) -> Bool): Bool {
-    final wereUiItemsClosed = Lambda.fold(
-        Reflect.fields(Global.uiState),
-        (field, result) -> {
-          if (!shouldClear(field)) {
-            return result;
-          }
-
-          final state = Reflect.field(Global.uiState, field);
-          final enabled = state.enabled;
-
-          state.enabled = false;
-        
-          if (enabled) {
-            return true;
-          }      
-
-          return result;
-        }, false);
-
-    return wereUiItemsClosed;
   }
 
   public static function hasUiItemsEnabled() {
@@ -230,7 +195,7 @@ class Main extends hxd.App {
     if (!Global.uiState.mainMenu.enabled) {
       if (Key.isPressed(Key.I)) {
         Hud.UiStateManager.send({
-          type: 'INVENTORY_TOGGLE'
+          type: 'UI_INVENTORY_TOGGLE'
         });
       }
 
@@ -238,7 +203,7 @@ class Main extends hxd.App {
         Key.isPressed(Key.P);
       if (togglePassiveSkillTree) {
         Hud.UiStateManager.send({
-          type: 'PASSIVE_SKILL_TREE_TOGGLE'
+          type: 'UI_PASSIVE_SKILL_TREE_TOGGLE'
         });
       }
     }
@@ -246,15 +211,9 @@ class Main extends hxd.App {
     final toggleMainMenu = 
       Key.isPressed(Key.ESCAPE);
     if (toggleMainMenu) {
-      // close all open ui elements first
-      final wereUiItemsClosed = Global.clearUi((field) -> {
-        return field != 'hud'; 
+      Hud.UiStateManager.send({
+        type: 'UI_MAIN_MENU_TOGGLE'
       });
-
-      // only show main menu if there were no elements closed
-      if (!wereUiItemsClosed) {
-        Global.uiState.mainMenu.enabled = true;  
-      }
     }
 
     return true;

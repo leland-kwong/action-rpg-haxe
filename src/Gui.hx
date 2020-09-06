@@ -57,7 +57,6 @@ class DialogBox {
     final parent = new h2d.Object(Main.Global.uiRoot);
 
     instancesById.set(id, parent);
-    Main.Global.uiState.dialogBox.enabled = true;
 
     Main.Global.updateHooks.push((dt) -> {
       final bounds = parent.getBounds(parent);
@@ -190,9 +189,6 @@ class DialogBox {
     instancesById.get(id)
       .remove();
     instancesById.remove(id);
-
-    final globalEnabled = Lambda.count(instancesById) > 0;
-    Main.Global.uiState.dialogBox.enabled = globalEnabled;
   }
 }
 

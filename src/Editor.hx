@@ -401,7 +401,7 @@ class Editor {
                 spriteKey: 'ui/hud_inventory_button',
                 type: 'UI_ELEMENT',
                 data: {
-                  onClick: 'INVENTORY_TOGGLE',
+                  onClick: 'UI_INVENTORY_TOGGLE',
                   hoverSprite: 'ui/hud_inventory_button--hover'
                 }
               },
@@ -409,7 +409,7 @@ class Editor {
                 spriteKey: 'ui/hud_passive_skill_tree_button',
                 type: 'UI_ELEMENT',
                 data: {
-                  onClick: 'PASSIVE_SKILL_TREE_TOGGLE',
+                  onClick: 'UI_PASSIVE_SKILL_TREE_TOGGLE',
                   hoverSprite: 'ui/hud_passive_skill_tree_button--hover'
                 }
               },

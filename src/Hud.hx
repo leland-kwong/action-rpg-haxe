@@ -25,6 +25,36 @@ class UiStateManager {
   public static function noopCompleteCallback(_, _) {
   }
 
+  public static final defaultUiState = {
+    mainMenu: {
+      enabled: false
+    },
+    hud: {
+      enabled: true
+    },
+    inventory: {
+      enabled: false
+    },
+    passiveSkillTree: {
+      enabled: false
+    },
+    dialogBox: {
+      enabled: false
+    }
+  }
+
+  public static function nextUiState(
+      state, props: Dynamic) {
+    final copy = Reflect.copy(state); 
+
+    for (f in Reflect.fields(props)) {
+      Reflect.setProperty(
+          copy, f, Reflect.getProperty(props, f));
+    }
+
+    return copy;
+  }
+
   public static function send(
       action: UiAction,
       ?onCompleteCalback: (
@@ -36,24 +66,51 @@ class UiStateManager {
     final uiState = Main.Global.uiState;
 
     switch(action) {
-      case { type: 'INVENTORY_TOGGLE' }: {
-        final s = uiState.inventory;
+      case { type: 'UI_INVENTORY_TOGGLE' }: {
+        final enabled = 
+          Main.Global.uiState.inventory.enabled;
 
-        if (!s.enabled) {
-          Main.Global.clearUi((field) -> field != 'hud');
-        }
-
-        s.enabled = !s.enabled;
+        Main.Global.uiState = nextUiState(defaultUiState, {
+          inventory: {
+            enabled: !enabled          
+          },
+        });
       }
 
-      case { type: 'PASSIVE_SKILL_TREE_TOGGLE' }: {
-        final s = uiState.passiveSkillTree;
+      case { type: 'UI_PASSIVE_SKILL_TREE_TOGGLE' }: {
+        final enabled = 
+          Main.Global.uiState.passiveSkillTree.enabled;
 
-        if (!s.enabled) {
-          Main.Global.clearUi((field) -> field != 'hud');
+        Main.Global.uiState = nextUiState(defaultUiState, {
+          passiveSkillTree: {
+            enabled: !enabled          
+          },
+        });
+      }
+
+      case { type: 'UI_MAIN_MENU_TOGGLE' }: {
+        final fieldsToCheck = Lambda.filter(
+            Reflect.fields(Main.Global.uiState),
+            field -> field != 'hud');
+        final areOtherUiEnabled = Lambda.exists(
+            fieldsToCheck, 
+            (field) -> {
+              final state = Reflect.field(Main.Global.uiState, field);
+              return state.enabled;
+            });
+
+        if (areOtherUiEnabled) {
+          Main.Global.uiState = defaultUiState;
+        } else {
+          final enabled = 
+            Main.Global.uiState.mainMenu.enabled;
+
+          Main.Global.uiState = nextUiState(defaultUiState, {
+            mainMenu: {
+              enabled: !enabled          
+            },
+          });
         }
-
-        s.enabled = !s.enabled;
       }
 
       case { 
@@ -61,10 +118,7 @@ class UiStateManager {
         data: gameState
       }: {
         Main.Global.gameState = gameState;
-        Main.Global.clearUi((field) -> {
-          return field != 'hud';
-        });
-
+        Main.Global.uiState = defaultUiState; 
         Main.Global.replaceScene( 
             () -> {
               final gameInstance = new Game(Main.Global.rootScene); 
@@ -96,10 +150,8 @@ class UiStateManager {
         type: 'SWITCH_SCENE',
         data: sceneName
       }: {
-        final Global = Main.Global;
-        Main.Global.clearUi((field) -> true);
-
-        Global.replaceScene(() -> {
+        Main.Global.uiState = defaultUiState; 
+        Main.Global.replaceScene(() -> {
           return  switch(sceneName) {
             case 'experiment': Experiment.init();
             case 'editor': Editor.init();

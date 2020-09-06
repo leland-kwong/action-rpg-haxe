@@ -2741,9 +2741,12 @@ class Game extends h2d.Object {
               i.y = -spriteData.pivot.y * spriteData.sourceSize.h;
               i.onClick = (e) -> {
                 if (!Main.Global.uiState.dialogBox.enabled) {
-                  Main.Global.clearUi((field) -> {
-                    return field != 'hud';
-                  });
+                  Main.Global.uiState = Hud.UiStateManager.nextUiState(
+                      Hud.UiStateManager.defaultUiState, {
+                        dialogBox: {
+                          enabled: true
+                        }
+                      });
                   Gui.DialogBox.create(
                       npcRef.x + i.x,
                       npcRef.y + i.y,
@@ -2779,9 +2782,13 @@ class Game extends h2d.Object {
                       },
                       dialogId);
                 } else {
-
+                  Main.Global.uiState = Hud.UiStateManager.nextUiState(
+                      Hud.UiStateManager.defaultUiState, {
+                        dialogBox: {
+                          enabled: false
+                        }
+                      });
                   Gui.DialogBox.destroy(dialogId);
-
                 }
               }
 
