@@ -63,9 +63,6 @@ class Global {
   public static var obstacleMaskScene: h2d.Scene;
   public static var obscuredEntitiesScene: h2d.Scene;
   public static var staticScene: h2d.Scene;
-  public static var inactiveAbilitiesRoot: h2d.Scene;
-  public static var uiRoot: h2d.Scene;
-  public static var debugScene: h2d.Scene;
 
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
@@ -195,7 +192,6 @@ class Main extends hxd.App {
       Global.staticScene.render(e);
       Global.scene.inactiveAbilitiesRoot.render(e);
       Global.scene.uiRoot.render(e);
-      Global.debugScene.render(e);
 
     } catch (error: Dynamic) {
       HaxeUtils.handleError(
@@ -260,8 +256,6 @@ class Main extends hxd.App {
         Global.particleScene = new h2d.Scene();
         Global.particleScene.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
-
-        Global.debugScene = new h2d.Scene();
 
         {
           Global.obstacleMaskScene = new h2d.Scene();
