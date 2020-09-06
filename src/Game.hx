@@ -1029,7 +1029,7 @@ class Player extends Entity {
     type = 'PLAYER';
     forceMultiplier = 5.0;
     traversableGrid = Main.Global.traversableGrid;
-    obstacleGrid = Main.Global.obstacleGrid;
+    obstacleGrid = Main.Global.grid.obstacle;
     Entity.setComponent(this, 'neighborQueryThreshold', 100);
 
     rootScene = s2d;
@@ -2698,7 +2698,7 @@ class Game extends h2d.Object {
                 
                 final debugWallCollision = false;
                 if (debugWallCollision) {
-                  final grid = Main.Global.obstacleGrid;
+                  final grid = Main.Global.grid.obstacle;
                   final bounds = grid.itemCache
                     .get(wallRef.id);
                   Main.Global.sb.emitSprite(
@@ -2972,7 +2972,7 @@ class Game extends h2d.Object {
   public function lineOfSight(entity, x, y, i) {
     final cellSize = mapRef.cellSize;
     final isClearPath = Grid.isEmptyCell(
-        Main.Global.obstacleGrid, x, y);
+        Main.Global.grid.obstacle, x, y);
     final isInSightRange = i * cellSize <= 
       entity.sightRange;
 
@@ -3190,7 +3190,7 @@ class Game extends h2d.Object {
   ) {
     super(s2d);
 
-    mapRef = Main.Global.obstacleGrid;
+    mapRef = Main.Global.grid.obstacle;
     var spriteSheet = hxd.Res.sprite_sheet_png.toTile();
     var spriteSheetData = Main.Global.sb
       .batchManager.spriteSheetData;
@@ -3330,7 +3330,7 @@ class Game extends h2d.Object {
             Main.Global.dynamicWorldGrid, a.x, a.y, width, height
             );
         var obstacleNeighbors = Grid.getItemsInRect(
-            Main.Global.obstacleGrid, a.x, a.y, width, height
+            Main.Global.grid.obstacle, a.x, a.y, width, height
             );
         for (n in dynamicNeighbors) {
           if (n != a.id) {
@@ -3387,7 +3387,7 @@ class Game extends h2d.Object {
           { type: 'OBSTACLE' }
         | { type: 'NPC' }: {
           Grid.setItemRect(
-              Main.Global.obstacleGrid,
+              Main.Global.grid.obstacle,
               a.x,
               a.y,
               a.radius * 2,

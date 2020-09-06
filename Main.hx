@@ -47,8 +47,9 @@ class Global {
     clicked: false,
     hoverState: HoverState.None,
   }
-  public static final obstacleGrid: GridRef = 
-    Grid.create(16);
+  public static final grid = {
+    obstacle: Grid.create(16)
+  }
   public static final dynamicWorldGrid: GridRef = 
     Grid.create(16);
   public static var traversableGrid: GridRef = null;

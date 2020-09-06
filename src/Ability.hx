@@ -150,7 +150,7 @@ class ChannelBeam {
       final y = source.y + dy * i * interval;
       for (collisionGrid in [
           Main.Global.dynamicWorldGrid,
-          Main.Global.obstacleGrid,
+          Main.Global.grid.obstacle,
       ]) {
         final entities = Grid.getItemsInRect(
             collisionGrid,
