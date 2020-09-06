@@ -3115,7 +3115,7 @@ class Game extends h2d.Object {
 
   public static function makeBackground() {
     final Global = Main.Global;
-    final s2d = Global.mainBackground;
+    final s2d = Global.scene.mainBackground;
     final g = new h2d.Graphics(s2d);
     final scale = Global.resolutionScale;
     final bgBaseColor = 0x1f1f1f;

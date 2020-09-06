@@ -23,6 +23,18 @@ enum HoverState {
 
 typedef VoidFn = () -> Void;
 
+class SceneGroup {
+  public var mainBackground = {
+    final scene = new h2d.Scene();
+    scene.scaleMode = ScaleMode.Zoom(
+        Global.resolutionScale);
+    scene;
+  }
+
+  public function new(): Void {
+  }
+}
+
 class Global {
   public static var time = 0.0;
   public static var isNextFrame = true;
@@ -30,7 +42,7 @@ class Global {
   public static var resolutionScale = 4.;
   public static var logData: Dynamic = {};
   
-  public static var mainBackground: h2d.Scene;
+  public static var scene: SceneGroup = null;
   public static var rootScene: h2d.Scene;
   public static var particleScene: h2d.Scene;
   public static var obstacleMaskScene: h2d.Scene;
@@ -161,7 +173,7 @@ class Main extends hxd.App {
       SpriteBatchSystem.renderAll(Global.time);
 
       Global.obstacleMaskScene.render(e);
-      Global.mainBackground.render(e);
+      Global.scene.mainBackground.render(e);
       super.render(e);
       Global.particleScene.render(e);
       Global.obscuredEntitiesScene.render(e);
@@ -225,6 +237,7 @@ class Main extends hxd.App {
 
       // setup global scene objects
       {
+        Global.scene = new SceneGroup();
         Global.rootScene = s2d;
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
@@ -242,9 +255,6 @@ class Main extends hxd.App {
         Global.particleScene.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
 
-        Global.mainBackground = new h2d.Scene();
-        Global.mainBackground.scaleMode = ScaleMode.Zoom(
-            Global.resolutionScale);
         Global.debugScene = new h2d.Scene();
 
         {
