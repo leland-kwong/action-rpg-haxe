@@ -2718,6 +2718,29 @@ class Game extends h2d.Object {
             }
 
             case 'npc_quest_provider': {
+              function getDialogChoices() {
+                return Lambda.fold([
+                    'testQuest',
+                    'aggressiveBats'
+                ], (questName, result: Array<Gui.DialogChoice>) -> {
+                  final questState = Main.Global.gameState
+                    .questState[questName];
+                  if (!questState.active) {
+                    result.push({
+                      text: Quest.conditionsByName[questName]
+                        .defaultState
+                        .description,
+                      action: {
+                        type: 'ACTIVATE_QUEST',
+                        data: questName
+                      }
+                    });
+                  }
+
+                  return result;
+                }, []);
+              }
+
               final spriteData = SpriteBatchSystem.getSpriteData(
                   Main.Global.sb.batchManager.spriteSheetData,
                   objectMeta.spriteKey);
@@ -2731,10 +2754,11 @@ class Game extends h2d.Object {
                 radius: Std.int(spriteData.sourceSize.w / 2)
               });
               Main.Global.rootScene.addChild(npcRef);
+              final dialogOffsetY = -spriteData.pivot.y * spriteData.sourceSize.h;
 
               final state = {
                 hovered: false,
-                showDialog: false,
+                interacting: false,
               };
               final dialogId = 'questNpc';
               final i = new h2d.Interactive(
@@ -2742,7 +2766,7 @@ class Game extends h2d.Object {
                   spriteData.sourceSize.h,
                   npcRef); 
               i.x = -spriteData.pivot.x * spriteData.sourceSize.w;
-              i.y = -spriteData.pivot.y * spriteData.sourceSize.h;
+              i.y = dialogOffsetY;
               i.onClick = (e) -> {
                 if (!Main.Global.uiState.dialogBox.enabled) {
                   Main.Global.uiState = Hud.UiStateManager.nextUiState(
@@ -2755,27 +2779,7 @@ class Game extends h2d.Object {
                       npcRef.x + i.x,
                       npcRef.y + i.y,
                       () -> {
-                        final choices = Lambda.fold([
-                            'testQuest',
-                            'aggressiveBats'
-                        ], (questName, result: Array<Gui.DialogChoice>) -> {
-                          final questState = Main.Global.gameState
-                            .questState[questName];
-                          if (!questState.active) {
-                            result.push({
-                              text: Quest.conditionsByName[questName]
-                                .defaultState
-                                .description,
-                              action: {
-                                type: 'ACTIVATE_QUEST',
-                                data: questName
-                              }
-                            });
-                          }
-
-                          return result;
-                        }, []);
-
+                        final choices = getDialogChoices();
                         return {
                           characterName: 'Haku, bounty provider',
                           text: choices.length > 0 
@@ -2794,6 +2798,9 @@ class Game extends h2d.Object {
                       });
                   Gui.DialogBox.destroy(dialogId);
                 }
+
+                state.interacting = 
+                  Main.Global.uiState.dialogBox.enabled;
               }
 
               i.onOver = (e) -> {
@@ -2807,6 +2814,18 @@ class Game extends h2d.Object {
               npcRef.renderFn = (ref, time) -> {
                 final sprite = Main.Global.sb.emitSprite(
                     x, y, objectMeta.spriteKey);
+                final choices = getDialogChoices();
+
+                if (choices.length > 0 && !state.interacting) {
+                  final s = Main.Global.sb.emitSprite(
+                      x, 
+                      y + dialogOffsetY, 
+                      'ui/exclamation_bubble');
+                  s.g = 0.8;
+                  s.b = 0.2;
+                  s.scaleX = 0.95 + 0.05 * Math.cos(Main.Global.time * 2);
+                  s.scaleY = 0.95 + 0.05 * Math.sin(Main.Global.time * 2);
+                }
 
                 if (state.hovered) {
                   Entity.renderOutline(
