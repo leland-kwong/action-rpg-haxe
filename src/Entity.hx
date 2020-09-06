@@ -367,6 +367,7 @@ class Entity extends h2d.Object {
   // immediately cleans up the entity and removes
   // all references
   public static function deAlloc(id: EntityId) {
+    destroy(id);
     final a = Entity.getById(id);
     a.remove();
     Entity.ALL_BY_ID.remove(a.id);
