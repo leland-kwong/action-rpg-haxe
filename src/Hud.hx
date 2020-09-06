@@ -794,11 +794,6 @@ class InventoryDragAndDropPrototype {
   static final NULL_LOOT_INSTANCE = Loot.createInstance(
       ['nullItem'], NULL_PICKUP_ID);
   static public final state = {
-    equippedAbilitiesById: new haxe.ds.Vector<String>(3),
-    itemsById: [
-      NULL_PICKUP_ID => NULL_LOOT_INSTANCE
-    ],
-    invGrid: Grid.create(16),
     initialized: false,
     debugGrid: Grid.create(16),
     pickedUpItemId: NULL_PICKUP_ID,
@@ -813,18 +808,27 @@ class InventoryDragAndDropPrototype {
   };
 
   static public function getEquippedAbilities() {
-    return state.equippedAbilitiesById;
+    return Main
+      .Global
+      .gameState
+      .inventoryState
+      .equippedAbilitiesById;
   }
 
   static public function getItemById(id: String) {
-    return Main.Global.gameState.inventoryState.itemsById.get(id);
+    return Main
+      .Global
+      .gameState
+      .inventoryState
+      .itemsById
+      .get(id);
   }
 
   static public function equipItemToSlot(
       lootInst: Loot.LootInstance, 
       index) {
 
-    state.equippedAbilitiesById[index] = lootInst.id;
+    getEquippedAbilities()[index] = lootInst.id;
     Main.Global.gameState.inventoryState.itemsById.set(lootInst.id, lootInst);
 
   }
@@ -833,12 +837,14 @@ class InventoryDragAndDropPrototype {
     final createLootInstanceByType = (type: Loot.LootDefType) -> {
       return Loot.createInstance([type]);
     };
-
     equipItemToSlot(
-        createLootInstanceByType('spiderBots'), 0); 
+        createLootInstanceByType('basicBlasterEvolved'), 0); 
 
-    equipItemToSlot(
-        createLootInstanceByType('channelBeam'), 1); 
+    // equipItemToSlot(
+    //     createLootInstanceByType('spiderBots'), 0); 
+
+    // equipItemToSlot(
+    //     createLootInstanceByType('channelBeam'), 1); 
 
     equipItemToSlot(
         createLootInstanceByType('energy1'), 2); 
@@ -1070,7 +1076,7 @@ class InventoryDragAndDropPrototype {
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
-            final originallyEquipped = state.equippedAbilitiesById[
+            final originallyEquipped = getEquippedAbilities()[
               nearestAbilitySlot.slotIndex];
             equipItemToSlot(lootInst, nearestAbilitySlot.slotIndex);
             state.pickedUpItemId = Utils.withDefault(
@@ -1285,8 +1291,8 @@ class InventoryDragAndDropPrototype {
     };
 
     final equipmentSlotDefs = getEquipmentSlotDefinitions();
-    for (index in 0...state.equippedAbilitiesById.length) {
-      final itemId = state.equippedAbilitiesById[index];
+    for (index in 0...getEquippedAbilities().length) {
+      final itemId = getEquippedAbilities()[index];
       final abilitySlot = equipmentSlotDefs[index];
 
       renderEquippedItem(itemId, abilitySlot);

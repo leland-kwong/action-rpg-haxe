@@ -1313,8 +1313,12 @@ class Player extends Entity {
 
     final equippedAbilities = Hud.InventoryDragAndDropPrototype
       .getEquippedAbilities();
-    final lootDefsByType = [
+    final abilitiesByType = [
       for (lootId in equippedAbilities) {
+        if (lootId == null) {
+          continue;
+        }
+
         final lootInst = Hud.InventoryDragAndDropPrototype
           .getItemById(lootId);
         final def = Loot.getDef(lootInst.type);
@@ -1323,7 +1327,7 @@ class Player extends Entity {
       }
     ];
 
-    if (lootDefsByType.exists('moveSpeedAura')) {
+    if (abilitiesByType.exists('moveSpeedAura')) {
       Aura.create(this.id, [
           'FRIENDLY_AI' => true,
           'PLAYER' => true
