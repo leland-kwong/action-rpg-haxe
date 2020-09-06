@@ -373,7 +373,7 @@ class Entity extends h2d.Object {
     Entity.ALL_BY_ID.remove(a.id);
     Grid.removeItem(Main.Global.grid.dynamicWorld, a.id);
     Grid.removeItem(Main.Global.grid.obstacle, a.id);
-    Grid.removeItem(Main.Global.lootColGrid, a.id);
+    Grid.removeItem(Main.Global.grid.lootCol, a.id);
   }
 
   public static function getById(

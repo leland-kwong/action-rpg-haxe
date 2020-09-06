@@ -245,7 +245,7 @@ class Inventory {
       final mWorldX = Main.Global.rootScene.mouseX;
       final mWorldY = Main.Global.rootScene.mouseY;
       final hoveredLootIds = Grid.getItemsInRect(
-          Main.Global.lootColGrid,
+          Main.Global.grid.lootCol,
           mWorldX,
           mWorldY,
           1,

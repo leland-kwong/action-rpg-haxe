@@ -3396,7 +3396,7 @@ class Game extends h2d.Object {
         }
         case { type: 'LOOT' }: {
           Grid.setItemRect(
-              Main.Global.lootColGrid,
+              Main.Global.grid.lootCol,
               a.x,
               a.y,
               a.radius * 2,
