@@ -28,6 +28,8 @@ class SceneGroup {
   public var uiRoot: h2d.Scene;
   public var inactiveAbilitiesRoot: h2d.Scene;
   public var particle: h2d.Scene;
+  public var obstacleMask: h2d.Scene;
+  public var obscuredEntities: h2d.Scene;
 
   public function new(sevents: hxd.SceneEvents): Void {
     mainBackground = {
@@ -55,6 +57,20 @@ class SceneGroup {
           Global.resolutionScale);
       s;
     }
+
+    obstacleMask = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
+
+    obscuredEntities = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
   }
 }
 
@@ -67,8 +83,6 @@ class Global {
   
   public static var scene: SceneGroup = null;
   public static var rootScene: h2d.Scene;
-  public static var obstacleMaskScene: h2d.Scene;
-  public static var obscuredEntitiesScene: h2d.Scene;
   public static var staticScene: h2d.Scene;
 
   public static var mainCamera: CameraRef;
@@ -191,11 +205,11 @@ class Main extends hxd.App {
       // run sprite batches before engine rendering
       SpriteBatchSystem.renderAll(Global.time);
 
-      Global.obstacleMaskScene.render(e);
+      Global.scene.obstacleMask.render(e);
       Global.scene.mainBackground.render(e);
       super.render(e);
       Global.scene.particle.render(e);
-      Global.obscuredEntitiesScene.render(e);
+      Global.scene.obscuredEntities.render(e);
       Global.staticScene.render(e);
       Global.scene.inactiveAbilitiesRoot.render(e);
       Global.scene.uiRoot.render(e);
@@ -260,15 +274,6 @@ class Main extends hxd.App {
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
 
-        {
-          Global.obstacleMaskScene = new h2d.Scene();
-          Global.obstacleMaskScene.scaleMode = ScaleMode.Zoom(
-              Global.resolutionScale);
-          Global.obscuredEntitiesScene = new h2d.Scene();
-          Global.obscuredEntitiesScene.scaleMode = ScaleMode.Zoom(
-              Global.resolutionScale);
-        }
-
         // used for experimental projects
         Global.staticScene = new h2d.Scene();
         sevents.addScene(Global.staticScene);
@@ -280,15 +285,15 @@ class Main extends hxd.App {
             hxd.Res.sprite_sheet_json);
         {
           Global.wmSpriteBatch = new SpriteBatchSystem(
-              Global.obstacleMaskScene,
+              Global.scene.obstacleMask,
               hxd.Res.sprite_sheet_png,
               hxd.Res.sprite_sheet_json);
           Global.oeSpriteBatch = new SpriteBatchSystem(
-              Global.obscuredEntitiesScene,
+              Global.scene.obscuredEntities,
               hxd.Res.sprite_sheet_png,
               hxd.Res.sprite_sheet_json);
           final mask = new h2d.filter.Mask(
-              Global.obstacleMaskScene, true, true);
+              Global.scene.obstacleMask, true, true);
           final batch = Global.oeSpriteBatch.batchManager.batch;
           batch.filter = mask;
           batch.color = new h3d.Vector(1, 1, 1, 0.7);
@@ -500,8 +505,8 @@ class Main extends hxd.App {
           for (scene in [
               Global.rootScene,
               Global.scene.particle,
-              Global.obstacleMaskScene,
-              Global.obscuredEntitiesScene,
+              Global.scene.obstacleMask,
+              Global.scene.obscuredEntities,
           ]) {
             scene.x = cam_center_x;
             scene.y = cam_center_y;
