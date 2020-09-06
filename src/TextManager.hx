@@ -1,5 +1,5 @@
 class TextManager {
-  static final instances: Array<h2d.Text> = [];
+  static var instances: Array<h2d.Text> = [];
 
   public static function get() {
     final inst = new h2d.Text(Fonts.primary());
@@ -9,14 +9,15 @@ class TextManager {
   } 
 
   public static function resetAll() {
-    for (inst in instances) {
-      inst.remove();
-    }
-
 #if debugMode
     Main.Global.logData.textManager = {
       numInstances: instances.length
     };
 #end
+
+    for (inst in instances) {
+      inst.remove();
+    }
+    instances = [];
   } 
 }
