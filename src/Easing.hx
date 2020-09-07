@@ -1,27 +1,12 @@
-// [easing algorithms](https://easings.net/) 
 import Game.Colors;
 
 class Easing {
   static var pow = Math.pow;
-  static var cos = Math.cos;
   static var sin = Math.sin;
-  static var sqrt = Math.sqrt;
   static var PI = Math.PI;
 
   public static function easeIn(x: Float): Float {
     return x;
-  }
-
-  public static function easeInSine(x: Float): Float {
-      return 1 - cos((x * PI) / 2);
-  }
-
-  public static function easeInCirc(x: Float): Float {
-    return 1 - sqrt(1 - pow(x, 2));
-  }
-
-  public static function easeInExpo(x: Float): Float {
-    return x == 0 ? 0 : pow(2, 10 * x - 10);
   }
 
   public static function easeInOut(x: Float): Float {
@@ -36,32 +21,8 @@ class Easing {
     return x * x * x * x * x;
   }
 
-  public static function easeOutExpo(x: Float): Float {
-    return x == 1 ? 1 : 1 - pow(2, -10 * x);
-  }
-
   public static function easeOutQuint(x: Float): Float {
     return 1 - pow(1 - x, 5);
-  }
-
-  public static function easeInElastic(x: Float): Float {
-    final c4 = (2 * Math.PI) / 3;
-
-    return x == 0
-      ? 0
-      : x == 1
-      ? 1
-      : -pow(2, 10 * x - 10) * sin((x * 10 - 10.75) * c4);
-  }
-
-  public static function easeOutElastic(x: Float): Float {
-    final c4 = (2 * Math.PI) / 3;
-
-    return x == 0
-      ? 0
-      : x == 1
-      ? 1
-      : pow(2, -10 * x) * sin((x * 10 - 0.75) * c4) + 1;
   }
 
   public static function easeInOutElastic(x: Float): Float {
@@ -74,22 +35,6 @@ class Easing {
     : x < 0.5
     ? -(pow(2, 20 * x - 10) * sin((20 * x - 11.125) * c5)) / 2
     : (pow(2, -20 * x + 10) * sin((20 * x - 11.125) * c5)) / 2 + 1;
-  }
-
-  public static function easeInBack(x: Float): Float {
-    final c1 = 1.70158;
-    final c3 = c1 + 1;
-
-    return c3 * x * x * x - c1 * x * x;
-  }
-
-  public static function easeInOutBack(x: Float): Float {
-    final c1 = 1.70158;
-    final c2 = c1 * 1.525;
-
-    return x < 0.5
-      ? (pow(2 * x, 2) * ((c2 + 1) * 2 * x - c2)) / 2
-      : (pow(2 * x - 2, 2) * ((c2 + 1) * (x * 2 - 2) + c2) + 2) / 2;
   }
 
   public static function easeOutBounce(x: Float) {
@@ -114,15 +59,8 @@ class Easing {
   }
 
   public static function easeHeartBeat(x: Float) {
-    return 1 + pow(sin(x * PI),12) / 4;
+    return pow(sin(x * PI),12);
   }
-
-  public static function easeOutBack(x: Float): Float {
-    final c1 = 1.70158;
-    final c3 = c1 + 1;
-
-    return 1 + c3 * pow(x - 1, 3) + c1 * pow(x - 1, 2);
-  } 
 
   public static function progress(startTime: Float, currentTime: Float, duration: Float) {
     return Math.min(1, (currentTime - startTime) / duration);

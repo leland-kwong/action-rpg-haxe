@@ -1,11 +1,2 @@
-# compiled file for heaps' game executable
-**/hlboot.dat
-bin/external-assets/saved-games
-
-**/aseprite_exports
-*.tmp
-temp
-
-*.dist.*
-.logs
-node_modules
+# example: game.dist.js
+*.dist*

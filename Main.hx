@@ -1,161 +1,52 @@
-import haxe.Json;
 import h2d.Text;
 import h2d.Interactive;
 import Fonts;
 import Game;
-import Grid;
-import SpriteBatchSystem;
-import Camera;
-import Tests;
-import Collision;
-import Gui;
 
-enum MainPhase {
-  Init;
-  Update;
-  Render;
-}
+class BatchDraw {
+  var txt: h2d.Text;
+  var batch: h2d.SpriteBatch;
+  var graphic: h2d.Graphics;
+  var circleTile: h2d.Tile;
+  var squareTile: h2d.Tile;
 
-enum HoverState {
-  None;
-  Ui;
-}
+  public function new(s2d: h2d.Scene, font) {
+    var texture = new h3d.mat.Texture(s2d.height, s2d.width, [h3d.mat.Data.TextureFlags.Target]);
+    var tile = h2d.Tile.fromTexture(texture);
+    circleTile = tile.sub(0, 0, 51 * 2, 51 * 2);
 
-typedef VoidFn = () -> Void;
+    graphic = new h2d.Graphics(s2d);
+    // outline
+    graphic.beginFill(0xffffff);
+    graphic.drawCircle(51, 51, 51);
+    // fill
+    graphic.beginFill(0x999);
+    graphic.drawCircle(51, 51, 50);
 
-class SceneGroup {
-  public var mainBackground: h2d.Scene;
-  public var uiRoot: h2d.Scene;
-  public var inactiveAbilitiesRoot: h2d.Scene;
-  public var particle: h2d.Scene;
-  public var obstacleMask: h2d.Scene;
-  public var obscuredEntities: h2d.Scene;
-  public var staticScene: h2d.Scene;
-
-  public function new(sevents: hxd.SceneEvents): Void {
-    mainBackground = {
-      final s = new h2d.Scene();
-      s.scaleMode = ScaleMode.Zoom(
-          Global.resolutionScale);
-      s;
-    }
-
-    uiRoot = {
-      final s = new h2d.Scene();
-      sevents.addScene(s);
-      s;
-    }
-
-    inactiveAbilitiesRoot = {
-      final s2d = new h2d.Scene();
-      s2d.filter = h2d.filter.ColorMatrix.grayed();
-      s2d;
-    }
-
-    particle = {
-      final s = new h2d.Scene();
-      s.scaleMode = ScaleMode.Zoom(
-          Global.resolutionScale);
-      s;
-    }
-
-    obstacleMask = {
-      final s = new h2d.Scene();
-      s.scaleMode = ScaleMode.Zoom(
-          Global.resolutionScale);
-      s;
-    }
-
-    obscuredEntities = {
-      final s = new h2d.Scene();
-      s.scaleMode = ScaleMode.Zoom(
-          Global.resolutionScale);
-      s;
-    }
-
-    staticScene = {
-      final s = new h2d.Scene();
-      sevents.addScene(s);
-      s;
-    }
-  }
-}
-
-class Global {
-  public static var time = 0.0;
-  public static var isNextFrame = true;
-  public static var tickCount = 0.;
-  public static var resolutionScale = 4.;
-  public static var logData: Dynamic = {};
-  
-  public static var scene: SceneGroup = null;
-  public static var rootScene: h2d.Scene;
-
-  public static var mainCamera: CameraRef;
-  public static var worldMouse = {
-    buttonDown: -1,
-    buttonDownStartedAt: -1.0,
-    clicked: false,
-    hoverState: HoverState.None,
-  }
-  public static final grid = {
-    obstacle: Grid.create(16),
-    dynamicWorld: Grid.create(16),
-    traversable: Grid.create(16),
-    lootCol: Grid.create(8),
-  }
-  public static var sb: SpriteBatchSystem;
-  public static var wmSpriteBatch: SpriteBatchSystem;
-  public static var oeSpriteBatch: SpriteBatchSystem;
-  public static var uiSpriteBatch: SpriteBatchSystem;
-
-  public static final hooks = {
-    update: new Array<(dt: Float) -> Bool>(),
-    render: new Array<(time: Float) -> Bool>(),
-    // handles input device events
-    input: new Array<(dt: Float) -> Bool>(),
+    var squareX = 50 + 102;
+    var squareY = 51;
+    squareTile = tile.sub(squareX, squareY, 50, 50);
+    graphic.beginFill(0xffda3d);
+    graphic.drawRect(squareX, squareY, 50, 50);
+    graphic.endFill();
+    graphic.drawTo(texture);
   }
 
-  public static var mainPhase: MainPhase = null;
-  public static var entitiesToRender: Array<Entity> = [];
-  public static var uiState = Hud.UiStateManager.nextUiState(
-      Hud.UiStateManager.defaultUiState, {
-        mainMenu: {
-          enabled: true
-        }
-      });
-  // enables/disables home menu toggling so pressing
-  // escape doesn't open it under certain conditions
-  public static var uiHomeMenuEnabled = true;
+  public function update(t, dt:Float, s2d: h2d.Scene) {
+    graphic.clear();
 
-  public static var hoveredEntity = {
-    id: Entity.NULL_ENTITY.id,
-    hoverStart: -1.0
-  };
-  public static var gameState = Session.createGameState(
-      -1, null, null, 'placeholder_game_state');
-
-  static var sceneCleanupFn: () -> Void;
-
-  public static function replaceScene(
-      getNextScene: () -> VoidFn) {
-    if (sceneCleanupFn != null) {
-      sceneCleanupFn();
-    } 
-
-    sceneCleanupFn = getNextScene();
-  }
-
-  public static function hasUiItemsEnabled() {
-    final uiPanelFields = Lambda.filter(
-        Reflect.fields(Global.uiState),
-        (field) -> field != 'hud');
-
-    return Lambda.exists(
-        uiPanelFields,
-        (field) -> {
-          return Reflect.field(Global.uiState, field).enabled;
-        });
+    for (i in 0...10000) {
+      var x = i % 50 * 2 + 100 + Std.random(100);
+      var y = Math.round(i / 2) + Std.random(100);
+      var tile = i % 2 == 0 ? circleTile : squareTile;
+      var centerOffsetX = tile.width / 2;
+      var centerOffsetY = tile.height / 2;
+      graphic.drawTile(
+        x + Math.sin(t) * 100 - centerOffsetX,
+        y - centerOffsetY,
+        tile
+      );
+    }
   }
 }
 
@@ -164,444 +55,293 @@ enum UiState {
   Normal;
 }
 
+class UiButton extends h2d.Object {
+  var text: h2d.Text;
+  var state: UiState;
+  public var button: Interactive;
+
+  public function new(btnText, font, onClick) {
+    super();
+
+    text = new Text(font);
+    text.text = btnText;
+
+    button = new Interactive(
+      text.textWidth,
+      text.textHeight
+    );
+
+    button.onOver = function(ev: hxd.Event) {
+      state = UiState.Over;
+    }
+
+    button.onOut = function(ev: hxd.Event) {
+      state = UiState.Normal;
+    }
+
+    button.onClick = function(ev: hxd.Event) {
+      onClick();
+    }
+
+    button.addChild(text);
+    addChild(button);
+  }
+
+  public function update(dt) {
+    if (state == UiState.Normal) {
+      text.textColor = Game.Colors.pureWhite;
+    }
+
+    if (state == UiState.Over) {
+      text.textColor = Game.Colors.yellow;
+    }
+  }
+}
+class HomeScreen extends h2d.Object {
+  var uiButtonsList = [];
+
+  public function new(s2d, onGameStart, onGameExit) {
+    super();
+
+    var leftMargin = 100;
+
+    var titleFont = Fonts.primary.get().clone();
+    titleFont.resizeTo(12 * 6);
+    var titleText = new h2d.Text(titleFont, this);
+    titleText.text = 'Autonomous';
+    titleText.textColor = Game.Colors.pureWhite;
+    titleText.x = leftMargin;
+    titleText.y = 300;
+
+    var btnFont = Fonts.primary.get().clone();
+    btnFont.resizeTo(36);
+
+    var startGameBtn = new UiButton(
+      'Start Game', btnFont, onGameStart
+    );
+    addChild(startGameBtn);
+    startGameBtn.x = leftMargin;
+    startGameBtn.y = titleText.y + titleText.textHeight + 50;
+    uiButtonsList.push(startGameBtn);
+
+    var exitGameBtn = new UiButton(
+      'Exit Game', btnFont, onGameExit
+    );
+    addChild(exitGameBtn);
+    exitGameBtn.x = startGameBtn.x;
+    exitGameBtn.y = startGameBtn.y + startGameBtn.button.height + 10;
+    uiButtonsList.push(exitGameBtn);
+  }
+
+  override function onRemove() {
+    trace('homescreen remove');
+    for (o in uiButtonsList) {
+      o.remove();
+    }
+  }
+
+  public function update(dt: Float) {
+    for (o in uiButtonsList) {
+      var btn = (o: UiButton);
+      btn.update(dt);
+    }
+  }
+}
+
+class Hud extends h2d.Object {
+  var helpTextList: Array<h2d.Text> = [];
+  var scene: h2d.Scene;
+
+  function controlsHelpText(text, font) {
+    var t = new h2d.Text(font, this);
+    t.text = text;
+    t.textColor = Game.Colors.pureWhite;
+    helpTextList.push(t);
+    return t;
+  }
+
+  public function new(s2d: h2d.Scene) {
+    super();
+
+    scene = s2d;
+    var font = Fonts.primary.get().clone();
+    font.resizeTo(24);
+    controlsHelpText('wasd: move', font);
+    controlsHelpText('left-click: primary', font);
+    controlsHelpText('right-click: secondary', font);
+  }
+
+  public function update() {
+    var _originX = 10.0;
+    var originY = scene.height - 10;
+
+    for (t in helpTextList) {
+      t.x = _originX;
+      t.y = originY - t.textHeight;
+      _originX += t.textWidth + 20;
+    }
+  }
+}
+
 class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
+  var tickCount = 0;
+  var t = 0.0;
   var acc = 0.0;
-  public static final nativePixelResolution = {
-    // TODO this should be based on
-    // the actual screen's resolution
-    x: 1920,
-    y: 1080
-  };
+  var batcher: BatchDraw;
+  var game: Game;
+  var background: h2d.Bitmap;
+  var homeScreen: HomeScreen;
+  var hud: Hud;
+  var reactiveItems: Array<Dynamic> = [];
+
+  function animate(s2d: h2d.Scene) {
+    // creates three tiles with different color
+    var t1 = h2d.Tile.fromColor(0xFF0000, 30, 30);
+    var t2 = h2d.Tile.fromColor(0x00FF00, 30, 40);
+    var t3 = h2d.Tile.fromColor(0x0000FF, 30, 50);
+
+    // creates an animation for these tiles
+    anim = new h2d.Anim([t1,t2,t3], s2d);
+    anim.x = s2d.width * 0.5;
+    anim.y = s2d.height * 0.5;
+  }
+
+  function addBackground(s2d: h2d.Scene, color) {
+    // background
+    var overlayTile = h2d.Tile.fromColor(color, s2d.width, s2d.height);
+    return new h2d.Bitmap(overlayTile, s2d);
+  }
 
   function setupDebugInfo(font) {
     debugText = new h2d.Text(font);
-    // debugText.textAlign = Right;
+    debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
-    Global.scene.uiRoot.addChild(debugText);
+    s2d.addChild(debugText);
   }
 
-  public static function onGameExit() {
-    hxd.System.exit();
-
-    return () -> {};
-  }
-
-  public override function render(e: h3d.Engine) {
-    try {
-
-      Global.mainPhase = MainPhase.Render;
-
-      {
-        final nextRenderHooks = [];
-        for (hook in Global.hooks.render) {
-          final keepAlive = hook(Global.time);
-
-          if (keepAlive) {
-            nextRenderHooks.push(hook);
-          }
-        }
-        Global.hooks.render = nextRenderHooks;
+  function getNumEnemies() {
+    var numEnemies = 0;
+    for (e in Entity.ALL) {
+      if (e.type == 'ENEMY') {
+        numEnemies += 1;
       }
-
-      core.Anim.AnimEffect
-        .render(Global.time);
-      // run sprite batches before engine rendering
-      SpriteBatchSystem.renderAll(Global.time);
-
-      Global.scene.obstacleMask.render(e);
-      Global.scene.mainBackground.render(e);
-      super.render(e);
-      Global.scene.particle.render(e);
-      Global.scene.obscuredEntities.render(e);
-      Global.scene.staticScene.render(e);
-      Global.scene.inactiveAbilitiesRoot.render(e);
-      Global.scene.uiRoot.render(e);
-
-    } catch (error: Dynamic) {
-      HaxeUtils.handleError(
-          null, 
-          (_) -> hxd.System.exit())(error);
     }
+    return numEnemies;
   }
 
-  function handleGlobalHotkeys(dt: Float) {
-    final Key = hxd.Key;
+  function showHomeScreen() {
+    if (homeScreen != null) {
+      return;
+    }
 
-#if debugMode
-    final isForceExit = Key.isDown(Key.CTRL) &&
-      Key.isPressed(Key.Q);
+    // reset game states
+    game.remove();
+    game = null;
 
-    if (isForceExit) {
+    function onGameStart() {
+      game = new Game(s2d, game);
+      homeScreen.remove();
+      homeScreen = null;
+    }
+
+    function onGameExit() {
+      trace('on game exit');
       hxd.System.exit();
     }
-#end
-
-    // handle in game hotkeys
-    if (!Global.uiState.mainMenu.enabled) {
-      if (Key.isPressed(Key.I)) {
-        Hud.UiStateManager.send({
-          type: 'UI_INVENTORY_TOGGLE'
-        });
-      }
-
-      final togglePassiveSkillTree = 
-        Key.isPressed(Key.P);
-      if (togglePassiveSkillTree) {
-        Hud.UiStateManager.send({
-          type: 'UI_PASSIVE_SKILL_TREE_TOGGLE'
-        });
-      }
-    }
-
-    final toggleMainMenu = 
-      Key.isPressed(Key.ESCAPE);
-    if (toggleMainMenu) {
-      Hud.UiStateManager.send({
-        type: 'UI_MAIN_MENU_TOGGLE'
-      });
-    }
-
-    return true;
+    homeScreen = new HomeScreen(
+      s2d, onGameStart, onGameExit
+    );
+    s2d.addChild(homeScreen);
   }
 
   override function init() {
-    try {
-      hxd.Res.initEmbed();
-      Global.mainPhase = MainPhase.Init;
-      Global.hooks.input.push(handleGlobalHotkeys);
-
-      // setup global scene objects
-      {
-        Global.scene = new SceneGroup(sevents);
-        Global.rootScene = s2d;
-        s2d.scaleMode = ScaleMode.Zoom(
-            Global.resolutionScale);
-
-        // setup sprite batch systems
-        Global.sb = new SpriteBatchSystem(
-            Global.scene.particle,
-            hxd.Res.sprite_sheet_png,
-            hxd.Res.sprite_sheet_json);
-        {
-          Global.wmSpriteBatch = new SpriteBatchSystem(
-              Global.scene.obstacleMask,
-              hxd.Res.sprite_sheet_png,
-              hxd.Res.sprite_sheet_json);
-          Global.oeSpriteBatch = new SpriteBatchSystem(
-              Global.scene.obscuredEntities,
-              hxd.Res.sprite_sheet_png,
-              hxd.Res.sprite_sheet_json);
-          final mask = new h2d.filter.Mask(
-              Global.scene.obstacleMask, true, true);
-          final batch = Global.oeSpriteBatch.batchManager.batch;
-          batch.filter = mask;
-          batch.color = new h3d.Vector(1, 1, 1, 0.7);
-          batch.colorAdd = new h3d.Vector(1, 1, 1, 1);
-        }
-        Global.uiSpriteBatch = new SpriteBatchSystem(
-            Global.scene.uiRoot,
-            hxd.Res.sprite_sheet_png,
-            hxd.Res.sprite_sheet_json);
-      }
-
-      Tests.run();      
-
-      final win = hxd.Window.getInstance();
-
-      // setup global mouse interactions
-      {
-        final rootInteract = new h2d.Interactive(
-            nativePixelResolution.x,
-            nativePixelResolution.y,
-            Global.scene.uiRoot);
-
-        rootInteract.propagateEvents = true;
-        rootInteract.enableRightButton = true;
-
-        var pointerDownAt = 0.0;
-
-        rootInteract.onClick = (_) -> {
-          // Click events trigger regardless of how long
-          // since the pointer was down. This fixes that.
-          final timeBetweenPointerDown = Global.time - pointerDownAt;
-          final clickTimeTolerance = 0.3; // seconds
-
-          if (timeBetweenPointerDown > clickTimeTolerance) {
-            return;
-          }
-
-          Global.worldMouse.clicked = true;
-
-          return;
-        };
-
-        rootInteract.onPush = (event : hxd.Event) -> {
-          pointerDownAt = Global.time;
-          Global.worldMouse.buttonDownStartedAt = Global.time;
-          Global.worldMouse.buttonDown = event.button;
-        };
-
-        rootInteract.onRelease = (event : hxd.Event) -> {
-          Global.worldMouse.buttonDown = -1;
-        };
-        
-        // setup custom cursor graphic
-        {
-          final spriteSheetRes = hxd.Res.sprite_sheet_ui_cursor_png;
-          final spriteSheetData: SpriteBatchSystem.SpriteSheetData = 
-            Utils.loadJsonFile(
-              hxd.Res.sprite_sheet_ui_cursor_json);
-          final cursorSpriteData: SpriteBatchSystem.SpriteData = 
-            Reflect.field(
-                spriteSheetData.frames, 'default-0');
-          final f = cursorSpriteData.frame;
-          final targetCursorFrames = {
-            final pixels = spriteSheetRes.getPixels(RGBA);
-            final colorTeal = 0x2ce8f5;
-            final bmp = new hxd.BitmapData(f.w, f.h);
-            final dst = haxe.io.Bytes.alloc(f.w * f.h * 4);
-            final subSpritePixels = new hxd.Pixels(
-                f.w, f.h, dst, RGBA); 
-
-            // draw the pixels from the sprite
-            // to generate a custom cursor
-            for (y in f.y...(f.y + f.h)) {
-              for (x in f.x...(f.x + f.w)) {
-                final px = pixels.getPixel(x, y);
-                subSpritePixels.setPixel(
-                    x - f.x, y - f.y, px);
-              }
-            }
-            bmp.setPixels(subSpritePixels);
-
-            [bmp];
-          }
-
-          final Cursor = hxd.Cursor;
-          final targetCursor = Cursor.Custom(
-              new hxd.Cursor.CustomCursor(
-                targetCursorFrames, 
-                0, 
-                Std.int(f.w / 2), 
-                Std.int(f.h / 2)));
-
-          function deriveCursorStyle() {
-            if (Global.hasUiItemsEnabled()) {
-              return Cursor.Default;
-            }
-
-            return targetCursor;
-          }
-
-          function updateCursorStyle(dt) {
-            rootInteract.cursor = deriveCursorStyle();
-
-            return true;
-          }
-
-          Global.hooks.update.push(updateCursorStyle);
-        }
-      }
-
-      // setup viewport
-#if !jsMode
-      {
-        // make fullscreen
-        win.resize(
-            nativePixelResolution.x, 
-            nativePixelResolution.y);
-        win.displayMode = hxd.Window.DisplayMode
-          .Fullscreen;
-      }
-#end
-
-      Global.mainCamera = Camera.create();      
-
-#if debugMode
-      setupDebugInfo(Fonts.debug());
-#end
-
-      Gui.init();
-      Gui.GuiComponents.mainMenu();
-      Hud.init();
-      PassiveSkillTree.init();
-    } catch (error: Dynamic) {
-      HaxeUtils.handleError(
-          '[update error]',
-          (_) -> hxd.System.exit())(error);
+    #if !jsMode
+    // make fullscreen
+    {
+      hxd.Window.getInstance()
+        .displayMode = hxd.Window.DisplayMode.Fullscreen;
     }
+    #end
+
+    background = addBackground(s2d, 0x222222);
+
+    showHomeScreen();
+    hud = new Hud(s2d);
+    s2d.addChild(hud);
+
+    #if debugMode
+      setupDebugInfo(Fonts.primary.get());
+    #end
   }
 
-  
-  function hasRemainingUpdateFrames(
-      acc: Float, frameTime: Float) {
-    return acc >= frameTime;
+  function handleGlobalHotkeys() {
+    var Key = hxd.Key;
+
+    if (Key.isPressed(Key.ESCAPE)) {
+      showHomeScreen();
+    }
   }
 
   // on each frame
   override function update(dt:Float) {
-    try {
-      Global.isNextFrame = false;
-      Global.mainPhase = MainPhase.Update;
-      acc += dt;
+    handleGlobalHotkeys();
+    hud.update();
 
-      final trueFps = Math.round(1/dt);
-      
-      // Set to fixed dt otherwise we can get inconsistent
-      // results with the game physics.
-      // https://gafferongames.com/post/fix_your_timestep/
-      final frameTime = 1/100;
-      // prevent updates from cascading into infinite
-      final maxNumUpdatesPerFrame = 4;
-      var frameDt = 0.;
-      var numUpdates = 0;
+    for (it in reactiveItems) {
+      it.update(dt);
+    }
 
-      TextManager.resetAll();
+    t += dt;
+    acc += dt;
 
-      // run while there is remaining frames to simulate
-      while (hasRemainingUpdateFrames(acc, frameTime)
-          && numUpdates < maxNumUpdatesPerFrame) {
-        numUpdates += 1;
+    // fixed to 60fps for now
+    var frameTime = 1/60;
+    var fps = Math.round(1/dt);
+    var isNextFrame = acc >= frameTime;
+    // handle fixed dt here
+    if (isNextFrame) {
+      acc -= frameTime;
 
-        acc -= frameTime;
-        Global.isNextFrame = true;
+      var numEnemies = getNumEnemies();
 
-        Global.time += frameTime;
-        frameDt += frameTime;
-
-        // run updateHooks
-        {
-          final nextHooks = [];
-          for (update in Global.hooks.update) {
-            final shouldKeepAlive = update(frameTime);
-
-            if (shouldKeepAlive) {
-              nextHooks.push(update); 
-            }
-          }
-          Global.hooks.update = nextHooks;
+      if (game != null) {
+        var levelCleared = numEnemies == 0;
+        if (levelCleared) {
+          game.newLevel(s2d);
         }
 
-        // sync up scenes with the camera
-        {
-          // IMPORTANT: update the camera position first
-          // before updating the scenes otherwise they
-          // will be lagging behind
-          Camera.update(Global.mainCamera, frameTime);
-          Camera.setSize(
-              Global.mainCamera,
-              Global.rootScene.width,
-              Global.rootScene.height);
-          Camera.setZoom(
-              Global.mainCamera,
-              Global.resolutionScale);
+        game.update(s2d, frameTime);
+        // batcher.update(t, dt, s2d);
 
-          // update scenes to move relative to camera
-          final cam_center_x = -Global.mainCamera.x 
-            + Math.fround(Global.rootScene.width / 2);
-          final cam_center_y = -Global.mainCamera.y 
-            + Math.fround(Global.rootScene.height / 2);
-          for (scene in [
-              Global.rootScene,
-              Global.scene.particle,
-              Global.scene.obstacleMask,
-              Global.scene.obscuredEntities,
-          ]) {
-            scene.x = cam_center_x;
-            scene.y = cam_center_y;
-          }
+        if (game.isGameOver()) {
+          showHomeScreen();
         }
-
-        // ints (under 8 bytes in size) can only be a maximum of 10^10 before they wrap over
-        // and become negative values. So to get around this, we floor a float value to achieve the same thing.
-        Global.tickCount = Math.ffloor(
-            Global.time / frameTime);
-
-        // we want to set this to false as soon as
-        // a single update is run to prevent a situation
-        // where we'll get a double click due to the game
-        // loop updating more than once per frame on systems
-        // that don't support high frame rates
-        Global.worldMouse.clicked = false;
       }
-      
-      // run input hooks outside of the main update loop
-      // because we only want it to trigger once per
-      // frame.
-      {
-        final nextHooks = [];
-        for (update in Global.hooks.input) {
-          final shouldKeepAlive = update(frameTime);
 
-          if (shouldKeepAlive) {
-            nextHooks.push(update); 
-          }
-        }
-        Global.hooks.input = nextHooks;
+      if (homeScreen != null) {
+        homeScreen.update(dt);
       }
 
       if (debugText != null) {
-        final stats = {
-          time: Global.time,
-          tickCount: Global.tickCount,
-          trueFps: trueFps,
-          updatesPerFrame: Math.round(1/frameTime),
-          drawCalls: engine.drawCalls,
-          numEntities: Lambda.count(Entity.ALL_BY_ID),
-          numSprites: Lambda.fold(
-              SpriteBatchSystem.instances, 
-              (ref, count) -> {
-                return count + ref.particles.length;
-              }, 0),
-          numActiveEntitiesToRender: 
-            Global.entitiesToRender.length,
-          numAnimations: core.Anim.AnimEffect
-            .nextAnimations.length,
-          numUpdateHooks: Global.hooks.update.length,
-          numInputHooks: Global.hooks.input.length,
-          numRenderHooks: Global.hooks.render.length,
-        }
-        final formattedStats = Json.stringify(stats, null, '  ');
-        final text = [
-          'stats: ${formattedStats}',
-          'log: ${Json.stringify(Global.logData, null, '  ')}'
+        var text = [
+          'time: ${t}',
+          'fps: ${fps}',
+          'drawCalls: ${engine.drawCalls}',
+          'numEntities: ${Entity.ALL.length}',
+          'numEnemies: ${numEnemies}'
         ].join('\n');
-        debugText.x = Gui.margin;
-        debugText.y = Gui.margin;
+        var debugUiMargin = 10;
+        debugText.x = s2d.width - debugUiMargin;
+        debugText.y = debugUiMargin;
         debugText.text = text;
-        Global.logData.maxParticles = Math.max(
-            Global.logData.maxParticles,
-            stats.numSprites);
-        Global.logData.totalParticles =
-          Utils.withDefault(
-              Global.logData.totalParticles, 0) 
-          + stats.numSprites;
-        Global.logData.avgParticles = Std.int(
-            Global.logData.totalParticles / Global.tickCount);
       }
-
-      core.Anim.AnimEffect
-        .update(frameDt);
-      SpriteBatchSystem.updateAll(frameDt);
-
-      // version info
-      {
-        final tf = TextManager.get();
-        final win = hxd.Window.getInstance();
-        tf.font = Fonts.debug();
-        tf.text = 'build ${Config.version}';
-        tf.x = win.width - tf.textWidth - Gui.margin;
-        tf.y = win.height - tf.textHeight - Gui.margin;
-      }
-
-    } catch (error: Dynamic) {
-      HaxeUtils.handleError(
-          '[update error]',
-          (_) -> hxd.System.exit())(error);
     }
+
+    background.width = s2d.width;
+    background.height = s2d.height;
   }
 
   static function main() {
