@@ -172,15 +172,6 @@ class LineProjectile extends Projectile {
   } 
 }
 
-class SpotLight {
-  public static function emit(x, y, radius) {
-    final sprite = Main.lightingSystem.sb.emitSprite(
-        x, y, 
-        'ui/spotlight');
-    sprite.scale = radius * 2 * 8 / 100;
-  }
-}
-
 class Bullet extends Projectile {
   static var onHitFrames = [
     'projectile_hit_animation/burst-0',
@@ -881,29 +872,30 @@ class Ai extends Entity {
     final currentFrameName = core.Anim.getFrame(
         activeAnim, time);
 
-    final sprite = Main.Global.sb.emitSprite(
-        x, y,
-        currentFrameName,
-        null,
-        (p) -> {
-          final b: h2d.SpriteBatch.BatchElement = 
-            p;
+    // render character sprite
+    {
+      final sprite = Main.Global.sb.emitSprite(
+          x, y,
+          currentFrameName);
+      // flash enemy white
+      if (Cooldown.has(cds, 'hitFlash')) {
+        sprite.r = 150;
+        sprite.g = 150;
+        sprite.b = 150;
+      }
 
-          // flash enemy white
-          if (Cooldown.has(cds, 'hitFlash')) {
-            b.r = 150;
-            b.g = 150;
-            b.b = 150;
-          }
-
-          b.scaleX = facingDir * 1;
-        });
-
-    final shouldHighlight = Main.Global.hoveredEntity.id == id;
-    if (shouldHighlight) {
-      Entity.renderOutline(
-          sprite.sortOrder - 1, currentFrameName, this);
+      sprite.scaleX = facingDir * 1;
+      
+      final shouldHighlight = Main.Global.hoveredEntity.id == id;
+      if (shouldHighlight) {
+        Entity.renderOutline(
+            sprite.sortOrder - 1, currentFrameName, this);
+      }
     }
+
+    final lightSource = Main.lightingSystem.emitSpotLight(
+        x, y, radius * 2);
+    lightSource.alpha = 0.5;
   }
 }
 
@@ -2003,7 +1995,8 @@ class Player extends Entity {
       spriteEffect
     );
 
-    SpotLight.emit(x, y, radius);
+    final lightRadius = 100;
+    Main.lightingSystem.emitSpotLight(x, y, lightRadius);
 
     final obscuredSilhouetteSprite = 
       Main.Global.oeSpriteBatch.emitSprite(
@@ -2497,7 +2490,7 @@ class Game extends h2d.Object {
                 Main.Global.hooks.render.push(function makeSpotlight(_) {
                   final progress = (Main.Global.time - startedAt) 
                     / animDuration;
-                  SpotLight.emit(x, y, 3);
+                  Main.lightingSystem.emitSpotLight(x, y, 3);
 
                   return progress < 1;
                 });

@@ -83,6 +83,18 @@ class LightingSystem {
     return true;
   }
 
+  public function emitSpotLight(x, y, scaleX, ?scaleY) {
+    final sprite = sb.emitSprite(
+        x, y, 
+        'ui/spotlight');
+    sprite.scaleX = 2 * scaleX / 100;
+
+    final sy = scaleY == null ? scaleX : scaleY;
+    sprite.scaleY = 2 * sy / 100;
+
+    return sprite;
+  }
+
   public function render(e: h3d.Engine) {
     e.pushTarget(renderTarget);
     e.clear(0);
