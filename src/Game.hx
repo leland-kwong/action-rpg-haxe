@@ -3109,13 +3109,20 @@ class Game extends h2d.Object {
       }
 
       if (lootDef.rarity == Loot.Rarity.Legendary) {
-        final lightBeamConfigs = [
+        final lightBeamConfigs: Array<{
+          radius: Float,
+          x: Float,
+          y: Float,
+          alpha: Float,
+          ?isLightSource: Null<Bool>
+        }> = [
           // main beam
           {
             radius: ref.radius * 1.2,
             x: ref.x - ref.radius * 1.2,
             y: ref.y,
-            alpha: 0.9 + 0.1 * Math.sin(Main.Global.time * 1.5)
+            alpha: 0.9 + 0.1 * Math.sin(Main.Global.time * 1.5),
+            isLightSource: true
           },
           {
             radius: radius1,
@@ -3138,18 +3145,41 @@ class Game extends h2d.Object {
         ];
 
         for (cfg in lightBeamConfigs) {
+          final spriteKey = 'ui/loot_effect_legendary_gradient';
           final sprite = Main.Global.sb.emitSprite(
               cfg.x,
               cfg.y,
-              'ui/loot_effect_legendary_gradient');
+              spriteKey);
           final cam = Main.Global.mainCamera;
-          final cameraDy = Math.abs(cfg.y - cam.y);
+          final cameraDy = Math.abs(cfg.y - cam.y - 20);
           final alphaFallOff = Math.max(
               0, 1 - Math.pow(cameraDy / cam.h * 2, 3));
-          Main.Global.logData.alphaFallOff = alphaFallOff;
-          sprite.scaleY = 1.3;
-          sprite.scaleX = cfg.radius * 2;
-          sprite.a = cfg.alpha * alphaFallOff;
+          final baseScaleX = cfg.radius * 2;
+          final alpha = cfg.alpha * alphaFallOff;
+          sprite.scaleY = 1.5;
+          sprite.scaleX = baseScaleX;
+          sprite.a = alpha;
+
+          if (cfg.isLightSource) {
+            final source = Main.lightingSystem.sb.emitSprite(
+                cfg.x,
+                cfg.y,
+                spriteKey);
+            source.scaleY = sprite.scaleY;
+            source.scaleX = baseScaleX;
+            source.alpha = alpha;
+          }
+        }
+
+        {
+          // emit light around object
+          final oLight = Main.lightingSystem.sb.emitSprite(
+              ref.x,
+              ref.y,
+              spriteKey);
+          oLight.r = 255.;
+          oLight.g = 255.;
+          oLight.b = 255.;
         }
       }
     };
