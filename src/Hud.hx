@@ -25,6 +25,36 @@ class UiStateManager {
   public static function noopCompleteCallback(_, _) {
   }
 
+  public static final defaultUiState = {
+    mainMenu: {
+      enabled: false
+    },
+    hud: {
+      enabled: true
+    },
+    inventory: {
+      enabled: false
+    },
+    passiveSkillTree: {
+      enabled: false
+    },
+    dialogBox: {
+      enabled: false
+    }
+  }
+
+  public static function nextUiState(
+      state, props: Dynamic) {
+    final copy = Reflect.copy(state); 
+
+    for (f in Reflect.fields(props)) {
+      Reflect.setProperty(
+          copy, f, Reflect.getProperty(props, f));
+    }
+
+    return copy;
+  }
+
   public static function send(
       action: UiAction,
       ?onCompleteCalback: (
@@ -36,24 +66,57 @@ class UiStateManager {
     final uiState = Main.Global.uiState;
 
     switch(action) {
-      case { type: 'INVENTORY_TOGGLE' }: {
-        final s = uiState.inventory;
+      case { type: 'UI_INVENTORY_TOGGLE' }: {
+        final enabled = 
+          Main.Global.uiState.inventory.enabled;
 
-        if (!s.enabled) {
-          Main.Global.clearUi((field) -> field != 'hud');
-        }
-
-        s.enabled = !s.enabled;
+        Main.Global.uiState = nextUiState(defaultUiState, {
+          inventory: {
+            enabled: !enabled          
+          },
+        });
       }
 
-      case { type: 'PASSIVE_SKILL_TREE_TOGGLE' }: {
-        final s = uiState.passiveSkillTree;
+      case { type: 'UI_PASSIVE_SKILL_TREE_TOGGLE' }: {
+        final enabled = 
+          Main.Global.uiState.passiveSkillTree.enabled;
 
-        if (!s.enabled) {
-          Main.Global.clearUi((field) -> field != 'hud');
+        Main.Global.uiState = nextUiState(defaultUiState, {
+          passiveSkillTree: {
+            enabled: !enabled          
+          },
+        });
+      }
+
+      case { type: 'UI_MAIN_MENU_TOGGLE' }: {
+        if (Main.Global.uiHomeMenuEnabled) { 
+          final fieldsToCheck = Lambda.filter(
+              Reflect.fields(Main.Global.uiState),
+              field -> field != 'hud');
+          final areOtherUiEnabled = Lambda.exists(
+              fieldsToCheck, 
+              (field) -> {
+                final state = Reflect.field(Main.Global.uiState, field);
+                return state.enabled;
+              });
+
+          if (areOtherUiEnabled) {
+            Main.Global.uiState = defaultUiState;
+          } else {
+            final enabled = 
+              Main.Global.uiState.mainMenu.enabled;
+
+            Main.Global.uiState = nextUiState(defaultUiState, {
+              mainMenu: {
+                enabled: !enabled          
+              },
+            });
+          }
         }
+      }
 
-        s.enabled = !s.enabled;
+      case { type: 'UI_CLEAR_ALL' }: {
+        Main.Global.uiState = defaultUiState; 
       }
 
       case { 
@@ -61,10 +124,7 @@ class UiStateManager {
         data: gameState
       }: {
         Main.Global.gameState = gameState;
-        Main.Global.clearUi((field) -> {
-          return field != 'hud';
-        });
-
+        Main.Global.uiState = defaultUiState; 
         Main.Global.replaceScene( 
             () -> {
               final gameInstance = new Game(Main.Global.rootScene); 
@@ -96,10 +156,8 @@ class UiStateManager {
         type: 'SWITCH_SCENE',
         data: sceneName
       }: {
-        final Global = Main.Global;
-        Main.Global.clearUi((field) -> true);
-
-        Global.replaceScene(() -> {
+        Main.Global.uiState = defaultUiState; 
+        Main.Global.replaceScene(() -> {
           return  switch(sceneName) {
             case 'experiment': Experiment.init();
             case 'editor': Editor.init();
@@ -191,7 +249,7 @@ class Inventory {
       final mWorldX = Main.Global.rootScene.mouseX;
       final mWorldY = Main.Global.rootScene.mouseY;
       final hoveredLootIds = Grid.getItemsInRect(
-          Main.Global.lootColGrid,
+          Main.Global.grid.lootCol,
           mWorldX,
           mWorldY,
           1,
@@ -267,7 +325,7 @@ class Inventory {
 
               return true;
             };
-            Main.Global.updateHooks.push(
+            Main.Global.hooks.update.push(
                 flyToPlayerThenDestroy);
           }
 
@@ -278,7 +336,7 @@ class Inventory {
             final dx = Utils.irnd(-5, 5, true);
             final startTime = Main.Global.time;
             final duration = 0.4;
-            Main.Global.updateHooks.push((dt: Float) -> {
+            Main.Global.hooks.update.push((dt: Float) -> {
               final progress = (Main.Global.time - startTime) / duration;
               final z = Math.sin(Math.PI * progress) * 15;
               lootRef.x = lootRefOriginalX + progress * dx;
@@ -390,7 +448,7 @@ class UiGrid {
           final iRef = new h2d.Interactive(
               width,
               height,
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
           iRef.x = x;
           iRef.y = y;
 
@@ -648,9 +706,9 @@ class UiGrid {
         .objectMetaByType
         .get(objectType);
 
-      final tfPlayerLevel = TextPool.get();
+      final tfPlayerLevel = TextManager.get();
       tfPlayerLevel.font = Fonts.title();
-      Main.Global.uiRoot.addChild(tfPlayerLevel);
+      Main.Global.scene.uiRoot.addChild(tfPlayerLevel);
       tfPlayerLevel.text = Std.string(
           Config.calcCurrentLevel(
             Main.Global.gameState.experienceGained) + 1);
@@ -683,7 +741,7 @@ class Tooltip {
       return;
     }
 
-    Main.Global.uiRoot.addChild(tooltipTextRef);
+    Main.Global.scene.uiRoot.addChild(tooltipTextRef);
     tooltipTextRef.textAlign = Center;
     final lootType = Entity.getComponent(
         entityRef, 
@@ -705,23 +763,24 @@ class Tooltip {
     final ttWorldPos = Camera.toScreenPos(
         Main.Global.mainCamera, 
         lootRef.x, lootRef.y);
-    tooltipTextRef.x = ttWorldPos[0] * Hud.rScale;
-    tooltipTextRef.y = (ttWorldPos[1] - 25) * Hud.rScale;
+    tooltipTextRef.x = ttWorldPos[0];
+    tooltipTextRef.y = (ttWorldPos[1]) - (lootRef.radius + 10) 
+      * Main.Global.mainCamera.zoom;
 
     // tooltip background
     final ttPaddingH = 5;
     final ttPaddingV = 2;
-    Main.Global.sb.emitSprite(
-        lootRef.x - (ttPaddingH / 2) - 
-        tooltipTextRef.textWidth / 2 / Hud.rScale,
-        lootRef.y - (ttPaddingV / 2) - 25,
+    Main.Global.uiSpriteBatch.emitSprite(
+        tooltipTextRef.x - (ttPaddingH / 2) - 
+        tooltipTextRef.textWidth / 2,
+        tooltipTextRef.y - (ttPaddingV / 2),
         'ui/square_white',
         null,
         (p) -> {
           p.scaleX = ttPaddingH + 
-            tooltipTextRef.textWidth / Hud.rScale;
+            tooltipTextRef.textWidth;
           p.scaleY = ttPaddingV + 
-            tooltipTextRef.textHeight / Hud.rScale;
+            tooltipTextRef.textHeight;
           p.r = 0;
           p.g = 0;
           p.b = 0;
@@ -741,12 +800,6 @@ class InventoryDragAndDropPrototype {
   static final NULL_LOOT_INSTANCE = Loot.createInstance(
       ['nullItem'], NULL_PICKUP_ID);
   static public final state = {
-    equippedAbilitiesById: new haxe.ds.Vector<String>(3),
-    itemsById: [
-      NULL_PICKUP_ID => NULL_LOOT_INSTANCE
-    ],
-    invGrid: Grid.create(16),
-    initialized: false,
     debugGrid: Grid.create(16),
     pickedUpItemId: NULL_PICKUP_ID,
     pickedUpInstance: NULL_LOOT_INSTANCE,
@@ -760,18 +813,27 @@ class InventoryDragAndDropPrototype {
   };
 
   static public function getEquippedAbilities() {
-    return state.equippedAbilitiesById;
+    return Main
+      .Global
+      .gameState
+      .inventoryState
+      .equippedAbilitiesById;
   }
 
   static public function getItemById(id: String) {
-    return Main.Global.gameState.inventoryState.itemsById.get(id);
+    return Main
+      .Global
+      .gameState
+      .inventoryState
+      .itemsById
+      .get(id);
   }
 
   static public function equipItemToSlot(
       lootInst: Loot.LootInstance, 
       index) {
 
-    state.equippedAbilitiesById[index] = lootInst.id;
+    getEquippedAbilities()[index] = lootInst.id;
     Main.Global.gameState.inventoryState.itemsById.set(lootInst.id, lootInst);
 
   }
@@ -780,12 +842,14 @@ class InventoryDragAndDropPrototype {
     final createLootInstanceByType = (type: Loot.LootDefType) -> {
       return Loot.createInstance([type]);
     };
-
     equipItemToSlot(
-        createLootInstanceByType('spiderBots'), 0); 
+        createLootInstanceByType('basicBlasterEvolved'), 0); 
 
-    equipItemToSlot(
-        createLootInstanceByType('channelBeam'), 1); 
+    // equipItemToSlot(
+    //     createLootInstanceByType('spiderBots'), 0); 
+
+    // equipItemToSlot(
+    //     createLootInstanceByType('channelBeam'), 1); 
 
     equipItemToSlot(
         createLootInstanceByType('energy1'), 2); 
@@ -888,7 +952,7 @@ class InventoryDragAndDropPrototype {
               final interact = new h2d.Interactive(
                   ti.width,
                   ti.height,
-                  Main.Global.uiRoot);
+                  Main.Global.scene.uiRoot);
               
               interact.propagateEvents = true;
               interact.x = ti.x;
@@ -911,10 +975,6 @@ class InventoryDragAndDropPrototype {
       return;
     }
 
-    if (!state.initialized) {
-      state.initialized = true;
-    }
-
     // handle slot interactions
     {
       final pickedUpId = Utils.withDefault(
@@ -931,8 +991,8 @@ class InventoryDragAndDropPrototype {
         slotWidth: slotWidth,
         slotHeight: slotHeight,
       };
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final w = pickedUpItem.slotWidth;
       final h = pickedUpItem.slotHeight;
       /*
@@ -1017,7 +1077,7 @@ class InventoryDragAndDropPrototype {
           if (canEquip && 
               Main.Global.worldMouse.clicked) {
             // swap currently equipped with item at pointer
-            final originallyEquipped = state.equippedAbilitiesById[
+            final originallyEquipped = getEquippedAbilities()[
               nearestAbilitySlot.slotIndex];
             equipItemToSlot(lootInst, nearestAbilitySlot.slotIndex);
             state.pickedUpItemId = Utils.withDefault(
@@ -1191,7 +1251,7 @@ class InventoryDragAndDropPrototype {
           };
           return true;
         }
-        Main.Global.updateHooks.push(
+        Main.Global.hooks.update.push(
             restoreStateOnMouseRelease);
       }
     }
@@ -1232,8 +1292,8 @@ class InventoryDragAndDropPrototype {
     };
 
     final equipmentSlotDefs = getEquipmentSlotDefinitions();
-    for (index in 0...state.equippedAbilitiesById.length) {
-      final itemId = state.equippedAbilitiesById[index];
+    for (index in 0...getEquippedAbilities().length) {
+      final itemId = getEquippedAbilities()[index];
       final abilitySlot = equipmentSlotDefs[index];
 
       renderEquippedItem(itemId, abilitySlot);
@@ -1304,8 +1364,8 @@ class InventoryDragAndDropPrototype {
           lootDef.spriteKey);
       final w = toSlotSize(spriteData.sourceSize.w);
       final h = toSlotSize(spriteData.sourceSize.h);
-      final x = Main.Global.uiRoot.mouseX;
-      final y = Main.Global.uiRoot.mouseY;
+      final x = Main.Global.scene.uiRoot.mouseX;
+      final y = Main.Global.scene.uiRoot.mouseY;
 
       Main.Global.uiSpriteBatch.emitSprite(
           x, y,
@@ -1368,24 +1428,24 @@ class Hud {
 
   public static function init() {
     aiHealthBar = new h2d.Graphics(
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
     final font = Fonts.primary();
     aiNameText = new h2d.Text(
         font, 
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
     aiNameText.textAlign = Center;
     aiNameText.textColor = Game.Colors.pureWhite;
 
     questDisplay = new h2d.Text(
         Fonts.primary(),
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
 
     inactiveAbilitiesSb = new SpriteBatchSystem(
-        Main.Global.inactiveAbilitiesRoot,
+        Main.Global.scene.inactiveAbilitiesRoot,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     inactiveAbilitiesCooldownGraphics = new h2d.Graphics(
-        Main.Global.uiRoot);
+        Main.Global.scene.uiRoot);
   }
 
   public static function update(dt: Float) {
@@ -1404,7 +1464,7 @@ class Hud {
       return;
     }
 
-    aiNameText.x = Main.Global.uiRoot.width / 2;
+    aiNameText.x = Main.Global.scene.uiRoot.width / 2;
     aiNameText.y = 10;
     aiHealthBar.x = aiNameText.x - aiHealthBarWidth / 2;
     aiHealthBar.y = 35;
@@ -1414,7 +1474,7 @@ class Hud {
     final threshold = 16;
     final hoveredMatch = Lambda.fold(
         Grid.getItemsInRect(
-          Main.Global.dynamicWorldGrid,
+          Main.Global.grid.dynamicWorld,
           x, y, threshold, threshold),
         (entityId, result: {
           previousDist: Float,

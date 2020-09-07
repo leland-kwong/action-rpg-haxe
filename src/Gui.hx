@@ -19,6 +19,203 @@ class GuiNode extends h2d.Interactive {
   };
 }
 
+typedef DialogInstanceId = String;
+
+typedef DialogChoice = {
+  text: String,
+  action: {
+    type: Session.EventType,
+    data: Session.EventDetail
+  }
+}
+
+typedef Dialog = () -> {
+  characterName: String,
+  text: String,
+  ?choices: Array<DialogChoice>
+};
+
+class DialogBox {
+  public static var instancesById 
+    = new Map<String, h2d.Object>();
+
+  public static function create(
+      worldX: Float, 
+      worldY: Float, 
+      calcNextDialog: Dialog,
+      id: DialogInstanceId) {
+
+#if debugMode 
+    if (instancesById.exists(id)) {
+      throw new haxe.Exception(
+          'dialog instance with id `${id}` already exists');
+    }
+#end
+    final dialog = calcNextDialog();
+    final padding = 10;
+    final maxWidth = 400;
+    final parent = new h2d.Object(Main.Global.scene.uiRoot);
+    final getPos = () ->  Camera.toScreenPos(
+        Main.Global.mainCamera, 
+        worldX, 
+        worldY);
+    final fullScreenCloseButton = {
+      final pos = getPos();
+      final i = new h2d.Interactive(
+        0, 0, parent);
+      i.cursor = hxd.Cursor.Default;
+
+      Main.Global.hooks.update.push(function autoResize(dt) {
+        final res = Main.nativePixelResolution;
+        // readjust position to be 0,0 at screen coords
+        i.x = -parent.x;
+        i.y = -parent.y;
+        i.width = res.x;
+        i.height = res.y;
+
+        return parent.parent != null;
+      });
+
+      i.onClick = (e) -> {
+        Hud.UiStateManager.send({
+          type: 'UI_CLEAR_ALL'
+        });
+      }
+      i;
+    }
+
+    instancesById.set(id, parent);
+
+    Main.Global.hooks.update.push((dt) -> {
+      final bounds = parent.getBounds(parent);
+      final pos = getPos();
+      parent.x = pos[0];
+      parent.y = pos[1] - 5 - padding - bounds.height;
+
+      final globalEnabled = Main.Global.uiState.dialogBox.enabled;
+      if (!globalEnabled) {
+        destroy(id);
+        return false;
+      }
+
+      return parent.parent != null;
+    });
+
+    // character name display
+    final ctf = {
+      final tf = new h2d.Text(Fonts.primary(), parent);
+      tf.text = dialog.characterName + '\n';
+      tf.textColor = 0xffffff;
+      tf.x = 0;
+      tf.y = 0;
+      tf.textAlign = Center;
+      tf.maxWidth = maxWidth; 
+      tf;
+    }
+
+    // dialog text
+    final dtf = {
+      final tf = new h2d.Text(Fonts.primary(), parent);
+
+      parent.addChild(tf);
+      tf.text = dialog.text + '\n';
+      tf.textColor = 0xffffff;
+      tf.x = 0;
+      tf.y = ctf.textHeight + 10;
+      tf.maxWidth = maxWidth; 
+      tf;
+    }
+
+    // dialog interactive choices
+    final choices = dialog.choices;
+    if (choices != null) {
+      var offsetY = dtf.y + dtf.textHeight;
+
+      for (i in 0...choices.length) {
+        final choice = choices[i];
+        final tf = new h2d.Text(Fonts.primary(), parent);
+        final alpha = 0.8;
+        final textColor = 0xffffff;
+
+        parent.addChild(tf);
+        tf.text = '> ${choice.text}';
+        tf.textColor = textColor;
+        tf.x = dtf.x;
+        tf.y = offsetY;
+        tf.alpha = alpha;
+
+        offsetY += tf.textHeight;
+
+        final interact = new h2d.Interactive(
+            tf.textWidth,
+            tf.textHeight,
+            parent);
+        parent.addChild(interact);
+        interact.x = tf.x;
+        interact.y = tf.y; 
+        tf.maxWidth = maxWidth; 
+
+        interact.onClick = (e) -> {
+          Main.Global.logData.dialogChoice = choice.action;
+          Session.logAndProcessEvent(
+              Main.Global.gameState,
+              Session.makeEvent(
+                choice.action.type,
+                choice.action.data));
+
+          destroy(id);
+          // recreate instance
+          // so that we can get the latest
+          // dialog
+          create(
+              worldX, worldY, calcNextDialog, id);
+        }
+
+        interact.onOver = (e) -> {
+          tf.alpha = 1;
+          tf.textColor = 0xffff00;
+        }
+
+        interact.onOut = (e) -> {
+          tf.alpha = alpha;
+          tf.textColor = textColor;
+        }
+      }
+    }
+
+    final bounds = parent.getBounds(parent);
+    final background = new h2d.Graphics();
+    parent.addChildAt(background, 0);
+    background.beginFill(0x000000);
+    background.drawRect(
+        -padding,
+        -padding,
+        maxWidth + padding * 2,
+        bounds.height + padding * 2);
+
+    // // character name background
+    background.beginFill(0x003366);
+    background.drawRect(
+        -padding,
+        -padding,
+        maxWidth + padding * 2,
+        ctf.textHeight);
+
+    return id;
+  }
+
+  public static function destroy(
+      id: DialogInstanceId) {
+    if (!instancesById.exists(id)) {
+      return;
+    }
+
+    instancesById.get(id)
+      .remove();
+    instancesById.remove(id);
+  }
+}
+
 class GuiComponents {
   static final sortOrders = {
     mainMenuBg: 1000,
@@ -36,7 +233,7 @@ class GuiComponents {
       isAlive: true
     };
     final win = hxd.Window.getInstance();
-    final root = new h2d.Object(Main.Global.uiRoot);
+    final root = new h2d.Object(Main.Global.scene.uiRoot);
     var gameSlotNodes: GuiNodeList = null;
     var gameDeleteNodes: GuiNodeList = null;
 
@@ -187,7 +384,7 @@ class GuiComponents {
 
     refreshInteractNodes();
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       final hoveredGameSlot = Lambda.find(
           gameSlotNodes,
           (i) -> i.isOver());
@@ -252,7 +449,7 @@ class GuiComponents {
         (o) -> {
           final tf = new h2d.Text(
               font,
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
 
           return tf;
         });
@@ -265,11 +462,11 @@ class GuiComponents {
       }
     }
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 
@@ -302,9 +499,9 @@ class GuiComponents {
       return state.isAlive;
     });
 
-    Main.Global.renderHooks.push((time) -> {
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+    Main.Global.hooks.render.push((time) -> {
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final hoveredItem = Gui.getHoveredControl(
           options, mx, my);
 
@@ -405,7 +602,7 @@ class GuiComponents {
       }
 
       final cleanup = GuiComponents.savedGameSlots(fetchGamesList);
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         if (!state.isAlive) {
           cleanup();
         }
@@ -423,7 +620,7 @@ class GuiComponents {
 
       final cleanup = GuiComponents.mainMenuOptions(options); 
 
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         if (!state.isAlive) {
           cleanup();
         }
@@ -432,7 +629,7 @@ class GuiComponents {
       });
     }
 
-    Main.Global.updateHooks.push((dt) -> {
+    Main.Global.hooks.update.push((dt) -> {
       final menuEnabled = Main.Global.uiState.mainMenu.enabled;
       final shouldOpen = menuEnabled
         && !state.isAlive;
@@ -464,7 +661,7 @@ class Gui {
       isAlive: true
     };
 
-    Main.Global.renderHooks.push((time) -> {
+    Main.Global.hooks.render.push((time) -> {
       tempTf.text = '';
 
       return state.isAlive;

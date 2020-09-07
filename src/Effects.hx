@@ -4,7 +4,7 @@ class Effects {
 
     final renderBackground = false;
     if (renderBackground) {
-      final g = new h2d.Graphics(Main.Global.uiRoot);
+      final g = new h2d.Graphics(Main.Global.scene.uiRoot);
       g.beginFill(0x99999);
       g.drawRect(
           0, 0, win.width, win.height);
@@ -38,7 +38,7 @@ class Effects {
     final totalWidth = Gui.calcTextWidth(
         Fonts.title(), textBlocks.join(''));
     final rootNode = new h2d.Object();
-    Main.Global.uiRoot.addChildAt(rootNode, 0);
+    Main.Global.scene.uiRoot.addChildAt(rootNode, 0);
     final bmp = new h2d.Bitmap(
         SpriteBatchSystem.makeTile(
           Main.Global.uiSpriteBatch.batchManager.spriteSheet,
@@ -99,7 +99,7 @@ class Effects {
         final duration = 0.25;
         final startedAt = Main.Global.time;
 
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           final progress = (Main.Global.time - startedAt) / duration;
 
           rootNode.visible = true;
@@ -115,7 +115,7 @@ class Effects {
       }
 
       function triggerShine(onComplete) {
-        final shine = new h2d.Graphics(Main.Global.uiRoot);
+        final shine = new h2d.Graphics(Main.Global.scene.uiRoot);
         final mask = new h2d.filter.Mask(textRoot, true, true);
         previousShine = shine;
         shine.lineStyle(50, 0xffffff);
@@ -126,7 +126,7 @@ class Effects {
 
         final duration = 0.8;
         final startedAt = Main.Global.time;
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
 
           final progress = (Main.Global.time - startedAt) / duration;
           final bmpBounds = bmp.getBounds();
@@ -147,7 +147,7 @@ class Effects {
         final duration = 0.3;
         final startedAt = Main.Global.time;
 
-        Main.Global.updateHooks.push((dt) -> {
+        Main.Global.hooks.update.push((dt) -> {
           final progress = (Main.Global.time - startedAt) / duration;
 
           rootNode.visible = true;
@@ -168,7 +168,7 @@ class Effects {
         final lengthAnimDuration = 0.5;
         final startedAt = Main.Global.time;
 
-        Main.Global.renderHooks.push((time) -> {
+        Main.Global.hooks.render.push((time) -> {
           final p = Easing.progress(
               startedAt, Main.Global.time, duration);
           final p2 = Easing.progress(

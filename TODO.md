@@ -1,13 +1,17 @@
 # Todos
 
-## SpriteBatch System
-  - [ ] Use a global particle pool which should give a pretty large performance boost since we don't have to recreate new objects each frame. This will be especially important when we're using flashy partilcles.
+## Unit tests
+  - [x] Add unit test for checking memory leaks when creating new game and tearing it down.
 
 ## Bugs
   - [ ] `gameState` can sometimes end up in a bad state which cannot be loaded up next time. Its possible that the thread did not finish processing the most recent event.
 
+## Quests
+  - [ ] When boss is killed, activate quest to `talk to the bounty provider in town`. Upon interacting with bounty provider, reward the player with a new passive skill point and trigger the `level up` effect but say `new skill point gained`.
+  - [x] Show indicator above npc when there is something new for the player to do.
+
 ## Game state
-  - [ ] Integrate inventory state
+  - [x] Integrate inventory state
 
 ## Projectile abilities
   - [x] `channelBeam` ability should have a tick cooldown per target. This way the first hit will hit immediately on each new target. Currently the tick cooldown is a global which can cause undesirable situations when hitting things like interactable props.
@@ -21,6 +25,10 @@
 
 ## UI
   - [ ] See if we can get rid of hover state since it adds too much complexity for ui state management. There simply is just too many possible combinations which causes a problem of state mutation.
+
+## SpriteBatch System
+  - [ ] Use a global particle pool which should give a pretty large performance boost since we don't have to recreate new objects each frame. This will be especially important when we're using flashy particles.
+
 
 ## Game Session loading/saving
   - [ ] [PERFORMANCE ENHANCEMENT] save updated state to disk upon processing and loading the file. Currently the only time it gets saved is when a new session begins. This means each time we read the latest game file, it will re-process it again, which will slow the home screen down since we are always re-reading the file.

@@ -72,12 +72,6 @@ class Cooldown {
   }
 }
 
-/*
-   TODO: Dissasociate Entity from h2d.Object.
-   Instead, the Entity class should just be standalone so
-   we don't inherit all the unecessary fields from h2d.Object
-   which also will make serialization easier.
- */
 class Entity extends h2d.Object {
   static final defaultComponents: Map<String, Dynamic> = [
     'neighborQueryThreshold' => 10,
@@ -264,7 +258,7 @@ class Entity extends h2d.Object {
       font.resizeTo(8);
       final tf = new h2d.Text(
           font,
-          Main.Global.particleScene);
+          Main.Global.scene.particle);
       final initialX = x;
       final initialY = y;
       final endX = x + Utils.irnd(-10, 10, true);
@@ -283,7 +277,7 @@ class Entity extends h2d.Object {
 
       final startTime = Main.Global.time;
       final duration = 0.5;
-      Main.Global.updateHooks.push((dt) -> {
+      Main.Global.hooks.update.push((dt) -> {
         final aliveTime = Main.Global.time - startTime;
         final progress = aliveTime / duration;
         final dx = Math.cos(angle) * 5;
@@ -360,6 +354,7 @@ class Entity extends h2d.Object {
     return getById(id) != NULL_ENTITY;
   }
 
+  // marks the entity for cleanup on the next update 
   public static function destroy(id: EntityId) {
     final ref = Entity.getById(id);
     EntityStats.addEvent(
@@ -367,6 +362,18 @@ class Entity extends h2d.Object {
         EntityStats.destroyEvent,
         false,
         true);
+  }
+
+  // immediately cleans up the entity and removes
+  // all references
+  public static function deAlloc(id: EntityId) {
+    destroy(id);
+    final a = Entity.getById(id);
+    a.remove();
+    Entity.ALL_BY_ID.remove(a.id);
+    Grid.removeItem(Main.Global.grid.dynamicWorld, a.id);
+    Grid.removeItem(Main.Global.grid.obstacle, a.id);
+    Grid.removeItem(Main.Global.grid.lootCol, a.id);
   }
 
   public static function getById(
@@ -411,4 +418,56 @@ class Entity extends h2d.Object {
     }
   }
 
+  public static function debugBox(
+      x, y, 
+      width, 
+      height,
+      ?batch: SpriteBatchSystem) {
+
+    final sb = batch == null
+      ? Main.Global.sb
+      : batch;
+    final sprite = sb.emitSprite(
+        x, y,
+        'ui/square_white');
+    sprite.scaleX = width;
+    sprite.scaleY = height;
+
+    return sprite;
+  };
+
+  public static function unitTests() {
+    TestUtils.assert(
+        'de-allocate entity',
+        (passed) -> {
+          final ref = new Entity({
+            x: 0,
+            y: 0,
+          });
+          final id = ref.id;
+
+          Entity.deAlloc(id);
+
+          passed(
+              !Entity.exists(id)
+              && !Entity.ALL_BY_ID.exists(id)
+              && ref.parent == null
+              && ref.isDone());
+        });
+
+    TestUtils.assert(
+        'entities have unique ids between instances',
+        (passed) -> {
+          final ref1 = new Entity({
+            x: 0,
+            y: 0,
+          });
+          final ref2 = new Entity({
+            x: 0,
+            y: 0
+          });
+
+          passed(ref1.id != ref2.id);
+        });
+  }
 }

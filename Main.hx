@@ -23,16 +23,73 @@ enum HoverState {
 
 typedef VoidFn = () -> Void;
 
+class SceneGroup {
+  public var mainBackground: h2d.Scene;
+  public var uiRoot: h2d.Scene;
+  public var inactiveAbilitiesRoot: h2d.Scene;
+  public var particle: h2d.Scene;
+  public var obstacleMask: h2d.Scene;
+  public var obscuredEntities: h2d.Scene;
+  public var staticScene: h2d.Scene;
+
+  public function new(sevents: hxd.SceneEvents): Void {
+    mainBackground = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
+
+    uiRoot = {
+      final s = new h2d.Scene();
+      sevents.addScene(s);
+      s;
+    }
+
+    inactiveAbilitiesRoot = {
+      final s2d = new h2d.Scene();
+      s2d.filter = h2d.filter.ColorMatrix.grayed();
+      s2d;
+    }
+
+    particle = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
+
+    obstacleMask = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
+
+    obscuredEntities = {
+      final s = new h2d.Scene();
+      s.scaleMode = ScaleMode.Zoom(
+          Global.resolutionScale);
+      s;
+    }
+
+    staticScene = {
+      final s = new h2d.Scene();
+      sevents.addScene(s);
+      s;
+    }
+  }
+}
+
 class Global {
-  public static var mainBackground: h2d.Scene;
+  public static var time = 0.0;
+  public static var isNextFrame = true;
+  public static var tickCount = 0.;
+  public static var resolutionScale = 4.;
+  public static var logData: Dynamic = {};
+  
+  public static var scene: SceneGroup = null;
   public static var rootScene: h2d.Scene;
-  public static var particleScene: h2d.Scene;
-  public static var obstacleMaskScene: h2d.Scene;
-  public static var obscuredEntitiesScene: h2d.Scene;
-  public static var staticScene: h2d.Scene;
-  public static var inactiveAbilitiesRoot: h2d.Scene;
-  public static var uiRoot: h2d.Scene;
-  public static var debugScene: h2d.Scene;
 
   public static var mainCamera: CameraRef;
   public static var worldMouse = {
@@ -41,50 +98,34 @@ class Global {
     clicked: false,
     hoverState: HoverState.None,
   }
-  public static final obstacleGrid: GridRef = 
-    Grid.create(16);
-  public static final dynamicWorldGrid: GridRef = 
-    Grid.create(16);
-  public static var traversableGrid: GridRef = null;
-  public static final lootColGrid: GridRef = 
-    Grid.create(8);
+  public static final grid = {
+    obstacle: Grid.create(16),
+    dynamicWorld: Grid.create(16),
+    traversable: Grid.create(16),
+    lootCol: Grid.create(8),
+  }
   public static var sb: SpriteBatchSystem;
   public static var wmSpriteBatch: SpriteBatchSystem;
   public static var oeSpriteBatch: SpriteBatchSystem;
   public static var uiSpriteBatch: SpriteBatchSystem;
-  public static var time = 0.0;
-  public static var isNextFrame = true;
 
-  public static var tickCount = 0.;
-  public static var resolutionScale = 4;
-
-  // for convenience, not sure if this is performant enough
-  // for us to use for everything
-  public static var updateHooks: 
-    Array<(dt: Float) -> Bool> = [];
-  public static var renderHooks: 
-    Array<(dt: Float) -> Bool> = [];
-  // handles input device events
-  public static var inputHooks: 
-    Array<(dt: Float) -> Bool> = [];
+  public static final hooks = {
+    update: new Array<(dt: Float) -> Bool>(),
+    render: new Array<(time: Float) -> Bool>(),
+    // handles input device events
+    input: new Array<(dt: Float) -> Bool>(),
+  }
 
   public static var mainPhase: MainPhase = null;
-  public static var logData: Dynamic = {};
   public static var entitiesToRender: Array<Entity> = [];
-  public static var uiState = {
-    mainMenu: {
-      enabled: true
-    },
-    hud: {
-      enabled: true
-    },
-    inventory: {
-      enabled: false
-    },
-    passiveSkillTree: {
-      enabled: false
-    }
-  }
+  public static var uiState = Hud.UiStateManager.nextUiState(
+      Hud.UiStateManager.defaultUiState, {
+        mainMenu: {
+          enabled: true
+        }
+      });
+  // enables/disables home menu toggling so pressing
+  // escape doesn't open it under certain conditions
   public static var uiHomeMenuEnabled = true;
 
   public static var hoveredEntity = {
@@ -103,30 +144,6 @@ class Global {
     } 
 
     sceneCleanupFn = getNextScene();
-  }
-
-  public static function clearUi(
-      shouldClear: (field: String) -> Bool): Bool {
-    final wereUiItemsClosed = Lambda.fold(
-        Reflect.fields(Global.uiState),
-        (field, result) -> {
-          if (!shouldClear(field)) {
-            return result;
-          }
-
-          final state = Reflect.field(Global.uiState, field);
-          final enabled = state.enabled;
-
-          state.enabled = false;
-        
-          if (enabled) {
-            return true;
-          }      
-
-          return result;
-        }, false);
-
-    return wereUiItemsClosed;
   }
 
   public static function hasUiItemsEnabled() {
@@ -163,7 +180,7 @@ class Main extends hxd.App {
     // debugText.textAlign = Right;
 
     // add to any parent, in this case we append to root
-    Global.uiRoot.addChild(debugText);
+    Global.scene.uiRoot.addChild(debugText);
   }
 
   public static function onGameExit() {
@@ -179,14 +196,14 @@ class Main extends hxd.App {
 
       {
         final nextRenderHooks = [];
-        for (hook in Global.renderHooks) {
+        for (hook in Global.hooks.render) {
           final keepAlive = hook(Global.time);
 
           if (keepAlive) {
             nextRenderHooks.push(hook);
           }
         }
-        Global.renderHooks = nextRenderHooks;
+        Global.hooks.render = nextRenderHooks;
       }
 
       core.Anim.AnimEffect
@@ -194,15 +211,14 @@ class Main extends hxd.App {
       // run sprite batches before engine rendering
       SpriteBatchSystem.renderAll(Global.time);
 
-      Global.obstacleMaskScene.render(e);
-      Global.mainBackground.render(e);
+      Global.scene.obstacleMask.render(e);
+      Global.scene.mainBackground.render(e);
       super.render(e);
-      Global.particleScene.render(e);
-      Global.obscuredEntitiesScene.render(e);
-      Global.staticScene.render(e);
-      Global.inactiveAbilitiesRoot.render(e);
-      Global.uiRoot.render(e);
-      Global.debugScene.render(e);
+      Global.scene.particle.render(e);
+      Global.scene.obscuredEntities.render(e);
+      Global.scene.staticScene.render(e);
+      Global.scene.inactiveAbilitiesRoot.render(e);
+      Global.scene.uiRoot.render(e);
 
     } catch (error: Dynamic) {
       HaxeUtils.handleError(
@@ -227,7 +243,7 @@ class Main extends hxd.App {
     if (!Global.uiState.mainMenu.enabled) {
       if (Key.isPressed(Key.I)) {
         Hud.UiStateManager.send({
-          type: 'INVENTORY_TOGGLE'
+          type: 'UI_INVENTORY_TOGGLE'
         });
       }
 
@@ -235,7 +251,7 @@ class Main extends hxd.App {
         Key.isPressed(Key.P);
       if (togglePassiveSkillTree) {
         Hud.UiStateManager.send({
-          type: 'PASSIVE_SKILL_TREE_TOGGLE'
+          type: 'UI_PASSIVE_SKILL_TREE_TOGGLE'
         });
       }
     }
@@ -243,15 +259,9 @@ class Main extends hxd.App {
     final toggleMainMenu = 
       Key.isPressed(Key.ESCAPE);
     if (toggleMainMenu) {
-      // close all open ui elements first
-      final wereUiItemsClosed = Global.clearUi((field) -> {
-        return field != 'hud'; 
+      Hud.UiStateManager.send({
+        type: 'UI_MAIN_MENU_TOGGLE'
       });
-
-      // only show main menu if there were no elements closed
-      if (!wereUiItemsClosed) {
-        Global.uiState.mainMenu.enabled = true;  
-      }
     }
 
     return true;
@@ -261,68 +271,38 @@ class Main extends hxd.App {
     try {
       hxd.Res.initEmbed();
       Global.mainPhase = MainPhase.Init;
-      Global.inputHooks.push(handleGlobalHotkeys);
+      Global.hooks.input.push(handleGlobalHotkeys);
 
       // setup global scene objects
       {
+        Global.scene = new SceneGroup(sevents);
         Global.rootScene = s2d;
         s2d.scaleMode = ScaleMode.Zoom(
             Global.resolutionScale);
 
-        Global.uiRoot = new h2d.Scene();
-        sevents.addScene(Global.uiRoot);
-
-        Global.inactiveAbilitiesRoot = {
-          final s2d = new h2d.Scene();
-          s2d.filter = h2d.filter.ColorMatrix.grayed();
-          s2d;
-        }
-
-        Global.particleScene = new h2d.Scene();
-        Global.particleScene.scaleMode = ScaleMode.Zoom(
-            Global.resolutionScale);
-
-        Global.mainBackground = new h2d.Scene();
-        Global.mainBackground.scaleMode = ScaleMode.Zoom(
-            Global.resolutionScale);
-        Global.debugScene = new h2d.Scene();
-
-        {
-          Global.obstacleMaskScene = new h2d.Scene();
-          Global.obstacleMaskScene.scaleMode = ScaleMode.Zoom(
-              Global.resolutionScale);
-          Global.obscuredEntitiesScene = new h2d.Scene();
-          Global.obscuredEntitiesScene.scaleMode = ScaleMode.Zoom(
-              Global.resolutionScale);
-        }
-
-        // used for experimental projects
-        Global.staticScene = new h2d.Scene();
-        sevents.addScene(Global.staticScene);
-
         // setup sprite batch systems
         Global.sb = new SpriteBatchSystem(
-            Global.particleScene,
+            Global.scene.particle,
             hxd.Res.sprite_sheet_png,
             hxd.Res.sprite_sheet_json);
         {
           Global.wmSpriteBatch = new SpriteBatchSystem(
-              Global.obstacleMaskScene,
+              Global.scene.obstacleMask,
               hxd.Res.sprite_sheet_png,
               hxd.Res.sprite_sheet_json);
           Global.oeSpriteBatch = new SpriteBatchSystem(
-              Global.obscuredEntitiesScene,
+              Global.scene.obscuredEntities,
               hxd.Res.sprite_sheet_png,
               hxd.Res.sprite_sheet_json);
           final mask = new h2d.filter.Mask(
-              Global.obstacleMaskScene, true, true);
+              Global.scene.obstacleMask, true, true);
           final batch = Global.oeSpriteBatch.batchManager.batch;
           batch.filter = mask;
           batch.color = new h3d.Vector(1, 1, 1, 0.7);
           batch.colorAdd = new h3d.Vector(1, 1, 1, 1);
         }
         Global.uiSpriteBatch = new SpriteBatchSystem(
-            Global.uiRoot,
+            Global.scene.uiRoot,
             hxd.Res.sprite_sheet_png,
             hxd.Res.sprite_sheet_json);
       }
@@ -336,7 +316,7 @@ class Main extends hxd.App {
         final rootInteract = new h2d.Interactive(
             nativePixelResolution.x,
             nativePixelResolution.y,
-            Global.uiRoot);
+            Global.scene.uiRoot);
 
         rootInteract.propagateEvents = true;
         rootInteract.enableRightButton = true;
@@ -422,7 +402,7 @@ class Main extends hxd.App {
             return true;
           }
 
-          Global.updateHooks.push(updateCursorStyle);
+          Global.hooks.update.push(updateCursorStyle);
         }
       }
 
@@ -479,7 +459,7 @@ class Main extends hxd.App {
       var frameDt = 0.;
       var numUpdates = 0;
 
-      TextPool.resetAll();
+      TextManager.resetAll();
 
       // run while there is remaining frames to simulate
       while (hasRemainingUpdateFrames(acc, frameTime)
@@ -495,14 +475,14 @@ class Main extends hxd.App {
         // run updateHooks
         {
           final nextHooks = [];
-          for (update in Global.updateHooks) {
+          for (update in Global.hooks.update) {
             final shouldKeepAlive = update(frameTime);
 
             if (shouldKeepAlive) {
               nextHooks.push(update); 
             }
           }
-          Global.updateHooks = nextHooks;
+          Global.hooks.update = nextHooks;
         }
 
         // sync up scenes with the camera
@@ -515,6 +495,9 @@ class Main extends hxd.App {
               Global.mainCamera,
               Global.rootScene.width,
               Global.rootScene.height);
+          Camera.setZoom(
+              Global.mainCamera,
+              Global.resolutionScale);
 
           // update scenes to move relative to camera
           final cam_center_x = -Global.mainCamera.x 
@@ -523,9 +506,9 @@ class Main extends hxd.App {
             + Math.fround(Global.rootScene.height / 2);
           for (scene in [
               Global.rootScene,
-              Global.particleScene,
-              Global.obstacleMaskScene,
-              Global.obscuredEntitiesScene,
+              Global.scene.particle,
+              Global.scene.obstacleMask,
+              Global.scene.obscuredEntities,
           ]) {
             scene.x = cam_center_x;
             scene.y = cam_center_y;
@@ -550,14 +533,14 @@ class Main extends hxd.App {
       // frame.
       {
         final nextHooks = [];
-        for (update in Global.inputHooks) {
+        for (update in Global.hooks.input) {
           final shouldKeepAlive = update(frameTime);
 
           if (shouldKeepAlive) {
             nextHooks.push(update); 
           }
         }
-        Global.inputHooks = nextHooks;
+        Global.hooks.input = nextHooks;
       }
 
       if (debugText != null) {
@@ -577,9 +560,9 @@ class Main extends hxd.App {
             Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
             .nextAnimations.length,
-          numUpdateHooks: Global.updateHooks.length,
-          numInputHooks: Global.inputHooks.length,
-          numRenderHooks: Global.renderHooks.length,
+          numUpdateHooks: Global.hooks.update.length,
+          numInputHooks: Global.hooks.input.length,
+          numRenderHooks: Global.hooks.render.length,
         }
         final formattedStats = Json.stringify(stats, null, '  ');
         final text = [
@@ -606,7 +589,7 @@ class Main extends hxd.App {
 
       // version info
       {
-        final tf = TextPool.get();
+        final tf = TextManager.get();
         final win = hxd.Window.getInstance();
         tf.font = Fonts.debug();
         tf.text = 'build ${Config.version}';

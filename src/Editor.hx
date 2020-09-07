@@ -196,10 +196,10 @@ class Editor {
 
   // all configuration stuff lives here
   public static function getConfig(
-      // activeFile = 'editor-data/level_1.eds'
+      activeFile = 'editor-data/level_1.eds'
       // activeFile = 'editor-data/passive_skill_tree.eds'
       // activeFile = 'editor-data/dummy_level.eds'
-      activeFile = 'editor-data/hud.eds'
+      // activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,
@@ -229,6 +229,9 @@ class Editor {
                 [
                   'pillar' => {
                     spriteKey: 'ui/pillar',
+                  },
+                  'npc_quest_provider' => {
+                    spriteKey: 'ui/npc_quest_provider',
                   },
                   'player' => {
                     spriteKey: 'player_animation/idle-0',
@@ -398,7 +401,7 @@ class Editor {
                 spriteKey: 'ui/hud_inventory_button',
                 type: 'UI_ELEMENT',
                 data: {
-                  onClick: 'INVENTORY_TOGGLE',
+                  onClick: 'UI_INVENTORY_TOGGLE',
                   hoverSprite: 'ui/hud_inventory_button--hover'
                 }
               },
@@ -406,7 +409,7 @@ class Editor {
                 spriteKey: 'ui/hud_passive_skill_tree_button',
                 type: 'UI_ELEMENT',
                 data: {
-                  onClick: 'PASSIVE_SKILL_TREE_TOGGLE',
+                  onClick: 'UI_PASSIVE_SKILL_TREE_TOGGLE',
                   hoverSprite: 'ui/hud_passive_skill_tree_button--hover'
                 }
               },
@@ -594,11 +597,11 @@ class Editor {
     final spriteSheetData = Utils.loadJsonFile(
         hxd.Res.sprite_sheet_json);
     final sbs = new SpriteBatchSystem(
-        Main.Global.uiRoot,
+        Main.Global.scene.uiRoot,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     final loadPath = getConfig().activeFile;
-    final s2d = Main.Global.staticScene;
+    final s2d = Main.Global.scene.staticScene;
     // custom transformation function to
     // modify the saved data.
     final migrateState = (state: EditorState) -> {
@@ -1001,8 +1004,8 @@ class Editor {
         return !finished;
       }
 
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
 
       updateObjectMetaList();
       localState.editorUiRegion = {
@@ -1208,9 +1211,9 @@ class Editor {
           });
           for (rowIndex in rowIndices) {
             final renderRow = rRows.get(rowIndex);
-            Main.Global.staticScene.addChild(
+            Main.Global.scene.staticScene.addChild(
                 renderRow.tg);
-            Main.Global.staticScene.addChild(
+            Main.Global.scene.staticScene.addChild(
                 renderRow.objectRow);
 
             // move marquee selection relative to mouse position
@@ -1231,8 +1234,8 @@ class Editor {
                 .get('layer_marquee_selection');
               final cellSize = Std.int(
                   localState.snapGridSize * localState.zoom);
-              final mx = Main.Global.uiRoot.mouseX;
-              final my = Main.Global.uiRoot.mouseY;
+              final mx = Main.Global.scene.uiRoot.mouseX;
+              final my = Main.Global.scene.uiRoot.mouseY;
               final snappedMousePos = snapToGrid(
                   (mx - editorState.translate.x * localState.zoom),
                   (my - editorState.translate.y * localState.zoom),
@@ -1316,7 +1319,7 @@ class Editor {
           final previousEditorMode = localState.editorMode;
           final input = new h2d.TextInput(
               Fonts.primary(),
-              Main.Global.uiRoot);
+              Main.Global.scene.uiRoot);
           final win = hxd.Window.getInstance();
           final state = {
             isDone: false
@@ -1383,7 +1386,7 @@ class Editor {
             }
           }
 
-          Main.Global.updateHooks.push((dt) -> {
+          Main.Global.hooks.update.push((dt) -> {
             localState.editorMode = CommandBar;
             input.x = win.width / 2;
             input.y = 10;
@@ -1563,8 +1566,8 @@ class Editor {
                   itemId);
               final activeGrid = editorState.gridByLayerId
                 .get(localState.activeLayerId);
-              final mx = Main.Global.uiRoot.mouseX;
-              final my = Main.Global.uiRoot.mouseY;
+              final mx = Main.Global.scene.uiRoot.mouseX;
+              final my = Main.Global.scene.uiRoot.mouseY;
               final tx = localState.translate.x * localState.zoom;
               final ty = localState.translate.y * localState.zoom;
               final zoom = localState.zoom;
@@ -1724,10 +1727,10 @@ class Editor {
         }
       }
 
-      Main.Global.staticScene.scaleMode = ScaleMode.Zoom(
+      Main.Global.scene.staticScene.scaleMode = ScaleMode.Zoom(
           localState.zoom);
-      Main.Global.staticScene.x = editorState.translate.x;
-      Main.Global.staticScene.y = editorState.translate.y;
+      Main.Global.scene.staticScene.x = editorState.translate.x;
+      Main.Global.scene.staticScene.y = editorState.translate.y;
 
       localState.isDragStart = initialLocalState().isDragStart;
       localState.isDragEnd = initialLocalState().isDragEnd;
@@ -1743,8 +1746,8 @@ class Editor {
       final activeGrid = editorState.gridByLayerId
         .get(localState.activeLayerId);
       final cellSize = activeGrid.cellSize;
-      final mx = Main.Global.uiRoot.mouseX;
-      final my = Main.Global.uiRoot.mouseY;
+      final mx = Main.Global.scene.uiRoot.mouseX;
+      final my = Main.Global.scene.uiRoot.mouseY;
       final zoom = localState.zoom;
       final translate = editorState.translate;
       final snapGridSize = localState.snapGridSize;
@@ -1852,7 +1855,7 @@ class Editor {
 
           // render label
           {
-            final tf = TextPool.get();
+            final tf = TextManager.get();
             final f = Fonts.primary().clone();
             f.resizeTo(14);
             tf.font = f;
@@ -1861,7 +1864,7 @@ class Editor {
             tf.text = menuItem.type;
             tf.textAlign = Center;
             tf.textColor = 0xffffff;
-            Main.Global.uiRoot.addChild(tf);
+            Main.Global.scene.uiRoot.addChild(tf);
           }
         }
       }
@@ -2053,8 +2056,8 @@ class Editor {
     final backgroundRef = Game.makeBackground();
     cleanupFns.push(() -> backgroundRef.remove());
 
-    Main.Global.updateHooks.push(update);
-    Main.Global.renderHooks.push(render);
+    Main.Global.hooks.update.push(update);
+    Main.Global.hooks.render.push(render);
 
     return () -> {
       for (fn in cleanupFns) {

@@ -5,8 +5,11 @@ import sys.thread.Thread;
 import sys.FileSystem;
 import sys.io.File;
 
+typedef EventType = String;
+typedef EventDetail = Dynamic;
+
 typedef SessionEvent = {
-  type: String,
+  type: EventType,
   data: Dynamic,
   time: Float
 };
@@ -301,6 +304,31 @@ class Session {
         ref.inventoryState.itemsById.remove(itemId);
       }
 
+      /*
+         Possible choice actions:
+
+         - grant a new quest and updates the quest state
+         - grant a quest reward and updates the quest state
+         - opens up a merchant ui
+       */
+      case {
+        type: 'ACTIVATE_QUEST',
+        data: questName
+      }: {
+        try {
+          final questAction = Quest.createAction(
+              'ACTIVATE_QUEST', 
+              'intro_level',
+              { questName: questName });
+          ref.questState = Quest.updateState(
+              questAction,
+              ref.questState,
+              Quest.conditionsByName);
+        } catch (err) {
+          HaxeUtils.handleError(null)(err);
+        }
+      }
+
       default: {
         throw 'invalid session event ${ev.type}';
       }
@@ -377,8 +405,8 @@ class Session {
   }
 
   public static function makeEvent(
-      eventType: String,
-      ?eventDetail: Dynamic): SessionEvent {
+      eventType: EventType,
+      ?eventDetail: EventDetail): SessionEvent {
 
     return {
       type: eventType,
@@ -693,7 +721,7 @@ class Session {
           null,
           'unit_test_temp_game_state');
 
-      Main.Global.updateHooks.push((dt: Float) -> {
+      Main.Global.hooks.update.push((dt: Float) -> {
         for (_ in 0...10) {
           Session.logAndProcessEvent(
               initialRef,
