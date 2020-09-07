@@ -903,7 +903,7 @@ class Ai extends Entity {
     }
 
     final lightSource = Main.lightingSystem.emitSpotLight(
-        x, y, radius * 2.5);
+        x, y, radius * 3.);
     // lightSource.alpha = 0.5;
   }
 }
@@ -2600,6 +2600,13 @@ class Game extends h2d.Object {
                     ref.x,
                     ref.y,
                     objectMeta.spriteKey);
+                final lightSprite = Main.lightingSystem.sb.emitSprite(
+                    ref.x,
+                    ref.y,
+                    objectMeta.spriteKey);
+                lightSprite.scale = 1.5 
+                  + Math.sin(Main.Global.time * 5) * 0.1;
+                lightSprite.alpha = 0.5;
                 if (Main.Global.hoveredEntity.id == ref.id) {
                   Entity.renderOutline(
                       sprite.sortOrder - 1,
@@ -2866,7 +2873,7 @@ class Game extends h2d.Object {
                 }
 
                 Main.lightingSystem.emitSpotLight(
-                    x, y, npcRef.radius * 10);
+                    x, y, npcRef.radius * 15);
               };
             }
 
