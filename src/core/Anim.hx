@@ -89,8 +89,10 @@ class AnimEffect {
             ref.x + dx * progress,
             ref.y + dy * progress,
             spriteKey,
-            ref.angle,
-            ref.effectCallback);
+            ref.angle);
+        if (ref.effectCallback != null) {
+          ref.effectCallback(spriteRef);
+        }
         final scale = ref.scale != null
           ? ref.scale : 1;
 
@@ -108,6 +110,8 @@ class AnimEffect {
           final lightScale = ref.lightScale != null
             ? ref.lightScale : 2;
           source.scale = scale * lightScale;
+          source.alpha = spriteRef.alpha;
+          source.rotation = spriteRef.rotation;
         }
 
         nextAnimations.push(ref);

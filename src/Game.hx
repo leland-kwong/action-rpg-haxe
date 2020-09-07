@@ -1672,7 +1672,9 @@ class Player extends Entity {
               elem.r = 1.;
               elem.g = 20.;
               elem.b = 20.;
-            }
+            },
+            isLightSource: true,
+            lightScale: 1.1
           });
         }
 
