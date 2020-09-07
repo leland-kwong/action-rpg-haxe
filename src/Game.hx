@@ -2725,6 +2725,7 @@ class Game extends h2d.Object {
                 ], (questName, result: Array<Gui.DialogChoice>) -> {
                   final questState = Main.Global.gameState
                     .questState[questName];
+
                   if (!questState.active) {
                     result.push({
                       text: Quest.conditionsByName[questName]
@@ -2798,9 +2799,6 @@ class Game extends h2d.Object {
                       });
                   Gui.DialogBox.destroy(dialogId);
                 }
-
-                state.interacting = 
-                  Main.Global.uiState.dialogBox.enabled;
               }
 
               i.onOver = (e) -> {
@@ -2815,8 +2813,10 @@ class Game extends h2d.Object {
                 final sprite = Main.Global.sb.emitSprite(
                     x, y, objectMeta.spriteKey);
                 final choices = getDialogChoices();
+                final hasNewInfo = choices.length > 0 
+                  && !Main.Global.uiState.dialogBox.enabled;
 
-                if (choices.length > 0 && !state.interacting) {
+                if (hasNewInfo) {
                   final s = Main.Global.sb.emitSprite(
                       x, 
                       y + dialogOffsetY, 
