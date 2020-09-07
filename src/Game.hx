@@ -249,6 +249,14 @@ class Bullet extends Projectile {
     final sprite = Main.Global.sb.emitSprite(
         x, y, spriteKey, angle, null);
     sprite.scale = 1 - progress;
+
+    final sprite = Main.renderTargetTest.lightingSb.emitSprite(
+        x, 
+        y, 
+        spriteKey, 
+        angle, 
+        null);
+    sprite.scale = 2 * (1 - progress);
   }
 }
 

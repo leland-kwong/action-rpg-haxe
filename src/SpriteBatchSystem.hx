@@ -23,19 +23,24 @@ class SpriteRef extends BatchElement {
   public var state: Dynamic;
 }
 
+typedef BatchSortFn = (
+    a: SpriteRef, b: SpriteRef) -> Int;
+
 typedef BatchManagerRef = {
   var particles: Array<SpriteRef>;
   var nextParticles: Array<SpriteRef>;
-  var batch: h2d.SpriteBatch;
-  var spriteSheet: h2d.Tile;
-  var spriteSheetData: SpriteSheetData;
+  final batch: h2d.SpriteBatch;
+  final spriteSheet: h2d.Tile;
+  final spriteSheetData: SpriteSheetData;
+  final sortFunction: Null<BatchSortFn>;
 };
 
 class BatchManager {
   static public function init(
       parent: h2d.Object,
       spriteSheetPng: hxd.res.Image,
-      spriteSheetJson: hxd.res.Resource) {
+      spriteSheetJson: hxd.res.Resource,
+      sortFunction) {
     var spriteSheet = spriteSheetPng.toTile();
     var system: BatchManagerRef = {
       particles: [],
@@ -44,6 +49,7 @@ class BatchManager {
           spriteSheetJson),
       spriteSheet: spriteSheet,
       batch: new h2d.SpriteBatch(spriteSheet, parent),
+      sortFunction: sortFunction
     };
     system.batch.hasRotationScale = true;
     return system;
@@ -51,14 +57,19 @@ class BatchManager {
 
   static public function emit(
       s: BatchManagerRef,
-      config: SpriteRef) {
+      sprite: SpriteRef) {
 
     if (Main.Global.mainPhase 
         != Main.MainPhase.Render) {
       trace('rendering must be done inside the render phase');
     }
 
-    s.particles.push(config);
+    if (s.sortFunction == null) {
+      s.batch.add(sprite);
+      return;
+    }
+
+    s.particles.push(sprite);
   }
 
   static public function update(
@@ -81,27 +92,14 @@ class BatchManager {
       }
     }
 
-    // sort by y-position or custom sort value
-    // draw order is lowest -> highest
-    s.particles.sort((a, b) -> {
-      var sortA = a.sortOrder;
-      var sortB = b.sortOrder;
+    if (s.sortFunction != null) {
+      s.particles.sort(s.sortFunction);
 
-      if (sortA < sortB) {
-        return -1;
-      }
-
-      if (sortA > sortB) {
-        return 1;
-      }
-
-      return 0;
-    });
-
-    for (p in s.particles) {
-      s.batch.add(p);
-      if (!p.done) {
-        s.nextParticles.push(p);
+      for (p in s.particles) {
+        s.batch.add(p);
+        if (!p.done) {
+          s.nextParticles.push(p);
+        }
       }
     }
   }
@@ -110,16 +108,39 @@ class BatchManager {
 class SpriteBatchSystem {
   public static final instances: Array<BatchManagerRef> = [];
   public static final tileCache: Map<String, h2d.Tile> = new Map();
+  public static final ySort: BatchSortFn = (a, b) -> {
+    final sortA = a.sortOrder;
+    final sortB = b.sortOrder;
+
+    if (sortA < sortB) {
+      return -1;
+    }
+
+    if (sortA > sortB) {
+      return 1;
+    }
+
+    return 0;
+  }
+
   public var batchManager: BatchManagerRef;
+  var translate = {
+    x: 0.,
+    y: 0.
+  };
 
   public function new(
       parent: h2d.Object,
       spriteSheetPng: hxd.res.Image,
-      spriteSheetJson: hxd.res.Resource) {
+      spriteSheetJson: hxd.res.Resource,
+      ?sortFunction: BatchSortFn) {
+
     batchManager = BatchManager.init(
         parent,
         spriteSheetPng,
-        spriteSheetJson);
+        spriteSheetJson,
+        sortFunction);
+
     instances.push(batchManager);
   }
 
@@ -174,6 +195,11 @@ class SpriteBatchSystem {
     return tile;
   }
 
+  public function setTranslate(x, y) {
+    translate.x = x;
+    translate.y = y;
+  }
+
   public function emitSprite(
     x: Float,
     y: Float,
@@ -194,8 +220,8 @@ class SpriteBatchSystem {
 
     spriteRef.createdAt = Main.Global.time;
     spriteRef.effectCallback = effectCallback;
-    spriteRef.x = x;
-    spriteRef.y = y;
+    spriteRef.x = x + translate.x;
+    spriteRef.y = y + translate.y;
     spriteRef.sortOrder = y;
 
     BatchManager.emit(batchManager, spriteRef);

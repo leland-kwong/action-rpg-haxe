@@ -1439,13 +1439,12 @@ class Hud {
     questDisplay = new h2d.Text(
         Fonts.primary(),
         Main.Global.scene.uiRoot);
-
     inactiveAbilitiesSb = new SpriteBatchSystem(
         Main.Global.scene.inactiveAbilitiesRoot,
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
     inactiveAbilitiesCooldownGraphics = new h2d.Graphics(
-        Main.Global.scene.uiRoot);
+        Main.Global.scene.inactiveAbilitiesRoot);
   }
 
   public static function update(dt: Float) {
@@ -1641,35 +1640,32 @@ class Hud {
 
         if (isCoolingDown) {
           // draw pie chart for cooldown
-          {
-            final angleStart = 0 + 3 * Math.PI / 2;
-            final progress = 1 - (cooldownLeft / lootDef.cooldown);
-            final angleLength = Math.PI * 2 * progress;
-            final g = inactiveAbilitiesCooldownGraphics;
+          final angleStart = 0 + 3 * Math.PI / 2;
+          final progress = 1 - (cooldownLeft / lootDef.cooldown);
+          final angleLength = Math.PI * 2 * progress;
+          final g = inactiveAbilitiesCooldownGraphics;
 
-            g.beginFill(0xfffffff, 0.6);
-            g.drawPie(
-                cx,
-                cy,
-                30,
-                angleStart,
-                angleLength);
-          }
-
-          final ref = inactiveAbilitiesSb.emitSprite(
-              cx, cy,
-              lootDef.spriteKey,
-              null,
-              spriteEffect);
-          ref.sortOrder = 1;
-        } else {
-          final ref = Main.Global.uiSpriteBatch.emitSprite(
-              cx, cy,
-              lootDef.spriteKey,
-              null,
-              spriteEffect);
-          ref.sortOrder = 1; 
+          g.beginFill(0xfffffff, 0.6);
+          g.drawPie(
+              cx,
+              cy,
+              30,
+              angleStart,
+              angleLength);
         }
+
+        final batchToUse = isCoolingDown 
+          ? inactiveAbilitiesSb
+          : Main.Global.uiSpriteBatch;
+        final ref = batchToUse.emitSprite(
+            cx, cy,
+            lootDef.spriteKey,
+            null,
+            spriteEffect);
+        ref.scale = batchToUse == inactiveAbilitiesSb
+          ? Main.Global.resolutionScale 
+          : 1;
+        ref.sortOrder = 1; 
       }
     }
   }

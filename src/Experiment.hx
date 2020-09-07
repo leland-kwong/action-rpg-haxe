@@ -1,3 +1,92 @@
+import h3d.mat.Data;
+import h3d.mat.Texture;
+import h3d.mat.DepthBuffer;
+
+class RenderTargetTest {
+  var renderTargetScene: h2d.Scene; 
+  var renderScene: h2d.Scene;
+  var renderTarget: h3d.mat.Texture;
+  public var lightingSb: SpriteBatchSystem;
+
+  public function new(engine) {
+    renderTargetScene = new h2d.Scene();
+    renderScene = new h2d.Scene();
+    for (s2d in [renderScene]) {
+      s2d.scaleMode = ScaleMode.Zoom(Main.Global.resolutionScale);
+    }
+
+    final sb = new SpriteBatchSystem(
+        renderScene,
+        hxd.Res.sprite_sheet_png,
+        hxd.Res.sprite_sheet_json);
+
+    final ambientShadowLayer = {
+      final res = Main.nativePixelResolution;
+      final scale = Main.Global.resolutionScale;
+      final bmp = new h2d.Bitmap(
+          h2d.Tile.fromColor(
+            0x000000,
+            Std.int(res.x / scale),
+            Std.int(res.y / scale)),
+          renderTargetScene);
+      bmp;
+    }
+
+    renderTarget = {
+      final width = Main.nativePixelResolution.x;
+      final height = Main.nativePixelResolution.y;
+      final rt = new Texture( width, height, [ Target ] );
+      rt.filter = Nearest;
+      rt.depthBuffer = new DepthBuffer( width, height );
+
+      final textureBitmap = {
+        final bmp = new h2d.Bitmap(
+            h2d.Tile.fromTexture(rt),
+            renderScene);
+        bmp.alpha = 0.6;
+        bmp.blendMode = h2d.BlendMode.AlphaMultiply;
+        bmp;
+      }
+      rt;
+    }
+
+
+    lightingSb = {
+      final sb = new SpriteBatchSystem(
+        renderTargetScene,
+        hxd.Res.sprite_sheet_png,
+        hxd.Res.sprite_sheet_json);
+      final batch = sb.batchManager.batch;
+      batch.filter = new h2d.filter.Blur(5);
+      batch.blendMode = h2d.BlendMode.Add;
+      sb;
+    }
+
+    Main.Global.hooks.update.push(function syncToCamera(_) {
+      final cam = Main.Global.mainCamera;
+      final cam_center_x = -cam.x 
+        + Math.fround(Main.Global.rootScene.width / 2);
+      final cam_center_y = -cam.y 
+        + Math.fround(Main.Global.rootScene.height / 2);
+
+      lightingSb.setTranslate(
+          cam_center_x,
+          cam_center_y);
+
+      return true;
+    });
+  }
+
+  public function render(e: h3d.Engine) {
+    e.pushTarget(renderTarget);
+    e.clear(0);
+    renderTargetScene.render(e);
+    e.popTarget();
+
+    renderScene.render(e);
+  }
+}
+
 class Experiment {
   public static function init() {
     final state = {
