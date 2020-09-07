@@ -227,6 +227,7 @@ class Bullet extends Projectile {
     if (isDone() && 
         explodeWhenExpired ||
         (!explodeWhenExpired && collidedWith.length > 0)) {
+
       core.Anim.AnimEffect.add({
         frames: onHitFrames,
         startTime: Main.Global.time,
@@ -234,7 +235,8 @@ class Bullet extends Projectile {
         x: x,
         y: y,
         z: 10,
-        scale: explosionScale
+        scale: explosionScale,
+        isLightSource: true
       }); 
     }
   }
