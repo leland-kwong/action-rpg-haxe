@@ -64,11 +64,6 @@ class BatchManager {
       trace('rendering must be done inside the render phase');
     }
 
-    if (s.sortFunction == null) {
-      s.batch.add(sprite);
-      return;
-    }
-
     s.particles.push(sprite);
   }
 
@@ -94,12 +89,12 @@ class BatchManager {
 
     if (s.sortFunction != null) {
       s.particles.sort(s.sortFunction);
+    }
 
-      for (p in s.particles) {
-        s.batch.add(p);
-        if (!p.done) {
-          s.nextParticles.push(p);
-        }
+    for (p in s.particles) {
+      s.batch.add(p);
+      if (!p.done) {
+        s.nextParticles.push(p);
       }
     }
   }
