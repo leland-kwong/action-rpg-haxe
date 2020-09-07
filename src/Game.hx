@@ -1048,7 +1048,8 @@ class Player extends Entity {
       currentHealth: 100.0,
       currentEnergy: 40.0,
       energyRegeneration: 3, // per second
-      pickupRadius: 40 
+      pickupRadius: 40,
+      lightRadius: 80
     });
 
     var runFrames = [
@@ -1995,8 +1996,7 @@ class Player extends Entity {
       spriteEffect
     );
 
-    final lightRadius = 100;
-    Main.lightingSystem.emitSpotLight(x, y, lightRadius);
+    Main.lightingSystem.emitSpotLight(x, y, stats.lightRadius);
 
     final obscuredSilhouetteSprite = 
       Main.Global.oeSpriteBatch.emitSprite(
@@ -2853,6 +2853,9 @@ class Game extends h2d.Object {
                       objectMeta.spriteKey,
                       npcRef);
                 }
+
+                Main.lightingSystem.emitSpotLight(
+                    x, y, npcRef.radius * 20);
               };
             }
 

@@ -16,6 +16,7 @@ typedef InitialStats = {
   var ?energyRegeneration: Int;
   var ?label: String;
   var ?pickupRadius: Int;
+  var ?lightRadius: Float;
 }
 
 typedef StatsRef = {
@@ -34,19 +35,24 @@ class EntityStats {
     final p = props;
 
     return {
-      label:         p.label,
-      maxHealth:     Utils.withDefault(
-          p.maxHealth, p.currentHealth),
-      maxEnergy:     Utils.withDefault(
-          p.maxEnergy, p.currentEnergy),
-      currentHealth: p.currentHealth,
-      currentEnergy: p.currentEnergy,
+      label:              p.label,
+      maxHealth:          Utils.withDefault(
+                            p.maxHealth, 
+                            p.currentHealth),
+      maxEnergy:          Utils.withDefault(
+                            p.maxEnergy, 
+                            p.currentEnergy),
+      currentHealth:      p.currentHealth,
+      currentEnergy:      p.currentEnergy,
       energyRegeneration: p.energyRegeneration,
-      pickupRadius:  p.pickupRadius,
-      moveSpeed:     0,
-      damageTaken:   0,
-      damage: 0,
-      recentEvents:  [],
+      pickupRadius:       p.pickupRadius,
+      moveSpeed:          0,
+      damageTaken:        0,
+      damage:             0,
+      lightRadius:        Utils.withDefault(
+                            p.lightRadius,
+                            0),
+      recentEvents:       [],
     };
   }
 

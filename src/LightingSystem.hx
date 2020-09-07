@@ -83,7 +83,9 @@ class LightingSystem {
     return true;
   }
 
-  public function emitSpotLight(x, y, scaleX, ?scaleY) {
+  public function emitSpotLight(
+      x: Float, y: Float, 
+      scaleX: Float, ?scaleY: Float) {
     final sprite = sb.emitSprite(
         x, y, 
         'ui/spotlight');
