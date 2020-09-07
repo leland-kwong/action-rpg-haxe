@@ -20,6 +20,7 @@ typedef AnimRef = {
   var ?effectCallback: SpriteBatchSystem.EffectCallback;
   var ?batchSystem: SpriteBatchSystem;
   var ?isLightSource: Bool;
+  var ?lightScale: Float;
 }
 
 class Anim {
@@ -104,7 +105,9 @@ class AnimEffect {
               spriteRef.x,
               spriteRef.y,
               spriteKey);
-          source.scale = scale * 2;
+          final lightScale = ref.lightScale != null
+            ? ref.lightScale : 2;
+          source.scale = scale * lightScale;
         }
 
         nextAnimations.push(ref);
