@@ -2864,7 +2864,7 @@ class Game extends h2d.Object {
                 }
 
                 Main.lightingSystem.emitSpotLight(
-                    x, y, npcRef.radius * 20);
+                    x, y, npcRef.radius * 10);
               };
             }
 
@@ -3514,7 +3514,7 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
-    Main.lightingSystem.globalIlluminate();
+    Main.lightingSystem.globalIlluminate(0.4);
     Hud.render(time);
 
     return !finished;
