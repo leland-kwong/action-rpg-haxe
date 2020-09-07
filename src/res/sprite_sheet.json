@@ -716,18 +716,18 @@
 	"frame": {"x":1025,"y":301,"w":24,"h":24},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":1,"w":24,"h":24},
+	"spriteSourceSize": {"x":0,"y":0,"w":24,"h":24},
 	"sourceSize": {"w":24,"h":24},
-	"pivot": {"x":0.520833,"y":0.479167}
+	"pivot": {"x":0.520833,"y":0.520833}
 },
 "ui/gravity_field_particle":
 {
 	"frame": {"x":857,"y":492,"w":7,"h":7},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":1,"w":7,"h":7},
+	"spriteSourceSize": {"x":0,"y":0,"w":7,"h":7},
 	"sourceSize": {"w":7,"h":7},
-	"pivot": {"x":0.571429,"y":0.428571}
+	"pivot": {"x":0.571429,"y":0.571429}
 },
 "ui/hud_ability_slot":
 {
@@ -1627,6 +1627,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1063,"h":502},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:c605b0cee2e25058f087619608239ab2:f556dda6261754dd8494c6c95e939796:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:7f1e8ada63518289be10bd7364859545:c24d1b16c518125188e1bf5cb92ee4b0:6cc8953523e0367402f95f3c9a630665$"
 }
 }

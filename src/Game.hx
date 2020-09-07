@@ -903,8 +903,8 @@ class Ai extends Entity {
     }
 
     final lightSource = Main.lightingSystem.emitSpotLight(
-        x, y, radius * 2);
-    lightSource.alpha = 0.5;
+        x, y, radius * 2.5);
+    // lightSource.alpha = 0.5;
   }
 }
 
@@ -1058,7 +1058,7 @@ class Player extends Entity {
       currentEnergy: 40.0,
       energyRegeneration: 3, // per second
       pickupRadius: 40,
-      lightRadius: 80
+      lightRadius: 100
     });
 
     var runFrames = [

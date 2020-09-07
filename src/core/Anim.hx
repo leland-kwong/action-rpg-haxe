@@ -93,14 +93,14 @@ class AnimEffect {
         if (ref.effectCallback != null) {
           ref.effectCallback(spriteRef);
         }
-        final scale = ref.scale != null
-          ? ref.scale : 1;
 
         if (ref.z != null) {
           spriteRef.sortOrder += ref.z;
         }
 
-        spriteRef.scale = scale;
+        if (ref.scale != null) {
+          spriteRef.scale = ref.scale;
+        }
 
         if (ref.isLightSource) {
           final source = Main.lightingSystem.sb.emitSprite(
@@ -109,7 +109,11 @@ class AnimEffect {
               spriteKey);
           final lightScale = ref.lightScale != null
             ? ref.lightScale : 2;
-          source.scale = scale * lightScale;
+          source.r = spriteRef.r;
+          source.g = spriteRef.r;
+          source.b = spriteRef.r;
+          source.scaleX = spriteRef.scaleX * lightScale;
+          source.scaleY = spriteRef.scaleY * lightScale;
           source.alpha = spriteRef.alpha;
           source.rotation = spriteRef.rotation;
         }
