@@ -9,7 +9,7 @@ import Camera;
 import Tests;
 import Collision;
 import Gui;
-import Experiment;
+import LightingSystem;
 
 enum MainPhase {
   Init;
@@ -175,7 +175,7 @@ class Main extends hxd.App {
     x: 1920,
     y: 1080
   };
-  public static var renderTargetTest: RenderTargetTest;
+  public static var lightingSystem: LightingSystem;
 
   function setupDebugInfo(font) {
     debugText = new h2d.Text(font, Global.scene.uiRoot);
@@ -214,7 +214,7 @@ class Main extends hxd.App {
       Global.scene.particle.render(e);
       Global.scene.obscuredEntities.render(e);
       Global.scene.staticScene.render(e);
-      renderTargetTest.render(e);
+      lightingSystem.render(e);
       Global.scene.uiRoot.render(e);
       Global.scene.inactiveAbilitiesRoot.render(e);
 
@@ -426,7 +426,7 @@ class Main extends hxd.App {
       setupDebugInfo(Fonts.debug());
 #end
 
-      renderTargetTest = new Experiment.RenderTargetTest(engine);
+      lightingSystem = new LightingSystem(engine);
 
       Gui.init();
       Gui.GuiComponents.mainMenu();

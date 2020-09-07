@@ -174,7 +174,7 @@ class LineProjectile extends Projectile {
 
 class SpotLight {
   public static function emit(x, y, radius) {
-    final sprite = Main.renderTargetTest.lightingSb.emitSprite(
+    final sprite = Main.lightingSystem.sb.emitSprite(
         x, y, 
         'ui/spotlight');
     sprite.scale = radius * 2 * 8 / 100;
@@ -259,7 +259,7 @@ class Bullet extends Projectile {
         x, y, spriteKey, angle, null);
     sprite.scale = 1 - progress;
 
-    final sprite = Main.renderTargetTest.lightingSb.emitSprite(
+    final sprite = Main.lightingSystem.sb.emitSprite(
         x, 
         y, 
         spriteKey, 
@@ -3479,7 +3479,7 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
-    Main.renderTargetTest.globalIlluminate();
+    Main.lightingSystem.globalIlluminate();
     Hud.render(time);
 
     return !finished;
