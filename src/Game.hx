@@ -172,6 +172,15 @@ class LineProjectile extends Projectile {
   } 
 }
 
+class SpotLight {
+  public static function emit(x, y, radius) {
+    final sprite = Main.renderTargetTest.lightingSb.emitSprite(
+        x, y, 
+        'ui/spotlight');
+    sprite.scale = radius * 2 * 8 / 100;
+  }
+}
+
 class Bullet extends Projectile {
   static var onHitFrames = [
     'projectile_hit_animation/burst-0',
@@ -1986,12 +1995,15 @@ class Player extends Entity {
           Entity.getComponent(this, 'alpha'),
           1);
     }
+    // render player sprite
     final baseSprite = Main.Global.sb.emitSprite(
       x, y,
       currentSprite,
       null,
       spriteEffect
     );
+
+    SpotLight.emit(x, y, radius);
 
     final obscuredSilhouetteSprite = 
       Main.Global.oeSpriteBatch.emitSprite(
@@ -2481,6 +2493,14 @@ class Game extends h2d.Object {
 
                   return progress < 1;
                 });
+
+                Main.Global.hooks.render.push(function makeSpotlight(_) {
+                  final progress = (Main.Global.time - startedAt) 
+                    / animDuration;
+                  SpotLight.emit(x, y, 3);
+
+                  return progress < 1;
+                });
               }
 
               final makePlayerAfterAnimation = (dt: Float) -> {
@@ -2492,7 +2512,6 @@ class Game extends h2d.Object {
                       x,
                       y,
                       Main.Global.rootScene);
-                  Main.Global.rootScene.addChild(playerRef);
                   Camera.follow(
                       Main.Global.mainCamera, 
                       playerRef);
@@ -3460,6 +3479,7 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
+    Main.renderTargetTest.globalIlluminate();
     Hud.render(time);
 
     return !finished;

@@ -43,13 +43,11 @@ class RenderTargetTest {
         final bmp = new h2d.Bitmap(
             h2d.Tile.fromTexture(rt),
             renderScene);
-        bmp.alpha = 0.6;
-        bmp.blendMode = h2d.BlendMode.AlphaMultiply;
+        bmp.blendMode = h2d.BlendMode.Multiply;
         bmp;
       }
       rt;
     }
-
 
     lightingSb = {
       final sb = new SpriteBatchSystem(
@@ -75,6 +73,19 @@ class RenderTargetTest {
 
       return true;
     });
+  }
+
+  public function globalIlluminate(a = 0.2) {
+    final cam = Main.Global.mainCamera;
+    final s = lightingSb.emitSprite(
+        cam.x - cam.w / 2,
+        cam.y - cam.h / 2,
+        'ui/square_white');
+    s.alpha = a;
+    s.scaleX = cam.w;
+    s.scaleY = cam.h;
+
+    return true;
   }
 
   public function render(e: h3d.Engine) {
