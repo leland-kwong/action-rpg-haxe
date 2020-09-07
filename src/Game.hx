@@ -361,15 +361,22 @@ class EnergyBomb extends Projectile {
     }
 
     final angle = time * Math.PI * 8;
-    Main.Global.sb.emitSprite(
+    final spriteKey = 'ui/energy_bomb_projectile';
+    final scale = 1;
+    final p = Main.Global.sb.emitSprite(
         x, y, 
-        'ui/energy_bomb_projectile', 
-        angle, (p) -> {
-          final b = p;
-          final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
-          b.g = v;
-          b.b = v / 2;
-        });
+        spriteKey, 
+        angle);
+    final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
+    p.g = v;
+    p.b = v / 2;
+
+    final light = Main.lightingSystem.sb.emitSprite(
+        x, 
+        y, 
+        spriteKey, 
+        angle);
+    light.scale = scale * 2;
   }
 }
 
