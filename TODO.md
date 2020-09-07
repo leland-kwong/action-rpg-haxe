@@ -7,9 +7,8 @@
   - [ ] `gameState` can sometimes end up in a bad state which cannot be loaded up next time. Its possible that the thread did not finish processing the most recent event.
 
 ## Quests
-  - [ ] Show indicator above npc when there is something new for the player to do.
   - [ ] When boss is killed, activate quest to `talk to the bounty provider in town`. Upon interacting with bounty provider, reward the player with a new passive skill point and trigger the `level up` effect but say `new skill point gained`.
-  - [ ] When interacting with bounty quest provider, check player state to trigger quest rewards and determine the next dialog to show.
+  - [x] Show indicator above npc when there is something new for the player to do.
 
 ## Game state
   - [x] Integrate inventory state
