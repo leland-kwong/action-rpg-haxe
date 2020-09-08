@@ -50,7 +50,7 @@ class LightingSystem {
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
       final batch = sb.batchManager.batch;
-      batch.filter = new h2d.filter.Blur(5);
+      batch.filter = new h2d.filter.Blur(3);
       batch.blendMode = h2d.BlendMode.Add;
       sb;
     }

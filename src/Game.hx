@@ -2070,24 +2070,22 @@ class Player extends Entity {
         final orbLineAngle = Math.atan2(
           (y2 + dy) - orbSpriteY,
           x - orbSpriteX);
-        sb.emitSprite(
+        // render line
+        final ray = sb.emitSprite(
             orbSpriteX,
             orbSpriteY,
             'ui/square_white',
-            orbLineAngle,
-            (p) -> {
-              p.sortOrder += 50.;
-              final b = p;
-              b.scaleX = lineLength;
+            orbLineAngle);
+        ray.sortOrder += 50.;
+        ray.scaleX = lineLength;
 
-              if (healType == 'LIFE_RESTORE') {
-                setSpriteColors(p, 0.6, 4., 0.8, 0.4);
-              }
+        if (healType == 'LIFE_RESTORE') {
+          setSpriteColors(ray, 0.6, 4., 0.8, 0.4);
+        }
 
-              if (healType == 'ENERGY_RESTORE') {
-                setSpriteColors(p, 0.6, 0.8, 4., 0.4);
-              }
-            });
+        if (healType == 'ENERGY_RESTORE') {
+          setSpriteColors(ray, 0.6, 0.8, 4., 0.4);
+        }
 
         final spriteRef = sb.emitSprite(
             x,
@@ -2771,18 +2769,23 @@ class Game extends h2d.Object {
                   objectMeta.spriteKey);
 
               ref.renderFn = (ref, t) -> {
+                final pulseTime = Math.sin(
+                    (Main.Global.time + timeOffset) * 2);
                 final sprite = Main.Global.sb.emitSprite(
                     ref.x, ref.y, objectMeta.spriteKey);
                 final light = Main.lightingSystem.sb.emitSprite(
                     ref.x, ref.y, 'ui/treasure_chest_light');
-                light.alpha = 0.5 + 0.5 * Math.sin(
-                    (Main.Global.time + timeOffset) * 2);
+                light.alpha = 0.5 + 0.5 * pulseTime;
                 final light2 = Main.lightingSystem.sb.emitSprite(
                     ref.x, ref.y, 'ui/treasure_chest_light');
                 light2.alpha = light.alpha;
                 final spotLight = Main.lightingSystem.emitSpotLight(
-                    ref.x, ref.y, 0);
-                spotLight.alpha = 0.4;
+                    ref.x, 
+                    ref.y 
+                    + spriteData.pivot.y * spriteData.sourceSize.h
+                    - 5,
+                    0);
+                spotLight.alpha = 0.5 + 0.3 * pulseTime;
                 spotLight.r = 44 / 255;
                 spotLight.g = 232 / 255;
                 spotLight.b = 245 / 255;
@@ -2902,14 +2905,17 @@ class Game extends h2d.Object {
                       x, 
                       y + dialogOffsetY, 
                       'ui/exclamation_bubble');
+                  s.g = 0.8;
+                  s.b = 0.2;
                   final light = Main.lightingSystem.sb.emitSprite(
                       x, 
                       y + dialogOffsetY, 
                       'ui/exclamation_bubble');
-                  light.scale = 1.5;
+                  light.r = 255.;
+                  light.g = 255.;
+                  light.b = 255.;
+                  light.scale = 1.2;
                   for (sprite in [s, light]) {
-                    sprite.g = 0.8;
-                    sprite.b = 0.2;
                     sprite.scaleX *= 0.95 + 
                       0.05 * Math.cos(Main.Global.time * 2);
                     sprite.scaleY *= 0.95 
