@@ -1865,6 +1865,7 @@ class Player extends Entity {
                 'ui/square_glow', 
               ],
               duration: duration,
+              isLightSource: true,
               effectCallback: (p) -> {
                 final progress = (Main.Global.time - startTime) 
                   / duration;
@@ -1899,6 +1900,8 @@ class Player extends Entity {
               'ui/flame_torch', 
             ],
             duration: torchDuration,
+            isLightSource: true,
+            lightScale: 1.2,
             effectCallback: (p) -> {
               final progress = (Main.Global.time - startTime) 
                 / torchDuration;
@@ -1923,6 +1926,7 @@ class Player extends Entity {
               'ui/circle_gradient', 
             ],
             duration: torchDuration,
+            isLightSource: true,
             effectCallback: (p) -> {
               final progress = (Main.Global.time - startTime) 
                 / torchDuration;
@@ -2773,8 +2777,11 @@ class Game extends h2d.Object {
                     (Main.Global.time + timeOffset) * 2);
                 final sprite = Main.Global.sb.emitSprite(
                     ref.x, ref.y, objectMeta.spriteKey);
-                final light = Main.lightingSystem.sb.emitSprite(
+                final light = Main.Global.sb.emitSprite(
                     ref.x, ref.y, 'ui/treasure_chest_light');
+                light.r = 120 / 255;
+                light.g = 232 / 255;
+                light.b = 245 / 255;
                 light.alpha = 0.5 + 0.5 * pulseTime;
                 final light2 = Main.lightingSystem.sb.emitSprite(
                     ref.x, ref.y, 'ui/treasure_chest_light');
@@ -2785,7 +2792,7 @@ class Game extends h2d.Object {
                     + spriteData.pivot.y * spriteData.sourceSize.h
                     - 5,
                     0);
-                spotLight.alpha = 0.5 + 0.3 * pulseTime;
+                spotLight.alpha = 0.5 + 0.5 * pulseTime;
                 spotLight.r = 44 / 255;
                 spotLight.g = 232 / 255;
                 spotLight.b = 245 / 255;
@@ -3153,20 +3160,17 @@ class Game extends h2d.Object {
 
     lootRef.renderFn = (ref, time: Float) -> {
       // drop shadow
-      Main.Global.sb.emitSprite(
+      final dropShadow = Main.Global.sb.emitSprite(
           ref.x - ref.radius,
           ref.y + ref.radius - 2,
-          'ui/square_white',
-          null,
-          (p) -> {
-            p.sortOrder = (ref.y / 2) - 1;
-            p.scaleX = ref.radius * 2;
-            p.r = 0;
-            p.g = 0;
-            p.b = 0.2;
-            p.a = 0.2;
-            p.scaleY = ref.radius * 0.5;
-          });
+          'ui/square_white');
+      dropShadow.sortOrder = (ref.y / 2) - 1;
+      dropShadow.scaleX = ref.radius * 2;
+      dropShadow.r = 0;
+      dropShadow.g = 0;
+      dropShadow.b = 0.2;
+      dropShadow.a = 0.2;
+      dropShadow.scaleY = ref.radius * 0.5;
 
       final lootDef = Loot.getDef(
             Entity.getComponent(ref, 'lootInstance').type);

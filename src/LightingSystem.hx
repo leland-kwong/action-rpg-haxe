@@ -11,7 +11,7 @@ class LightingSystem {
   public function new(engine) {
     renderTargetScene = new h2d.Scene();
     renderScene = new h2d.Scene();
-    for (s2d in [renderScene]) {
+    for (s2d in [renderScene, renderTargetScene]) {
       s2d.scaleMode = ScaleMode.Zoom(Main.Global.resolutionScale);
     }
 
@@ -28,8 +28,11 @@ class LightingSystem {
     }
 
     renderTarget = {
-      final width = Main.nativePixelResolution.x;
-      final height = Main.nativePixelResolution.y;
+      final gameScale = Main.Global.resolutionScale;
+      final width = Std.int(
+          Main.nativePixelResolution.x / gameScale);
+      final height = Std.int(
+          Main.nativePixelResolution.y / gameScale);
       final rt = new Texture( width, height, [ Target ] );
       rt.filter = Nearest;
       rt.depthBuffer = new DepthBuffer( width, height );
@@ -50,7 +53,7 @@ class LightingSystem {
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
       final batch = sb.batchManager.batch;
-      batch.filter = new h2d.filter.Blur(3);
+      batch.filter = new h2d.filter.Blur(2);
       batch.blendMode = h2d.BlendMode.Add;
       sb;
     }
