@@ -1437,7 +1437,7 @@ class Player extends Entity {
             (ent) -> (
               ent.type == 'ENEMY' || 
               ent.type == 'OBSTACLE' ||
-              ent.type == 'INTERACTABLE_PROP'));
+              ent.type == 'BREAKABLE_PROP'));
         ref.lifeTime = 1.2;
         ref.source = this;
       }
@@ -1446,7 +1446,7 @@ class Player extends Entity {
         final collisionFilter = (ent) -> (
             ent.type == 'ENEMY' || 
             ent.type == 'OBSTACLE' ||
-            ent.type == 'INTERACTABLE_PROP');
+            ent.type == 'BREAKABLE_PROP');
         for (_angle in [
           angle,
           angle - Math.PI / 10,
@@ -1477,7 +1477,7 @@ class Player extends Entity {
               case 
                   'ENEMY' 
                 | 'OBSTACLE' 
-                | 'INTERACTABLE_PROP': 
+                | 'BREAKABLE_PROP': 
                 true;
 
               default: false;
@@ -1596,7 +1596,7 @@ class Player extends Entity {
         final collisionFilter = (ent) -> (
             ent.type == 'ENEMY' || 
             ent.type == 'OBSTACLE' ||
-            ent.type == 'INTERACTABLE_PROP');
+            ent.type == 'BREAKABLE_PROP');
         var b = new EnergyBomb(
             x1,
             y1,
@@ -1760,7 +1760,7 @@ class Player extends Entity {
               'ui/placeholder',
               (ent) -> {
                 return ent.type == 'ENEMY' ||
-                  ent.type == 'INTERACTABLE_PROP';
+                  ent.type == 'BREAKABLE_PROP';
               }
             );
 
@@ -1954,7 +1954,7 @@ class Player extends Entity {
           return switch (e.type) {
             case 
                 'ENEMY'
-              | 'INTERACTABLE_PROP': {
+              | 'BREAKABLE_PROP': {
                 true;
               }
 
@@ -2613,7 +2613,6 @@ class Game extends h2d.Object {
                       objectMeta.spriteKey,
                       ref);
                 }
-
               }
               final shatterAnimation = (ref) -> {
                 final startedAt = Main.Global.time;
@@ -2666,7 +2665,7 @@ class Game extends h2d.Object {
 
               };
               ref.onDone = shatterAnimation;
-              ref.type = 'INTERACTABLE_PROP';
+              ref.type = 'BREAKABLE_PROP';
               ref.stats = EntityStats.create({
                 label: '@prop_1_1',
                 currentHealth: 1.,
@@ -2753,6 +2752,50 @@ class Game extends h2d.Object {
                       });
                 }
               };
+            }
+
+            case 'treasureChest': {
+              final ref = new Entity({
+                x: x,
+                y: y,
+                type: 'INTERACTABLE_PROP',
+                stats: EntityStats.create({
+                  label: '@treasureChest',
+                  currentHealth: 1.,
+                })
+              });
+              final timeOffset = Utils.rnd(0, 100);
+
+              final spriteData = SpriteBatchSystem.getSpriteData(
+                  Main.Global.sb.batchManager.spriteSheetData,
+                  objectMeta.spriteKey);
+
+              ref.renderFn = (ref, t) -> {
+                final sprite = Main.Global.sb.emitSprite(
+                    ref.x, ref.y, objectMeta.spriteKey);
+                final light = Main.lightingSystem.sb.emitSprite(
+                    ref.x, ref.y, 'ui/treasure_chest_light');
+                light.alpha = 0.5 + 0.5 * Math.sin(
+                    (Main.Global.time + timeOffset) * 2);
+                final light2 = Main.lightingSystem.sb.emitSprite(
+                    ref.x, ref.y, 'ui/treasure_chest_light');
+                light2.alpha = light.alpha;
+                final spotLight = Main.lightingSystem.emitSpotLight(
+                    ref.x, ref.y, 0);
+                spotLight.alpha = 0.4;
+                spotLight.r = 44 / 255;
+                spotLight.g = 232 / 255;
+                spotLight.b = 245 / 255;
+                spotLight.scaleX = spriteData.sourceSize.w / 30;
+                spotLight.scaleY = spriteData.sourceSize.h / 30;
+
+                if (Main.Global.hoveredEntity.id == ref.id) {
+                  Entity.renderOutline(
+                      sprite.sortOrder - 1,
+                      objectMeta.spriteKey,
+                      ref);
+                }
+              }
             }
 
             case 'npc_quest_provider': {
@@ -2859,10 +2902,19 @@ class Game extends h2d.Object {
                       x, 
                       y + dialogOffsetY, 
                       'ui/exclamation_bubble');
-                  s.g = 0.8;
-                  s.b = 0.2;
-                  s.scaleX = 0.95 + 0.05 * Math.cos(Main.Global.time * 2);
-                  s.scaleY = 0.95 + 0.05 * Math.sin(Main.Global.time * 2);
+                  final light = Main.lightingSystem.sb.emitSprite(
+                      x, 
+                      y + dialogOffsetY, 
+                      'ui/exclamation_bubble');
+                  light.scale = 1.5;
+                  for (sprite in [s, light]) {
+                    sprite.g = 0.8;
+                    sprite.b = 0.2;
+                    sprite.scaleX *= 0.95 + 
+                      0.05 * Math.cos(Main.Global.time * 2);
+                    sprite.scaleY *= 0.95 
+                      + 0.05 * Math.sin(Main.Global.time * 2);
+                  }
                 }
 
                 if (state.hovered) {
@@ -3338,7 +3390,7 @@ class Game extends h2d.Object {
       // cleanup entity
       if (a.isDone()) {
         final numItemsToDrop = switch(a.type) {
-          case 'INTERACTABLE_PROP': 
+          case 'BREAKABLE_PROP': 
             Utils.rollValues([
                 0, 0, 0, 0, 0, 1
             ]);
@@ -3464,7 +3516,7 @@ class Game extends h2d.Object {
           { type: 'PLAYER' } 
         | { type: 'ENEMY' } 
         | { type: 'FRIENDLY_AI' }
-        | { type: 'INTERACTABLE_PROP' }: {
+        | { type: 'BREAKABLE_PROP' }: {
           Grid.setItemRect(
               Main.Global.grid.dynamicWorld,
               a.x,
@@ -3475,6 +3527,7 @@ class Game extends h2d.Object {
         }
         case 
           { type: 'OBSTACLE' }
+        | { type: 'INTERACTABLE_PROP' }
         | { type: 'NPC' }: {
           Grid.setItemRect(
               Main.Global.grid.obstacle,

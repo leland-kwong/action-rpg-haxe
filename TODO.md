@@ -1,5 +1,11 @@
 # Todos
 
+## Treasure Chest
+  - [ ] Interacting with treasure chest drops loot
+
+## Entity Collision
+  - [ ] Add rectangle collision support. We should create a static method for testing collisions so it can handle various collision types.
+
 ## Unit tests
   - [x] Add unit test for checking memory leaks when creating new game and tearing it down.
 

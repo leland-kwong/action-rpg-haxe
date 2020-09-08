@@ -1471,10 +1471,18 @@ class Hud {
     final x = Main.Global.rootScene.mouseX;
     final y = Main.Global.rootScene.mouseY;
     final threshold = 16;
-    final hoveredMatch = Lambda.fold(
-        Grid.getItemsInRect(
+    final nearbyDynamicItems = [
+      for(key in Grid.getItemsInRect(
           Main.Global.grid.dynamicWorld,
-          x, y, threshold, threshold),
+          x, y, threshold, threshold)) key];
+    final nearbyObstacleItems = [
+      for (key in Grid.getItemsInRect(
+          Main.Global.grid.obstacle,
+          x, y, threshold, threshold)) key];
+    final nearbyItems = nearbyDynamicItems
+      .concat(nearbyObstacleItems);
+    final hoveredMatch = Lambda.fold(
+        nearbyItems,
         (entityId, result: {
           previousDist: Float,
           matchId: Entity.EntityId
@@ -1491,6 +1499,7 @@ class Hud {
               case 
                   'ENEMY' 
                 | 'INTERACTABLE_PROP'
+                | 'BREAKABLE_PROP'
                 | 'LOOT':
                 true;
 
