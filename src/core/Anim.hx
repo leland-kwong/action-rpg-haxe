@@ -18,6 +18,9 @@ typedef AnimRef = {
   var ?angle: Float;
   var ?scale: Float;
   var ?effectCallback: SpriteBatchSystem.EffectCallback;
+  var ?batchSystem: SpriteBatchSystem;
+  var ?isLightSource: Bool;
+  var ?lightScale: Float;
 }
 
 class Anim {
@@ -78,12 +81,18 @@ class AnimEffect {
       final dy = ref.dy == null ? 0 : ref.dy;
 
       if (isAlive) {
-        final spriteRef = Main.Global.sb.emitSprite(
+        final sb = ref.batchSystem != null 
+          ? ref.batchSystem 
+          : Main.Global.sb;
+        final spriteKey = core.Anim.getFrame(ref, time);
+        final spriteRef = sb.emitSprite(
             ref.x + dx * progress,
             ref.y + dy * progress,
-            core.Anim.getFrame(ref, time),
-            ref.angle,
-            ref.effectCallback);
+            spriteKey,
+            ref.angle);
+        if (ref.effectCallback != null) {
+          ref.effectCallback(spriteRef);
+        }
 
         if (ref.z != null) {
           spriteRef.sortOrder += ref.z;
@@ -92,6 +101,23 @@ class AnimEffect {
         if (ref.scale != null) {
           spriteRef.scale = ref.scale;
         }
+
+        if (ref.isLightSource) {
+          final source = Main.lightingSystem.sb.emitSprite(
+              spriteRef.x,
+              spriteRef.y,
+              spriteKey);
+          final lightScale = ref.lightScale != null
+            ? ref.lightScale : 2;
+          source.r = spriteRef.r;
+          source.g = spriteRef.r;
+          source.b = spriteRef.r;
+          source.scaleX = spriteRef.scaleX * lightScale;
+          source.scaleY = spriteRef.scaleY * lightScale;
+          source.alpha = spriteRef.alpha;
+          source.rotation = spriteRef.rotation;
+        }
+
         nextAnimations.push(ref);
       }
     }

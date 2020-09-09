@@ -9,6 +9,7 @@ import Camera;
 import Tests;
 import Collision;
 import Gui;
+import LightingSystem;
 
 enum MainPhase {
   Init;
@@ -47,9 +48,9 @@ class SceneGroup {
     }
 
     inactiveAbilitiesRoot = {
-      final s2d = new h2d.Scene();
-      s2d.filter = h2d.filter.ColorMatrix.grayed();
-      s2d;
+      final s = new h2d.Scene();
+      s.filter = h2d.filter.ColorMatrix.grayed();
+      s;
     }
 
     particle = {
@@ -174,13 +175,10 @@ class Main extends hxd.App {
     x: 1920,
     y: 1080
   };
+  public static var lightingSystem: LightingSystem;
 
   function setupDebugInfo(font) {
-    debugText = new h2d.Text(font);
-    // debugText.textAlign = Right;
-
-    // add to any parent, in this case we append to root
-    Global.scene.uiRoot.addChild(debugText);
+    debugText = new h2d.Text(font, Global.scene.uiRoot);
   }
 
   public static function onGameExit() {
@@ -191,7 +189,6 @@ class Main extends hxd.App {
 
   public override function render(e: h3d.Engine) {
     try {
-
       Global.mainPhase = MainPhase.Render;
 
       {
@@ -217,8 +214,9 @@ class Main extends hxd.App {
       Global.scene.particle.render(e);
       Global.scene.obscuredEntities.render(e);
       Global.scene.staticScene.render(e);
-      Global.scene.inactiveAbilitiesRoot.render(e);
+      lightingSystem.render(e);
       Global.scene.uiRoot.render(e);
+      Global.scene.inactiveAbilitiesRoot.render(e);
 
     } catch (error: Dynamic) {
       HaxeUtils.handleError(
@@ -284,16 +282,19 @@ class Main extends hxd.App {
         Global.sb = new SpriteBatchSystem(
             Global.scene.particle,
             hxd.Res.sprite_sheet_png,
-            hxd.Res.sprite_sheet_json);
+            hxd.Res.sprite_sheet_json,
+            SpriteBatchSystem.ySort);
         {
           Global.wmSpriteBatch = new SpriteBatchSystem(
               Global.scene.obstacleMask,
               hxd.Res.sprite_sheet_png,
-              hxd.Res.sprite_sheet_json);
+              hxd.Res.sprite_sheet_json,
+              SpriteBatchSystem.ySort);
           Global.oeSpriteBatch = new SpriteBatchSystem(
               Global.scene.obscuredEntities,
               hxd.Res.sprite_sheet_png,
-              hxd.Res.sprite_sheet_json);
+              hxd.Res.sprite_sheet_json,
+              SpriteBatchSystem.ySort);
           final mask = new h2d.filter.Mask(
               Global.scene.obstacleMask, true, true);
           final batch = Global.oeSpriteBatch.batchManager.batch;
@@ -304,7 +305,8 @@ class Main extends hxd.App {
         Global.uiSpriteBatch = new SpriteBatchSystem(
             Global.scene.uiRoot,
             hxd.Res.sprite_sheet_png,
-            hxd.Res.sprite_sheet_json);
+            hxd.Res.sprite_sheet_json,
+            SpriteBatchSystem.ySort);
       }
 
       Tests.run();      
@@ -424,6 +426,8 @@ class Main extends hxd.App {
       setupDebugInfo(Fonts.debug());
 #end
 
+      lightingSystem = new LightingSystem(engine);
+
       Gui.init();
       Gui.GuiComponents.mainMenu();
       Hud.init();
@@ -472,19 +476,6 @@ class Main extends hxd.App {
         Global.time += frameTime;
         frameDt += frameTime;
 
-        // run updateHooks
-        {
-          final nextHooks = [];
-          for (update in Global.hooks.update) {
-            final shouldKeepAlive = update(frameTime);
-
-            if (shouldKeepAlive) {
-              nextHooks.push(update); 
-            }
-          }
-          Global.hooks.update = nextHooks;
-        }
-
         // sync up scenes with the camera
         {
           // IMPORTANT: update the camera position first
@@ -513,6 +504,19 @@ class Main extends hxd.App {
             scene.x = cam_center_x;
             scene.y = cam_center_y;
           }
+        }
+
+        // run updateHooks
+        {
+          final nextHooks = [];
+          for (update in Global.hooks.update) {
+            final shouldKeepAlive = update(frameTime);
+
+            if (shouldKeepAlive) {
+              nextHooks.push(update); 
+            }
+          }
+          Global.hooks.update = nextHooks;
         }
 
         // ints (under 8 bytes in size) can only be a maximum of 10^10 before they wrap over

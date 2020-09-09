@@ -28,7 +28,7 @@
  * [ ] Minimap functionality. This will be useful for seeing a preview of the
        entire map while also surfacing any stray objects that we might not
        otherwise see because we forgot to clean them up.
- * [ ] [BUG] Fix issue with cursor brush in paint mode not properly snapping
+ * [x] [BUG] Fix issue with cursor brush in paint mode not properly snapping
        to the fine pixel grid. We can refer to the selected marquee 
        selection api since it doesn't appear to exhibit the same issues.
        to have this problem, so we can loo
@@ -227,6 +227,9 @@ class Editor {
               'editor-data/dummy_level.eds'
               | 'editor-data/level_1.eds': {
                 [
+                  'treasureChest' => {
+                    spriteKey: 'ui/treasure_chest'
+                  },
                   'pillar' => {
                     spriteKey: 'ui/pillar',
                   },
@@ -2049,6 +2052,8 @@ class Editor {
             Math.sin(Main.Global.time * 4) * 0.1;
         }
       }
+
+      Main.lightingSystem.globalIlluminate(1.);
 
       return !finished;
     }

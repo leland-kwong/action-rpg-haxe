@@ -227,6 +227,7 @@ class Bullet extends Projectile {
     if (isDone() && 
         explodeWhenExpired ||
         (!explodeWhenExpired && collidedWith.length > 0)) {
+
       core.Anim.AnimEffect.add({
         frames: onHitFrames,
         startTime: Main.Global.time,
@@ -234,7 +235,8 @@ class Bullet extends Projectile {
         x: x,
         y: y,
         z: 10,
-        scale: explosionScale
+        scale: explosionScale,
+        isLightSource: true
       }); 
     }
   }
@@ -249,6 +251,14 @@ class Bullet extends Projectile {
     final sprite = Main.Global.sb.emitSprite(
         x, y, spriteKey, angle, null);
     sprite.scale = 1 - progress;
+
+    final sprite = Main.lightingSystem.sb.emitSprite(
+        x, 
+        y, 
+        spriteKey, 
+        angle, 
+        null);
+    sprite.scale = 2 * (1 - progress);
   }
 }
 
@@ -351,15 +361,22 @@ class EnergyBomb extends Projectile {
     }
 
     final angle = time * Math.PI * 8;
-    Main.Global.sb.emitSprite(
+    final spriteKey = 'ui/energy_bomb_projectile';
+    final scale = 1;
+    final p = Main.Global.sb.emitSprite(
         x, y, 
-        'ui/energy_bomb_projectile', 
-        angle, (p) -> {
-          final b = p;
-          final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
-          b.g = v;
-          b.b = v / 2;
-        });
+        spriteKey, 
+        angle);
+    final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
+    p.g = v;
+    p.b = v / 2;
+
+    final light = Main.lightingSystem.sb.emitSprite(
+        x, 
+        y, 
+        spriteKey, 
+        angle);
+    light.scale = scale * 2;
   }
 }
 
@@ -864,29 +881,30 @@ class Ai extends Entity {
     final currentFrameName = core.Anim.getFrame(
         activeAnim, time);
 
-    final sprite = Main.Global.sb.emitSprite(
-        x, y,
-        currentFrameName,
-        null,
-        (p) -> {
-          final b: h2d.SpriteBatch.BatchElement = 
-            p;
+    // render character sprite
+    {
+      final sprite = Main.Global.sb.emitSprite(
+          x, y,
+          currentFrameName);
+      // flash enemy white
+      if (Cooldown.has(cds, 'hitFlash')) {
+        sprite.r = 150;
+        sprite.g = 150;
+        sprite.b = 150;
+      }
 
-          // flash enemy white
-          if (Cooldown.has(cds, 'hitFlash')) {
-            b.r = 150;
-            b.g = 150;
-            b.b = 150;
-          }
-
-          b.scaleX = facingDir * 1;
-        });
-
-    final shouldHighlight = Main.Global.hoveredEntity.id == id;
-    if (shouldHighlight) {
-      Entity.renderOutline(
-          sprite.sortOrder - 1, currentFrameName, this);
+      sprite.scaleX = facingDir * 1;
+      
+      final shouldHighlight = Main.Global.hoveredEntity.id == id;
+      if (shouldHighlight) {
+        Entity.renderOutline(
+            sprite.sortOrder - 1, currentFrameName, this);
+      }
     }
+
+    final lightSource = Main.lightingSystem.emitSpotLight(
+        x, y, radius * 3.);
+    // lightSource.alpha = 0.5;
   }
 }
 
@@ -1039,7 +1057,8 @@ class Player extends Entity {
       currentHealth: 100.0,
       currentEnergy: 40.0,
       energyRegeneration: 3, // per second
-      pickupRadius: 40 
+      pickupRadius: 40,
+      lightRadius: 100
     });
 
     var runFrames = [
@@ -1418,7 +1437,7 @@ class Player extends Entity {
             (ent) -> (
               ent.type == 'ENEMY' || 
               ent.type == 'OBSTACLE' ||
-              ent.type == 'INTERACTABLE_PROP'));
+              ent.type == 'BREAKABLE_PROP'));
         ref.lifeTime = 1.2;
         ref.source = this;
       }
@@ -1427,7 +1446,7 @@ class Player extends Entity {
         final collisionFilter = (ent) -> (
             ent.type == 'ENEMY' || 
             ent.type == 'OBSTACLE' ||
-            ent.type == 'INTERACTABLE_PROP');
+            ent.type == 'BREAKABLE_PROP');
         for (_angle in [
           angle,
           angle - Math.PI / 10,
@@ -1458,7 +1477,7 @@ class Player extends Entity {
               case 
                   'ENEMY' 
                 | 'OBSTACLE' 
-                | 'INTERACTABLE_PROP': 
+                | 'BREAKABLE_PROP': 
                 true;
 
               default: false;
@@ -1577,7 +1596,7 @@ class Player extends Entity {
         final collisionFilter = (ent) -> (
             ent.type == 'ENEMY' || 
             ent.type == 'OBSTACLE' ||
-            ent.type == 'INTERACTABLE_PROP');
+            ent.type == 'BREAKABLE_PROP');
         var b = new EnergyBomb(
             x1,
             y1,
@@ -1653,7 +1672,9 @@ class Player extends Entity {
               elem.r = 1.;
               elem.g = 20.;
               elem.b = 20.;
-            }
+            },
+            isLightSource: true,
+            lightScale: 1.1
           });
         }
 
@@ -1739,7 +1760,7 @@ class Player extends Entity {
               'ui/placeholder',
               (ent) -> {
                 return ent.type == 'ENEMY' ||
-                  ent.type == 'INTERACTABLE_PROP';
+                  ent.type == 'BREAKABLE_PROP';
               }
             );
 
@@ -1844,6 +1865,7 @@ class Player extends Entity {
                 'ui/square_glow', 
               ],
               duration: duration,
+              isLightSource: true,
               effectCallback: (p) -> {
                 final progress = (Main.Global.time - startTime) 
                   / duration;
@@ -1878,6 +1900,8 @@ class Player extends Entity {
               'ui/flame_torch', 
             ],
             duration: torchDuration,
+            isLightSource: true,
+            lightScale: 1.2,
             effectCallback: (p) -> {
               final progress = (Main.Global.time - startTime) 
                 / torchDuration;
@@ -1902,6 +1926,7 @@ class Player extends Entity {
               'ui/circle_gradient', 
             ],
             duration: torchDuration,
+            isLightSource: true,
             effectCallback: (p) -> {
               final progress = (Main.Global.time - startTime) 
                 / torchDuration;
@@ -1933,7 +1958,7 @@ class Player extends Entity {
           return switch (e.type) {
             case 
                 'ENEMY'
-              | 'INTERACTABLE_PROP': {
+              | 'BREAKABLE_PROP': {
                 true;
               }
 
@@ -1978,12 +2003,15 @@ class Player extends Entity {
           Entity.getComponent(this, 'alpha'),
           1);
     }
+    // render player sprite
     final baseSprite = Main.Global.sb.emitSprite(
       x, y,
       currentSprite,
       null,
       spriteEffect
     );
+
+    Main.lightingSystem.emitSpotLight(x, y, stats.lightRadius);
 
     final obscuredSilhouetteSprite = 
       Main.Global.oeSpriteBatch.emitSprite(
@@ -2046,24 +2074,22 @@ class Player extends Entity {
         final orbLineAngle = Math.atan2(
           (y2 + dy) - orbSpriteY,
           x - orbSpriteX);
-        sb.emitSprite(
+        // render line
+        final ray = sb.emitSprite(
             orbSpriteX,
             orbSpriteY,
             'ui/square_white',
-            orbLineAngle,
-            (p) -> {
-              p.sortOrder += 50.;
-              final b = p;
-              b.scaleX = lineLength;
+            orbLineAngle);
+        ray.sortOrder += 50.;
+        ray.scaleX = lineLength;
 
-              if (healType == 'LIFE_RESTORE') {
-                setSpriteColors(p, 0.6, 4., 0.8, 0.4);
-              }
+        if (healType == 'LIFE_RESTORE') {
+          setSpriteColors(ray, 0.6, 4., 0.8, 0.4);
+        }
 
-              if (healType == 'ENERGY_RESTORE') {
-                setSpriteColors(p, 0.6, 0.8, 4., 0.4);
-              }
-            });
+        if (healType == 'ENERGY_RESTORE') {
+          setSpriteColors(ray, 0.6, 0.8, 4., 0.4);
+        }
 
         final spriteRef = sb.emitSprite(
             x,
@@ -2473,6 +2499,14 @@ class Game extends h2d.Object {
 
                   return progress < 1;
                 });
+
+                Main.Global.hooks.render.push(function makeSpotlight(_) {
+                  final progress = (Main.Global.time - startedAt) 
+                    / animDuration;
+                  Main.lightingSystem.emitSpotLight(x, y, 3);
+
+                  return progress < 1;
+                });
               }
 
               final makePlayerAfterAnimation = (dt: Float) -> {
@@ -2484,7 +2518,6 @@ class Game extends h2d.Object {
                       x,
                       y,
                       Main.Global.rootScene);
-                  Main.Global.rootScene.addChild(playerRef);
                   Camera.follow(
                       Main.Global.mainCamera, 
                       playerRef);
@@ -2569,13 +2602,19 @@ class Game extends h2d.Object {
                     ref.x,
                     ref.y,
                     objectMeta.spriteKey);
+                final lightSprite = Main.lightingSystem.sb.emitSprite(
+                    ref.x,
+                    ref.y,
+                    objectMeta.spriteKey);
+                lightSprite.scale = 1.5 
+                  + Math.sin(Main.Global.time * 5) * 0.1;
+                lightSprite.alpha = 0.5;
                 if (Main.Global.hoveredEntity.id == ref.id) {
                   Entity.renderOutline(
                       sprite.sortOrder - 1,
                       objectMeta.spriteKey,
                       ref);
                 }
-
               }
               final shatterAnimation = (ref) -> {
                 final startedAt = Main.Global.time;
@@ -2628,7 +2667,7 @@ class Game extends h2d.Object {
 
               };
               ref.onDone = shatterAnimation;
-              ref.type = 'INTERACTABLE_PROP';
+              ref.type = 'BREAKABLE_PROP';
               ref.stats = EntityStats.create({
                 label: '@prop_1_1',
                 currentHealth: 1.,
@@ -2715,6 +2754,58 @@ class Game extends h2d.Object {
                       });
                 }
               };
+            }
+
+            case 'treasureChest': {
+              final ref = new Entity({
+                x: x,
+                y: y,
+                type: 'INTERACTABLE_PROP',
+                stats: EntityStats.create({
+                  label: '@treasureChest',
+                  currentHealth: 1.,
+                })
+              });
+              final timeOffset = Utils.rnd(0, 100);
+
+              final spriteData = SpriteBatchSystem.getSpriteData(
+                  Main.Global.sb.batchManager.spriteSheetData,
+                  objectMeta.spriteKey);
+
+              ref.renderFn = (ref, t) -> {
+                final pulseTime = Math.sin(
+                    (Main.Global.time + timeOffset) * 2);
+                final sprite = Main.Global.sb.emitSprite(
+                    ref.x, ref.y, objectMeta.spriteKey);
+                final light = Main.Global.sb.emitSprite(
+                    ref.x, ref.y, 'ui/treasure_chest_light');
+                light.r = 120 / 255;
+                light.g = 232 / 255;
+                light.b = 245 / 255;
+                light.alpha = 0.5 + 0.5 * pulseTime;
+                final light2 = Main.lightingSystem.sb.emitSprite(
+                    ref.x, ref.y, 'ui/treasure_chest_light');
+                light2.alpha = light.alpha;
+                final spotLight = Main.lightingSystem.emitSpotLight(
+                    ref.x, 
+                    ref.y 
+                    + spriteData.pivot.y * spriteData.sourceSize.h
+                    - 5,
+                    0);
+                spotLight.alpha = 0.5 + 0.5 * pulseTime;
+                spotLight.r = 44 / 255;
+                spotLight.g = 232 / 255;
+                spotLight.b = 245 / 255;
+                spotLight.scaleX = spriteData.sourceSize.w / 30;
+                spotLight.scaleY = spriteData.sourceSize.h / 30;
+
+                if (Main.Global.hoveredEntity.id == ref.id) {
+                  Entity.renderOutline(
+                      sprite.sortOrder - 1,
+                      objectMeta.spriteKey,
+                      ref);
+                }
+              }
             }
 
             case 'npc_quest_provider': {
@@ -2823,8 +2914,20 @@ class Game extends h2d.Object {
                       'ui/exclamation_bubble');
                   s.g = 0.8;
                   s.b = 0.2;
-                  s.scaleX = 0.95 + 0.05 * Math.cos(Main.Global.time * 2);
-                  s.scaleY = 0.95 + 0.05 * Math.sin(Main.Global.time * 2);
+                  final light = Main.lightingSystem.sb.emitSprite(
+                      x, 
+                      y + dialogOffsetY, 
+                      'ui/exclamation_bubble');
+                  light.r = 255.;
+                  light.g = 255.;
+                  light.b = 255.;
+                  light.scale = 1.2;
+                  for (sprite in [s, light]) {
+                    sprite.scaleX *= 0.95 + 
+                      0.05 * Math.cos(Main.Global.time * 2);
+                    sprite.scaleY *= 0.95 
+                      + 0.05 * Math.sin(Main.Global.time * 2);
+                  }
                 }
 
                 if (state.hovered) {
@@ -2833,6 +2936,9 @@ class Game extends h2d.Object {
                       objectMeta.spriteKey,
                       npcRef);
                 }
+
+                Main.lightingSystem.emitSpotLight(
+                    x, y, npcRef.radius * 15);
               };
             }
 
@@ -3054,20 +3160,17 @@ class Game extends h2d.Object {
 
     lootRef.renderFn = (ref, time: Float) -> {
       // drop shadow
-      Main.Global.sb.emitSprite(
+      final dropShadow = Main.Global.sb.emitSprite(
           ref.x - ref.radius,
           ref.y + ref.radius - 2,
-          'ui/square_white',
-          null,
-          (p) -> {
-            p.sortOrder = (ref.y / 2) - 1;
-            p.scaleX = ref.radius * 2;
-            p.r = 0;
-            p.g = 0;
-            p.b = 0.2;
-            p.a = 0.2;
-            p.scaleY = ref.radius * 0.5;
-          });
+          'ui/square_white');
+      dropShadow.sortOrder = (ref.y / 2) - 1;
+      dropShadow.scaleX = ref.radius * 2;
+      dropShadow.r = 0;
+      dropShadow.g = 0;
+      dropShadow.b = 0.2;
+      dropShadow.a = 0.2;
+      dropShadow.scaleY = ref.radius * 0.5;
 
       final lootDef = Loot.getDef(
             Entity.getComponent(ref, 'lootInstance').type);
@@ -3086,13 +3189,20 @@ class Game extends h2d.Object {
       }
 
       if (lootDef.rarity == Loot.Rarity.Legendary) {
-        final lightBeamConfigs = [
+        final lightBeamConfigs: Array<{
+          radius: Float,
+          x: Float,
+          y: Float,
+          alpha: Float,
+          ?isLightSource: Null<Bool>
+        }> = [
           // main beam
           {
             radius: ref.radius * 1.2,
             x: ref.x - ref.radius * 1.2,
             y: ref.y,
-            alpha: 0.9 + 0.1 * Math.sin(Main.Global.time * 1.5)
+            alpha: 0.9 + 0.1 * Math.sin(Main.Global.time * 1.5),
+            isLightSource: true
           },
           {
             radius: radius1,
@@ -3115,18 +3225,41 @@ class Game extends h2d.Object {
         ];
 
         for (cfg in lightBeamConfigs) {
+          final spriteKey = 'ui/loot_effect_legendary_gradient';
           final sprite = Main.Global.sb.emitSprite(
               cfg.x,
               cfg.y,
-              'ui/loot_effect_legendary_gradient');
+              spriteKey);
           final cam = Main.Global.mainCamera;
-          final cameraDy = Math.abs(cfg.y - cam.y);
+          final cameraDy = Math.abs(cfg.y - cam.y - 20);
           final alphaFallOff = Math.max(
               0, 1 - Math.pow(cameraDy / cam.h * 2, 3));
-          Main.Global.logData.alphaFallOff = alphaFallOff;
-          sprite.scaleY = 1.3;
-          sprite.scaleX = cfg.radius * 2;
-          sprite.a = cfg.alpha * alphaFallOff;
+          final baseScaleX = cfg.radius * 2;
+          final alpha = cfg.alpha * alphaFallOff;
+          sprite.scaleY = 1.5;
+          sprite.scaleX = baseScaleX;
+          sprite.a = alpha;
+
+          if (cfg.isLightSource) {
+            final source = Main.lightingSystem.sb.emitSprite(
+                cfg.x,
+                cfg.y,
+                spriteKey);
+            source.scaleY = sprite.scaleY;
+            source.scaleX = baseScaleX;
+            source.alpha = alpha;
+          }
+        }
+
+        {
+          // emit light around object
+          final oLight = Main.lightingSystem.sb.emitSprite(
+              ref.x,
+              ref.y,
+              spriteKey);
+          oLight.r = 255.;
+          oLight.g = 255.;
+          oLight.b = 255.;
         }
       }
     };
@@ -3267,7 +3400,7 @@ class Game extends h2d.Object {
       // cleanup entity
       if (a.isDone()) {
         final numItemsToDrop = switch(a.type) {
-          case 'INTERACTABLE_PROP': 
+          case 'BREAKABLE_PROP': 
             Utils.rollValues([
                 0, 0, 0, 0, 0, 1
             ]);
@@ -3393,7 +3526,7 @@ class Game extends h2d.Object {
           { type: 'PLAYER' } 
         | { type: 'ENEMY' } 
         | { type: 'FRIENDLY_AI' }
-        | { type: 'INTERACTABLE_PROP' }: {
+        | { type: 'BREAKABLE_PROP' }: {
           Grid.setItemRect(
               Main.Global.grid.dynamicWorld,
               a.x,
@@ -3404,6 +3537,7 @@ class Game extends h2d.Object {
         }
         case 
           { type: 'OBSTACLE' }
+        | { type: 'INTERACTABLE_PROP' }
         | { type: 'NPC' }: {
           Grid.setItemRect(
               Main.Global.grid.obstacle,
@@ -3452,6 +3586,7 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
+    Main.lightingSystem.globalIlluminate(0.4);
     Hud.render(time);
 
     return !finished;

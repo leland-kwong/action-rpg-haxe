@@ -1,5 +1,14 @@
 # Todos
 
+## Treasure Chest
+  - [ ] Interacting with treasure chest drops loot
+
+## Lighting system
+  - [ ] We can try using painter's algorithm (y sort) for properly stacking the lights. Anything that doesn't emit light should be painted as black (zero out all color channels) which could then be painted in another step using an additive blend mode. This way, all the black areas will never get painted and the bright areas will get stenciled out.
+
+## Entity Collision
+  - [ ] Add rectangle collision support. We should create a static method for testing collisions so it can handle various collision types.
+
 ## Unit tests
   - [x] Add unit test for checking memory leaks when creating new game and tearing it down.
 
