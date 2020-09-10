@@ -252,13 +252,14 @@ class Bullet extends Projectile {
         x, y, spriteKey, angle, null);
     sprite.scale = 1 - progress;
 
-    final sprite = Main.lightingSystem.sb.emitSprite(
+    final lightSource = Main.lightingSystem.sb.emitSprite(
         x, 
         y, 
         spriteKey, 
         angle, 
         null);
-    sprite.scale = 2 * (1 - progress);
+    lightSource.alpha = 0.8;
+    lightSource.scale = 1.7 * (1 - progress);
   }
 }
 
@@ -844,7 +845,7 @@ class Ai extends Entity {
           ];
 
           for (_ in 0...Utils.irnd(3, 4)) {
-            final duration = Utils.rnd(0.3, 0.7);
+            final duration = Utils.rnd(0.4, 0.7);
             final z = Utils.irnd(0, 1);
             final dx = Utils.irnd(-6, 6, true);
             final dy = Utils.irnd(-6, 6, true);
@@ -856,7 +857,10 @@ class Ai extends Entity {
               dy: Utils.rnd(1, 2) * dy,
               startTime: startTime,
               duration: duration,
-              frames: frames });
+              frames: frames,
+              isLightSource: true,
+              lightScale: 2.,
+            });
           }
         }
 
@@ -3321,7 +3325,7 @@ class Game extends h2d.Object {
         for (y in 0...yMax) {
           final v = p.perlin(seed, x / xMax, y / yMax, 15, 0.25);
           final color = v > 0 ? colorA : colorB;
-          g.beginFill(color, Math.abs(v) / 12);
+          g.beginFill(color, Math.abs(v) / 4);
           g.drawCircle(
               x * divisor, 
               y * divisor, 
