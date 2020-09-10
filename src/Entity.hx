@@ -418,6 +418,16 @@ class Entity extends h2d.Object {
     }
   }
 
+  public static function canInteract(
+      entityA: Entity, entityB: Entity, minDist: Float) {
+
+    final distBetweenEntities = Utils.distance(
+        entityA.x, entityA.y,
+        entityB.x, entityB.y);
+
+    return distBetweenEntities <= minDist;
+  }
+
   public static function debugBox(
       x, y, 
       width, 

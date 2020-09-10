@@ -1061,7 +1061,7 @@ class Player extends Entity {
       currentHealth: 100.0,
       currentEnergy: 40.0,
       energyRegeneration: 3, // per second
-      pickupRadius: 40,
+      pickupRadius: 50,
       lightRadius: 100
     });
 
@@ -2761,6 +2761,9 @@ class Game extends h2d.Object {
             }
 
             case 'treasureChest': {
+              final spriteData = SpriteBatchSystem.getSpriteData(
+                  Main.Global.sb.batchManager.spriteSheetData,
+                  objectMeta.spriteKey);
               final ref = new Entity({
                 x: x,
                 y: y,
@@ -2768,13 +2771,53 @@ class Game extends h2d.Object {
                 stats: EntityStats.create({
                   label: '@treasureChest',
                   currentHealth: 1.,
-                })
+                }),
               });
-              final timeOffset = Utils.rnd(0, 100);
+              Main.Global.rootScene.addChild(ref);
+              final interact = new h2d.Interactive(
+                  spriteData.sourceSize.w, 
+                  spriteData.sourceSize.h, 
+                  ref);
+              interact.x = -spriteData.sourceSize.w * spriteData.pivot.x;
+              interact.y = -spriteData.sourceSize.h * spriteData.pivot.y;
 
-              final spriteData = SpriteBatchSystem.getSpriteData(
-                  Main.Global.sb.batchManager.spriteSheetData,
-                  objectMeta.spriteKey);
+              interact.onClick = function handleInteract(_) {
+                final playerRef = Entity.getById('PLAYER');
+
+                if (!Entity.canInteract(
+                    playerRef, ref, playerRef.stats.pickupRadius)) {
+                  return;
+                }
+
+                Entity.destroy(ref.id); 
+                final numItems = Utils.irnd(2, 4);
+                final lootPool = [
+                  for (type => def in Loot.lootDefinitions) {
+                    if (def.category == 'ability') {
+                      type;
+                    }
+                  }
+                ];
+                for (_ in 0...numItems) {
+                  final lootInstance = Loot.createInstance(lootPool);
+                  Game.createLootEntity(
+                      ref.x + Utils.irnd(5, 10, true), 
+                      ref.y + Utils.irnd(5, 10, true),
+                      lootInstance);
+                }
+              }
+
+              Main.Global.hooks.update.push(function handleCursorStyle(_) {
+                final playerRef = Entity.getById('PLAYER');
+                interact.cursor = Entity.canInteract(
+                    playerRef, ref, playerRef.stats.pickupRadius)
+                  ? Main.cursorStyle.interact
+                  : Main.cursorStyle.target;
+
+                return interact.parent != null;
+              });
+              
+              final timeOffset = Utils.rnd(0, 100);
 
               ref.renderFn = (ref, t) -> {
                 final pulseTime = Math.sin(
@@ -2803,7 +2846,7 @@ class Game extends h2d.Object {
                 spotLight.scaleX = spriteData.sourceSize.w / 30;
                 spotLight.scaleY = spriteData.sourceSize.h / 30;
 
-                if (Main.Global.hoveredEntity.id == ref.id) {
+                if (interact.isOver()) {
                   Entity.renderOutline(
                       sprite.sortOrder - 1,
                       objectMeta.spriteKey,

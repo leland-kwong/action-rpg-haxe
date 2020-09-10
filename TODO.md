@@ -1,8 +1,5 @@
 # Todos
 
-## Treasure Chest
-  - [ ] Interacting with treasure chest drops loot
-
 ## Lighting system
   - [ ] We can try using painter's algorithm (y sort) for properly stacking the lights. Anything that doesn't emit light should be painted as black (zero out all color channels) which could then be painted in another step using an additive blend mode. This way, all the black areas will never get painted and the bright areas will get stenciled out.
 
@@ -55,4 +52,7 @@
 ## Entity System Performance
   - [x] Replace all base stats on `Entity` class such as `health` and `speed` with the `EntityStats.StatsRef` data structure. This way all stats are being handled by the stats system instead and keeps things nicely data driven with support for modifier events as well.
   - [ ] [PERFORMANCE ENHANCEMENT] We can reuse `EntityStats.StatsRef` instances by pooling them and releasing them back to the pool when an entity is destroyed. This way we can don't have to create a bunch of garbage which will be useful for when we want to create things like a multiple bullet spread. (Be sure to benchmark to validate that this will increase performance).
+
+## Treasure Chest
+  - [x] Interacting with treasure chest drops loot
 

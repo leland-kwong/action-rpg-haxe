@@ -169,6 +169,11 @@ class Main extends hxd.App {
   var anim: h2d.Anim;
   var debugText: h2d.Text;
   var acc = 0.0;
+  public static var cursorStyle: {
+    target: hxd.Cursor,
+    interact: hxd.Cursor,
+    _default: hxd.Cursor
+  }
   public static final nativePixelResolution = {
     // TODO this should be based on
     // the actual screen's resolution
@@ -383,19 +388,23 @@ class Main extends hxd.App {
           }
 
           final Cursor = hxd.Cursor;
-          final targetCursor = Cursor.Custom(
+          cursorStyle = {
+            target: Cursor.Custom(
               new hxd.Cursor.CustomCursor(
                 targetCursorFrames, 
                 0, 
                 Std.int(f.w / 2), 
-                Std.int(f.h / 2)));
+                Std.int(f.h / 2))),
+            interact: Cursor.Button,
+            _default: Cursor.Default
+          };
 
           function deriveCursorStyle() {
             if (Global.hasUiItemsEnabled()) {
-              return Cursor.Default;
+              return cursorStyle._default;
             }
 
-            return targetCursor;
+            return cursorStyle.target;
           }
 
           function updateCursorStyle(dt) {
