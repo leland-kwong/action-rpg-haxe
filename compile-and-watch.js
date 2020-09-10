@@ -199,49 +199,6 @@ const startAsepriteWatcher = (options) => {
   }).on('all', handleAesepriteExport);
 }
 
-// [Tiled App](https://www.mapeditor.org/)
-const startTiledWatcher = (options = {}) => {
-  const tiledLogger = require('debug')('watcher.tiled');
-  const debounceStates = new Map();
-  const handleTiledExport = (eventType, path) => {
-    const previousPending = debounceStates.get(path);
-    clearTimeout(previousPending);
-
-    if (options.verbose) {
-      console.log(`[tiledExport watch][${eventType}] \`${path}\``);
-    }
-
-    const triggerExport = () => {
-      const tiledExecutable = '\'/mnt/c/Program\ Files/Tiled/tiled.exe\''; 
-      // outputs file type based on file extension
-      console.log(`[tiledExport][export start] \`${path}\``);
-      const outputPath = path.replace(/\.tmx/, '.json');
-      const name = 'tiled';
-
-      // [Tiled cli export instructions](https://github.com/bjorn/tiled/issues/903)
-      exec(`${tiledExecutable} --export-map ${path} ${outputPath}`, (err, stdout, stderr) => {
-        if (err) {
-          logToDisk(
-            `build.txt`, `${name} error`, err, tiledLogger);
-        } else if (stderr) {
-          logToDisk(
-            `build.txt`, `${name} stderr`, stderr, tiledLogger);
-        } else {
-          const msg = `\`${path}\` to \`${outputPath}\``;
-          logToDisk(
-            `build.txt`, `${name} success`, msg, tiledLogger);
-        }
-      });
-    }
-    const newPending = setTimeout(triggerExport, 300);
-    debounceStates.set(path, newPending);
-  }
-
-  chokidar.watch('./src/res/*.tmx', {
-    usePolling: true,
-  }).on('all', handleTiledExport);
-}
-
 const startTexturePackerWatcher = (options = {}) => {
   const tpLogger = require('debug')('watcher.texturePacker');
   let pending = 0; 
@@ -256,7 +213,7 @@ const startTexturePackerWatcher = (options = {}) => {
       const tpExecutable = '\'/mnt/c/Program Files/CodeAndWeb/TexturePacker/bin/TexturePacker.exe\''; 
       const cmd = `${tpExecutable} --sheet ${destination} ${sourceFile}`; 
       const name = 'texturepacker'
-      console.log('[tiledExport]', eventType, sourceFile);
+
       exec(cmd, (err, stdout, stderr) => {
         if (err) {
 
@@ -321,9 +278,6 @@ startCompileWatcher({
 startAsepriteWatcher({
   // verbose: true,
   animationFilePattern: /_animation$/
-});
-startTiledWatcher({
-  verbose: true
 });
 startTexturePackerWatcher({
   sourceFile: './src/art/sprite_sheet.tps',
