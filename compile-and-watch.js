@@ -77,7 +77,7 @@ const asepriteExportDir = './src/art/aseprite_exports';
 const filenameWithoutExtension = (filePath) => 
   filePath.split('/').slice(-1)[0].replace(/\.[^]+/g, '');
 
-const exportDir = (filename) => 
+const makeExportDir = (filename) => 
   `${asepriteExportDir}/${filenameWithoutExtension(filename)}`
 
 const cleanupAsepriteExport = async (exportDir) => {
@@ -86,8 +86,7 @@ const cleanupAsepriteExport = async (exportDir) => {
 
 const asepriteLogger = require('debug')('watcher.aseprite');
 const asepriteExport = async (
-  fileEvent, filename, exportDir, exportFile
-) => {
+  fileEvent, exportDir, asepriteArgs) => {
   try {
     console.log(`[aseprite] cleaning export directory \`${exportDir}\`...`);
     await cleanupAsepriteExport(exportDir);
@@ -101,10 +100,6 @@ const asepriteExport = async (
     await fs.ensureDir(exportDir);
 
     const asepriteExecutable = '\'/mnt/c/Program Files (x86)/Steam/steamapps/common/Aseprite/Aseprite.exe\'';
-    const exportFullPath = `${exportDir}/${exportFile}`;
-    const asepriteArgs = `-b ${filename} --save-as ${exportFullPath}`;
-
-    console.log(`[aseprite] exporting file \`${filename}\`...`);
     const cmd = `${asepriteExecutable} ${asepriteArgs}`;
     exec(cmd, (err, stdout, stderr) => {
       if (err) {
@@ -119,9 +114,8 @@ const asepriteExport = async (
 
       } else {
 
-        const msg = `exported \`${filename}\` to \`${exportFullPath}\``;
         logToDisk(
-          'build.txt', 'aseprite success', msg, asepriteLogger);
+          'build.txt', 'aseprite export success', '', asepriteLogger);
 
       }
     });
@@ -187,8 +181,14 @@ const startAsepriteWatcher = (options) => {
     const triggerBuild = () => {
       // filenames with the pattern {my_file}_animation.aseprite
       const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
-      const filePath = isAnimationFile ? '{tag}-{frame}.png' : '{slice}.png';
-      asepriteExport(eventType, path, exportDir(path), filePath);
+      const filePath = isAnimationFile 
+        ? '{tag}-{frame}.png' 
+        : '{slice}.png';
+      console.log('[filename]', path);
+      const exportDir =  makeExportDir(path);
+      const exportFullPath = `${exportDir}/${filePath}`;
+      const asepriteArgs = `-b ${path} --save-as ${exportFullPath}`;
+      asepriteExport(eventType, exportDir, asepriteArgs);
     }
     const newPendingBuild = setTimeout(triggerBuild, 300);
     debounceStates.set(path, newPendingBuild);
