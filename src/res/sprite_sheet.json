@@ -680,9 +680,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":29,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.166667}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-1--main":
 {
@@ -698,9 +698,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":28,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.333333}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-2--main":
 {
@@ -716,9 +716,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":28,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.333333}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-3--main":
 {
@@ -752,9 +752,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":29,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.166667}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-5--main":
 {
@@ -770,9 +770,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":29,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.166667}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-6--main":
 {
@@ -788,9 +788,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":28,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.333333}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-7--main":
 {
@@ -806,9 +806,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":28,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.333333}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "player_animation/run-8--main":
 {
@@ -824,9 +824,9 @@
 	"frame": {"x":1053,"y":468,"w":13,"h":6},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":20,"y":28,"w":13,"h":6},
+	"spriteSourceSize": {"x":19,"y":28,"w":13,"h":6},
 	"sourceSize": {"w":13,"h":6},
-	"pivot": {"x":0.384616,"y":0.333333}
+	"pivot": {"x":0.461539,"y":0.333333}
 },
 "projectile_hit_animation/burst-0--main":
 {
@@ -2158,6 +2158,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1096,"h":502},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:bb892a6a23a0e9c2a274fcde0c90508d:04d4d37471be4397c1df7abfb758ad52:6cc8953523e0367402f95f3c9a630665$"
+	"smartupdate": "$TexturePacker:SmartUpdate:bb892a6a23a0e9c2a274fcde0c90508d:757e1fb4a124281221cd3c86fb02c117:6cc8953523e0367402f95f3c9a630665$"
 }
 }

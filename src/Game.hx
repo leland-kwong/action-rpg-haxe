@@ -2734,17 +2734,6 @@ class Game extends h2d.Object {
                     y,
                     spriteKey);
                 wallSprite.sortOrder = wallSprite.y + 32.;
-                final lightSourceSpriteKey = 'ui/${oKey}--light_source';
-                final lightSourceData = SpriteBatchSystem.getSpriteData(
-                    Main.lightingSystem.sb
-                    .batchManager.spriteSheetData,
-                    lightSourceSpriteKey);
-                if (lightSourceData != null) {
-                  final lightSource = Main.lightingSystem.sb.emitSprite(
-                      x, y, lightSourceSpriteKey);    
-                  lightSource.alpha = 0.7 + 0.3 * Math.sin(
-                      Main.Global.time * 3);
-                }
 
                 if (Entity.getComponent(wallRef, 'isObscuring')) {
                   final wallMaskSprite = Main.Global.wmSpriteBatch.emitSprite(
@@ -2838,18 +2827,15 @@ class Game extends h2d.Object {
                     (Main.Global.time + timeOffset) * 2);
                 final sprite = Main.Global.sb.emitSprite(
                     ref.x, ref.y, objectMeta.spriteKey);
-                final light = Main.Global.sb.emitSprite(
-                    ref.x, ref.y, 'ui/treasure_chest--light_source');
-                light.alpha = 0.5 + 0.5 * pulseTime;
-                final light2 = Main.lightingSystem.sb.emitSprite(
-                    ref.x, ref.y, 'ui/treasure_chest--light_source');
-                light2.alpha = light.alpha;
                 final spotLight = Main.lightingSystem.emitSpotLight(
                     ref.x, 
                     ref.y 
                     + spriteData.pivot.y * spriteData.sourceSize.h
                     - 5,
                     0);
+                spotLight.r = 44  / 255;
+                spotLight.g = 232 / 255;
+                spotLight.b = 245 / 255;
                 spotLight.alpha = 0.5 + 0.5 * pulseTime;
                 spotLight.scaleX = spriteData.sourceSize.w / 30;
                 spotLight.scaleY = spriteData.sourceSize.h / 30;
@@ -3071,16 +3057,6 @@ class Game extends h2d.Object {
                   // since we're adding tiles row-wise which means
                   // they'll all be sorted naturally anyway
                   tileRef.sortOrder = -1;
-
-                  final lightSourceSpriteKey = '${spriteKey}--light_source';
-                  final lightSourceData = SpriteBatchSystem.getSpriteData(
-                      Main.lightingSystem.sb
-                      .batchManager.spriteSheetData,
-                      lightSourceSpriteKey);
-                  if (lightSourceData != null) {
-                    final lightSource = Main.lightingSystem.sb.emitSprite(
-                        pos.x, y, lightSourceSpriteKey);    
-                  }
 
                   final miniMapPosDrawn = Grid2d.get(
                       miniMapPositionsDrawn, pos.x, pos.y) != null;

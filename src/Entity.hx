@@ -411,7 +411,7 @@ class Entity extends h2d.Object {
           spriteKey,
           null,
           null,
-          false);
+          SpriteBatchSystem.emitOptionsOutline);
 
       p.sortOrder = sortOrder - 1;
       p.r = 150;

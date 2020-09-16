@@ -100,7 +100,19 @@ class BatchManager {
   }
 }
 
+typedef SpriteInfo = {
+  final hasShadow: Bool;
+  final hasLightSource: Bool;
+}
+
+typedef EmitOptions = {
+  final renderShadow: Bool;
+  final renderLightSource: Bool;
+}
+
 class SpriteBatchSystem {
+  static final spriteInfoCacheBySpriteKey 
+    = new Map<String, SpriteInfo>();
   public static final instances: Array<BatchManagerRef> = [];
   public static final tileCache: Map<String, h2d.Tile> = new Map();
   public static final ySort: BatchSortFn = (a, b) -> {
@@ -195,6 +207,16 @@ class SpriteBatchSystem {
     translate.y = y;
   }
 
+  public static final emitOptionsOutline: EmitOptions = {
+    renderShadow: false,
+    renderLightSource: false
+  }
+
+  static final emitDefaultOptions: EmitOptions = {
+    renderShadow: true,
+    renderLightSource: true
+  }
+
   public function emitSprite(
     x: Float,
     y: Float,
@@ -203,7 +225,31 @@ class SpriteBatchSystem {
     // a callback for running side effects
     // to modify the sprite before rendering
     ?effectCallback: EffectCallback,
-    includeShadow = true): SpriteRef {
+    ?inputOptions: EmitOptions): SpriteRef {
+
+    final options = inputOptions == null
+      ? emitDefaultOptions
+      : inputOptions;
+    final ssData = this.batchManager.spriteSheetData;
+    final spriteInfo: SpriteInfo = {
+      final info = spriteInfoCacheBySpriteKey.get(
+          spriteKey);
+
+      if (info == null) {
+        final newInfo: SpriteInfo = {
+          hasShadow: getSpriteData(
+            ssData, 
+            '${spriteKey}--shadow') != null,
+          hasLightSource: getSpriteData(
+            ssData, 
+            '${spriteKey}--light_source') != null,
+        };
+        spriteInfoCacheBySpriteKey.set(spriteKey, newInfo);
+        newInfo;
+      } else {
+        info;
+      }
+    }
 
     final spriteRef = new SpriteRef(
         makeTile(
@@ -222,17 +268,19 @@ class SpriteBatchSystem {
 
     BatchManager.emit(batchManager, spriteRef);
 
-    if (includeShadow) {
+    if (spriteInfo.hasShadow 
+        && options.renderShadow) {
       final shadowKey = '${spriteKey}--shadow';
-      final shadowSpriteData = getSpriteData(
-          this.batchManager.spriteSheetData,
-          shadowKey);
-      final hasShadow = shadowSpriteData != null;
-      if (hasShadow) {
-        final shadow = emitSprite(
-            x, y, shadowKey);
-        shadow.sortOrder = 0;
-      }
+      final shadow = emitSprite(
+          x, y, shadowKey);
+      shadow.sortOrder = 0;
+    }
+
+    if (spriteInfo.hasLightSource 
+        && options.renderLightSource) {
+      final lightSourceKey = '${spriteKey}--light_source';
+      Main.lightingSystem.sb.emitSprite(
+          x, y, lightSourceKey);
     }
 
     return spriteRef;
@@ -242,19 +290,19 @@ class SpriteBatchSystem {
       spriteSheetData: SpriteSheetData,
       spriteKey): SpriteData {
 
-    final data = Reflect.field(
+      final data = Reflect.field(
         spriteSheetData.frames, 
         spriteKey);
 
-    if (data != null) {
-      return data;
-    }
+      if (data != null) {
+        return data;
+      }
 
-    final altData = Reflect.field(
-        spriteSheetData.frames, 
-        '${spriteKey}--main');
+      final altData = Reflect.field(
+          spriteSheetData.frames, 
+          '${spriteKey}--main');
 
-    return altData;
+      return altData;
   }
 
   public static function updateAll(dt: Float) {
