@@ -202,7 +202,8 @@ class SpriteBatchSystem {
     ?angle: Float,
     // a callback for running side effects
     // to modify the sprite before rendering
-    ?effectCallback: EffectCallback) {
+    ?effectCallback: EffectCallback,
+    includeShadow = true): SpriteRef {
 
     final spriteRef = new SpriteRef(
         makeTile(
@@ -221,6 +222,19 @@ class SpriteBatchSystem {
 
     BatchManager.emit(batchManager, spriteRef);
 
+    if (includeShadow) {
+      final shadowKey = '${spriteKey}--shadow';
+      final shadowSpriteData = getSpriteData(
+          this.batchManager.spriteSheetData,
+          shadowKey);
+      final hasShadow = shadowSpriteData != null;
+      if (hasShadow) {
+        final shadow = emitSprite(
+            x, y, shadowKey);
+        shadow.sortOrder = 0;
+      }
+    }
+
     return spriteRef;
   }
 
@@ -228,9 +242,19 @@ class SpriteBatchSystem {
       spriteSheetData: SpriteSheetData,
       spriteKey): SpriteData {
 
-    return Reflect.field(
+    final data = Reflect.field(
         spriteSheetData.frames, 
         spriteKey);
+
+    if (data != null) {
+      return data;
+    }
+
+    final altData = Reflect.field(
+        spriteSheetData.frames, 
+        '${spriteKey}--main');
+
+    return altData;
   }
 
   public static function updateAll(dt: Float) {

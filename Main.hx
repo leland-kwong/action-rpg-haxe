@@ -363,7 +363,7 @@ class Main extends hxd.App {
               hxd.Res.sprite_sheet_ui_cursor_json);
           final cursorSpriteData: SpriteBatchSystem.SpriteData = 
             Reflect.field(
-                spriteSheetData.frames, 'default-0');
+                spriteSheetData.frames, 'default-0--main');
           final f = cursorSpriteData.frame;
           final targetCursorFrames = {
             final pixels = spriteSheetRes.getPixels(RGBA);

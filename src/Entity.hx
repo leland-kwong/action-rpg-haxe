@@ -408,7 +408,10 @@ class Entity extends h2d.Object {
       final p = Main.Global.sb.emitSprite(
           ref.x + ox, 
           ref.y + oy,
-          spriteKey);
+          spriteKey,
+          null,
+          null,
+          false);
 
       p.sortOrder = sortOrder - 1;
       p.r = 150;

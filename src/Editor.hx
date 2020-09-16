@@ -196,8 +196,8 @@ class Editor {
 
   // all configuration stuff lives here
   public static function getConfig(
-      activeFile = 'editor-data/level_1.eds'
-      // activeFile = 'editor-data/passive_skill_tree.eds'
+      // activeFile = 'editor-data/level_1.eds'
+      activeFile = 'editor-data/passive_skill_tree.eds'
       // activeFile = 'editor-data/dummy_level.eds'
       // activeFile = 'editor-data/hud.eds'
       ): {

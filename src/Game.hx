@@ -2458,7 +2458,7 @@ class Game extends h2d.Object {
                 final sb = Main.Global.sb;
                 final spriteData = SpriteBatchSystem.getSpriteData(
                     sb.batchManager.spriteSheetData,
-                    'player_animation/idle-0');
+                    'player_animation/idle-0--main');
 
                 Main.Global.hooks.render.push((time) -> {
                   final progress = (time - startedAt) / animDuration;
@@ -2713,6 +2713,9 @@ class Game extends h2d.Object {
               };
               wallRef.renderFn = (ref, time) -> {
                 final shouldAutoTile = objectMeta.isAutoTile;
+                // TODO: we should be able to  cache this after 
+                // it runs the first  time since we're not 
+                // expecting the map layout to dynamically change
                 final spriteKey = {
                   if (shouldAutoTile) {
                     final tileValue = AutoTile.getValue(
@@ -2725,12 +2728,23 @@ class Game extends h2d.Object {
                     objectMeta.spriteKey;
                   }
                 }
+                final oKey = spriteKey.substring(3);
+                final lightSourceSpriteKey = '${oKey}--light_source';
                 final wallSprite = Main.Global.sb.emitSprite(
                     x,
                     y,
                     spriteKey);
-                wallSprite.sortOrder = 
-                  wallSprite.y + 32.;
+                wallSprite.sortOrder = wallSprite.y + 32.;
+                final lightSourceData = SpriteBatchSystem.getSpriteData(
+                    Main.lightingSystem.sb
+                    .batchManager.spriteSheetData,
+                    lightSourceSpriteKey);
+                if (lightSourceData != null) {
+                  final lightSource = Main.lightingSystem.sb.emitSprite(
+                      x, y, lightSourceSpriteKey);    
+                  lightSource.alpha = 0.7 + 0.3 * Math.sin(
+                      Main.Global.time * 3);
+                }
 
                 if (Entity.getComponent(wallRef, 'isObscuring')) {
                   final wallMaskSprite = Main.Global.wmSpriteBatch.emitSprite(

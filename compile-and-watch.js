@@ -178,19 +178,45 @@ const startAsepriteWatcher = (options) => {
     const previousPendingBuild = debounceStates.get(path);
     clearTimeout(previousPendingBuild);
 
-    const triggerBuild = () => {
+    const exportBaseSprites = () => {
       // filenames with the pattern {my_file}_animation.aseprite
       const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
-      const filePath = isAnimationFile 
-        ? '{tag}-{frame}.png' 
-        : '{slice}.png';
+      if (isAnimationFile) {
+        return;
+      }
+
+      const filePath = '{slice}.png';
       console.log('[filename]', path);
       const exportDir =  makeExportDir(path);
       const exportFullPath = `${exportDir}/${filePath}`;
       const asepriteArgs = `-b ${path} --save-as ${exportFullPath}`;
       asepriteExport(eventType, exportDir, asepriteArgs);
     }
-    const newPendingBuild = setTimeout(triggerBuild, 300);
+    const exportStaticLightSources = () => {
+      // filenames with the pattern {my_file}_animation.aseprite
+      const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
+      if (isAnimationFile) {
+        return;
+      }
+
+      const layer = 'light_source';
+      const filePath = `{slice}--${layer}.png`;
+      console.log('[filename]', path);
+      const exportDir =  makeExportDir(path);
+      const exportFullPath = `${exportDir}/${filePath}`;
+      const asepriteArgs = [
+        `-b ${path}`,
+        `--layer "${layer}"`,
+        `--ignore-empty`,
+        `--save-as ${exportFullPath}`
+      ].join(' ');
+      asepriteExport(eventType, exportDir, asepriteArgs);
+    }
+    const execBuild = () => {
+      exportBaseSprites();
+      exportStaticLightSources();
+    };
+    const newPendingBuild = setTimeout(execBuild, 300);
     debounceStates.set(path, newPendingBuild);
   }
 
