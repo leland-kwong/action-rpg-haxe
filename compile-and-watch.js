@@ -177,6 +177,7 @@ const startAsepriteWatcher = (options) => {
     }
 
     const previousPendingBuild = debounceStates.get(path);
+    const lightSourcelayer = 'light_source';
     clearTimeout(previousPendingBuild);
 
     const exportBaseSprites = () => {
@@ -190,7 +191,11 @@ const startAsepriteWatcher = (options) => {
       console.log('[filename]', path);
       const exportDir =  makeExportDir(path);
       const exportFullPath = `${exportDir}/${filePath}`;
-      const asepriteArgs = `-b ${path} --save-as ${exportFullPath}`;
+      const asepriteArgs = [
+        `-b ${path}`,
+        `--ignore-layer ${lightSourcelayer}`,
+        `--save-as ${exportFullPath}`
+      ].join(' ');
       asepriteExport(eventType, exportDir, asepriteArgs);
     }
     const exportStaticLightSources = () => {
@@ -200,14 +205,13 @@ const startAsepriteWatcher = (options) => {
         return;
       }
 
-      const layer = 'light_source';
-      const filePath = `{slice}--${layer}.png`;
+      const filePath = `{slice}--${lightSourcelayer}.png`;
       console.log('[filename]', path);
       const exportDir =  makeExportDir(path);
       const exportFullPath = `${exportDir}/${filePath}`;
       const asepriteArgs = [
         `-b ${path}`,
-        `--layer "${layer}"`,
+        `--layer "${lightSourcelayer}"`,
         `--ignore-empty`,
         `--save-as ${exportFullPath}`
       ].join(' ');

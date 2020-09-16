@@ -2839,13 +2839,10 @@ class Game extends h2d.Object {
                 final sprite = Main.Global.sb.emitSprite(
                     ref.x, ref.y, objectMeta.spriteKey);
                 final light = Main.Global.sb.emitSprite(
-                    ref.x, ref.y, 'ui/treasure_chest_light');
-                light.r = 120 / 255;
-                light.g = 232 / 255;
-                light.b = 245 / 255;
+                    ref.x, ref.y, 'ui/treasure_chest--light_source');
                 light.alpha = 0.5 + 0.5 * pulseTime;
                 final light2 = Main.lightingSystem.sb.emitSprite(
-                    ref.x, ref.y, 'ui/treasure_chest_light');
+                    ref.x, ref.y, 'ui/treasure_chest--light_source');
                 light2.alpha = light.alpha;
                 final spotLight = Main.lightingSystem.emitSpotLight(
                     ref.x, 
@@ -2854,9 +2851,6 @@ class Game extends h2d.Object {
                     - 5,
                     0);
                 spotLight.alpha = 0.5 + 0.5 * pulseTime;
-                spotLight.r = 44 / 255;
-                spotLight.g = 232 / 255;
-                spotLight.b = 245 / 255;
                 spotLight.scaleX = spriteData.sourceSize.w / 30;
                 spotLight.scaleY = spriteData.sourceSize.h / 30;
 

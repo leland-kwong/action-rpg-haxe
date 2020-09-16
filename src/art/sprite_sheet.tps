@@ -1150,29 +1150,14 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/tile_1_0--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_0.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_1--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_1.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_10--light_source.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_11--light_source.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_12--light_source.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_13--light_source.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_14--light_source.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_2--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_2.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_3--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_3.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_4--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_4.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_5--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_5.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_6--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_6.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_7--light_source.png</key>
             <key type="filename">aseprite_exports/ui/tile_1_7.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_8--light_source.png</key>
-            <key type="filename">aseprite_exports/ui/tile_1_9--light_source.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.138462</point_f>
@@ -1297,20 +1282,6 @@
                 <false/>
             </struct>
             <key type="filename">aseprite_exports/ui/treasure_chest--light_source.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>8,7,15,15</rect>
-                <key>scale9Paddings</key>
-                <rect>8,7,15,15</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
             <key type="filename">aseprite_exports/ui/treasure_chest.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -1323,36 +1294,6 @@
                 <rect>8,7,15,15</rect>
                 <key>scale9Paddings</key>
                 <rect>8,7,15,15</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/treasure_chest_light--light_source.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>3,7,5,15</rect>
-                <key>scale9Paddings</key>
-                <rect>3,7,5,15</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/treasure_chest_light.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.706897</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>3,7,5,15</rect>
-                <key>scale9Paddings</key>
-                <rect>3,7,5,15</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
