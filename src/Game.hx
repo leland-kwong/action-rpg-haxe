@@ -3078,6 +3078,16 @@ class Game extends h2d.Object {
                   // they'll all be sorted naturally anyway
                   tileRef.sortOrder = -1;
 
+                  final lightSourceSpriteKey = '${spriteKey}--light_source';
+                  final lightSourceData = SpriteBatchSystem.getSpriteData(
+                      Main.lightingSystem.sb
+                      .batchManager.spriteSheetData,
+                      lightSourceSpriteKey);
+                  if (lightSourceData != null) {
+                    final lightSource = Main.lightingSystem.sb.emitSprite(
+                        pos.x, y, lightSourceSpriteKey);    
+                  }
+
                   final miniMapPosDrawn = Grid2d.get(
                       miniMapPositionsDrawn, pos.x, pos.y) != null;
                   if (!miniMapPosDrawn) {

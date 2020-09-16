@@ -1,4 +1,5 @@
 const fs = require('fs-extra');
+const debounce = require('lodash.debounce');
 const chokidar = require('chokidar');
 const path = require('path');
 const { exec } = require('child_process');
@@ -46,7 +47,7 @@ const cleanupAsepriteExport = async (exportDir) => {
 
 async function run(event, file) {
   try {
-    console.log(`updating ${file}`);
+    console.log(`[${event}] ${file}`);
     const basename = path.basename(file, '.aseprite');
     const fullExportDir = `${asepriteExportDir}/${basename}`;
     await fs.remove(fullExportDir);
@@ -65,17 +66,20 @@ async function run(event, file) {
       }
     });
 
-    const commands = layerNames.filter((layer) => {
+    const commandConfigs = layerNames.filter((layer) => {
       return layersToExport.includes(layer);
     }).map((layer) => {
-      return asepriteExportLayerCmd({
+      return {
         layer,
         file,
         exportDir: fullExportDir
-      });
+      };
     });
 
-    function execCmd(cmd) {
+    function execCmd(config) {
+      const { layer } = config; 
+      const cmd = asepriteExportLayerCmd(config);
+
       exec(cmd, (err, stdout, stderr) => {
         if (err) {
 
@@ -91,12 +95,13 @@ async function run(event, file) {
 
         } else {
 
-          console.log('success');
+          console.log(
+            `[aseprite animation] exported layer \`${layer}\``);
 
         }
       });
     }
-    commands.forEach(execCmd);
+    commandConfigs.forEach(execCmd);
   } catch (err) {
     console.error('run error', err);
   }
@@ -105,5 +110,5 @@ async function run(event, file) {
 module.exports = (watchPattern) => {
   chokidar.watch(watchPattern, {
     usePolling: true
-  }).on('all', run);
+  }).on('all', debounce(run, 200));
 }
