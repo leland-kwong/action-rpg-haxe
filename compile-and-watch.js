@@ -2,6 +2,7 @@ const { exec } = require('child_process');
 const chokidar = require('chokidar');
 const fs = require('fs-extra');
 const argv = require('minimist')(process.argv.slice(2));
+const watchAndBuildAnimations = require('./build-animations');
 const { 
   port = 6001,
   env = 'development',
@@ -305,6 +306,9 @@ startAsepriteWatcher({
   // verbose: true,
   animationFilePattern: /_animation$/
 });
+watchAndBuildAnimations(
+  './src/art/*_animation.aseprite'
+);
 startTexturePackerWatcher({
   sourceFile: './src/art/sprite_sheet.tps',
   destination: './src/res/sprite_sheet.png'

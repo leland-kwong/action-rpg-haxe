@@ -2729,12 +2729,12 @@ class Game extends h2d.Object {
                   }
                 }
                 final oKey = spriteKey.substring(3);
-                final lightSourceSpriteKey = '${oKey}--light_source';
                 final wallSprite = Main.Global.sb.emitSprite(
                     x,
                     y,
                     spriteKey);
                 wallSprite.sortOrder = wallSprite.y + 32.;
+                final lightSourceSpriteKey = 'ui/${oKey}--light_source';
                 final lightSourceData = SpriteBatchSystem.getSpriteData(
                     Main.lightingSystem.sb
                     .batchManager.spriteSheetData,

@@ -102,6 +102,8 @@ async function run(event, file) {
   }
 }
 
-chokidar.watch('./src/art/*_animation.aseprite', {
-  usePolling: true
-}).on('all', run);
+module.exports = (watchPattern) => {
+  chokidar.watch(watchPattern, {
+    usePolling: true
+  }).on('all', run);
+}
