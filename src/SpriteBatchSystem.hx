@@ -207,7 +207,7 @@ class SpriteBatchSystem {
     translate.y = y;
   }
 
-  public static final emitOptionsOutline: EmitOptions = {
+  public static final emitOptionsNoShadow: EmitOptions = {
     renderShadow: false,
     renderLightSource: false
   }
@@ -230,7 +230,7 @@ class SpriteBatchSystem {
     final options = inputOptions == null
       ? emitDefaultOptions
       : inputOptions;
-    final ssData = this.batchManager.spriteSheetData;
+    final bm = this.batchManager;
     final spriteInfo: SpriteInfo = {
       final info = spriteInfoCacheBySpriteKey.get(
           spriteKey);
@@ -238,10 +238,10 @@ class SpriteBatchSystem {
       if (info == null) {
         final newInfo: SpriteInfo = {
           hasShadow: getSpriteData(
-            ssData, 
+            bm.spriteSheetData, 
             '${spriteKey}--shadow') != null,
           hasLightSource: getSpriteData(
-            ssData, 
+            bm.spriteSheetData, 
             '${spriteKey}--light_source') != null,
         };
         spriteInfoCacheBySpriteKey.set(spriteKey, newInfo);
@@ -253,8 +253,8 @@ class SpriteBatchSystem {
 
     final spriteRef = new SpriteRef(
         makeTile(
-          this.batchManager.spriteSheet,
-          this.batchManager.spriteSheetData, 
+          bm.spriteSheet,
+          bm.spriteSheetData, 
           spriteKey));
     if (angle != null) {
       spriteRef.rotation = angle;

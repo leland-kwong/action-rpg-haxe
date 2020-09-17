@@ -182,6 +182,7 @@
         <key>individualSpriteSettings</key>
         <map type="IndividualSpriteSettingsMap">
             <key type="filename">aseprite_exports/base_palette/--light_source.png</key>
+            <key type="filename">aseprite_exports/base_palette/--shadow.png</key>
             <key type="filename">aseprite_exports/base_palette/.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -546,6 +547,36 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/forcefield--light_source.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.833333</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>11,11,21,21</rect>
+                <key>scale9Paddings</key>
+                <rect>11,11,21,21</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">aseprite_exports/ui/forcefield.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.833333</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>10,10,19,19</rect>
+                <key>scale9Paddings</key>
+                <rect>10,10,19,19</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/gravity_field_core.png</key>
             <key type="filename">aseprite_exports/ui/passive_skill_tree__node_blue.png</key>
             <key type="filename">aseprite_exports/ui/passive_skill_tree__node_green.png</key>
@@ -789,6 +820,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/npc_quest_provider--shadow.png</key>
             <key type="filename">aseprite_exports/ui/npc_quest_provider.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -954,6 +986,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/player_pet_orb--shadow.png</key>
             <key type="filename">aseprite_exports/ui/player_pet_orb.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -966,21 +999,6 @@
                 <rect>1,7,3,13</rect>
                 <key>scale9Paddings</key>
                 <rect>1,7,3,13</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/player_pet_orb_shadow.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>1,1,3,1</rect>
-                <key>scale9Paddings</key>
-                <rect>1,1,3,1</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -1282,6 +1300,7 @@
                 <false/>
             </struct>
             <key type="filename">aseprite_exports/ui/treasure_chest--light_source.png</key>
+            <key type="filename">aseprite_exports/ui/treasure_chest--shadow.png</key>
             <key type="filename">aseprite_exports/ui/treasure_chest.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -1343,6 +1362,7 @@
                 <false/>
             </struct>
             <key type="filename">aseprite_exports/ui_passive_tree/--light_source.png</key>
+            <key type="filename">aseprite_exports/ui_passive_tree/--shadow.png</key>
             <key type="filename">aseprite_exports/ui_passive_tree/.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>

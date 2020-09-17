@@ -485,6 +485,19 @@ class Main extends hxd.App {
         Global.time += frameTime;
         frameDt += frameTime;
 
+        // run updateHooks
+        {
+          final nextHooks = [];
+          for (update in Global.hooks.update) {
+            final shouldKeepAlive = update(frameTime);
+
+            if (shouldKeepAlive) {
+              nextHooks.push(update); 
+            }
+          }
+          Global.hooks.update = nextHooks;
+        }
+
         // sync up scenes with the camera
         {
           // IMPORTANT: update the camera position first
@@ -513,19 +526,9 @@ class Main extends hxd.App {
             scene.x = cam_center_x;
             scene.y = cam_center_y;
           }
-        }
-
-        // run updateHooks
-        {
-          final nextHooks = [];
-          for (update in Global.hooks.update) {
-            final shouldKeepAlive = update(frameTime);
-
-            if (shouldKeepAlive) {
-              nextHooks.push(update); 
-            }
-          }
-          Global.hooks.update = nextHooks;
+          Main.lightingSystem.sb.setTranslate(
+              cam_center_x,
+              cam_center_y);
         }
 
         // ints (under 8 bytes in size) can only be a maximum of 10^10 before they wrap over

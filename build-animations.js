@@ -1,5 +1,4 @@
 const fs = require('fs-extra');
-const debounce = require('lodash.debounce');
 const chokidar = require('chokidar');
 const path = require('path');
 const { exec } = require('child_process');
@@ -41,13 +40,9 @@ function getAsepriteLayers(file) {
 const layersToExport = ['main', 'shadow', 'light_source'];
 const requiredLayers = ['main'];
 
-const cleanupAsepriteExport = async (exportDir) => {
-  return fs.remove(exportDir);
-}
-
 async function run(event, file) {
   try {
-    console.log(`[${event}] ${file}`);
+    console.log(`[aseprite animation ${event}] ${file}`);
     const basename = path.basename(file, '.aseprite');
     const fullExportDir = `${asepriteExportDir}/${basename}`;
     await fs.remove(fullExportDir);
@@ -110,5 +105,5 @@ async function run(event, file) {
 module.exports = (watchPattern) => {
   chokidar.watch(watchPattern, {
     usePolling: true
-  }).on('all', debounce(run, 200));
+  }).on('all', run);
 }

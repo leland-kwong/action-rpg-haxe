@@ -1205,31 +1205,18 @@ class Player extends Entity {
         return !this.isDone();
       });
 
-      function shadowSpriteEffect(p) {
-        p.sortOrder = 2.;
-      }
-
       ref.renderFn = (ref, time) -> {
         final timeOffset = 1.5;
         final yOffset = Math.sin(time + timeOffset) * 2;
-
-        Main.Global.sb.emitSprite(
-            ref.x,
-            ref.y + yOffset,
-            'ui/player_pet_orb',
-            null,
-            (p) -> {
-              final b = p;
-              final facingX = ref.dx > 0 ? 1 : -1;
-              b.scaleX = facingX;
-            });
-
-        Main.Global.sb.emitSprite(
+        final base = Main.Global.sb.emitSprite(
             ref.x,
             ref.y,
-            'ui/player_pet_orb_shadow',
-            null,
-            shadowSpriteEffect);
+            'ui/player_pet_orb');
+        final facingX = ref.dx > 0 ? 1 : -1;
+        // set the offset after so the shadow
+        // sprite doesn't use the same initial y position
+        base.y += yOffset;
+        base.scaleX = facingX;
       };
 
       ref;
@@ -2146,6 +2133,11 @@ class Player extends Entity {
         default: {}
       }
     }
+
+    Main.Global.sb.emitSprite(
+        x,
+        y,
+        'ui/forcefield');
   }
 }
 
@@ -2606,13 +2598,6 @@ class Game extends h2d.Object {
                     ref.x,
                     ref.y,
                     objectMeta.spriteKey);
-                final lightSprite = Main.lightingSystem.sb.emitSprite(
-                    ref.x,
-                    ref.y,
-                    objectMeta.spriteKey);
-                lightSprite.scale = 1.5 
-                  + Math.sin(Main.Global.time * 5) * 0.1;
-                lightSprite.alpha = 0.5;
                 if (Main.Global.hoveredEntity.id == ref.id) {
                   Entity.renderOutline(
                       sprite.sortOrder - 1,
@@ -2713,7 +2698,7 @@ class Game extends h2d.Object {
               };
               wallRef.renderFn = (ref, time) -> {
                 final shouldAutoTile = objectMeta.isAutoTile;
-                // TODO: we should be able to  cache this after 
+                // TODO: we should be able to cache this after 
                 // it runs the first  time since we're not 
                 // expecting the map layout to dynamically change
                 final spriteKey = {
@@ -2740,25 +2725,6 @@ class Game extends h2d.Object {
                       x,
                       y,
                       spriteKey);
-                }
-                
-                final debugWallCollision = false;
-                if (debugWallCollision) {
-                  final grid = Main.Global.grid.obstacle;
-                  final bounds = grid.itemCache
-                    .get(wallRef.id);
-                  Main.Global.sb.emitSprite(
-                      bounds[0] * grid.cellSize,
-                      bounds[2] * grid.cellSize,
-                      'ui/square_white',
-                      null,
-                      (p) -> {
-                        final b = p;
-                        p.sortOrder = 100000 * 1000000;
-                        b.alpha = 0.5;
-                        b.scale = wallRef.radius * 2;
-                        b.b = 0.;
-                      });
                 }
               };
             }

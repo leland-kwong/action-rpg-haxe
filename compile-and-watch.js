@@ -89,10 +89,6 @@ const asepriteLogger = require('debug')('watcher.aseprite');
 const asepriteExport = async (
   fileEvent, exportDir, asepriteArgs) => {
   try {
-    console.log(`[aseprite] cleaning export directory \`${exportDir}\`...`);
-    await cleanupAsepriteExport(exportDir);
-    console.log(`[aseprite success], removed export directory \`${exportDir}\``);
-
     if (fileEvent == 'unlink') {
       // only trigger the directory cleanup
       return;
@@ -172,54 +168,55 @@ const startAsepriteWatcher = (options) => {
   const debounceStates = new Map();
 
   const handleAesepriteExport = (eventType, path) => {
+    // filenames with the pattern {my_file}_animation.aseprite
+    const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
+    if (isAnimationFile) {
+      return;
+    }
+
     if (options.verbose) {
       console.log(`[aseprite watch][${eventType}] \`${path}\``);
     }
 
     const previousPendingBuild = debounceStates.get(path);
-    const lightSourcelayer = 'light_source';
+    const lightSourceLayer = 'light_source';
+    const shadowLayer = 'shadow';
+    const exportDir =  makeExportDir(path);
     clearTimeout(previousPendingBuild);
 
     const exportBaseSprites = () => {
-      // filenames with the pattern {my_file}_animation.aseprite
-      const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
-      if (isAnimationFile) {
-        return;
-      }
-
       const filePath = '{slice}.png';
       console.log('[filename]', path);
-      const exportDir =  makeExportDir(path);
       const exportFullPath = `${exportDir}/${filePath}`;
       const asepriteArgs = [
         `-b ${path}`,
-        `--ignore-layer ${lightSourcelayer}`,
+        `--ignore-layer ${lightSourceLayer}`,
+        `--ignore-layer ${shadowLayer}`,
         `--save-as ${exportFullPath}`
       ].join(' ');
       asepriteExport(eventType, exportDir, asepriteArgs);
     }
-    const exportStaticLightSources = () => {
-      // filenames with the pattern {my_file}_animation.aseprite
-      const isAnimationFile = options.animationFilePattern.test(filenameWithoutExtension(path));
-      if (isAnimationFile) {
-        return;
-      }
-
-      const filePath = `{slice}--${lightSourcelayer}.png`;
+    const exportLayer = (layer) => {
+      const filePath = `{slice}--${layer}.png`;
       console.log('[filename]', path);
-      const exportDir =  makeExportDir(path);
       const exportFullPath = `${exportDir}/${filePath}`;
       const asepriteArgs = [
         `-b ${path}`,
-        `--layer "${lightSourcelayer}"`,
+        `--layer "${layer}"`,
         `--ignore-empty`,
         `--save-as ${exportFullPath}`
       ].join(' ');
       asepriteExport(eventType, exportDir, asepriteArgs);
     }
-    const execBuild = () => {
+    const execBuild = async () => {
+
+      console.log(`[aseprite static] cleaning export directory \`${exportDir}\`...`);
+      await cleanupAsepriteExport(exportDir);
+      console.log(`[aseprite static], removed export directory \`${exportDir}\``);
+
       exportBaseSprites();
-      exportStaticLightSources();
+      exportLayer(lightSourceLayer);
+      exportLayer(shadowLayer);
     };
     const newPendingBuild = setTimeout(execBuild, 300);
     debounceStates.set(path, newPendingBuild);

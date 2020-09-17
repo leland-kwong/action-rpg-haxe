@@ -57,20 +57,6 @@ class LightingSystem {
       batch.blendMode = h2d.BlendMode.Add;
       sb;
     }
-
-    Main.Global.hooks.update.push(function syncToCamera(_) {
-      final cam = Main.Global.mainCamera;
-      final cam_center_x = -cam.x 
-        + Math.fround(Main.Global.rootScene.width / 2);
-      final cam_center_y = -cam.y 
-        + Math.fround(Main.Global.rootScene.height / 2);
-
-      sb.setTranslate(
-          cam_center_x,
-          cam_center_y);
-
-      return true;
-    });
   }
 
   public function globalIlluminate(a = 0.2) {
