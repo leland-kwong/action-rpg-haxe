@@ -672,8 +672,11 @@ class UiGrid {
       final expDiffBetweenCurrentAndNextLevel = nextLevelExpRequirement 
         - currentLevelExpRequirement;
       final expUntilNextLevel = nextLevelExpRequirement - currentExp;
-      final levelProgress = expUntilNextLevel 
-        / expDiffBetweenCurrentAndNextLevel;
+      final levelProgress = Math.min(
+          1, 
+          expUntilNextLevel 
+          / expDiffBetweenCurrentAndNextLevel);
+      Main.Global.logData.levelProgress = levelProgress;
 
       Main.Global.logData.levelInfo = [
         currentLevel, 
