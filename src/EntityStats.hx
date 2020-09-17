@@ -19,12 +19,19 @@ typedef InitialStats = {
   var ?lightRadius: Float;
 }
 
+typedef ForceFieldRef = {
+  life: Float,
+  percentAbsorb: Float,
+  damageTaken: Float,
+}
+
 typedef StatsRef = {
   > InitialStats,
 
   var label: String;
   var damageTaken: Float;
   var moveSpeed: Float;
+  var forceField: ForceFieldRef;
   // base damage that the entity deals
   var damage: Float;
   var recentEvents: StatsEventsList;
@@ -52,6 +59,11 @@ class EntityStats {
       lightRadius:        Utils.withDefault(
                             p.lightRadius,
                             0),
+      forceField:         {
+                            life: 0.,
+                            percentAbsorb: 0.,
+                            damageTaken: 0.
+                          },
       recentEvents:       [],
     };
   }
@@ -63,7 +75,7 @@ class EntityStats {
     currentHealth: 1.,
     currentEnergy: 0.,
     energyRegeneration: 0,
-    pickupRadius: 0
+    pickupRadius: 0,
   });
 
   public static final destroyEvent: EventObject = {
@@ -173,6 +185,14 @@ class EntityStats {
             true;
           }
 
+        case {
+          type: 'MAKE_FORCEFIELD',
+          value: forceFieldRef
+        }: {
+          sr.forceField = forceFieldRef;
+          true;
+        }
+
         case _:
           throw new haxe.Exception(
               '[stats recentEvent] invalid recentEvent type `${ev.type}`');
@@ -184,8 +204,19 @@ class EntityStats {
     }
 
     sr.moveSpeed = velocity;
-    sr.currentHealth -= totalDamageTaken;
-    sr.damageTaken = totalDamageTaken;
+
+    // apply damage
+    final damageAbsorbedByForceField = Math.min(
+        sr.forceField.life,
+        totalDamageTaken * sr.forceField.percentAbsorb);
+    final finalDamage = Math.max(
+        0, totalDamageTaken - damageAbsorbedByForceField);
+    sr.forceField.life = Math.max(
+        0, sr.forceField.life - damageAbsorbedByForceField);
+    sr.forceField.damageTaken = damageAbsorbedByForceField;
+    sr.currentHealth -= finalDamage;
+    sr.damageTaken = finalDamage;
+
     sr.damage = flatDamageBuff;
 
     // handle regeneration

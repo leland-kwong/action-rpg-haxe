@@ -148,6 +148,16 @@ class Loot {
       maxDamage: 0,
       spriteKey: 'ui/loot__ability_movespeed_aura'
     },
+    'forceField' => {
+      name: 'Force Field 1',
+      category: 'ability',
+      cooldown: 2,
+      actionSpeed: 0,
+      energyCost: 10,
+      minDamage: 0,
+      maxDamage: 0,
+      spriteKey: 'ui/loot__ability_forcefield'
+    },
     'nullItem' => {
       name: 'Null Item',
       category: 'nullCategory',

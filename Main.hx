@@ -244,18 +244,34 @@ class Main extends hxd.App {
 
     // handle in game hotkeys
     if (!Global.uiState.mainMenu.enabled) {
-      if (Key.isPressed(Key.I)) {
-        Hud.UiStateManager.send({
-          type: 'UI_INVENTORY_TOGGLE'
-        });
+      final modifierPressed = Key.isDown(Key.CTRL);
+      if (!modifierPressed) {
+        if (Key.isPressed(Key.I)) {
+          Hud.UiStateManager.send({
+            type: 'UI_INVENTORY_TOGGLE'
+          });
+        }
+
+        final togglePassiveSkillTree = 
+          Key.isPressed(Key.P);
+        if (togglePassiveSkillTree) {
+          Hud.UiStateManager.send({
+            type: 'UI_PASSIVE_SKILL_TREE_TOGGLE'
+          });
+        }
       }
 
-      final togglePassiveSkillTree = 
-        Key.isPressed(Key.P);
-      if (togglePassiveSkillTree) {
-        Hud.UiStateManager.send({
-          type: 'UI_PASSIVE_SKILL_TREE_TOGGLE'
-        });
+      // trigger fake damage on player
+      if (Key.isDown(Key.CTRL)
+          && Key.isPressed(Key.P)) {
+        EntityStats.addEvent(
+            Entity.getById('PLAYER').stats, {
+              type: 'DAMAGE_RECEIVED',
+              value: {
+                baseDamage: 1,
+                sourceStats: EntityStats.placeholderStats,
+              }
+            });
       }
     }
 

@@ -845,11 +845,8 @@ class InventoryDragAndDropPrototype {
     equipItemToSlot(
         createLootInstanceByType('basicBlasterEvolved'), 0); 
 
-    // equipItemToSlot(
-    //     createLootInstanceByType('spiderBots'), 0); 
-
-    // equipItemToSlot(
-    //     createLootInstanceByType('channelBeam'), 1); 
+    equipItemToSlot(
+        createLootInstanceByType('forceField'), 1); 
 
     equipItemToSlot(
         createLootInstanceByType('energy1'), 2); 

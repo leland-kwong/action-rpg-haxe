@@ -1034,8 +1034,8 @@ class Player extends Entity {
   var idleAnimFrames: Array<h2d.Tile>;
   var abilityEvents: Array<{
     type: String,
-    startPoint: h2d.col.Point,
-    endPoint: h2d.col.Point,
+    ?startPoint: h2d.col.Point,
+    ?endPoint: h2d.col.Point,
     ?targetId: Entity.EntityId
   }>;
   var facingX = 1;
@@ -1342,6 +1342,13 @@ class Player extends Entity {
           'FRIENDLY_AI' => true,
           'PLAYER' => true
       ]);
+    }
+
+    if (stats.forceField.damageTaken > 0) {
+      Cooldown.set(
+          this.cds,
+          'forceFieldAbsorbedDamage', 
+          0.15);
     }
   }
 
@@ -1971,6 +1978,16 @@ class Player extends Entity {
           hitRef.lifeTime = 0.05;
         }
       }
+
+      case 'forceField': {
+        EntityStats.addEvent(stats, {
+          type: 'MAKE_FORCEFIELD',
+          value: {
+            life: 10,
+            percentAbsorb: .5
+          }
+        });
+      }
     }
   }
 
@@ -2116,9 +2133,11 @@ class Player extends Entity {
       healAnimation('ENERGY_RESTORE', 0.25);
     }
 
+    // render abilities
     for (e in abilityEvents) {
       switch(e) {
-        case { type: 'KAMEHAMEHA', 
+        case { 
+          type: 'KAMEHAMEHA', 
           startPoint: startPt, 
           endPoint: endPt,
           targetId: tid
@@ -2134,10 +2153,26 @@ class Player extends Entity {
       }
     }
 
-    Main.Global.sb.emitSprite(
-        x,
-        y,
-        'ui/forcefield');
+    final hasForceField = stats.forceField.life > 0;
+    if (hasForceField) {
+      final ffSprite = Main.Global.sb.emitSprite(
+          x,
+          y,
+          'ui/forcefield');
+      ffSprite.sortOrder = baseSprite.sortOrder - 1;
+
+      if (Cooldown.has(this.cds, 'forceFieldAbsorbedDamage')) {
+        final blendProgress = Easing.easeInExpo(
+            Cooldown.get(
+              this.cds, 
+              'forceFieldAbsorbedDamage') / 0.15);
+        ffSprite.r = 1 + blendProgress * 1.;
+        ffSprite.g = 1 + blendProgress * 1.;
+        ffSprite.b = 1 + blendProgress * 1.;
+        ffSprite.a = 1 + blendProgress * 10.;
+        ffSprite.scale = 1 - blendProgress * 0.05;
+      }
+    }
   }
 }
 
