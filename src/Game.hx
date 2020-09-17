@@ -1987,6 +1987,10 @@ class Player extends Entity {
             percentAbsorb: .5
           }
         });
+        Cooldown.set(
+            this.cds,
+            'newForceField',
+            0.3);
       }
     }
   }
@@ -2159,19 +2163,22 @@ class Player extends Entity {
           x,
           y,
           'ui/forcefield');
+      final initProgress = Easing.easeOutBack(
+            Cooldown.get(
+              this.cds,
+              'newForceField') / 0.3);
+      final initialScale = 1 + initProgress * -0.4;
       ffSprite.sortOrder = baseSprite.sortOrder - 1;
 
-      if (Cooldown.has(this.cds, 'forceFieldAbsorbedDamage')) {
-        final blendProgress = Easing.easeInExpo(
-            Cooldown.get(
-              this.cds, 
-              'forceFieldAbsorbedDamage') / 0.15);
-        ffSprite.r = 1 + blendProgress * 1.;
-        ffSprite.g = 1 + blendProgress * 1.;
-        ffSprite.b = 1 + blendProgress * 1.;
-        ffSprite.a = 1 + blendProgress * 10.;
-        ffSprite.scale = 1 - blendProgress * 0.05;
-      }
+      final blendProgress = Easing.easeInExpo(
+          Cooldown.get(
+            this.cds, 
+            'forceFieldAbsorbedDamage') / 0.15);
+      ffSprite.r = 1 + blendProgress * 1.;
+      ffSprite.g = 1 + blendProgress * 1.;
+      ffSprite.b = 1 + blendProgress * 1.;
+      ffSprite.a = (1 + blendProgress * 10.) * (1 - 0.5 * initProgress);
+      ffSprite.scale = initialScale - blendProgress * 0.05;
     }
   }
 }
