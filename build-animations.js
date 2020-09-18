@@ -12,6 +12,7 @@ const asepriteExportLayerCmd = ({
   asepriteExecutable,
   '-b',
   `--layer "${layer}"`,
+  `--all-layers`,
   file,
   // NOTE:
   // If we use `{layer}` as a part of the filename, aseprite will
@@ -21,7 +22,7 @@ const asepriteExportLayerCmd = ({
 
 function getAsepriteLayers(file) {
   const cmd = 
-  `${asepriteExecutable} -b --list-layers ${file}`;
+  `${asepriteExecutable} -b --list-layers --all-layers ${file}`;
 
   return new Promise((resolve, reject) => {
     exec(cmd, (err, stdout, stderr) => {
@@ -37,7 +38,13 @@ function getAsepriteLayers(file) {
   });
 }
 
-const layersToExport = ['main', 'shadow', 'light_source'];
+const layersToExport = [
+  'main', 
+  'shadow', 
+  'light_source',
+  'collision_hitbox',
+  'collision_movement'
+];
 const requiredLayers = ['main'];
 
 async function run(event, file) {
