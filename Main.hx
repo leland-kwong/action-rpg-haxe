@@ -261,6 +261,8 @@ class Main extends hxd.App {
         }
       }
 
+      // debug hotkeys
+#if debugMode
       // trigger fake damage on player
       if (Key.isDown(Key.CTRL)
           && Key.isPressed(Key.P)) {
@@ -273,7 +275,14 @@ class Main extends hxd.App {
               }
             });
       }
+
+      if (Key.isDown(Key.CTRL)
+          && Key.isPressed(Key.S)) {
+        Main.lightingSystem.debugShadows = 
+          !Main.lightingSystem.debugShadows;
+      }
     }
+#end
 
     final toggleMainMenu = 
       Key.isPressed(Key.ESCAPE);

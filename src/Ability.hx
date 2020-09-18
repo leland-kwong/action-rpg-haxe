@@ -70,12 +70,12 @@ class ChannelBeam {
         'ui/kamehameha_head',
         bounds.angle);
     lhSprite.scaleY = lhScaleY;
-    final lhSpriteLight = Main.lightingSystem.sb.emitSprite(
-        lhSprite.x,
-        lhSprite.y,
-        'ui/kamehameha_head',
-        bounds.angle);
-    lhSpriteLight.scaleY = lhSprite.scaleY * 2;
+    // final lhSpriteLight = Main.lightingSystem.sb.emitSprite(
+    //     lhSprite.x,
+    //     lhSprite.y,
+    //     'ui/kamehameha_head',
+    //     bounds.angle);
+    // lhSpriteLight.scaleY = lhSprite.scaleY * 2;
 
     // laser center
     final lcAngle = bounds.angle + (Math.PI / 2);
@@ -89,27 +89,27 @@ class ChannelBeam {
         bounds.angle);
     final shaftLength = length - laserHeadWidth - laserTailWidth;
     centerSprite.scaleX = shaftLength;
-    final centerSpriteLight = Main.lightingSystem.sb.emitSprite(
-        centerSprite.x,
-        centerSprite.y,
-        'ui/kamehameha_center_width_1',
-        bounds.angle);
-    centerSpriteLight.scaleX = centerSprite.scaleX;
-    centerSpriteLight.scaleY = centerSprite.scaleY * 2;
+    // final centerSpriteLight = Main.lightingSystem.sb.emitSprite(
+    //     centerSprite.x,
+    //     centerSprite.y,
+    //     'ui/kamehameha_center_width_1',
+    //     bounds.angle);
+    // centerSpriteLight.scaleX = centerSprite.scaleX;
+    // centerSpriteLight.scaleY = centerSprite.scaleY * 2;
 
     final tailSprite = Main.Global.sb.emitSprite(
         lcx + dx * (shaftLength + laserTailWidth),
         lcy + dy * (shaftLength + laserTailWidth),
         'ui/kamehameha_tail',
         bounds.angle);
-    final lightScale = 2;
-    final tailSpriteLight = Main.lightingSystem.sb.emitSprite(
-        lcx + dx * (shaftLength),
-        lcy + dy * (shaftLength),
-        'ui/kamehameha_tail',
-        bounds.angle);
-    tailSpriteLight.scaleY = tailSprite.scaleY * lightScale;
-    tailSpriteLight.scaleX = tailSprite.scaleX * lightScale * 0.75;
+    // final lightScale = 2;
+    // final tailSpriteLight = Main.lightingSystem.sb.emitSprite(
+    //     lcx + dx * (shaftLength),
+    //     lcy + dy * (shaftLength),
+    //     'ui/kamehameha_tail',
+    //     bounds.angle);
+    // tailSpriteLight.scaleY = tailSprite.scaleY * lightScale;
+    // tailSpriteLight.scaleX = tailSprite.scaleX * lightScale * 0.75;
 
     // deform tail sprite
     if (hasCollision) {

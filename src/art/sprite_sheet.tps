@@ -264,12 +264,24 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/enemy-2_animation/idle-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/idle-0--collision_movement.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/idle-0--light_source.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/idle-0--main.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/idle-0--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/idle-1--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/idle-1--collision_movement.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/idle-1--light_source.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/idle-1--main.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/idle-1--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/move-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/move-0--collision_movement.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/move-0--light_source.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/move-0--main.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/move-0--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/move-1--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/move-1--collision_movement.png</key>
+            <key type="filename">aseprite_exports/enemy-2_animation/move-1--light_source.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/move-1--main.png</key>
             <key type="filename">aseprite_exports/enemy-2_animation/move-1--shadow.png</key>
             <struct type="IndividualSpriteSettings">
@@ -547,21 +559,6 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/forcefield--light_source.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.833333</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>11,11,21,21</rect>
-                <key>scale9Paddings</key>
-                <rect>11,11,21,21</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
             <key type="filename">aseprite_exports/ui/forcefield.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -620,6 +617,7 @@
             <key type="filename">aseprite_exports/ui/loot__ability_energy_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_energy_bomb.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_flame_torch.png</key>
+            <key type="filename">aseprite_exports/ui/loot__ability_forcefield.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_heal_1.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_movespeed_aura.png</key>
             <key type="filename">aseprite_exports/ui/loot__ability_spider_bots.png</key>
@@ -700,6 +698,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/kamehameha_center_width_1--light_source.png</key>
             <key type="filename">aseprite_exports/ui/kamehameha_center_width_1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -715,7 +714,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
-            <key type="filename">aseprite_exports/ui/kamehameha_center_width_2.png</key>
+            <key type="filename">aseprite_exports/ui/kamehameha_head--light_source.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0,0.5</point_f>
@@ -724,24 +723,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>0,4,1,9</rect>
+                <rect>6,6,12,13</rect>
                 <key>scale9Paddings</key>
-                <rect>0,4,1,9</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui/kamehameha_center_width_3.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>0,5,1,11</rect>
-                <key>scale9Paddings</key>
-                <rect>0,5,1,11</rect>
+                <rect>6,6,12,13</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -760,6 +744,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/kamehameha_tail--light_source.png</key>
             <key type="filename">aseprite_exports/ui/kamehameha_tail.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -1002,6 +987,22 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/prop_1_1--light_source.png</key>
+            <key type="filename">aseprite_exports/ui/prop_1_1--shadow.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>3,4,7,7</rect>
+                <key>scale9Paddings</key>
+                <rect>3,4,7,7</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/prop_1_1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -1032,6 +1033,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/prop_1_1_shard_2--light_source.png</key>
             <key type="filename">aseprite_exports/ui/prop_1_1_shard_2.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -1047,6 +1049,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/prop_1_1_shard_3--light_source.png</key>
             <key type="filename">aseprite_exports/ui/prop_1_1_shard_3.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
@@ -1358,23 +1361,6 @@
                 <rect>4,4,9,9</rect>
                 <key>scale9Paddings</key>
                 <rect>4,4,9,9</rect>
-                <key>scale9FromFile</key>
-                <false/>
-            </struct>
-            <key type="filename">aseprite_exports/ui_passive_tree/--light_source.png</key>
-            <key type="filename">aseprite_exports/ui_passive_tree/--shadow.png</key>
-            <key type="filename">aseprite_exports/ui_passive_tree/.png</key>
-            <struct type="IndividualSpriteSettings">
-                <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
-                <key>spriteScale</key>
-                <double>1</double>
-                <key>scale9Enabled</key>
-                <false/>
-                <key>scale9Borders</key>
-                <rect>125,125,250,250</rect>
-                <key>scale9Paddings</key>
-                <rect>125,125,250,250</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>

@@ -3,9 +3,12 @@ import h3d.mat.Texture;
 import h3d.mat.DepthBuffer;
 
 class LightingSystem {
+  public var debugShadows = false;
+
   var renderTargetScene: h2d.Scene; 
   var renderScene: h2d.Scene;
   var renderTarget: h3d.mat.Texture;
+  var debugShadowLayer: h2d.Bitmap;
   public var sb: SpriteBatchSystem;
 
   public function new(engine) {
@@ -37,6 +40,12 @@ class LightingSystem {
       rt.filter = Nearest;
       rt.depthBuffer = new DepthBuffer( width, height );
 
+      final t = h2d.Tile.fromColor(0x999999);
+      t.setSize(width, height);
+      debugShadowLayer = new h2d.Bitmap(
+          t,
+          renderScene);
+
       final textureBitmap = {
         final bmp = new h2d.Bitmap(
             h2d.Tile.fromTexture(rt),
@@ -44,6 +53,7 @@ class LightingSystem {
         bmp.blendMode = h2d.BlendMode.Multiply;
         bmp;
       }
+
       rt;
     }
 
@@ -53,10 +63,16 @@ class LightingSystem {
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
       final batch = sb.batchManager.batch;
-      batch.filter = new h2d.filter.Blur(2);
+      batch.filter = new h2d.filter.Blur(1.25);
       batch.blendMode = h2d.BlendMode.Add;
       sb;
     }
+
+    Main.Global.hooks.update.push(function lightingSystemUpdate(_) {
+      debugShadowLayer.visible = debugShadows;
+
+      return true;
+    });
   }
 
   public function globalIlluminate(a = 0.2) {

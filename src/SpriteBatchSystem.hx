@@ -105,6 +105,7 @@ class BatchManager {
         p.a = parent.a;
         p.x = parent.x;
         p.y = parent.y;
+        p.rotation = parent.rotation;
         p.scaleX = parent.scaleX;
         p.scaleY = parent.scaleY;
       }

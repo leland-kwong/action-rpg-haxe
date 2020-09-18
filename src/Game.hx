@@ -908,7 +908,7 @@ class Ai extends Entity {
 
     final lightSource = Main.lightingSystem.emitSpotLight(
         x, y, radius * 3.);
-    lightSource.alpha = 0.5;
+    lightSource.alpha = 0.3;
   }
 }
 
@@ -3609,6 +3609,7 @@ class Game extends h2d.Object {
       }
 
       Cooldown.update(a.cds, dt);
+      // update entity
       a.update(dt);
 
       final shouldRender = {
@@ -3635,7 +3636,7 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
-    Main.lightingSystem.globalIlluminate(0.4);
+    Main.lightingSystem.globalIlluminate(0.3);
     Hud.render(time);
 
     return !finished;
