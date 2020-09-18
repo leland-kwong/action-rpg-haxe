@@ -21,6 +21,11 @@ class SpriteRef extends BatchElement {
   public var done = true;
   public var effectCallback: EffectCallback;
   public var state: Dynamic;
+  public var parent: SpriteRef;
+  public var translate: {
+    x: Float,
+    y: Float
+  };
 }
 
 typedef BatchSortFn = (
@@ -92,6 +97,19 @@ class BatchManager {
     }
 
     for (p in s.particles) {
+      final parent = p.parent;
+      if (parent != null) {
+        p.r = parent.r;
+        p.g = parent.g;
+        p.b = parent.b;
+        p.a = parent.a;
+        p.x = parent.x;
+        p.y = parent.y;
+        p.scaleX = parent.scaleX;
+        p.scaleY = parent.scaleY;
+      }
+      p.x += p.translate.x;
+      p.y += p.translate.y;
       s.batch.add(p);
       if (!p.done) {
         s.nextParticles.push(p);
@@ -225,7 +243,8 @@ class SpriteBatchSystem {
     // a callback for running side effects
     // to modify the sprite before rendering
     ?effectCallback: EffectCallback,
-    ?inputOptions: EmitOptions): SpriteRef {
+    ?inputOptions: EmitOptions,
+    ?parent): SpriteRef {
 
     final options = inputOptions == null
       ? emitDefaultOptions
@@ -262,9 +281,11 @@ class SpriteBatchSystem {
 
     spriteRef.createdAt = Main.Global.time;
     spriteRef.effectCallback = effectCallback;
-    spriteRef.x = x + translate.x;
-    spriteRef.y = y + translate.y;
+    spriteRef.x = x;
+    spriteRef.y = y;
     spriteRef.sortOrder = y;
+    spriteRef.parent = parent;
+    spriteRef.translate = translate;
 
     BatchManager.emit(batchManager, spriteRef);
 
@@ -280,7 +301,7 @@ class SpriteBatchSystem {
         && options.renderLightSource) {
       final lightSourceKey = '${spriteKey}--light_source';
       Main.lightingSystem.sb.emitSprite(
-          x, y, lightSourceKey);
+          x, y, lightSourceKey, null, null, null, spriteRef);
     }
 
     return spriteRef;

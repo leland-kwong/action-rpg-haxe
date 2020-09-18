@@ -908,7 +908,7 @@ class Ai extends Entity {
 
     final lightSource = Main.lightingSystem.emitSpotLight(
         x, y, radius * 3.);
-    // lightSource.alpha = 0.5;
+    lightSource.alpha = 0.5;
   }
 }
 
