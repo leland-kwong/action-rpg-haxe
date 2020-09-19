@@ -205,6 +205,7 @@ const startAsepriteWatcher = (options) => {
       const asepriteArgs = [
         `-b ${path}`,
         `--layer "${layer}"`,
+        `--all-layers`,
         `--ignore-empty`,
         `--save-as ${exportFullPath}`
       ].join(' ');

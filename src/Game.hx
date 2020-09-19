@@ -3140,8 +3140,8 @@ class Game extends h2d.Object {
 
     }
 
-    // final levelFile = 'editor-data/dummy_level.eds';
-    final levelFile = 'editor-data/level_1.eds';
+    final levelFile = 'editor-data/dummy_level.eds';
+    // final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,
