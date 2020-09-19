@@ -231,29 +231,39 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-0--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-0--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-0--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-1--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-1--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-1--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-2--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-2--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-2--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-3--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-3--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-3--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-4--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-4--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-4--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-5--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-5--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-5--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-6--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-6--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-6--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-7--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-7--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-7--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-8--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-8--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-8--shadow.png</key>
+            <key type="filename">aseprite_exports/enemy-1_animation/idle-9--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-9--main.png</key>
             <key type="filename">aseprite_exports/enemy-1_animation/idle-9--shadow.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
+                <point_f>0.5,0.9</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>

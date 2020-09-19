@@ -73,6 +73,10 @@ class Cooldown {
 }
 
 class Entity extends h2d.Object {
+  public static final debug = {
+    collisionHitbox: false
+  };
+
   static final defaultComponents: Map<String, Dynamic> = [
     'neighborQueryThreshold' => 10,
     'neighborCheckInterval' => 1,
@@ -369,14 +373,16 @@ class Entity extends h2d.Object {
       renderFn(this, time);
     }
 
-    final hb = collisionHitBox;
-    final sprite = Main.Global.sb.emitSprite(
-        hb.x, hb.y, 
-        'ui/square_white');
-    sprite.scaleX = hb.width;
-    sprite.scaleY = hb.height;
-    sprite.a = 0.5;
-    sprite.sortOrder = 99999;
+    if (Entity.debug.collisionHitbox) {
+      final hb = collisionHitBox;
+      final sprite = Main.Global.sb.emitSprite(
+          hb.x, hb.y, 
+          'ui/square_white');
+      sprite.scaleX = hb.width;
+      sprite.scaleY = hb.height;
+      sprite.a = 0.5;
+      sprite.sortOrder = 99999;
+    }
   }
 
   public function isDone() {

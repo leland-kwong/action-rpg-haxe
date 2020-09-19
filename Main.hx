@@ -263,9 +263,16 @@ class Main extends hxd.App {
 
       // debug hotkeys
 #if debugMode
-      // trigger fake damage on player
-      if (Key.isDown(Key.CTRL)
-          && Key.isPressed(Key.P)) {
+      final toggleLightingDebug = Key.isDown(Key.CTRL)
+          && Key.isPressed(Key.NUMBER_0);
+      if (toggleLightingDebug) {
+        Main.lightingSystem.debugShadows = 
+          !Main.lightingSystem.debugShadows;
+      }
+
+      final triggerPlayerDamage = Key.isDown(Key.CTRL)
+          && Key.isPressed(Key.NUMBER_1);
+      if (triggerPlayerDamage) {
         EntityStats.addEvent(
             Entity.getById('PLAYER').stats, {
               type: 'DAMAGE_RECEIVED',
@@ -276,10 +283,10 @@ class Main extends hxd.App {
             });
       }
 
-      if (Key.isDown(Key.CTRL)
-          && Key.isPressed(Key.S)) {
-        Main.lightingSystem.debugShadows = 
-          !Main.lightingSystem.debugShadows;
+      final toggleHitboxDebug = Key.isDown(Key.CTRL)
+        && Key.isPressed(Key.NUMBER_2);
+      if (toggleHitboxDebug) {
+        Entity.debug.collisionHitbox = !Entity.debug.collisionHitbox;
       }
     }
 #end
