@@ -181,6 +181,7 @@
         </struct>
         <key>individualSpriteSettings</key>
         <map type="IndividualSpriteSettingsMap">
+            <key type="filename">aseprite_exports/base_palette/--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/base_palette/--light_source.png</key>
             <key type="filename">aseprite_exports/base_palette/--shadow.png</key>
             <key type="filename">aseprite_exports/base_palette/.png</key>
@@ -298,22 +299,40 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/intro_boss_animation/idle-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/idle-0--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/idle-0--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/idle-0--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-0--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-0--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-0--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-1--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-1--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-1--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-1--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-2--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-2--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-2--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-2--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-3--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-3--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-3--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-3--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-4--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-4--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-4--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-4--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-5--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-5--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-5--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-5--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-6--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-6--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-6--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-6--shadow.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-7--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/intro_boss_animation/walk-7--light_source.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-7--main.png</key>
             <key type="filename">aseprite_exports/intro_boss_animation/walk-7--shadow.png</key>
             <struct type="IndividualSpriteSettings">
@@ -330,34 +349,64 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/player_animation/attack-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-0--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-0--main.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-0--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-1--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-1--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-1--main.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-1--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-2--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-2--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-2--main.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-2--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-3--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-3--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-3--main.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-3--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-4--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/attack-4--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-4--main.png</key>
             <key type="filename">aseprite_exports/player_animation/attack-4--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/idle-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/idle-0--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/idle-0--main.png</key>
             <key type="filename">aseprite_exports/player_animation/idle-0--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-0--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-0--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-0--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-0--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-1--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-1--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-1--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-1--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-2--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-2--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-2--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-2--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-3--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-3--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-3--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-3--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-4--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-4--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-4--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-4--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-5--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-5--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-5--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-5--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-6--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-6--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-6--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-6--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-7--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-7--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-7--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-7--shadow.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-8--collision_hitbox.png</key>
+            <key type="filename">aseprite_exports/player_animation/run-8--collision_movement.png</key>
             <key type="filename">aseprite_exports/player_animation/run-8--main.png</key>
             <key type="filename">aseprite_exports/player_animation/run-8--shadow.png</key>
             <struct type="IndividualSpriteSettings">
@@ -453,10 +502,25 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/bullet_player_basic--collision_hitbox.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.547619,0.5</point_f>
+                <key>spriteScale</key>
+                <double>1</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>5,4,11,9</rect>
+                <key>scale9Paddings</key>
+                <rect>5,4,11,9</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">aseprite_exports/ui/bullet_player_basic.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
-                <point_f>0.5,0.5</point_f>
+                <point_f>0.547619,0.5</point_f>
                 <key>spriteScale</key>
                 <double>1</double>
                 <key>scale9Enabled</key>

@@ -846,7 +846,7 @@ class InventoryDragAndDropPrototype {
       return Loot.createInstance([type]);
     };
     equipItemToSlot(
-        createLootInstanceByType('channelBeam'), 0); 
+        createLootInstanceByType('basicBlaster'), 0); 
 
     equipItemToSlot(
         createLootInstanceByType('forceField'), 1); 

@@ -121,11 +121,15 @@ class Entity extends h2d.Object {
   public var renderFn: (ref: Entity, time: Float) -> Void;
   public var onDone: (ref: Entity) -> Void;
   public var facingDir = 1;
+  public var collisionHitBox: h2d.col.Bounds;
+  public var collisionHitboxSpriteData: SpriteBatchSystem.SpriteData;
+  final oProps: EntityProps;
  
   public function new(
       props: EntityProps, 
       fromInitialization = false) {
- 
+
+    oProps = props;
     id = props.id == null
       ? 'entity_${idGenerated++}'
       : props.id;
@@ -150,6 +154,9 @@ class Entity extends h2d.Object {
     cds = new Cooldown();
     avoidanceRadius = Utils.withDefault(
         props.avoidanceRadius, radius);
+
+    // init hitbox
+    collisionHitBox = new h2d.col.Bounds();
 
     if (fromInitialization) {
       return;
@@ -246,6 +253,12 @@ class Entity extends h2d.Object {
     return collisions;
   }
 
+  public static function intersectRect(
+      entityA: Entity, entityB: Entity) {
+    return entityA.collisionHitBox.intersects(
+        entityB.collisionHitBox);
+  }
+
   public function update(dt: Float) {
 
     EntityStats.update(
@@ -338,12 +351,32 @@ class Entity extends h2d.Object {
         y = nextPos;
       }
     }
+
+    final hbs = collisionHitboxSpriteData;
+    if (hbs != null) {
+      Entity.updateHitboxWithSpriteData(this, hbs);
+    } else {
+      collisionHitBox.set(
+          x - radius,
+          y - radius,
+          radius * 2,
+          radius * 2);
+    }
   }
 
   public function render(time: Float) {
     if (renderFn != null) {
       renderFn(this, time);
     }
+
+    final hb = collisionHitBox;
+    final sprite = Main.Global.sb.emitSprite(
+        hb.x, hb.y, 
+        'ui/square_white');
+    sprite.scaleX = hb.width;
+    sprite.scaleY = hb.height;
+    sprite.a = 0.5;
+    sprite.sortOrder = 99999;
   }
 
   public function isDone() {
@@ -431,6 +464,16 @@ class Entity extends h2d.Object {
     return distBetweenEntities <= minDist;
   }
 
+  public static function updateHitboxWithSpriteData(
+      entity, spriteData: SpriteBatchSystem.SpriteData) {
+    final x = entity.x + (0.5 - spriteData.pivot.x * spriteData.sourceSize.w);
+    final y = entity.y + (0.5 - spriteData.pivot.y * spriteData.sourceSize.h);
+    final width = spriteData.sourceSize.w;
+    final height = spriteData.sourceSize.h;
+
+    entity.collisionHitBox.set(x, y, width, height); 
+  }
+
   public static function debugBox(
       x, y, 
       width, 
@@ -482,5 +525,165 @@ class Entity extends h2d.Object {
 
           passed(ref1.id != ref2.id);
         });
+
+    TestUtils.assert('aabb should intersect (full overlap)', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+        radius: 5
+      });
+      final entityB = new Entity({
+        x: 0,
+        y: 0,
+        radius: 5
+      });
+      entityA.update(0.);
+      entityB.update(0.);
+
+      passed(
+          intersectRect(entityA, entityB));
+    });
+
+    TestUtils.assert('aabb should intersect (partial overlap)', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+        radius: 5
+      });
+      final entityB = new Entity({
+        x: 2,
+        y: 2,
+        radius: 5 
+      });
+
+      entityA.update(0.);
+      entityB.update(0.);
+
+      passed(
+          intersectRect(entityA, entityB));
+    });
+
+    TestUtils.assert('aabb should not intersect x-axis', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+        radius: 5
+      });
+      final entityB = new Entity({
+        x: 11,
+        y: 0,
+        radius: 5
+      });
+
+      entityA.update(0.);
+      entityB.update(0.);
+
+      passed(
+          !intersectRect(entityA, entityB));
+    });
+
+    TestUtils.assert('aabb should not intersect y-axis', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+        radius: 5
+      });
+      final entityB = new Entity({
+        x: 0,
+        y: 11,
+        radius: 5
+      });
+
+      entityA.update(0.);
+      entityB.update(0.);
+
+      passed(
+          !intersectRect(entityA, entityB));
+    });
+    
+    final spriteHitbox = {
+      "frame": {"x":189,"y":873,"w":21,"h":39},
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {"x":11,"y":3,"w":21,"h":39},
+      "sourceSize": {"w":10,"h":10},
+      "pivot": {"x":0.5,"y":0.5}
+    };
+    TestUtils.assert('aabb should not intersect hitbox-radius', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+      });
+      Entity.updateHitboxWithSpriteData(
+          entityA, spriteHitbox);
+
+      final entityB = new Entity({
+        x: 11,
+        y: 0,
+        radius: 5
+      });
+
+      passed(
+          !intersectRect(entityA, entityB));
+    });
+
+    TestUtils.assert('aabb should not intersect mixed hitbox-hitbox', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+      });
+
+      final entityB = new Entity({
+        x: 11,
+        y: 0,
+      });
+
+      Entity.updateHitboxWithSpriteData(
+          entityA, spriteHitbox);
+      Entity.updateHitboxWithSpriteData(
+          entityB, spriteHitbox);
+
+      passed(
+          !intersectRect(entityA, entityB));
+    });
+
+    TestUtils.assert('aabb should intersect hitbox-radius', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+      });
+
+      final entityB = new Entity({
+        x: 2,
+        y: 0,
+        radius: 5
+      });
+
+      Entity.updateHitboxWithSpriteData(
+          entityA, spriteHitbox);
+
+      passed(
+          intersectRect(entityA, entityB));
+    });
+
+    TestUtils.assert('aabb should intersect mixed hitbox-hitbox', (passed) -> {
+      final entityA = new Entity({
+        x: 0,
+        y: 0,
+      });
+
+      final entityB = new Entity({
+        x: 2,
+        y: 0,
+      });
+
+      Entity.updateHitboxWithSpriteData(
+          entityA, spriteHitbox);
+      Entity.updateHitboxWithSpriteData(
+          entityB, spriteHitbox);
+
+      passed(
+          intersectRect(entityA, entityB));
+    });
   }
 }

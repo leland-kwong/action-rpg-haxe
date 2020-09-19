@@ -181,6 +181,7 @@ const startAsepriteWatcher = (options) => {
     const previousPendingBuild = debounceStates.get(path);
     const lightSourceLayer = 'light_source';
     const shadowLayer = 'shadow';
+    const collisionHitboxLayer = 'collision_hitbox';
     const exportDir =  makeExportDir(path);
     clearTimeout(previousPendingBuild);
 
@@ -192,6 +193,7 @@ const startAsepriteWatcher = (options) => {
         `-b ${path}`,
         `--ignore-layer ${lightSourceLayer}`,
         `--ignore-layer ${shadowLayer}`,
+        `--ignore-layer ${collisionHitboxLayer}`,
         `--save-as ${exportFullPath}`
       ].join(' ');
       asepriteExport(eventType, exportDir, asepriteArgs);
@@ -217,6 +219,7 @@ const startAsepriteWatcher = (options) => {
       exportBaseSprites();
       exportLayer(lightSourceLayer);
       exportLayer(shadowLayer);
+      exportLayer(collisionHitboxLayer);
     };
     const newPendingBuild = setTimeout(execBuild, 300);
     debounceStates.set(path, newPendingBuild);

@@ -136,9 +136,9 @@ class Projectile extends Entity {
     for (id in neighbors) {
       final a = Entity.getById(id);
       if (cFilter(a)) {
-        var d = Utils.distance(x, y, a.x, a.y);
-        var min = radius + a.radius * 1.0;
-        var conflict = d < min;
+        final d = Utils.distance(x, y, a.x, a.y);
+        final min = radius + a.radius * 1.0;
+        final conflict = Entity.intersectRect(this, a);
         if (conflict) {
           collidedWith.push(a);
 
@@ -242,6 +242,7 @@ class Bullet extends Projectile {
   }
 
   public override function render(time: Float) {
+    super.render(time);
     final progress = Easing.easeInExpo(
         Easing.progress(
           createdAt, time, lifeTime));
@@ -249,7 +250,7 @@ class Bullet extends Projectile {
         y + dy - y,
         x + dx - x);
     final sprite = Main.Global.sb.emitSprite(
-        x, y, spriteKey, angle, null);
+        x, y, spriteKey, angle);
     sprite.scale = 1 - progress;
 
     final lightSource = Main.lightingSystem.sb.emitSprite(
@@ -340,6 +341,7 @@ class EnergyBomb extends Projectile {
   }
 
   public override function render(time: Float) {
+    super.render(time);
 
     {
       final ringBurstDuration = 0.4;
@@ -879,9 +881,16 @@ class Ai extends Entity {
             }));
       }
     }
+
+    final currentFrameName = core.Anim.getFrame(
+        activeAnim, Main.Global.time);
+    collisionHitboxSpriteData = SpriteBatchSystem.getSpriteData(
+        Main.Global.sb.batchManager.spriteSheetData,
+        '${currentFrameName}--collision_hitbox');
   }
 
   public override function render(time: Float) {
+    super.render(time);
     final currentFrameName = core.Anim.getFrame(
         activeAnim, time);
 
@@ -907,8 +916,8 @@ class Ai extends Entity {
     }
 
     final lightSource = Main.lightingSystem.emitSpotLight(
-        x, y, radius * 3.);
-    lightSource.alpha = 0.3;
+        x, y, radius * 2.);
+    lightSource.alpha = 0.2;
   }
 }
 
@@ -1040,6 +1049,7 @@ class Player extends Entity {
   }>;
   var facingX = 1;
   var facingY = 1;
+  var activeAnim: core.Anim.AnimRef;
 
   public function new(x, y, s2d: h2d.Scene) {
     super({
@@ -1350,6 +1360,24 @@ class Player extends Entity {
           'forceFieldAbsorbedDamage', 
           0.15);
     }
+
+    // update active anim
+    if (Cooldown.has(cds, 'recoveringFromAbility')) {
+      activeAnim = attackAnim;
+    }
+    else {
+      if (dx != 0 || dy != 0) {
+        activeAnim = runAnim;
+      } else {
+        activeAnim = idleAnim;
+      }
+    }
+
+    final currentSprite = core.Anim.getFrame(
+        activeAnim, Main.Global.time);
+    collisionHitboxSpriteData = SpriteBatchSystem.getSpriteData(
+        Main.Global.sb.batchManager.spriteSheetData,
+        '${currentSprite}--collision_hitbox');
   }
 
   public function useAbility() {
@@ -1996,18 +2024,7 @@ class Player extends Entity {
   }
 
   public override function render(time: Float) {
-    var activeAnim: core.Anim.AnimRef;
-    if (Cooldown.has(cds, 'recoveringFromAbility')) {
-      activeAnim = attackAnim;
-    }
-    else {
-      if (dx != 0 || dy != 0) {
-        activeAnim = runAnim;
-      } else {
-        activeAnim = idleAnim;
-      }
-    }
-
+    super.render(time);
     final currentSprite = core.Anim.getFrame(activeAnim, time);
     function spriteEffect(p: SpriteBatchSystem.SpriteRef) {
       p.scaleX = facingX;
@@ -2196,6 +2213,7 @@ class MapObstacle extends Entity {
   }
 
   public override function render(_) {
+    super.render(_);
     Main.Global.sb.emitSprite(
       x, y, meta.spriteKey);
   }
@@ -3636,7 +3654,7 @@ class Game extends h2d.Object {
       entityRef.render(time);
     }
 
-    Main.lightingSystem.globalIlluminate(0.3);
+    Main.lightingSystem.globalIlluminate(0.4);
     Hud.render(time);
 
     return !finished;
