@@ -70,12 +70,6 @@ class ChannelBeam {
         'ui/kamehameha_head',
         bounds.angle);
     lhSprite.scaleY = lhScaleY;
-    // final lhSpriteLight = Main.lightingSystem.sb.emitSprite(
-    //     lhSprite.x,
-    //     lhSprite.y,
-    //     'ui/kamehameha_head',
-    //     bounds.angle);
-    // lhSpriteLight.scaleY = lhSprite.scaleY * 2;
 
     // laser center
     final lcAngle = bounds.angle + (Math.PI / 2);
@@ -89,27 +83,12 @@ class ChannelBeam {
         bounds.angle);
     final shaftLength = length - laserHeadWidth - laserTailWidth;
     centerSprite.scaleX = shaftLength;
-    // final centerSpriteLight = Main.lightingSystem.sb.emitSprite(
-    //     centerSprite.x,
-    //     centerSprite.y,
-    //     'ui/kamehameha_center_width_1',
-    //     bounds.angle);
-    // centerSpriteLight.scaleX = centerSprite.scaleX;
-    // centerSpriteLight.scaleY = centerSprite.scaleY * 2;
 
     final tailSprite = Main.Global.sb.emitSprite(
         lcx + dx * (shaftLength + laserTailWidth),
         lcy + dy * (shaftLength + laserTailWidth),
         'ui/kamehameha_tail',
         bounds.angle);
-    // final lightScale = 2;
-    // final tailSpriteLight = Main.lightingSystem.sb.emitSprite(
-    //     lcx + dx * (shaftLength),
-    //     lcy + dy * (shaftLength),
-    //     'ui/kamehameha_tail',
-    //     bounds.angle);
-    // tailSpriteLight.scaleY = tailSprite.scaleY * lightScale;
-    // tailSpriteLight.scaleX = tailSprite.scaleX * lightScale * 0.75;
 
     // deform tail sprite
     if (hasCollision) {
@@ -133,7 +112,7 @@ class ChannelBeam {
             startTime, Main.Global.time, duration);
         final progress = Easing.easeInBack(rawProgress);
         p.sortOrder += 5;
-        p.scale = 3 * (1 - progress);
+        p.scale = 2 * (1 - progress);
         p.g = 0.5 + 0.5 * (1 - progress);
         p.b = 1 - (progress * 1.5);
         p.a = 1 - progress;
@@ -150,8 +129,7 @@ class ChannelBeam {
           dy: Utils.rnd(-1, 1, true) * 20,
           angle: Utils.rnd(0, 2) * Math.PI,
           effectCallback: particleEffectCallback,
-          isLightSource: true,
-          lightScale: 4.
+          lightScale: 2.
         }
 
         core.Anim.AnimEffect.add(params);

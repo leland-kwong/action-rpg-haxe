@@ -40,11 +40,14 @@ class LightingSystem {
       rt.filter = Nearest;
       rt.depthBuffer = new DepthBuffer( width, height );
 
-      final t = h2d.Tile.fromColor(0x999999);
-      t.setSize(width, height);
-      debugShadowLayer = new h2d.Bitmap(
+      debugShadowLayer = {
+        final t = h2d.Tile.fromColor(0x999999);
+        t.setSize(width, height);
+
+        new h2d.Bitmap(
           t,
           renderScene);
+      }
 
       final textureBitmap = {
         final bmp = new h2d.Bitmap(
@@ -63,7 +66,7 @@ class LightingSystem {
         hxd.Res.sprite_sheet_png,
         hxd.Res.sprite_sheet_json);
       final batch = sb.batchManager.batch;
-      batch.filter = new h2d.filter.Blur(1.25);
+      batch.filter = new h2d.filter.Blur(1);
       batch.blendMode = h2d.BlendMode.Add;
       sb;
     }
