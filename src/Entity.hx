@@ -125,7 +125,7 @@ class Entity extends h2d.Object {
   public var renderFn: (ref: Entity, time: Float) -> Void;
   public var onDone: (ref: Entity) -> Void;
   public var facingDir = 1;
-  public var collisionHitBox: h2d.col.Bounds;
+  public var collisionHitbox: h2d.col.Bounds;
   public var collisionHitboxSpriteData: SpriteBatchSystem.SpriteData;
   final oProps: EntityProps;
  
@@ -160,7 +160,7 @@ class Entity extends h2d.Object {
         props.avoidanceRadius, radius);
 
     // init hitbox
-    collisionHitBox = new h2d.col.Bounds();
+    collisionHitbox = new h2d.col.Bounds();
 
     if (fromInitialization) {
       return;
@@ -259,8 +259,8 @@ class Entity extends h2d.Object {
 
   public static function intersectRect(
       entityA: Entity, entityB: Entity) {
-    return entityA.collisionHitBox.intersects(
-        entityB.collisionHitBox);
+    return entityA.collisionHitbox.intersects(
+        entityB.collisionHitbox);
   }
 
   public function update(dt: Float) {
@@ -360,7 +360,7 @@ class Entity extends h2d.Object {
     if (hbs != null) {
       Entity.updateHitboxWithSpriteData(this, hbs);
     } else {
-      collisionHitBox.set(
+      collisionHitbox.set(
           x - radius,
           y - radius,
           radius * 2,
@@ -374,7 +374,7 @@ class Entity extends h2d.Object {
     }
 
     if (Entity.debug.collisionHitbox) {
-      final hb = collisionHitBox;
+      final hb = collisionHitbox;
       final sprite = Main.Global.sb.emitSprite(
           hb.x, hb.y, 
           'ui/square_white');
@@ -477,7 +477,7 @@ class Entity extends h2d.Object {
     final width = spriteData.sourceSize.w;
     final height = spriteData.sourceSize.h;
 
-    entity.collisionHitBox.set(x, y, width, height); 
+    entity.collisionHitbox.set(x, y, width, height); 
   }
 
   public static function debugBox(
