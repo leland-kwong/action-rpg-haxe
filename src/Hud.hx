@@ -723,7 +723,7 @@ class UiGrid {
   }
 }
 
-class Tooltip {
+class LootTooltip {
   static var tooltipTextRef: h2d.Text;
 
   public static function update(dt: Float) {
@@ -1521,7 +1521,7 @@ class Hud {
     Main.Global.hoveredEntity.id = hoveredMatch.matchId;
     InventoryDragAndDropPrototype.update(dt);
     Inventory.update(dt);
-    Tooltip.update(dt);
+    LootTooltip.update(dt);
     UiGrid.update(dt);
   }
 
