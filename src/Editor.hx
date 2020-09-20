@@ -17,7 +17,6 @@
        in cases where autotiling renders it differently.
        We can determine the bounding box of the object based on its
        sprite data. (source size, pivot, etc).
- * [ ] Add support for additional properties for an object. We can store this
        data on `editorState.itemPropertiesById`.  
    * [ ] Press `f` to flip brush horizontally, and `shift + f` to 
          flip brush vertically.
@@ -197,9 +196,9 @@ class Editor {
   // all configuration stuff lives here
   public static function getConfig(
       // activeFile = 'editor-data/level_1.eds'
-      activeFile = 'editor-data/passive_skill_tree.eds'
+      // activeFile = 'editor-data/passive_skill_tree.eds'
       // activeFile = 'editor-data/dummy_level.eds'
-      // activeFile = 'editor-data/hud.eds'
+      activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,

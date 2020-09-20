@@ -863,7 +863,7 @@ class InventoryDragAndDropPrototype {
     final abilitySlot1 = {
       equippedItemId: NULL_PICKUP_ID,
       allowedCategory: 'ability',
-      x: 151 * Hud.rScale,
+      x: 165 * Hud.rScale,
       y: 32 * Hud.rScale,
       width: 22 * Hud.rScale,
       height: 22 * Hud.rScale,
@@ -904,7 +904,7 @@ class InventoryDragAndDropPrototype {
   public static final INVENTORY_RECT = {
     equippedItemId: NULL_PICKUP_ID,
     allowedCategory: 'any',
-    x: 256 * Hud.rScale,
+    x: 272 * Hud.rScale,
     y: 32 * Hud.rScale,
     width: 192 * Hud.rScale,
     height: 160 * Hud.rScale
