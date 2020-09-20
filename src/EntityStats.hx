@@ -110,6 +110,7 @@ class EntityStats {
     var velocity = 0.;
     var totalDamageTaken = 0.;
     var flatDamageBuff = 0.;
+    var damageMultiplier = 1.;
 
     for (ev in sr.recentEvents) {
       final done = switch(ev) {
@@ -139,12 +140,20 @@ class EntityStats {
           }
 
         case { 
+          type: 'PERCENT_DAMAGE_INCREASE',
+          value: v }: {
+
+            damageMultiplier += v;
+            true;
+          }
+
+        case { 
           type: 'DAMAGE_RECEIVED',
           value: v }: {
 
-            final baseDamage = v.baseDamage;
-            final sourceStats = v.sourceStats;
-            final totalDamage = (baseDamage + sourceStats.damage);
+            final baseDamage: Float = v.baseDamage;
+            final sourceDmg: Float = v.sourceStats.damage;
+            final totalDamage = (baseDamage + sourceDmg);
 
             totalDamageTaken += totalDamage;
             true;
@@ -205,7 +214,7 @@ class EntityStats {
 
     sr.moveSpeed = velocity;
 
-    // apply damage
+    // apply damage taken
     final damageAbsorbedByForceField = Math.min(
         sr.forceField.life,
         totalDamageTaken * sr.forceField.percentAbsorb);
@@ -217,7 +226,7 @@ class EntityStats {
     sr.currentHealth -= finalDamage;
     sr.damageTaken = finalDamage;
 
-    sr.damage = flatDamageBuff;
+    sr.damage = flatDamageBuff * damageMultiplier;
 
     // handle regeneration
     final newCurrentEnergy = sr.currentEnergy 

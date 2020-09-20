@@ -40,17 +40,22 @@ class PassiveSkillTree {
     final nodeStates = gameState
         .passiveSkillTreeState
         .nodeSelectionStateById;
-    final editorConfig = Editor.getConfig(
-        passiveTreeLayoutFile);
-
     for (nodeId => isSelected in nodeStates) {
       if (isSelected) {
-        final objectType = treeLayoutData.itemTypeById.get(nodeId);
-        final objectMeta = editorConfig.objectMetaByType.get(objectType);
-
-        callback(objectMeta);
+        callback(
+            getNodeMeta(treeLayoutData, nodeId));
       } 
     }
+  }
+
+  static function getNodeMeta(
+      treeLayoutData: Editor.EditorState, 
+      nodeId) {
+    final editorConfig = Editor.getConfig(
+        passiveTreeLayoutFile);
+    final objectType = treeLayoutData.itemTypeById.get(nodeId);
+
+    return editorConfig.objectMetaByType.get(objectType);
   }
 
   static function calcNumAvailablePoints(
@@ -624,9 +629,57 @@ class PassiveSkillTree {
             }
           }
 
+          if (nextHoveredNode != NULL_HOVERED_NODE) {
+            final nodeMeta = getNodeMeta(layoutData, nextHoveredNode.nodeId);
+            final content = {
+              if (nodeMeta.data.displayName != null) {
+                final title = {
+                  final tf = new h2d.Text(
+                      Fonts.title());
+                  final displayName = Utils.withDefault(
+                      nodeMeta.data.displayName,
+                      'unknown node title');
+                  tf.text = displayName;
+                  tf.textColor = 0xf3f3f3;
+                  tf.textAlign = Center;
+                  tf;
+                }
+                final description = {
+                  final tf = new h2d.Text(
+                      Fonts.primary());
+                  final description = Utils.withDefault(
+                      nodeMeta.data.description,
+                      (_) -> 'unknown node description');
+                  tf.text = description(nodeMeta.data.statModifier);
+                  tf.textAlign = Center;
+                  tf.textColor = 0x0095e9;
+                  tf.y = title.y + tf.textHeight + title.textHeight;
+                  tf;
+                }
+                [title, description];
+              } else {
+                final description = {
+                  final tf = new h2d.Text(Fonts.primary());
+                  tf.text = 'not implemented yet';
+                  tf.textAlign = Center;
+                  tf.textColor = 0xfee761;
+                  tf;
+                };
+                [description];
+              }
+            }
+            Tooltip.setContent({
+              content: content,
+              position: {
+                x: Main.Global.scene.uiRoot.mouseX,
+                y: Main.Global.scene.uiRoot.mouseY
+              }
+            });
+          }
+
           return !state.shouldCleanup;
         }
-        Main.Global.hooks.update.push(handleTreeInteraction);
+        Main.Global.hooks.input.push(handleTreeInteraction);
 
         function handleMouseEvents(e: hxd.Event) {
           final mx = Std.int(treeScene.mouseX);

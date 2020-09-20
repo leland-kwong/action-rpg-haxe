@@ -292,15 +292,27 @@ class Editor {
               'passive_skill_tree__node_fist' => {
                 spriteKey: 'ui/passive_skill_tree__node_fist',
                 data: {
-                  size: 2
+                  size: 2,
+                  displayName: 'Fist of Power',
+                  statModifier: {
+                    type: 'PERCENT_DAMAGE_INCREASE',
+                    value: 0.1
+                  },
+                  description: (mods: { value: Float }) -> {
+                    return '+${Std.string(mods.value * 100)}% damage';
+                  }
                 }
               },
               'passive_skill_tree__node_damage_1' => {
                 spriteKey: 'ui/passive_skill_tree__node_orange',
                 data: {
+                  displayName: 'Flat Damage',
                   statModifier: {
                     type: 'FLAT_DAMAGE_INCREASE',
                     value: 1
+                  },
+                  description: (mods) -> {
+                    return '+${Std.string(mods.value)} flat damage';
                   }
                 }
               },

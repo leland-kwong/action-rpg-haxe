@@ -1459,6 +1459,8 @@ class Hud {
       && !uiState.mainMenu.enabled;
     uiState.hud.enabled = enabled;
 
+    Tooltip.update(dt);
+
     if (!enabled) {
       return;
     }
@@ -1526,10 +1528,11 @@ class Hud {
   }
 
   public static function render(time: Float) {
-    Tooltip.render(time);
+    LootTooltip.render(time);
     InventoryDragAndDropPrototype.render(time);
     Inventory.render(time);
     Hud.UiGrid.render(time);
+    Tooltip.render(time);
 
     if (!Main.Global.uiState.hud.enabled) {
       return;

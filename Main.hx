@@ -135,6 +135,7 @@ class Global {
   };
   public static var gameState = Session.createGameState(
       -1, null, null, 'placeholder_game_state');
+  public static var tooltipContent = Tooltip.defaultContent;
 
   static var sceneCleanupFn: () -> Void;
 
@@ -506,6 +507,21 @@ class Main extends hxd.App {
 
       TextManager.resetAll();
 
+      // run input hooks outside of the main update loop
+      // because we only want it to trigger once per
+      // frame.
+      {
+        final nextHooks = [];
+        for (update in Global.hooks.input) {
+          final shouldKeepAlive = update(frameTime);
+
+          if (shouldKeepAlive) {
+            nextHooks.push(update); 
+          }
+        }
+        Global.hooks.input = nextHooks;
+      }
+
       // run while there is remaining frames to simulate
       while (hasRemainingUpdateFrames(acc, frameTime)
           && numUpdates < maxNumUpdatesPerFrame) {
@@ -576,21 +592,6 @@ class Main extends hxd.App {
         Global.worldMouse.clicked = false;
       }
       
-      // run input hooks outside of the main update loop
-      // because we only want it to trigger once per
-      // frame.
-      {
-        final nextHooks = [];
-        for (update in Global.hooks.input) {
-          final shouldKeepAlive = update(frameTime);
-
-          if (shouldKeepAlive) {
-            nextHooks.push(update); 
-          }
-        }
-        Global.hooks.input = nextHooks;
-      }
-
       if (debugText != null) {
         final stats = {
           time: Global.time,

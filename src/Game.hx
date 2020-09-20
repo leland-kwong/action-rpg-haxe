@@ -3140,8 +3140,8 @@ class Game extends h2d.Object {
 
     }
 
-    final levelFile = 'editor-data/dummy_level.eds';
-    // final levelFile = 'editor-data/level_1.eds';
+    // final levelFile = 'editor-data/dummy_level.eds';
+    final levelFile = 'editor-data/level_1.eds';
     SaveState.load(
         levelFile,
         false,
@@ -3434,13 +3434,14 @@ class Game extends h2d.Object {
 
     Main.Global.hooks.update.push(this.update);
     Main.Global.hooks.render.push(this.render);
+    Main.Global.hooks.input.push(function hudUpdate(dt) {
+      Hud.update(dt);
+
+      return !finished;
+    });
   }
 
   public function update(dt: Float) {
-    // IMPORTANT: This must update before the player
-    // so that we can intercept certain click states
-    Hud.update(dt);
-
     final s2d = Main.Global.rootScene;
 
     if (!Main.Global.isNextFrame) {
