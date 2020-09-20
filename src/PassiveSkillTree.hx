@@ -74,17 +74,13 @@ class PassiveSkillTree {
   }
 
   public static function openPassiveSkillTree() {
-    final EMPTY_HOVERED_NODE = {
-      x: 0,
-      y: 0,
-      w: 0,
-      h: 0
-    };
     final treeScene = Main.Global.scene.uiRoot;
     final treeRootObj = new h2d.Object(treeScene);
     final NULL_HOVERED_NODE = {
       nodeId: 'NO_HOVERED_NODE',
-      startedAt: -1.
+      startedAt: -1.,
+      screenX: 0.,
+      screenY: 0.
     };
     final baseSortOrder = 10;
 
@@ -598,15 +594,16 @@ class PassiveSkillTree {
 
             if (isHovered) {
               final alreadyHovered = state.hoveredNode.nodeId == itemId;
+              final startedAt = alreadyHovered 
+                ? state.hoveredNode.startedAt
+                : Main.Global.time;
 
-              if (!alreadyHovered) {
-                nextHoveredNode = {
-                  nodeId: itemId,
-                  startedAt: Main.Global.time
-                };
-              } else {
-                nextHoveredNode = state.hoveredNode;
-              } 
+              nextHoveredNode = {
+                nodeId: itemId,
+                startedAt: startedAt,
+                screenX: sx,
+                screenY: sy,
+              };
             }
           });
 
@@ -668,13 +665,26 @@ class PassiveSkillTree {
                 [description];
               }
             }
-            Tooltip.setContent({
-              content: content,
-              position: {
-                x: Main.Global.scene.uiRoot.mouseX,
-                y: Main.Global.scene.uiRoot.mouseY
-              }
-            });
+            final root = new h2d.Object(Main.Global.scene.uiRoot);
+            for (tf in content) {
+              root.addChild(tf);
+            }
+            final background = new h2d.Graphics();
+            final padding = 20;
+            final bounds = root.getBounds(root);
+            root.addChildAt(background, 0);
+            background.beginFill(0x000000, 0.9);
+            background.drawRect(
+                bounds.x - padding,
+                bounds.y - padding,
+                bounds.width + padding * 2,
+                bounds.height + padding * 2);
+            root.x = nextHoveredNode.screenX;
+            root.y = nextHoveredNode.screenY 
+              - bounds.height
+              - padding 
+              - 10;
+            Main.AutoCleanupGameObjects.add(root);
           }
 
           return !state.shouldCleanup;

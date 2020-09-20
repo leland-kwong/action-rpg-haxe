@@ -135,7 +135,6 @@ class Global {
   };
   public static var gameState = Session.createGameState(
       -1, null, null, 'placeholder_game_state');
-  public static var tooltipContent = Tooltip.defaultContent;
 
   static var sceneCleanupFn: () -> Void;
 
@@ -164,6 +163,21 @@ class Global {
 enum UiState {
   Over;
   Normal;
+}
+
+class AutoCleanupGameObjects {
+  static var items: Array<h2d.Object> = [];
+
+  public static function add(o: h2d.Object) {
+    items.push(o);
+  }
+
+  public static function clear() {
+    for (o in items) {
+      o.remove();
+    }
+    items = [];
+  }
 }
 
 class Main extends hxd.App {
@@ -429,7 +443,7 @@ class Main extends hxd.App {
                 Std.int(f.w / 2), 
                 Std.int(f.h / 2))),
             interact: Cursor.Button,
-            _default: Cursor.Default
+            _default: Cursor.Default,
           };
 
           function deriveCursorStyle() {
@@ -506,6 +520,7 @@ class Main extends hxd.App {
       var numUpdates = 0;
 
       TextManager.resetAll();
+      AutoCleanupGameObjects.clear();
 
       // run input hooks outside of the main update loop
       // because we only want it to trigger once per

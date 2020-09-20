@@ -1532,7 +1532,6 @@ class Hud {
     InventoryDragAndDropPrototype.render(time);
     Inventory.render(time);
     Hud.UiGrid.render(time);
-    Tooltip.render(time);
 
     if (!Main.Global.uiState.hud.enabled) {
       return;

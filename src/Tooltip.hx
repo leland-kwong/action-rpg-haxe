@@ -7,7 +7,7 @@ typedef TooltipContent = {
 }
 
 class Tooltip {
-  public static final defaultContent = {
+  public static final emptyContent = {
     content: [],
     position: {
       x: 0.,
@@ -15,7 +15,7 @@ class Tooltip {
     }
   }
 
-  static var content: TooltipContent = defaultContent;
+  static var content: TooltipContent = emptyContent;
   static var root: h2d.Object;
 
   public static function setContent(
@@ -26,6 +26,10 @@ class Tooltip {
   public static function update(_) {
     if (root != null) {
       root.remove();
+    }
+
+    if (!hasContent()) {
+      return;
     }
 
     root = new h2d.Object(Main.Global.scene.uiRoot);
@@ -49,10 +53,14 @@ class Tooltip {
         bounds.width + padding * 2,
         bounds.height + padding * 2);
 
-    content = defaultContent;
+    // vertically center tooltip
+    root.y -= bounds.height / 2;
+
+    content = emptyContent;
   }
 
-  public static function render(_) {
+  public static function hasContent() {
+    return content != emptyContent;
   }
 }
 
