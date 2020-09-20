@@ -1459,8 +1459,6 @@ class Hud {
       && !uiState.mainMenu.enabled;
     uiState.hud.enabled = enabled;
 
-    Tooltip.update(dt);
-
     if (!enabled) {
       return;
     }
