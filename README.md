@@ -27,3 +27,17 @@ Electric guitar themed, capcom style
 #### Player's orb companion
 
 The player can have more than one orb and uses these orbs to power different abilities.
+
+### Passive Tree Ideas
+
+#### Basic nodes
+* Increased action speed
+* Cooldown reduction
+* Flat increased maximum health
+* Percent increased maximum health
+
+#### Special nodes
+* Strength in Numbers - Increases maximum number of spider bots.
+* Swarm
+  Summon twice the number of bots. Bots decay over time. Decay 10% health/sec.
+* Rampage - Increased damage at the expense of health. Each time you hit an enemy you gain a rampage stack. Each rampage stack increases health cost by a percentage of the ability's energy cost and increases damage by X%.
