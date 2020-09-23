@@ -626,13 +626,14 @@ class PassiveSkillTree {
             }
           }
 
-          if (nextHoveredNode != NULL_HOVERED_NODE) {
+          final showTooltip = nextHoveredNode != NULL_HOVERED_NODE;
+          if (showTooltip) {
             final nodeMeta = getNodeMeta(layoutData, nextHoveredNode.nodeId);
             final content = {
               if (nodeMeta.data.displayName != null) {
                 final title = {
-                  final tf = new h2d.Text(
-                      Fonts.title());
+                  final font = Fonts.title();
+                  final tf = new h2d.Text(font);
                   final displayName = Utils.withDefault(
                       nodeMeta.data.displayName,
                       'unknown node title');

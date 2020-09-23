@@ -535,6 +535,7 @@ class Main extends hxd.App {
           }
         }
         Global.hooks.input = nextHooks;
+        Global.worldMouse.clicked = false;
       }
 
       // run while there is remaining frames to simulate
@@ -598,13 +599,6 @@ class Main extends hxd.App {
         // and become negative values. So to get around this, we floor a float value to achieve the same thing.
         Global.tickCount = Math.ffloor(
             Global.time / frameTime);
-
-        // we want to set this to false as soon as
-        // a single update is run to prevent a situation
-        // where we'll get a double click due to the game
-        // loop updating more than once per frame on systems
-        // that don't support high frame rates
-        Global.worldMouse.clicked = false;
       }
       
       if (debugText != null) {
