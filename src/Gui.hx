@@ -462,7 +462,7 @@ class GuiComponents {
       }
     }
 
-    Main.Global.hooks.update.push((dt) -> {
+    Main.Global.hooks.input.push((dt) -> {
       Main.Global.worldMouse.hoverState = Main.HoverState.Ui;
 
       final mx = Main.Global.scene.uiRoot.mouseX;
