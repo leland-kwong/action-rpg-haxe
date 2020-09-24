@@ -858,7 +858,10 @@ class InventoryDragAndDropPrototype {
         createLootInstanceByType('moveSpeedAura'), 3); 
   }
 
-  static function getEquipmentSlotDefinitions() {
+  static function getEquipmentSlotDefinitions():
+    Array<EquippableSlotMeta> 
+  {
+
     final slotGap = 1 * Hud.rScale;
     final abilitySlot1 = {
       equippedItemId: NULL_PICKUP_ID,
@@ -941,7 +944,12 @@ class InventoryDragAndDropPrototype {
         }
         state.interactSlots = [];
         state.slotHovered = false;
-      } else if (state.interactSlots.length == 0) {
+      }
+
+      final shouldSetupInteractSlots = 
+        state.interactSlots.length == 0;
+
+      if (shouldSetupInteractSlots) {
         final interactableSlots: Array<Dynamic> = 
           getEquipmentSlotDefinitions()
               .concat([INVENTORY_RECT]);
