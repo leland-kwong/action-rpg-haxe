@@ -925,6 +925,8 @@ class InventoryDragAndDropPrototype {
     final hudLayoutData: Editor.EditorState = SaveState.load(
         Hud.HUD_LAYOUT_FILE,
         false);
+    final inventoryEnabled = 
+      Main.Global.uiState.inventory.enabled;
 
     if (hudLayoutData == null) {
       return;
@@ -935,16 +937,18 @@ class InventoryDragAndDropPrototype {
         Main.HoverState.Ui;
     }
 
+    // cleanup
+    if (!inventoryEnabled) {
+      for (interact in state.interactSlots) {
+        interact.remove();
+      }
+      state.interactSlots = [];
+      state.slotHovered = false;
+      return;
+    }
+
     // handle interact slots
     {
-      // cleanup
-      if (!Main.Global.uiState.inventory.enabled) {
-        for (interact in state.interactSlots) {
-          interact.remove();
-        }
-        state.interactSlots = [];
-        state.slotHovered = false;
-      }
 
       final shouldSetupInteractSlots = 
         state.interactSlots.length == 0;
@@ -977,10 +981,6 @@ class InventoryDragAndDropPrototype {
               interact;
             });
       }
-    }
-
-    if (!Main.Global.uiState.inventory.enabled) {
-      return;
     }
 
     // handle slot interactions
@@ -1269,6 +1269,37 @@ class InventoryDragAndDropPrototype {
     final hudLayoutData: Editor.EditorState = SaveState.load(
         Hud.HUD_LAYOUT_FILE,
         false);
+    final mouseCol = {
+      final col = new h2d.col.Bounds();
+      col.set(
+          Main.Global.scene.uiRoot.mouseX,
+          Main.Global.scene.uiRoot.mouseY,
+          1, 
+          1);
+      col;
+    }
+    final NULL_HOVERED_ITEM_STATE = {
+      id: null,
+      x: 0.,
+      y: 0.,
+      w: 0.,
+      h: 0.
+    };
+    var hoveredItemState = NULL_HOVERED_ITEM_STATE;
+    final itemCol = new h2d.col.Bounds();
+    final setHoveredItemState = (
+        x: Float, y: Float, w, h, itemId) -> {
+      itemCol.set(x, y, w, h);
+      if (mouseCol.intersects(itemCol)) {
+        hoveredItemState = {
+          id: itemId,
+          x: x,
+          y: y,
+          w: w,
+          h: h
+        };
+      }
+    }
 
     if (hudLayoutData == null) {
       return;
@@ -1296,6 +1327,13 @@ class InventoryDragAndDropPrototype {
               p.sortOrder = 2;
               b.scale = Hud.rScale;
             });
+
+        setHoveredItemState(
+            abilitySlot.x,
+            abilitySlot.y,
+            abilitySlot.width,
+            abilitySlot.height,
+            itemId);
       }
     };
 
@@ -1328,6 +1366,13 @@ class InventoryDragAndDropPrototype {
             final b = p;
             b.scale = Hud.rScale;
           });
+
+      setHoveredItemState(
+          bounds[0] * cellSize * Hud.rScale + INVENTORY_RECT.x,
+          bounds[2] * cellSize * Hud.rScale + INVENTORY_RECT.y,
+          width * cellSize * Hud.rScale,
+          height * cellSize * Hud.rScale,
+          itemId);
     } 
 
     // render slot highlights (shows if you may drop/equip at given slot)
@@ -1418,6 +1463,103 @@ class InventoryDragAndDropPrototype {
               b.b = 0;
             }
           });
+    }
+
+    Main.Global.logData.hoveredItemState = hoveredItemState;
+    final sprite = Main.Global.uiSpriteBatch.emitSprite(
+        hoveredItemState.x,
+        hoveredItemState.y,
+        'ui/square_white');
+    sprite.a = 0.3;
+    sprite.scaleX = hoveredItemState.w;
+    sprite.scaleY = hoveredItemState.h;
+
+    final shouldShowTooltip = 
+      hoveredItemState != NULL_HOVERED_ITEM_STATE;
+
+    if (shouldShowTooltip) {
+      final lootInst = Main
+        .Global
+        .gameState
+        .inventoryState
+        .itemsById
+        .get(hoveredItemState.id); 
+      final lootDef = Loot.getDef(lootInst.type);
+      final maxWidth = 500;
+      Main.Global.logData.lootDef = lootDef;
+      final tooltipO = new h2d.Object(Main.Global.scene.uiRoot);
+      final tooltipPadding = 20;
+      tooltipO.x = hoveredItemState.x + hoveredItemState.w + tooltipPadding;
+      tooltipO.y = hoveredItemState.y;
+      final titleTf = {
+        final tf = new h2d.Text(Fonts.title(), tooltipO);
+        tf.text = lootDef.name;
+        tf.textAlign = Center;
+        tf.maxWidth = maxWidth;
+        tf;
+      }
+      final dpsTf = {
+        final y = titleTf.y + titleTf.textHeight;
+        final labelTf = new h2d.Text(Fonts.primary(), tooltipO);
+        labelTf.textColor = 0x999999;
+        labelTf.text = 'Damage: ';
+        labelTf.y = y + labelTf.textHeight;
+
+        final tf = new h2d.Text(Fonts.primary(), tooltipO);
+        tf.textColor = Game.Colors.itemModifier;
+        tf.text = '${lootDef.minDamage} - ${lootDef.maxDamage}';
+        tf.x = labelTf.x + labelTf.textWidth;
+        tf.y = labelTf.y;
+        tf;
+
+        final totalTextWidth = labelTf.textWidth + tf.textWidth;
+        final remainingSpace = maxWidth - totalTextWidth;
+        final centerAdjust = remainingSpace / 2;
+        for (tf in [labelTf, tf]) {
+          tf.x += centerAdjust;
+        }
+
+        tf;
+      }
+      final descriptionTf = {
+        final tf = new h2d.Text(Fonts.primary(), tooltipO);
+        tf.textColor = Game.Colors.itemModifier;
+        tf.text = Utils.withDefault(lootDef.description, '');
+        tf.textAlign = Center;
+        tf.y = dpsTf.y + dpsTf.textHeight + tf.textHeight;
+        tf.maxWidth = maxWidth;
+        tf;
+      }
+
+      final bounds = tooltipO.getBounds(tooltipO);
+      {
+        final background = new h2d.Graphics();
+
+        background.beginFill(0x000000, 0.9);
+        background.drawRect(
+            0, 0,
+            maxWidth + tooltipPadding * 2,
+            bounds.height + tooltipPadding * 2);
+        
+        background.x = -tooltipPadding;
+        background.y = bounds.y - tooltipPadding;
+        tooltipO.addChildAt(background, 0);
+      }
+
+      {
+        final bounds = tooltipO.getBounds(Main.Global.scene.uiRoot);
+        Main.Global.logData.tooltipCheck = {
+          xMax: bounds.xMax,
+          res: Main.nativePixelResolution.x
+        }
+        final isOutsideX = bounds.xMax > Main.nativePixelResolution.x;
+
+        if (isOutsideX) {
+          tooltipO.x = hoveredItemState.x - bounds.width + tooltipPadding;
+        }
+      }
+
+      Main.AutoCleanupGameObjects.add(tooltipO);
     }
   }
 }

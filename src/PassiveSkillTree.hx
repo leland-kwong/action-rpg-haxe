@@ -650,7 +650,7 @@ class PassiveSkillTree {
                       (_) -> 'unknown node description');
                   tf.text = description(nodeMeta.data.statModifier);
                   tf.textAlign = Center;
-                  tf.textColor = 0x0095e9;
+                  tf.textColor = Game.Colors.itemModifier;
                   tf.y = title.y + tf.textHeight + title.textHeight;
                   tf;
                 }

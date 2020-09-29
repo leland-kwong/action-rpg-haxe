@@ -66,6 +66,7 @@ class Colors {
   public static final darkBlue = 0x073b4c;
   public static final pureWhite = 0xffffff;
   public static final black = 0x000000;
+  public static final itemModifier = 0x0095e9;
 }
 
 class Projectile extends Entity {

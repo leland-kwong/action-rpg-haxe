@@ -19,7 +19,8 @@ typedef LootDef = {
   maxDamage: Int,
   spriteKey: String,
   ?damageMultiplier: Float,
-  ?rarity: Rarity
+  ?rarity: Rarity,
+  ?description: String 
 };
 
 // loot that was generated via rng
@@ -48,6 +49,7 @@ class Loot {
       minDamage: 1,
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_basic_blaster',
+      description: 'Fires a small blast dealing damage to a single target'
     },
     'basicBlasterEvolved' => {
       name: 'Basic Blaster Evolved',
