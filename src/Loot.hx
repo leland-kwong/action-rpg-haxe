@@ -20,7 +20,7 @@ typedef LootDef = {
   spriteKey: String,
   ?damageMultiplier: Float,
   ?rarity: Rarity,
-  ?description: String 
+  ?description: () -> String 
 };
 
 // loot that was generated via rng
@@ -49,7 +49,9 @@ class Loot {
       minDamage: 1,
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_basic_blaster',
-      description: 'Fires a small blast dealing damage to a single target'
+      description: () -> {
+        return 'Fires a small blast dealing damage to the first target hit.';
+      }
     },
     'basicBlasterEvolved' => {
       name: 'Basic Blaster Evolved',
@@ -70,7 +72,10 @@ class Loot {
       actionSpeed: 2 / 10,
       minDamage: 1,
       maxDamage: 1,
-      spriteKey: 'ui/loot__ability_spider_bots'
+      spriteKey: 'ui/loot__ability_spider_bots',
+      description: () -> {
+        return 'Releases several small bots that move towards nearby enemies, exploding upon impact.';
+      }
     },
     // TODO: Make beam have both an initial energy cost at
     // initial use and then a lower channeling cost. This
@@ -121,14 +126,17 @@ class Loot {
     // where the ability builds charges as you
     // kill enemies.
     'heal1' => {
-      name: 'Basic Heal',
+      name: 'Basic Health Restore',
       category: 'ability',
       cooldown: 0.3,
       actionSpeed: 0,
       energyCost: 0,
       minDamage: 0,
       maxDamage: 0,
-      spriteKey: 'ui/loot__ability_heal_1'
+      spriteKey: 'ui/loot__ability_heal_1',
+      description: () -> {
+        return 'Recovers health over a short duration.';
+      }
     },
     'energy1' => {
       name: 'Basic Energy Restore',
@@ -138,17 +146,23 @@ class Loot {
       energyCost: 0,
       minDamage: 0,
       maxDamage: 0,
-      spriteKey: 'ui/loot__ability_energy_1'
+      spriteKey: 'ui/loot__ability_energy_1',
+      description: () -> {
+        return 'Recovers energy over a short duration.';
+      }
     },
     'moveSpeedAura' => {
-      name: 'Burst Of Speed (aura)',
+      name: 'Burst Of Speed',
       category: 'ability',
       cooldown: 0,
       actionSpeed: 0,
       energyCost: 0,
       minDamage: 0,
       maxDamage: 0,
-      spriteKey: 'ui/loot__ability_movespeed_aura'
+      spriteKey: 'ui/loot__ability_movespeed_aura',
+      description: () -> {
+        return 'Gain an aura granting increased movement speed to you and your allies.';
+      }
     },
     'forceField' => {
       name: 'Force Field 1',
@@ -158,7 +172,10 @@ class Loot {
       energyCost: 10,
       minDamage: 0,
       maxDamage: 0,
-      spriteKey: 'ui/loot__ability_forcefield'
+      spriteKey: 'ui/loot__ability_forcefield',
+      description: () -> {
+        return 'Creates a temporary shield that absorbs a portion of all incoming damage.';
+      }
     },
     'nullItem' => {
       name: 'Null Item',

@@ -1474,10 +1474,10 @@ class InventoryDragAndDropPrototype {
     sprite.scaleX = hoveredItemState.w;
     sprite.scaleY = hoveredItemState.h;
 
-    final shouldShowTooltip = 
+    final shouldShowInventoryItemTooltip = 
       hoveredItemState != NULL_HOVERED_ITEM_STATE;
 
-    if (shouldShowTooltip) {
+    if (shouldShowInventoryItemTooltip) {
       final lootInst = Main
         .Global
         .gameState
@@ -1498,35 +1498,58 @@ class InventoryDragAndDropPrototype {
         tf.maxWidth = maxWidth;
         tf;
       }
-      final dpsTf = {
-        final y = titleTf.y + titleTf.textHeight;
+
+      function makeMetaRow(label, value: Dynamic, y) {
+        final text = Std.string(value);
         final labelTf = new h2d.Text(Fonts.primary(), tooltipO);
         labelTf.textColor = 0x999999;
-        labelTf.text = 'Damage: ';
+        labelTf.text = label;
         labelTf.y = y + labelTf.textHeight;
 
         final tf = new h2d.Text(Fonts.primary(), tooltipO);
         tf.textColor = Game.Colors.itemModifier;
-        tf.text = '${lootDef.minDamage} - ${lootDef.maxDamage}';
+        tf.text = text;
         tf.x = labelTf.x + labelTf.textWidth;
         tf.y = labelTf.y;
         tf;
 
         final totalTextWidth = labelTf.textWidth + tf.textWidth;
         final remainingSpace = maxWidth - totalTextWidth;
-        final centerAdjust = remainingSpace / 2;
+        final centerAdjust = Math.round(remainingSpace / 2);
         for (tf in [labelTf, tf]) {
           tf.x += centerAdjust;
         }
 
-        tf;
+        return tf;
       }
+
+      final energyCostTf = makeMetaRow(
+          'Energy cost: ', 
+          lootDef.energyCost,
+          titleTf.y + titleTf.textHeight);
+      final dpsTf = makeMetaRow(
+          'Damage: ', 
+          '${lootDef.minDamage} - ${lootDef.maxDamage}',
+          energyCostTf.y);
+      final actionSpeedTf = makeMetaRow(
+          'Action Speed: ',
+          Std.string(lootDef.actionSpeed),
+          dpsTf.y);
+      final cooldownTf = makeMetaRow(
+          'Cooldown: ',
+          Std.string(lootDef.cooldown),
+          actionSpeedTf.y);
+      final metaRows = [dpsTf, actionSpeedTf, cooldownTf];
       final descriptionTf = {
         final tf = new h2d.Text(Fonts.primary(), tooltipO);
+        final lastRow = metaRows.slice(-1)[0];
+        final description = lootDef.description != null
+          ? lootDef.description()
+          : '';
         tf.textColor = Game.Colors.itemModifier;
-        tf.text = Utils.withDefault(lootDef.description, '');
+        tf.text = description;
         tf.textAlign = Center;
-        tf.y = dpsTf.y + dpsTf.textHeight + tf.textHeight;
+        tf.y = lastRow.y + lastRow.textHeight + tf.textHeight;
         tf.maxWidth = maxWidth;
         tf;
       }
