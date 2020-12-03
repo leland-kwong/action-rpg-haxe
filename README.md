@@ -4,27 +4,19 @@ This is an action role playing game set in a sci-fi universe. The core game loop
 
 ## Running the game
 
-Currently, the game only supports Windows. 
+*Note: Currently, the game only supports Windows.*
 
-### Via Windows Explorer
-
-Double-click `./bin/game.exe` in the Windows explorer.
-
-### Via WSL (Windows subsystem for linux)
-
-```sh
-cd bin
-./game.exe
-```
+1. `npm start`
+2. Double-click `./bin/game.exe` in the Windows explorer.
 
 ## Architecture
 
-Programming language - [Haxe](https://haxe.org/)
-Game Engine - [Heaps](https://heaps.io/)
+* Programming language - [Haxe](https://haxe.org/)
+* Game Engine - [Heaps](https://heaps.io/)
 
 ## Third-party applications
 
-Pixel Art - [Aseprite](https://www.aseprite.org/)
+* Pixel Art - [Aseprite](https://www.aseprite.org/)
 
 ## Build and compile
 
