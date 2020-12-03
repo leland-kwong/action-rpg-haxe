@@ -1,6 +1,32 @@
-# Notes
+# Name of game TBD
 
-## Software Development
+This is an action role playing game set in a sci-fi universe. The core game loop revolves around the idea of destroying enemies, collecting loot and building skills to get stronger.
+
+## Running the game
+
+Currently, the game only supports Windows. 
+
+### Via Windows Explorer
+
+Double-click `./bin/game.exe` in the Windows explorer.
+
+### Via WSL (Windows subsystem for linux)
+
+```sh
+cd bin
+./game.exe
+```
+
+## Architecture
+
+Programming language - [Haxe](https://haxe.org/)
+Game Engine - [Heaps](https://heaps.io/)
+
+## Third-party applications
+
+Pixel Art - [Aseprite](https://www.aseprite.org/)
+
+## Build and compile
 
 ### Dev server
 
