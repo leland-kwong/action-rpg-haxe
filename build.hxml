@@ -1,4 +1,7 @@
--D resourcesPath=./sound_effects_res
+# [reference](https://github.com/HaxeFoundation/hashlink/wiki/Distribution-&--Packaging)
+
+# [compilation flags](https://haxe.org/manual/lf-condition-compilation.html)
+-D resourcesPath=./src/res
 
 # class paths
 -cp src

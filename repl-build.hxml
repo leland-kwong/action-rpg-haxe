@@ -1,9 +1,7 @@
-# custom debug vars
--D jsMode
--D debugMode
 
-# heaps built-in vars
--D resourcesPath=./src/res
+# custom debug vars
+-D debugMode
+-D replMode
 
 # haxe built-in vars
 -D haxeJSON
@@ -11,7 +9,8 @@
 # class paths
 -cp src
 
+-js temp/repl-haxe.js
+# libraries
 -lib heaps
--js bin/game.dist.js
--main Main
+-main Repl
 -debug
