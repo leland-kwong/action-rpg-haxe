@@ -116,16 +116,6 @@ class Utils {
     return 0.0;
   }
 
-#if !replMode
-  public static function loadJsonFile(res: hxd.res.Resource) {
-    var path = Std.string(res);
-
-    return haxe.Json.parse(
-      hxd.Res.loader.load(path).toText()
-    );
-  }
-#end
-
   public static function withDefault<T>(
       value: T, defaultValue: T) {
     if (value == null) {

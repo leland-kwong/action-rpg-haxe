@@ -4,5 +4,6 @@
 
 class Repl {
   static function main() {
+    trace('wtf...');
   }
 }
