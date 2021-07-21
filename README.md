@@ -2,6 +2,8 @@
 
 This is an action role playing game set in a sci-fi universe. The core game loop revolves around the idea of destroying enemies, collecting loot and building skills to get stronger.
 
+![alt text](readme-media/screenshot-1.png)
+
 ## Playing the game
 
 *Note: Currently, the game only supports Windows.*
