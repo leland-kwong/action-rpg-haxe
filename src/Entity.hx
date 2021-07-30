@@ -94,8 +94,8 @@ class Entity extends h2d.Object {
   public final showHitNumbers = true;
   public static var NULL_ENTITY: Entity = {
     final defaultEntity = new Entity({
-      x: 0, 
-      y: 0, 
+      x: 0,
+      y: 0,
       radius: 0,
       id: 'NULL_ENTITY',
       type: 'NULL_ENTITY'
@@ -128,9 +128,9 @@ class Entity extends h2d.Object {
   public var collisionHitbox: h2d.col.Bounds;
   public var collisionHitboxSpriteData: SpriteBatchSystem.SpriteData;
   final oProps: EntityProps;
- 
+
   public function new(
-      props: EntityProps, 
+      props: EntityProps,
       fromInitialization = false) {
 
     oProps = props;
@@ -149,10 +149,10 @@ class Entity extends h2d.Object {
     x = props.x;
     y = props.y;
     components = {
-      final c = props.components != null 
+      final c = props.components != null
         ? props.components
         : new Map();
-      
+
       c;
     }
     cds = new Cooldown();
@@ -170,8 +170,8 @@ class Entity extends h2d.Object {
   }
 
   public static function setComponent<T>(
-      ref: Entity, 
-      type: String, 
+      ref: Entity,
+      type: String,
       value: T): T {
 
     if (value == null) {
@@ -187,17 +187,17 @@ class Entity extends h2d.Object {
       ref: Entity,
       component: String,
       calcNextValue: (
-        curVal: T, 
+        curVal: T,
         ctx: T2) -> T,
       ?context: T2): T {
 
-    final curVal = getComponent(ref, component); 
+    final curVal = getComponent(ref, component);
     return setComponent(
         ref, component, calcNextValue(curVal, context));
   }
 
   public static function getComponent(
-      ref: Entity, 
+      ref: Entity,
       type: String,
       ?defaultValue: Dynamic): Dynamic {
 
@@ -233,7 +233,7 @@ class Entity extends h2d.Object {
       sourceEntity: EntityId,
       entities: Array<EntityId>,
       ?collisionFilter) {
-  
+
     final s = getById(sourceEntity);
     final collisions = [];
 
@@ -269,7 +269,7 @@ class Entity extends h2d.Object {
         stats,
         dt);
 
-    if (showHitNumbers 
+    if (showHitNumbers
         && stats.damageTaken > 0) {
       final font = Fonts.primary().clone();
       font.resizeTo(8);
@@ -303,10 +303,10 @@ class Entity extends h2d.Object {
         tf.x = initialX + dx * Easing.easeOutExpo(progress);
         tf.y = initialY
           - 25 * Easing.easeOutExpo(progress)
-          + dy * Easing.easeInExpo(progress); 
-        tf.alpha = 1 - Easing.easeInExpo(progress); 
+          + dy * Easing.easeInExpo(progress);
+        tf.alpha = 1 - Easing.easeInExpo(progress);
         tf.setScale(1 - Easing.easeInExpo(progress));
-        
+
         if (aliveTime > duration) {
           tf.remove();
           return false;
@@ -319,10 +319,10 @@ class Entity extends h2d.Object {
     final totalSpeed = stats.moveSpeed;
 
     if (dx != 0) {
-      final nextPos = x + Utils.clamp(dx, -max, max) 
+      final nextPos = x + Utils.clamp(dx, -max, max)
         * totalSpeed * dt;
       final direction = dx > 0 ? 1 : -1;
-      final isTraversable = traversableGrid != null 
+      final isTraversable = traversableGrid != null
         ? Lambda.count(
             Grid.getItemsInRect(
               traversableGrid,
@@ -330,7 +330,7 @@ class Entity extends h2d.Object {
               Math.floor(y),
               1,
               1)) > 0
-        : true; 
+        : true;
 
       if (isTraversable) {
         x = nextPos;
@@ -338,10 +338,10 @@ class Entity extends h2d.Object {
     }
 
     if (dy != 0) {
-      final nextPos = y + Utils.clamp(dy, -max, max) 
+      final nextPos = y + Utils.clamp(dy, -max, max)
         * totalSpeed * dt;
       final direction = dy > 0 ? 1 : -1;
-      final isTraversable = traversableGrid != null 
+      final isTraversable = traversableGrid != null
         ? Lambda.count(
             Grid.getItemsInRect(
               traversableGrid,
@@ -376,7 +376,7 @@ class Entity extends h2d.Object {
     if (Entity.debug.collisionHitbox) {
       final hb = collisionHitbox;
       final sprite = Main.Global.sb.emitSprite(
-          hb.x, hb.y, 
+          hb.x, hb.y,
           'ui/square_white');
       sprite.scaleX = hb.width;
       sprite.scaleY = hb.height;
@@ -393,11 +393,11 @@ class Entity extends h2d.Object {
     return getById(id) != NULL_ENTITY;
   }
 
-  // marks the entity for cleanup on the next update 
+  // marks the entity for cleanup on the next update
   public static function destroy(id: EntityId) {
     final ref = Entity.getById(id);
     EntityStats.addEvent(
-        ref.stats, 
+        ref.stats,
         EntityStats.destroyEvent,
         false,
         true);
@@ -416,13 +416,13 @@ class Entity extends h2d.Object {
   }
 
   public static function getById(
-      id: EntityId, 
+      id: EntityId,
       ?defaultEntity) {
     final ref = ALL_BY_ID.get(id);
 
     if (ref == null) {
-      return defaultEntity == null 
-        ? NULL_ENTITY 
+      return defaultEntity == null
+        ? NULL_ENTITY
         : defaultEntity;
     }
 
@@ -445,7 +445,7 @@ class Entity extends h2d.Object {
       final ox = o[0];
       final oy = o[1];
       final p = Main.Global.sb.emitSprite(
-          ref.x + ox, 
+          ref.x + ox,
           ref.y + oy,
           spriteKey,
           null,
@@ -477,12 +477,12 @@ class Entity extends h2d.Object {
     final width = spriteData.sourceSize.w;
     final height = spriteData.sourceSize.h;
 
-    entity.collisionHitbox.set(x, y, width, height); 
+    entity.collisionHitbox.set(x, y, width, height);
   }
 
   public static function debugBox(
-      x, y, 
-      width, 
+      x, y,
+      width,
       height,
       ?batch: SpriteBatchSystem) {
 
@@ -559,7 +559,7 @@ class Entity extends h2d.Object {
       final entityB = new Entity({
         x: 2,
         y: 2,
-        radius: 5 
+        radius: 5
       });
 
       entityA.update(0.);
@@ -606,7 +606,7 @@ class Entity extends h2d.Object {
       passed(
           !intersectRect(entityA, entityB));
     });
-    
+
     final spriteHitbox = {
       "frame": {"x":189,"y":873,"w":21,"h":39},
       "rotated": false,

@@ -895,6 +895,7 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">aseprite_exports/ui/npc_test_dummy--collision_hitbox.png</key>
             <key type="filename">aseprite_exports/ui/npc_test_dummy.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>

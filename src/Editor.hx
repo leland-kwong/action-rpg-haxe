@@ -17,18 +17,18 @@
        in cases where autotiling renders it differently.
        We can determine the bounding box of the object based on its
        sprite data. (source size, pivot, etc).
-       data on `editorState.itemPropertiesById`.  
-   * [ ] Press `f` to flip brush horizontally, and `shift + f` to 
+       data on `editorState.itemPropertiesById`.
+   * [ ] Press `f` to flip brush horizontally, and `shift + f` to
          flip brush vertically.
    * [ ] When copying/cutting/pasting, we need to also copy all other properties
          associated with that object.
-   * [ ] Press `r` to rotate brush 45 degrees clockwise, 
+   * [ ] Press `r` to rotate brush 45 degrees clockwise,
          and `shift + r` to rotate brush 45 degrees counter-clockwise.
  * [ ] Minimap functionality. This will be useful for seeing a preview of the
        entire map while also surfacing any stray objects that we might not
        otherwise see because we forgot to clean them up.
  * [x] [BUG] Fix issue with cursor brush in paint mode not properly snapping
-       to the fine pixel grid. We can refer to the selected marquee 
+       to the fine pixel grid. We can refer to the selected marquee
        selection api since it doesn't appear to exhibit the same issues.
        to have this problem, so we can loo
  * [ ] undo/redo system
@@ -182,8 +182,8 @@ class Editor {
       final propValue = Reflect.field(props, field);
 
       Reflect.setField(
-          newProps, 
-          field, 
+          newProps,
+          field,
           Utils.withDefault(
             propValue, defaultValue));
     }
@@ -196,9 +196,9 @@ class Editor {
   // all configuration stuff lives here
   public static function getConfig(
       // activeFile = 'editor-data/level_1.eds'
-      // activeFile = 'editor-data/passive_skill_tree.eds'
+      activeFile = 'editor-data/passive_skill_tree.eds'
       // activeFile = 'editor-data/dummy_level.eds'
-      activeFile = 'editor-data/hud.eds'
+      // activeFile = 'editor-data/hud.eds'
       ): {
     activeFile: String,
     autoSave: Bool,
@@ -220,9 +220,9 @@ class Editor {
 
         final metaByType = new Map<String, ConfigObjectMeta>();
 
-        final configList: Map<String, ConfigObjectMeta> = 
+        final configList: Map<String, ConfigObjectMeta> =
           switch (activeFile) {
-            case 
+            case
               'editor-data/dummy_level.eds'
               | 'editor-data/level_1.eds': {
                 [
@@ -595,9 +595,9 @@ class Editor {
       layersToShow: [],
       // set to first layer by default
       activeLayerId: editorState.layerOrderById[0],
-      renderRowsByLayerId: 
+      renderRowsByLayerId:
         new Map<String, EditorRendererLayer>(),
-      searchObjectMatchesById: 
+      searchObjectMatchesById:
         new Array<{
           objectId: String,
           layerId: String
@@ -691,7 +691,7 @@ class Editor {
                   trace(error);
                 });
           }
-        }       
+        }
       } catch(err) {
         trace('[editor save error]', err.stack);
       }
@@ -733,7 +733,7 @@ class Editor {
             gridRef,
             key);
         final objectType = editorState.itemTypeById.get(key);
-        final objectMeta = getConfig().objectMetaByType.get(objectType); 
+        final objectMeta = getConfig().objectMetaByType.get(objectType);
         isAutoTile = objectMeta.isAutoTile;
         editorState.itemTypeById.remove(key);
       }
@@ -762,7 +762,7 @@ class Editor {
     };
 
     final insertSquare = (
-        gridRef: Grid.GridRef, 
+        gridRef: Grid.GridRef,
         gridX, gridY, id, objectType, layerId) -> {
       if (localState.editorUiRegion != EditorUiRegion.MainMap) {
         return;
@@ -776,7 +776,7 @@ class Editor {
 
       // remove item that shares same id
       if (hasSharedId) {
-        final bounds = gridRef.itemCache.get(id); 
+        final bounds = gridRef.itemCache.get(id);
 
         if (bounds != null) {
           final x = bounds[0];
@@ -818,7 +818,7 @@ class Editor {
       });
 
       final objectType = editorState.itemTypeById.get(id);
-      final objectMeta = getConfig().objectMetaByType.get(objectType); 
+      final objectMeta = getConfig().objectMetaByType.get(objectType);
 
       if (objectMeta.isAutoTile) {
         // refresh row above
@@ -937,8 +937,8 @@ class Editor {
 
     final listener = (e: hxd.Event) -> {
       for (fn in [
-          handleZoom, 
-          handleDrag, 
+          handleZoom,
+          handleDrag,
           handlePaletteMenu]) {
         fn(e);
       }
@@ -954,10 +954,10 @@ class Editor {
       final tx = editorState.translate.x * localState.zoom;
       final ty = editorState.translate.y * localState.zoom;
       final hg = Math.floor(gridSize / 2);
-      final gridX = 
+      final gridX =
         Math.floor((screenX - tx) / gridSize / localState.zoom)
         * gridSize + hg;
-      final gridY = 
+      final gridY =
         Math.floor((screenY - ty) / gridSize / localState.zoom)
         * gridSize + hg;
 
@@ -1009,7 +1009,7 @@ class Editor {
 
       final sharedId = objectMeta.sharedId;
 
-      return sharedId == null 
+      return sharedId == null
         ? Utils.uid() : sharedId;
     }
 
@@ -1024,7 +1024,7 @@ class Editor {
       updateObjectMetaList();
       localState.editorUiRegion = {
         final p = new h2d.col.Point(mx, my);
-        var activeRegion = EditorUiRegion.MainMap; 
+        var activeRegion = EditorUiRegion.MainMap;
 
         for (regionType => bounds in localState.uiRegionRects) {
           if (bounds.contains(p)) {
@@ -1035,7 +1035,7 @@ class Editor {
         activeRegion;
       };
 
-      Main.Global.uiHomeMenuEnabled = 
+      Main.Global.uiHomeMenuEnabled =
         localState.editorMode != MarqueeSelect
         && localState.editorMode != CommandBar;
 
@@ -1121,7 +1121,7 @@ class Editor {
                 if (renderRowsRedrawn.get(rowId) == null) {
                   renderRowsRedrawn.set(rowId, true);
                   tg.clear();
-                  objRow.removeChildren(); 
+                  objRow.removeChildren();
 
                   if (action.layerId == 'layer_marquee_selection') {
                     tg.setDefaultColor(0xffffff, 0.4);
@@ -1142,7 +1142,7 @@ class Editor {
                       if (hasText) {
                         final tf = new h2d.Text(
                             Fonts.primary(),
-                            objRow); 
+                            objRow);
                         tf.x = colIndex;
                         tf.y = rowIndex;
                         tf.text = objectMeta.text.text;
@@ -1196,7 +1196,7 @@ class Editor {
             default: {}
           }
 
-          if (getConfig().autoSave && 
+          if (getConfig().autoSave &&
               action.type != 'PAINT_CELL_FROM_LOADING_STATE') {
             localState.stateToSave = editorState;
           }
@@ -1289,13 +1289,14 @@ class Editor {
       final buttonDown = Main.Global.worldMouse.buttonDown;
       final menuItemRect = new h2d.col.Bounds();
       final mousePt = new h2d.col.Point(mx, my);
+
       final menuItemHovered  = Lambda.fold(
           objectTypeMenu,
           (menuItem, result: { value: String }) -> {
             menuItemRect.set(
-                menuItem.x - menuItem.width / 2, 
+                menuItem.x - menuItem.width / 2,
                 menuItem.y - menuItem.height / 2,
-                menuItem.height, 
+                menuItem.height,
                 menuItem.width);
 
             if (menuItemRect.contains(mousePt)) {
@@ -1326,7 +1327,7 @@ class Editor {
           return;
         }
 
-        final openCommandBar = Key.isDown(Key.CTRL) 
+        final openCommandBar = Key.isDown(Key.CTRL)
           && Key.isPressed(Key.P);
 
         if (openCommandBar) {
@@ -1366,7 +1367,7 @@ class Editor {
                   final searchValue = input.text.substring(
                       ':so '.length);
 
-                  for (layerId => grid in 
+                  for (layerId => grid in
                       editorState.gridByLayerId) {
                     for (objectId in grid.itemCache.keys()) {
                       final objectType = editorState
@@ -1378,7 +1379,7 @@ class Editor {
                         matches.push({
                           objectId: objectId,
                           layerId: layerId
-                        });  
+                        });
                       }
                     }
                   }
@@ -1443,7 +1444,7 @@ class Editor {
               (gs) -> gs == localState.snapGridSize);
           // cycle to next
           final nextSetting = curSettingIndex + 1;
-          final shouldResetToStart = 
+          final shouldResetToStart =
             nextSetting > (snapOpts.length - 1);
           localState.snapGridSize = snapOpts[
             shouldResetToStart
@@ -1459,7 +1460,7 @@ class Editor {
               (gs) -> gs == localState.gridLineSize);
           // cycle to next
           final nextSetting = curSettingIndex + 1;
-          final shouldResetToStart = 
+          final shouldResetToStart =
             nextSetting > (gridLineOpts.length - 1);
           localState.gridLineSize = gridLineOpts[
             shouldResetToStart
@@ -1781,9 +1782,9 @@ class Editor {
       if (localState.gridLineSize > 0) {
         final gridLineSize = localState.gridLineSize;
         final win = hxd.Window.getInstance();
-        final gridXOffset = (translate.x % gridLineSize) 
+        final gridXOffset = (translate.x % gridLineSize)
           * localState.zoom;
-        final gridYOffset = (translate.y % gridLineSize) 
+        final gridYOffset = (translate.y % gridLineSize)
           * localState.zoom;
         final numCols = Math.ceil(
             win.width / gridLineSize / localState.zoom);
@@ -1949,7 +1950,7 @@ class Editor {
 
           // east edge
           sbs.emitSprite(
-              cx + hcCeil, 
+              cx + hcCeil,
               cy - hcFloor,
               'ui/square_white',
               null,
@@ -1963,7 +1964,7 @@ class Editor {
 
           // south edge
           sbs.emitSprite(
-              cx - hcFloor, 
+              cx - hcFloor,
               cy + hcCeil,
               'ui/square_white',
               null,
@@ -2039,7 +2040,7 @@ class Editor {
           final zoom = localState.zoom;
           final tx = editorState.translate;
           final gridRef = editorState
-            .gridByLayerId.get(match.layerId); 
+            .gridByLayerId.get(match.layerId);
           final bounds = gridRef.itemCache.get(match.objectId);
           final objectType = editorState.itemTypeById.get(match.objectId);
           final objectMeta = getConfig().objectMetaByType.get(objectType);
@@ -2059,7 +2060,7 @@ class Editor {
 
           spriteRef.scaleX = sw;
           spriteRef.scaleY = sh;
-          spriteRef.alpha = 0.1 + 
+          spriteRef.alpha = 0.1 +
             Math.sin(Main.Global.time * 4) * 0.1;
         }
       }

@@ -4,15 +4,15 @@
    * [ ] TODO: Add support for rectangular collisions on entities. This is
          especially important for walls but also useful for npcs that don't
          exactly fit within the shape of a circle.
-   * [ ] TODO: Enemies should go after player when they take a hit and are 
+   * [ ] TODO: Enemies should go after player when they take a hit and are
          in line of sight.
-   * [ ] TODO: Make pets follow player if they are 
+   * [ ] TODO: Make pets follow player if they are
          too far away from player. If they are a screen's distance
          away from player, teleport them nearby to player. This will
          also help prevent them from getting stuck in certain situations.
    * [ ] TODO: Add some basic pathfinding for ai (maybe flowfield?) so they're
          not getting stuck when trying to walk towards player even though
-         they're clearly within vision. This can happen if there is a 
+         they're clearly within vision. This can happen if there is a
          long island in between the player and ai but the ai can clearly walk
          around that island. This will also improve their ability to
          maneuver around corners.
@@ -108,9 +108,9 @@ class Projectile extends Entity {
     var _dx = Math.cos(aToTarget);
     var _dy = Math.sin(aToTarget);
     var magnitude = Math.sqrt(_dx * _dx + _dy * _dy);
-    var dxNormalized = magnitude == 0 
+    var dxNormalized = magnitude == 0
       ? _dx : _dx / magnitude;
-    var dyNormalized = magnitude == 0 
+    var dyNormalized = magnitude == 0
       ? _dy : _dy / magnitude;
     dx = dxNormalized;
     dy = dyNormalized;
@@ -170,19 +170,19 @@ class LineProjectile extends Projectile {
       EntityStats.addEvent(
           ent.stats, damageEvent);
     }
-  } 
+  }
 }
 
 class Bullet extends Projectile {
   static var onHitFrames = [
     'projectile_hit_animation/burst-0',
     'projectile_hit_animation/burst-1',
-    'projectile_hit_animation/burst-2', 
-    'projectile_hit_animation/burst-3', 
-    'projectile_hit_animation/burst-4', 
-    'projectile_hit_animation/burst-5', 
-    'projectile_hit_animation/burst-6', 
-    'projectile_hit_animation/burst-7', 
+    'projectile_hit_animation/burst-2',
+    'projectile_hit_animation/burst-3',
+    'projectile_hit_animation/burst-4',
+    'projectile_hit_animation/burst-5',
+    'projectile_hit_animation/burst-6',
+    'projectile_hit_animation/burst-7',
   ];
   var launchSoundPlayed = false;
   var spriteKey: String;
@@ -191,7 +191,7 @@ class Bullet extends Projectile {
   public var explosionScale = 1.;
 
   public function new(
-    x1, y1, x2, y2, speed, 
+    x1, y1, x2, y2, speed,
     _spriteKey, collisionFilter
   ) {
     super(x1, y1, x2, y2, speed, 8, collisionFilter);
@@ -225,7 +225,7 @@ class Bullet extends Projectile {
       }
     }
 
-    if (isDone() && 
+    if (isDone() &&
         explodeWhenExpired ||
         (!explodeWhenExpired && collidedWith.length > 0)) {
 
@@ -238,7 +238,7 @@ class Bullet extends Projectile {
         z: 10,
         scale: explosionScale,
         isLightSource: true
-      }); 
+      });
     }
   }
 
@@ -255,10 +255,10 @@ class Bullet extends Projectile {
     sprite.scale = 1 - progress;
 
     final lightSource = Main.lightingSystem.sb.emitSprite(
-        x, 
-        y, 
-        spriteKey, 
-        angle, 
+        x,
+        y,
+        spriteKey,
+        angle,
         null);
     lightSource.alpha = 0.8;
     lightSource.scale = 1.7 * (1 - progress);
@@ -272,7 +272,7 @@ class EnergyBomb extends Projectile {
   public function new(
     x1, y1, x2, y2, cFilter
   ) {
-    super(x1, y1, x2, y2, 
+    super(x1, y1, x2, y2,
         0.0, 8, cFilter);
     radius = 4;
     lifeTime = 1.5;
@@ -303,7 +303,7 @@ class EnergyBomb extends Projectile {
     // Trigger cluster explosion
     // Launches an explosion at the point of impact,
     // and several more in random locations near point
-    // of impact 
+    // of impact
     if (isDone()) {
       for (i in 0...5) {
         final explosionStart = Main.Global.time + i * 0.025;
@@ -313,16 +313,16 @@ class EnergyBomb extends Projectile {
           }
 
           final offsetRange = 20;
-          final x2 = x + (i == 0 
-            ? 0 
+          final x2 = x + (i == 0
+            ? 0
             : Utils.irnd(-offsetRange, offsetRange, true));
-          final y2 = y + (i == 0 
-            ? 0 
+          final y2 = y + (i == 0
+            ? 0
             : Utils.irnd(-offsetRange, offsetRange, true));
           final ref = new Bullet(
-              x2, y2, 
               x2, y2,
-              0, 
+              x2, y2,
+              0,
               'ui/placeholder',
               cFilter);
           ref.explodeWhenExpired = true;
@@ -337,7 +337,7 @@ class EnergyBomb extends Projectile {
 
           return false;
         });
-      } 
+      }
     }
   }
 
@@ -352,8 +352,8 @@ class EnergyBomb extends Projectile {
       }
 
       Main.Global.sb.emitSprite(
-          x, y, 
-          'ui/energy_bomb_ring', 
+          x, y,
+          'ui/energy_bomb_ring',
           null, (p) -> {
             final b = p;
             final ringBurstCd = Cooldown.get(cds, 'ringBurst');
@@ -368,17 +368,17 @@ class EnergyBomb extends Projectile {
     final spriteKey = 'ui/energy_bomb_projectile';
     final scale = 1;
     final p = Main.Global.sb.emitSprite(
-        x, y, 
-        spriteKey, 
+        x, y,
+        spriteKey,
         angle);
     final v = 1 + Math.abs(Math.sin(time * 8 - createdAt)) * 10;
     p.g = v;
     p.b = v / 2;
 
     final light = Main.lightingSystem.sb.emitSprite(
-        x, 
-        y, 
-        spriteKey, 
+        x,
+        y,
+        spriteKey,
         angle);
     light.scale = scale * 2;
   }
@@ -396,9 +396,9 @@ class Ai extends Entity {
   static final defaultFindTargetFn = (ent: Entity) -> {
     return Entity.NULL_ENTITY;
   };
-  static final defaultAttackTargetFilterFn: EntityFilter = 
+  static final defaultAttackTargetFilterFn: EntityFilter =
     (ent) -> {
-      return ent.type == 'PLAYER' 
+      return ent.type == 'PLAYER'
         || ent.type == 'OBSTACLE';
     };
 
@@ -414,12 +414,12 @@ class Ai extends Entity {
   public var sightRange = 200;
   public var attackTarget: Entity;
   var findTargetFn: (self: Entity) -> Entity;
-  var attackTargetFilterFn: EntityFilter = 
+  var attackTargetFilterFn: EntityFilter =
     defaultAttackTargetFilterFn;
 
   public function new(
-      props: AiProps, 
-      ?findTargetFn, 
+      props: AiProps,
+      ?findTargetFn,
       ?attackTargetFilterFn) {
     super(props);
     traversableGrid = Main.Global.grid.traversable;
@@ -495,7 +495,7 @@ class Ai extends Entity {
       ];
 
       final timeOffset = Utils.irnd(0, 100) / 100;
- 
+
       idleAnim = {
         frames: idleFrames,
         duration: 1,
@@ -655,7 +655,7 @@ class Ai extends Entity {
       }
 
       if (canSeeTarget && attackTarget == null) {
-        var isInAttackRange = dFromTarget <= 
+        var isInAttackRange = dFromTarget <=
           attackRange + follow.radius;
         if (isInAttackRange) {
           attackTarget = follow;
@@ -688,7 +688,7 @@ class Ai extends Entity {
           facingDir = (dx > 0 ? -1 : 1);
         }
       }
-      
+
       if (debugCenter) {
         var spriteEffect = (p) -> {
           final scale = radius * 2;
@@ -740,7 +740,7 @@ class Ai extends Entity {
               final startTime = Main.Global.time;
               final duration = 0.3;
               core.Anim.AnimEffect.add({
-                x: x + Utils.irnd(2, 2, true), 
+                x: x + Utils.irnd(2, 2, true),
                 y: y + Utils.irnd(2, 2, true),
                 z: 1,
                 frames: [
@@ -749,15 +749,15 @@ class Ai extends Entity {
                 startTime: startTime,
                 duration: duration,
                 effectCallback: (p) -> {
-                  final b: h2d.SpriteBatch.BatchElement 
+                  final b: h2d.SpriteBatch.BatchElement
                     = p;
-                  final aliveTime = Main.Global.time 
+                  final aliveTime = Main.Global.time
                     - startTime;
                   final progress = Easing
                     .easeInCirc(aliveTime / duration);
 
                   final scale = 1.2;
-                  b.scale = scale - (scale * progress); 
+                  b.scale = scale - (scale * progress);
                   b.alpha = 1 - progress;
                   b.g = 0.9 - progress * 0.5;
                   b.b = 0.7 - progress * 0.7;
@@ -766,7 +766,7 @@ class Ai extends Entity {
 
               final duration = 0.2;
               core.Anim.AnimEffect.add({
-                x: x, 
+                x: x,
                 y: y,
                 z: 2,
                 frames: [
@@ -775,15 +775,15 @@ class Ai extends Entity {
                 startTime: startTime,
                 duration: duration,
                 effectCallback: (p) -> {
-                  final b: h2d.SpriteBatch.BatchElement 
+                  final b: h2d.SpriteBatch.BatchElement
                     = p;
-                  final aliveTime = Main.Global.time 
+                  final aliveTime = Main.Global.time
                     - startTime;
                   final progress = Easing
                     .easeInCirc(aliveTime / duration);
 
                   final scale = 0.7;
-                  b.scale = scale - (scale * progress); 
+                  b.scale = scale - (scale * progress);
                   b.alpha = 1 - Math.sqrt(progress);
                 }
               });
@@ -807,7 +807,7 @@ class Ai extends Entity {
             for (entityId in nearbyEntities) {
               final entityRef = Entity.getById(entityId);
 
-              if (entityRef != attackTarget 
+              if (entityRef != attackTarget
                   && attackTargetFilterFn(entityRef)) {
                 EntityStats.addEvent(
                     attackTarget.stats, damageEvent);
@@ -876,7 +876,7 @@ class Ai extends Entity {
             this, 'aiType');
 
         Session.logAndProcessEvent(
-            Main.Global.gameState, 
+            Main.Global.gameState,
             Session.makeEvent('ENEMY_KILLED', {
               enemyType: enemyType
             }));
@@ -908,7 +908,7 @@ class Ai extends Entity {
       }
 
       sprite.scaleX = facingDir * 1;
-      
+
       final shouldHighlight = Main.Global.hoveredEntity.id == id;
       if (shouldHighlight) {
         Entity.renderOutline(
@@ -926,14 +926,14 @@ class Aura {
   static final instancesByFollowId = new Map();
 
   public static function create(
-      followId, 
+      followId,
       filterTypes: Map<String, Bool>) {
     final lifeTime = 0.5;
     final fromCache = instancesByFollowId.get(followId);
     final isCached = fromCache != null;
     final auraRadius = 100;
     final inst = isCached
-      ? fromCache 
+      ? fromCache
       : new Entity({
         x: 0,
         y: 0,
@@ -946,7 +946,7 @@ class Aura {
           'checkNeighbors' => true,
         ]
       });
-    Entity.setComponent(inst, 'lifeTime', lifeTime); 
+    Entity.setComponent(inst, 'lifeTime', lifeTime);
 
     if (isCached) {
       return;
@@ -983,7 +983,7 @@ class Aura {
 
       for (id in inst.neighbors) {
         final entityRef = Entity.getById(id);
-        if (filterTypes.exists(entityRef.type)) {  
+        if (filterTypes.exists(entityRef.type)) {
           final stats = entityRef.stats;
           EntityStats.addEvent(
               stats,
@@ -997,7 +997,7 @@ class Aura {
     Main.Global.hooks.render.push(function auraRender(time) {
       for (id in inst.neighbors) {
         final entityRef = Entity.getById(id);
-        if (filterTypes.exists(entityRef.type)) {  
+        if (filterTypes.exists(entityRef.type)) {
           final x = entityRef.x;
           final y = entityRef.y;
           final colorAdjust = Math.sin(Main.Global.time);
@@ -1163,11 +1163,11 @@ class Player extends Entity {
         final accel = distFromPos < speedDistThreshold
           ? -ref.stats.moveSpeed * 0.2
           : pSpeed * 0.1;
-        final hasPlayerChangedPosition = 
+        final hasPlayerChangedPosition =
           prevPlayerX != this.x
             || prevPlayerY != py;
 
-        if (hasPlayerChangedPosition 
+        if (hasPlayerChangedPosition
             || Cooldown.has(this.cds, 'recoveringFromAbility')) {
           state.mode = MODE_FOLLOW;
           state.idleDuration = 0;
@@ -1192,9 +1192,9 @@ class Player extends Entity {
 
         if (state.mode == MODE_WANDER) {
           state.idleDuration += dt;
-        } 
+        }
 
-        if (state.mode == MODE_WANDER 
+        if (state.mode == MODE_WANDER
             && state.idleDuration > 1
             && !Cooldown.has(cds, 'petOrbWander')) {
           Cooldown.set(cds, 'petOrbWander', Utils.irnd(2, 3));
@@ -1263,9 +1263,9 @@ class Player extends Entity {
     }
 
     var magnitude = Math.sqrt(dx * dx + dy * dy);
-    var dxNormalized = magnitude == 0 
+    var dxNormalized = magnitude == 0
       ? dx : (dx / magnitude);
-    var dyNormalized = magnitude == 0 
+    var dyNormalized = magnitude == 0
       ? dy : (dy / magnitude);
 
     dx = dxNormalized;
@@ -1313,8 +1313,8 @@ class Player extends Entity {
       if (isColliding) {
         final conflict = (min - d);
 
-        x += Math.cos(a) * conflict; 
-        y += Math.sin(a) * conflict; 
+        x += Math.cos(a) * conflict;
+        y += Math.sin(a) * conflict;
       }
 
       if (entity.type == 'OBSTACLE') {
@@ -1358,7 +1358,7 @@ class Player extends Entity {
     if (stats.forceField.damageTaken > 0) {
       Cooldown.set(
           this.cds,
-          'forceFieldAbsorbedDamage', 
+          'forceFieldAbsorbedDamage',
           0.15);
     }
 
@@ -1382,15 +1382,15 @@ class Player extends Entity {
   }
 
   public function useAbility() {
-    final preventAbilityUse = 
-         Cooldown.has(cds, 'recoveringFromAbility') 
-      || Cooldown.has(cds, 'playerCanPickupItem') 
+    final preventAbilityUse =
+         Cooldown.has(cds, 'recoveringFromAbility')
+      || Cooldown.has(cds, 'playerCanPickupItem')
       || Main.Global.hasUiItemsEnabled();
 
     if (preventAbilityUse) {
       return;
     }
-    
+
     final abilitySlotIndexByMouseBtn = [
       -1 => -1,
       0 => 0,
@@ -1433,10 +1433,10 @@ class Player extends Entity {
       .getItemById(lootId);
     final lootDef = Loot.getDef(lootInst.type);
     var energyCost = lootDef.energyCost;
-    var hasEnoughEnergy = energyCost 
+    var hasEnoughEnergy = energyCost
       <= Entity.getById('PLAYER').stats.currentEnergy;
     final cooldownKey = 'ability__${lootInst.type}';
-    var isUnavailable = Cooldown.has(cds, cooldownKey) 
+    var isUnavailable = Cooldown.has(cds, cooldownKey)
       || !hasEnoughEnergy;
 
     if (isUnavailable) {
@@ -1448,7 +1448,7 @@ class Player extends Entity {
     Cooldown.set(cds, 'recoveringFromAbility', lootDef.actionSpeed);
     Cooldown.set(cds, cooldownKey, lootDef.cooldown);
     EntityStats.addEvent(
-        Entity.getById('PLAYER').stats, 
+        Entity.getById('PLAYER').stats,
         { type: 'ENERGY_SPEND',
           value: energyCost });
 
@@ -1462,7 +1462,7 @@ class Player extends Entity {
             250.0,
             'ui/bullet_player_basic',
             (ent) -> (
-              ent.type == 'ENEMY' || 
+              ent.type == 'ENEMY' ||
               ent.type == 'OBSTACLE' ||
               ent.type == 'BREAKABLE_PROP'));
         ref.lifeTime = 1.2;
@@ -1471,7 +1471,7 @@ class Player extends Entity {
 
       case 'basicBlasterEvolved': {
         final collisionFilter = (ent) -> (
-            ent.type == 'ENEMY' || 
+            ent.type == 'ENEMY' ||
             ent.type == 'OBSTACLE' ||
             ent.type == 'BREAKABLE_PROP');
         for (_angle in [
@@ -1488,8 +1488,8 @@ class Player extends Entity {
               'ui/bullet_player_basic',
               collisionFilter);
           final isSideShot = _angle != angle;
-          ref.lifeTime = isSideShot 
-            ? 0.7 
+          ref.lifeTime = isSideShot
+            ? 0.7
             : 1.;
           ref.source = this;
         }
@@ -1501,10 +1501,10 @@ class Player extends Entity {
           .run(this, function collisionFilter(id: Entity.EntityId) {
             final type = Entity.getById(id).type;
             return switch(type) {
-              case 
-                  'ENEMY' 
-                | 'OBSTACLE' 
-                | 'BREAKABLE_PROP': 
+              case
+                  'ENEMY'
+                | 'OBSTACLE'
+                | 'BREAKABLE_PROP':
                 true;
 
               default: false;
@@ -1517,7 +1517,7 @@ class Player extends Entity {
             this.x + dx * launchOffset,
             this.y + (dy * launchOffset) + yCenterOffset);
         final targetRef = Entity.getById(targetId);
-        final endPt = Entity.isNullId(targetId) 
+        final endPt = Entity.isNullId(targetId)
           ? new h2d.col.Point(
               startPt.x + dx * Ability.ChannelBeam.maxLength,
               startPt.y + dy * Ability.ChannelBeam.maxLength)
@@ -1555,10 +1555,10 @@ class Player extends Entity {
           final player = this;
           final queryInterval = 30;
           final tickOffset = Utils.irnd(0, queryInterval);
-          var cachedQuery: Map<Grid.GridKey, Grid.GridKey> 
+          var cachedQuery: Map<Grid.GridKey, Grid.GridKey>
             = null;
           final compareEntityByDistance = (
-              entityId, 
+              entityId,
               data: {
                 ent: Entity,
                 distance: Float,
@@ -1601,8 +1601,8 @@ class Player extends Entity {
                   botRef: botRef
                 }).ent;
 
-            return nearestEnemy != null 
-              ? nearestEnemy 
+            return nearestEnemy != null
+              ? nearestEnemy
               : player;
           }
 
@@ -1621,7 +1621,7 @@ class Player extends Entity {
 
       case 'energyBomb': {
         final collisionFilter = (ent) -> (
-            ent.type == 'ENEMY' || 
+            ent.type == 'ENEMY' ||
             ent.type == 'OBSTACLE' ||
             ent.type == 'BREAKABLE_PROP');
         var b = new EnergyBomb(
@@ -1679,7 +1679,7 @@ class Player extends Entity {
         final trailDuration = 0.4;
 
         function renderTrail(
-            percentDist: Float, 
+            percentDist: Float,
             initialAlpha: Float,
             spriteKey) {
           core.Anim.AnimEffect.add({
@@ -1691,7 +1691,7 @@ class Player extends Entity {
               spriteKey
             ],
             effectCallback: (p) -> {
-              final progress = (Main.Global.time - startTime) 
+              final progress = (Main.Global.time - startTime)
                 / trailDuration;
               final elem = p;
               elem.alpha = initialAlpha * (1 - progress);
@@ -1714,7 +1714,7 @@ class Player extends Entity {
             () -> renderTrail(0.8, 1., 'player_animation/run-4')
         ];
         for (trailIndex in 0...trailFns.length) {
-          final startedAt = Main.Global.time; 
+          final startedAt = Main.Global.time;
 
           Main.Global.hooks.update.push((dt) -> {
             final timeElapsed = Main.Global.time - startedAt;
@@ -1726,7 +1726,7 @@ class Player extends Entity {
             }
 
             return true;
-          }); 
+          });
         }
 
         // burst hit offset position
@@ -1751,9 +1751,9 @@ class Player extends Entity {
               oldPos.x,
               oldPos.y);
           Entity.setComponent(this, 'alpha', 0.2);
-          
+
           final hasCollisions = Entity.getCollisions(
-              this.id, 
+              this.id,
               this.neighbors,
               (ref) -> {
                 if (ref.type == 'FRIENDLY_AI') {
@@ -1769,7 +1769,7 @@ class Player extends Entity {
                 return isWithinPath;
               }).length > 0;
 
-          state.isDashComplete = hasCollisions 
+          state.isDashComplete = hasCollisions
             || distanceTraveled >= maxDist
             || progress >= 1;
 
@@ -1827,7 +1827,7 @@ class Player extends Entity {
         Main.Global.hooks.render.push((time) -> {
           final duration = 0.35;
           final aliveTime = Main.Global.time - startedAt;
-          final progress = (aliveTime) 
+          final progress = (aliveTime)
             / duration;
           final endX = this.x;
           final endY = this.y;
@@ -1839,14 +1839,14 @@ class Player extends Entity {
           final posV = Easing.easeInCirc(progress);
           final facingX = dx > 0 ? 1 : -1;
           final spriteRef = Main.Global.sb.emitSprite(
-              endX + xOffset * facingX + dx * randOffset * posV, 
+              endX + xOffset * facingX + dx * randOffset * posV,
               endY + yOffset + dy * randOffset * posV,
               'ui/melee_burst');
           spriteRef.sortOrder = y + 10;
 
           if (aliveTime < 0.2) {
             final ref = Main.Global.sb.emitSprite(
-              endX + xOffset * facingX + dx * randOffset * posV * 0.3, 
+              endX + xOffset * facingX + dx * randOffset * posV * 0.3,
               endY + yOffset + dy * randOffset * posV * 0.3,
               'ui/melee_burst');
 
@@ -1874,10 +1874,10 @@ class Player extends Entity {
           final startTime = Main.Global.time;
           final numParticles = 10;
 
-          for (i in 
+          for (i in
               -Std.int(numParticles / 2)...Std.int(numParticles / 2)) {
             final spreadAngle = Math.PI / 6;
-            final angle2 = angle + 
+            final angle2 = angle +
               i * spreadAngle / numParticles
               + (Utils.irnd(-4, 4) * Math.PI / 30);
             final speed = 10 + Utils.irnd(-10, 10);
@@ -1889,12 +1889,12 @@ class Player extends Entity {
               y: y1,
               startTime: startTime,
               frames: [
-                'ui/square_glow', 
+                'ui/square_glow',
               ],
               duration: duration,
               isLightSource: true,
               effectCallback: (p) -> {
-                final progress = (Main.Global.time - startTime) 
+                final progress = (Main.Global.time - startTime)
                   / duration;
                 final elem = p;
                 final dx = Math.cos(angle2);
@@ -1924,13 +1924,13 @@ class Player extends Entity {
             y: y1,
             startTime: startTime,
             frames: [
-              'ui/flame_torch', 
+              'ui/flame_torch',
             ],
             duration: torchDuration,
             isLightSource: true,
             lightScale: 1.2,
             effectCallback: (p) -> {
-              final progress = (Main.Global.time - startTime) 
+              final progress = (Main.Global.time - startTime)
                 / torchDuration;
               final v1 = Easing.easeOutQuint(progress);
               final v2 = Easing.easeInQuint(progress);
@@ -1950,12 +1950,12 @@ class Player extends Entity {
             y: y1,
             startTime: startTime,
             frames: [
-              'ui/circle_gradient', 
+              'ui/circle_gradient',
             ],
             duration: torchDuration,
             isLightSource: true,
             effectCallback: (p) -> {
-              final progress = (Main.Global.time - startTime) 
+              final progress = (Main.Global.time - startTime)
                 / torchDuration;
               final v1 = Easing.easeInQuint(progress);
               final elem = p;
@@ -1983,7 +1983,7 @@ class Player extends Entity {
 
         final collisionFilter = (e: Entity) -> {
           return switch (e.type) {
-            case 
+            case
                 'ENEMY'
               | 'BREAKABLE_PROP': {
                 true;
@@ -2043,7 +2043,7 @@ class Player extends Entity {
 
     Main.lightingSystem.emitSpotLight(x, y, stats.lightRadius);
 
-    final obscuredSilhouetteSprite = 
+    final obscuredSilhouetteSprite =
       Main.Global.oeSpriteBatch.emitSprite(
           x, y,
           currentSprite,
@@ -2088,13 +2088,13 @@ class Player extends Entity {
         final progress = ((time + tOffset) % animDuration) / animDuration;
         final yOffset = spriteData.pivot.y * spriteData.frame.h * (1 - progress);
         final orbSpriteY = orbSpriteRef.y
-          - orbSpriteData.sourceSize.h 
+          - orbSpriteData.sourceSize.h
           * orbSpriteData.pivot.y
           + (orbSpriteData.sourceSize.h / 2);
         final orbSpriteX = orbSpriteRef.x;
         final y2 = y + (1 - spriteData.pivot.y);
-        final dy = -spriteData.pivot.y 
-          * spriteData.sourceSize.h 
+        final dy = -spriteData.pivot.y
+          * spriteData.sourceSize.h
           * progress;
         final lineLength = Utils.distance(
             orbSpriteX,
@@ -2124,7 +2124,7 @@ class Player extends Entity {
         final spriteRef = sb.emitSprite(
             x,
             y2,
-            'ui/placeholder'); 
+            'ui/placeholder');
         final playerTile = sb.batchManager.spriteSheet
           .sub(spriteData.frame.x
               ,spriteData.frame.y + yOffset
@@ -2158,9 +2158,9 @@ class Player extends Entity {
     // render abilities
     for (e in abilityEvents) {
       switch(e) {
-        case { 
-          type: 'KAMEHAMEHA', 
-          startPoint: startPt, 
+        case {
+          type: 'KAMEHAMEHA',
+          startPoint: startPt,
           endPoint: endPt,
           targetId: tid
         }: {
@@ -2190,7 +2190,7 @@ class Player extends Entity {
 
       final blendProgress = Easing.easeInExpo(
           Cooldown.get(
-            this.cds, 
+            this.cds,
             'forceFieldAbsorbedDamage') / 0.15);
       ffSprite.r = 1 + blendProgress * 1.;
       ffSprite.g = 1 + blendProgress * 1.;
@@ -2280,7 +2280,7 @@ class EnemySpawner extends Entity {
     if (isDone) {
       Entity.destroy(this.id);
       return;
-    } 
+    }
 
     if (Cooldown.has(cds, 'recentlySpawned')) {
       return;
@@ -2319,7 +2319,7 @@ class Game extends h2d.Object {
 
   public function newLevel(s2d: h2d.Scene) {
     final processMap = (
-        fileName, 
+        fileName,
         mapData: Editor.EditorState) -> {
 
       final editorConfig = Editor.getConfig(fileName);
@@ -2339,7 +2339,7 @@ class Game extends h2d.Object {
           mapData.layerOrderById,
           (layerId) -> {
             return !Lambda.exists(
-                layersToIgnore, 
+                layersToIgnore,
                 (l) -> l == layerId);
           });
       final tileGridByLayerId = {
@@ -2359,14 +2359,14 @@ class Game extends h2d.Object {
           tileGrid, x: Int, y: Int, itemId) -> {
         Grid.setItemRect(
             tileGrid,
-            x, 
+            x,
             y,
             tileGrid.cellSize,
             tileGrid.cellSize,
             itemId);
         truePositionByItemId.set(
-            itemId, 
-            { x: x, 
+            itemId,
+            { x: x,
               y: y });
       }
 
@@ -2376,8 +2376,8 @@ class Game extends h2d.Object {
         final miniMapSize = 200;
         final root = new h2d.Object(Main.Global.scene.uiRoot);
         final mask = new h2d.Mask(
-            miniMapSize, 
-            miniMapSize, 
+            miniMapSize,
+            miniMapSize,
             root);
         final bg = new h2d.Graphics(root);
         bg.beginFill(0x000000, 0.1);
@@ -2388,12 +2388,12 @@ class Game extends h2d.Object {
         bg.beginFill(0xfffffff, 0);
         bg.lineStyle(4, 0xffffff);
         bg.drawRect(0, 0, miniMapSize, miniMapSize);
-        
+
 
         final g = new h2d.Graphics(mask);
         g.alpha = 0.6;
-        root.x = Main.nativePixelResolution.x 
-          - miniMapMargin 
+        root.x = Main.nativePixelResolution.x
+          - miniMapMargin
           - miniMapSize;
         root.y = miniMapMargin;
 
@@ -2401,7 +2401,7 @@ class Game extends h2d.Object {
           root.visible = Main.Global.uiState.hud.enabled
             && !Main.Global.uiState.inventory.enabled;
 
-          final camera = Main.Global.mainCamera; 
+          final camera = Main.Global.mainCamera;
           g.x = -camera.x * miniMapScale + miniMapSize / 2;
           g.y = -camera.y * miniMapScale + miniMapSize / 2;
 
@@ -2418,7 +2418,7 @@ class Game extends h2d.Object {
       // process each map object
       for (layerId in orderedLayers) {
         final grid = mapData.gridByLayerId.get(layerId);
-        final tileGrid = tileGridByLayerId.get(layerId); 
+        final tileGrid = tileGridByLayerId.get(layerId);
 
         for (itemId => bounds in grid.itemCache) {
           final objectType = mapData.itemTypeById.get(itemId);
@@ -2436,7 +2436,7 @@ class Game extends h2d.Object {
                   5,
                   Main.Global.rootScene,
                   spawnerFindTargetFn);
-            } 
+            }
 
             case 'intro_level_boss': {
               final e = new Ai({
@@ -2487,7 +2487,7 @@ class Game extends h2d.Object {
               final startedAt = Main.Global.time + cameraPanDuration * 0.3;
 
               function panCameraToPlayer(dt) {
-                final progress = (Main.Global.time - cameraStartTime) 
+                final progress = (Main.Global.time - cameraStartTime)
                   / cameraPanDuration;
                 final v = Easing.easeOutExpo(progress);
                 final initialX = x - 30;
@@ -2519,7 +2519,7 @@ class Game extends h2d.Object {
                   final spriteRef = sb.emitSprite(
                       x,
                       y + (1 - spriteData.pivot.y) * yOffset,
-                      'ui/placeholder'); 
+                      'ui/placeholder');
                   final playerTile = sb.batchManager.spriteSheet
                     .sub(spriteData.frame.x
                         ,spriteData.frame.y + yOffset
@@ -2540,7 +2540,7 @@ class Game extends h2d.Object {
                   final spriteRef = sb.emitSprite(
                       x,
                       y + (1 - spriteData.pivot.y) * yOffset,
-                      'ui/placeholder'); 
+                      'ui/placeholder');
                   final playerTile = sb.batchManager.spriteSheet
                     .sub(spriteData.frame.x
                         ,spriteData.frame.y + yOffset
@@ -2558,7 +2558,7 @@ class Game extends h2d.Object {
                 });
 
                 Main.Global.hooks.render.push(function makeSpotlight(_) {
-                  final progress = (Main.Global.time - startedAt) 
+                  final progress = (Main.Global.time - startedAt)
                     / animDuration;
                   Main.lightingSystem.emitSpotLight(x, y, 3);
 
@@ -2567,7 +2567,7 @@ class Game extends h2d.Object {
               }
 
               final makePlayerAfterAnimation = (dt: Float) -> {
-                final progress = (Main.Global.time - startedAt) 
+                final progress = (Main.Global.time - startedAt)
                   / animDuration;
 
                 if (progress > 1) {
@@ -2576,7 +2576,7 @@ class Game extends h2d.Object {
                       y,
                       Main.Global.rootScene);
                   Camera.follow(
-                      Main.Global.mainCamera, 
+                      Main.Global.mainCamera,
                       playerRef);
 
                   return false;
@@ -2627,7 +2627,7 @@ class Game extends h2d.Object {
                   Main.Global.sb.emitSprite(
                       ref.x,
                       ref.y,
-                      'ui/teleporter_pillar_left'); 
+                      'ui/teleporter_pillar_left');
                 };
 
                 final refRight = new Entity({
@@ -2643,7 +2643,7 @@ class Game extends h2d.Object {
                   Main.Global.sb.emitSprite(
                       ref.x,
                       ref.y,
-                      'ui/teleporter_pillar_right'); 
+                      'ui/teleporter_pillar_right');
                 };
               }
             }
@@ -2684,7 +2684,7 @@ class Game extends h2d.Object {
                         ref.y + dy * progress,
                         'ui/prop_1_1_shard_1',
                         (time - startedAt) * 14);
-                    spriteRef.alpha = 
+                    spriteRef.alpha =
                       1 - Easing.easeInQuint(progress);
                   }
 
@@ -2696,7 +2696,7 @@ class Game extends h2d.Object {
                         ref.y + dy * progress,
                         'ui/prop_1_1_shard_2',
                         (time - startedAt) * 14);
-                    spriteRef.alpha = 
+                    spriteRef.alpha =
                       1 - Easing.easeInQuint(progress);
                   }
 
@@ -2708,7 +2708,7 @@ class Game extends h2d.Object {
                         ref.y + dy * progress,
                         'ui/prop_1_1_shard_3',
                         (time - startedAt) * 14);
-                    spriteRef.alpha = 
+                    spriteRef.alpha =
                       1 - Easing.easeInQuint(progress);
                   }
 
@@ -2739,9 +2739,9 @@ class Game extends h2d.Object {
               });
               wallRef.forceMultiplier = 3.0;
               addToTileGrid(tileGrid, x, y, itemId);
-              final gridX = Std.int((x - (tileGrid.cellSize / 2)) 
+              final gridX = Std.int((x - (tileGrid.cellSize / 2))
                   / tileGrid.cellSize);
-              final gridY = Std.int((y - (tileGrid.cellSize / 2)) 
+              final gridY = Std.int((y - (tileGrid.cellSize / 2))
                   / tileGrid.cellSize);
               final hasTile = (cellData: Grid.GridItems) -> {
                 if (cellData == null) {
@@ -2759,13 +2759,13 @@ class Game extends h2d.Object {
               };
               wallRef.renderFn = (ref, time) -> {
                 final shouldAutoTile = objectMeta.isAutoTile;
-                // TODO: we should be able to cache this after 
-                // it runs the first  time since we're not 
+                // TODO: we should be able to cache this after
+                // it runs the first  time since we're not
                 // expecting the map layout to dynamically change
                 final spriteKey = {
                   if (shouldAutoTile) {
                     final tileValue = AutoTile.getValue(
-                        tileGrid, gridX, gridY, 
+                        tileGrid, gridX, gridY,
                         hasTile, 1, objectMeta.autoTileCorner);
 
                     final sprite = 'ui/${objectType}_${tileValue}';
@@ -2805,8 +2805,8 @@ class Game extends h2d.Object {
               });
               Main.Global.rootScene.addChild(ref);
               final interact = new h2d.Interactive(
-                  spriteData.sourceSize.w, 
-                  spriteData.sourceSize.h, 
+                  spriteData.sourceSize.w,
+                  spriteData.sourceSize.h,
                   ref);
               interact.x = -spriteData.sourceSize.w * spriteData.pivot.x;
               interact.y = -spriteData.sourceSize.h * spriteData.pivot.y;
@@ -2819,7 +2819,7 @@ class Game extends h2d.Object {
                   return;
                 }
 
-                Entity.destroy(ref.id); 
+                Entity.destroy(ref.id);
                 final numItems = Utils.irnd(2, 4);
                 final lootPool = [
                   for (type => def in Loot.lootDefinitions) {
@@ -2831,7 +2831,7 @@ class Game extends h2d.Object {
                 for (_ in 0...numItems) {
                   final lootInstance = Loot.createInstance(lootPool);
                   Game.createLootEntity(
-                      ref.x + Utils.irnd(5, 10, true), 
+                      ref.x + Utils.irnd(5, 10, true),
                       ref.y + Utils.irnd(5, 10, true),
                       lootInstance);
                 }
@@ -2846,7 +2846,7 @@ class Game extends h2d.Object {
 
                 return interact.parent != null;
               });
-              
+
               final timeOffset = Utils.rnd(0, 100);
 
               ref.renderFn = (ref, t) -> {
@@ -2855,8 +2855,8 @@ class Game extends h2d.Object {
                 final sprite = Main.Global.sb.emitSprite(
                     ref.x, ref.y, objectMeta.spriteKey);
                 final spotLight = Main.lightingSystem.emitSpotLight(
-                    ref.x, 
-                    ref.y 
+                    ref.x,
+                    ref.y
                     + spriteData.pivot.y * spriteData.sourceSize.h
                     - 5,
                     0);
@@ -2905,7 +2905,7 @@ class Game extends h2d.Object {
                   Main.Global.sb.batchManager.spriteSheetData,
                   objectMeta.spriteKey);
               final npcRef = new Entity({
-                x: x, 
+                x: x,
                 y: y,
                 type: 'NPC',
                 stats: EntityStats.create({
@@ -2924,7 +2924,7 @@ class Game extends h2d.Object {
               final i = new h2d.Interactive(
                   spriteData.sourceSize.w,
                   spriteData.sourceSize.h,
-                  npcRef); 
+                  npcRef);
               i.x = -spriteData.pivot.x * spriteData.sourceSize.w;
               i.y = dialogOffsetY;
               i.onClick = (e) -> {
@@ -2942,7 +2942,7 @@ class Game extends h2d.Object {
                         final choices = getDialogChoices();
                         return {
                           characterName: 'Haku, bounty provider',
-                          text: choices.length > 0 
+                          text: choices.length > 0
                             ? 'Choose a bounty quest:'
                             : 'No more quests available.',
                           choices: choices
@@ -2972,35 +2972,35 @@ class Game extends h2d.Object {
                 final sprite = Main.Global.sb.emitSprite(
                     x, y, objectMeta.spriteKey);
                 final choices = getDialogChoices();
-                final hasNewInfo = choices.length > 0 
+                final hasNewInfo = choices.length > 0
                   && !Main.Global.uiState.dialogBox.enabled;
 
                 if (hasNewInfo) {
                   final s = Main.Global.sb.emitSprite(
-                      x, 
-                      y + dialogOffsetY, 
+                      x,
+                      y + dialogOffsetY,
                       'ui/exclamation_bubble');
                   s.g = 0.8;
                   s.b = 0.2;
                   final light = Main.lightingSystem.sb.emitSprite(
-                      x, 
-                      y + dialogOffsetY, 
+                      x,
+                      y + dialogOffsetY,
                       'ui/exclamation_bubble');
                   light.r = 255.;
                   light.g = 255.;
                   light.b = 255.;
                   light.scale = 1.2;
                   for (sprite in [s, light]) {
-                    sprite.scaleX *= 0.95 + 
+                    sprite.scaleX *= 0.95 +
                       0.05 * Math.cos(Main.Global.time * 2);
-                    sprite.scaleY *= 0.95 
+                    sprite.scaleY *= 0.95
                       + 0.05 * Math.sin(Main.Global.time * 2);
                   }
                 }
 
                 if (state.hovered) {
                   Entity.renderOutline(
-                      sprite.sortOrder, 
+                      sprite.sortOrder,
                       objectMeta.spriteKey,
                       npcRef);
                 }
@@ -3010,7 +3010,7 @@ class Game extends h2d.Object {
               };
             }
 
-            // everything else is treated as a tile 
+            // everything else is treated as a tile
             default: {
               final gridRow = y;
 
@@ -3018,20 +3018,20 @@ class Game extends h2d.Object {
               if (objectMeta.type == 'traversableSpace') {
                 Grid.setItemRect(
                     traversableGrid,
-                    x, 
-                    y, 
+                    x,
+                    y,
                     tileGrid.cellSize,
                     tileGrid.cellSize,
                     itemId);
-              } 
+              }
             }
           }
         }
       }
 
       final miniMapPositionsDrawn = [];
-      final hasTile = (cellData) -> 
-        cellData != null; 
+      final hasTile = (cellData) ->
+        cellData != null;
 
       final refreshMap = (dt) -> {
         final idsRendered = new Map();
@@ -3039,8 +3039,8 @@ class Game extends h2d.Object {
         for (layerId in orderedLayers) {
           final tileGrid = tileGridByLayerId.get(layerId);
           final renderTile = (
-              gridX: Int, 
-              gridY: Int, 
+              gridX: Int,
+              gridY: Int,
               cellData: Grid.GridItems) -> {
             if (cellData != null) {
               for (itemId in cellData) {
@@ -3049,7 +3049,7 @@ class Game extends h2d.Object {
                   .objectMetaByType
                   .get(objectType);
 
-                if (!idsRendered.exists(itemId) 
+                if (!idsRendered.exists(itemId)
                     && objectMeta.type != 'obstacleWall') {
                   idsRendered.set(itemId, true);
 
@@ -3057,7 +3057,7 @@ class Game extends h2d.Object {
                   final spriteKey = {
                     if (shouldAutoTile) {
                       final tileValue = AutoTile.getValue(
-                          tileGrid, gridX, gridY, 
+                          tileGrid, gridX, gridY,
                           hasTile, 1, objectMeta.autoTileCorner);
 
                       final sprite = 'ui/${objectType}_${tileValue}';
@@ -3095,9 +3095,9 @@ class Game extends h2d.Object {
                       case 'traversableSpace': {
                         miniMap.beginFill(0xfffffff);
                         miniMap.drawRect(
-                            pos.x * miniMapScale, 
-                            y * miniMapScale, 
-                            cellSize * miniMapScale, 
+                            pos.x * miniMapScale,
+                            y * miniMapScale,
+                            cellSize * miniMapScale,
                             cellSize * miniMapScale);
                       }
                     }
@@ -3107,16 +3107,16 @@ class Game extends h2d.Object {
             }
           };
           final mc = Main.Global.mainCamera;
-          // Pretty large overdraw right now because some 
+          // Pretty large overdraw right now because some
           // objects that are really large can get clipped too
-          // early (ie: teleporter). We can fix this by splitting 
+          // early (ie: teleporter). We can fix this by splitting
           // large objects into multiple sprites or rendering
           // those objects separately
           final threshold = 200;
 
           Grid.eachCellInRect(
               tileGrid,
-              mc.x, 
+              mc.x,
               mc.y,
               mc.w + threshold,
               mc.h + threshold,
@@ -3155,7 +3155,7 @@ class Game extends h2d.Object {
           }
 
           return;
-        }, 
+        },
         (err) -> {
           trace('[load level failure]', err.stack);
         });
@@ -3166,7 +3166,7 @@ class Game extends h2d.Object {
     final cellSize = mapRef.cellSize;
     final isClearPath = Grid.isEmptyCell(
         Main.Global.grid.obstacle, x, y);
-    final isInSightRange = i * cellSize <= 
+    final isInSightRange = i * cellSize <=
       entity.sightRange;
 
     if (!isClearPath || !isInSightRange) {
@@ -3182,18 +3182,18 @@ class Game extends h2d.Object {
     final startX = x;
     final startY = y;
     final lootRef = new Entity({
-      x: startX, 
+      x: startX,
       y: startY,
       radius: 11,
-    }); 
+    });
     final endYOffset = Utils.irnd(-5, 5, true);
     final endXOffset = Utils.irnd(-10, 10, true);
     final lootDropAnimation = (dt: Float) -> {
       final duration = 0.3;
       final progress = Math.min(
-          1, 
-          (Main.Global.time - 
-           lootRef.createdAt) / duration);   
+          1,
+          (Main.Global.time -
+           lootRef.createdAt) / duration);
       final z = Math.sin(progress * Math.PI) * 10;
       lootRef.x = startX + endXOffset * progress;
       lootRef.y = startY + endYOffset * progress - z;
@@ -3211,7 +3211,7 @@ class Game extends h2d.Object {
     // instance-specific data such as the rolled rng values
     // as well as the loot type so we can look it up in the
     // loot definition table
-    Entity.setComponent(lootRef, 'lootInstance', 
+    Entity.setComponent(lootRef, 'lootInstance',
         lootInstance);
     final radius1 = Utils.rnd(0.5, 1);
     final radius2 = Utils.rnd(0.5, 2);
@@ -3339,11 +3339,11 @@ class Game extends h2d.Object {
     final g = new h2d.Graphics(s2d);
     final scale = Global.resolutionScale;
     final bgBaseColor = 0x1f1f1f;
-    
+
     g.beginFill(bgBaseColor);
     g.drawRect(
-        0, 0, 
-        s2d.width * scale, 
+        0, 0,
+        s2d.width * scale,
         s2d.height * scale);
 
     final p = new hxd.Perlin();
@@ -3362,8 +3362,8 @@ class Game extends h2d.Object {
           final color = 0xffffff;
           g.beginFill(color, Math.abs(v) * 1.5);
           g.drawCircle(
-              x * divisor + Utils.irnd(-10, 10, true), 
-              y * divisor + Utils.irnd(-10, 10, true), 
+              x * divisor + Utils.irnd(-10, 10, true),
+              y * divisor + Utils.irnd(-10, 10, true),
               Utils.rollValues(starSizes) / 4,
               6);
         }
@@ -3391,8 +3391,8 @@ class Game extends h2d.Object {
           final color = v > 0 ? colorA : colorB;
           g.beginFill(color, Math.abs(v) / 4);
           g.drawCircle(
-              x * divisor, 
-              y * divisor, 
+              x * divisor,
+              y * divisor,
               10,
               4);
         }
@@ -3403,7 +3403,7 @@ class Game extends h2d.Object {
     makeNebulaClouds();
 
     return g;
-  } 
+  }
 
   public function new(
     s2d: h2d.Scene
@@ -3469,12 +3469,12 @@ class Game extends h2d.Object {
       // cleanup entity
       if (a.isDone()) {
         final numItemsToDrop = switch(a.type) {
-          case 'BREAKABLE_PROP': 
+          case 'BREAKABLE_PROP':
             Utils.rollValues([
                 0, 0, 0, 0, 0, 1
             ]);
-            case 'ENEMY' 
-              if (Entity.getComponent(a, 'aiType') != 'npcTestDummy'): 
+            case 'ENEMY'
+              if (Entity.getComponent(a, 'aiType') != 'npcTestDummy'):
                 Utils.rollValues([
                     0, 0, 0, 0, 1, 1, 2
                 ]);
@@ -3492,8 +3492,8 @@ class Game extends h2d.Object {
             ];
             final lootInstance = Loot.createInstance(lootPool);
             Game.createLootEntity(
-                a.x + Utils.irnd(5, 10, true), 
-                a.y + Utils.irnd(5, 10, true), 
+                a.x + Utils.irnd(5, 10, true),
+                a.y + Utils.irnd(5, 10, true),
                 lootInstance);
           }
         }
@@ -3514,7 +3514,7 @@ class Game extends h2d.Object {
 
       final isDynamic = Entity.getComponent(a, 'isDynamic', false) ||
         switch(a.type) {
-          case 
+          case
               'ENEMY'
             | 'FRIENDLY_AI'
             | 'PROJECTILE'
@@ -3527,12 +3527,12 @@ class Game extends h2d.Object {
 
       final isMoving = a.dx != 0 || a.dy != 0;
       final hasTakenDamage = a.stats.damageTaken > 0;
-      final isCheckTick = (Main.Global.tickCount + groupIndex) % 
+      final isCheckTick = (Main.Global.tickCount + groupIndex) %
         Entity.getComponent(a, 'neighborCheckInterval') == 0;
       final shouldFindNeighbors = {
         final isRecentlySummoned =  Cooldown.has(
             a.cds, 'recentlySummoned');
-        final isActive = isMoving 
+        final isActive = isMoving
           || hasTakenDamage
           || Entity.getComponent(a, 'checkNeighbors', false);
 
@@ -3571,7 +3571,7 @@ class Game extends h2d.Object {
       if (a.type == 'ENEMY' && enemy.follow != null) {
         final follow = enemy.follow;
         final dFromTarget = Utils.distance(a.x, a.y, follow.x, follow.y);
-        final shouldCheckLineOfSight = dFromTarget <= 
+        final shouldCheckLineOfSight = dFromTarget <=
           enemy.sightRange;
 
         if (shouldCheckLineOfSight) {
@@ -3582,7 +3582,7 @@ class Game extends h2d.Object {
           final targetGridY = Math.floor(follow.y / cellSize);
 
           Utils.bresenhamLine(
-              startGridX, startGridY, targetGridX, 
+              startGridX, startGridY, targetGridX,
               targetGridY, lineOfSight, enemy);
         } else {
           enemy.canSeeTarget = false;
@@ -3591,9 +3591,9 @@ class Game extends h2d.Object {
 
       // update collision worlds
       switch (a) {
-        case 
-          { type: 'PLAYER' } 
-        | { type: 'ENEMY' } 
+        case
+          { type: 'PLAYER' }
+        | { type: 'ENEMY' }
         | { type: 'FRIENDLY_AI' }
         | { type: 'BREAKABLE_PROP' }: {
           Grid.setItemRect(
@@ -3604,7 +3604,7 @@ class Game extends h2d.Object {
               a.radius * 2,
               a.id);
         }
-        case 
+        case
           { type: 'OBSTACLE' }
         | { type: 'INTERACTABLE_PROP' }
         | { type: 'NPC' }: {

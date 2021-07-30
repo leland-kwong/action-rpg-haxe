@@ -1,5 +1,5 @@
 class PassiveSkillTree {
-  static final passiveTreeLayoutFile = 
+  static final passiveTreeLayoutFile =
       'editor-data/passive_skill_tree.eds';
 
   static function loadLayoutFile(?onComplete): Editor.EditorState {
@@ -16,7 +16,7 @@ class PassiveSkillTree {
           'error loading passive skill tree',
           (err) -> {
             hxd.System.exit();
-          }));  
+          }));
   }
 
   static function calcNumSelectedNodes(
@@ -44,12 +44,12 @@ class PassiveSkillTree {
       if (isSelected) {
         callback(
             getNodeMeta(treeLayoutData, nodeId));
-      } 
+      }
     }
   }
 
   static function getNodeMeta(
-      treeLayoutData: Editor.EditorState, 
+      treeLayoutData: Editor.EditorState,
       nodeId) {
     final editorConfig = Editor.getConfig(
         passiveTreeLayoutFile);
@@ -67,8 +67,8 @@ class PassiveSkillTree {
   public static function calcNumUnusedPoints(
       sessionRef: Session.SessionRef) {
 
-    return calcNumAvailablePoints(sessionRef) 
-      - calcNumSelectedNodes(sessionRef) 
+    return calcNumAvailablePoints(sessionRef)
+      - calcNumSelectedNodes(sessionRef)
       // account for the root node which is already selected
       + 1;
   }
@@ -146,7 +146,7 @@ class PassiveSkillTree {
     // test passive skill tree
     {
       final debugOptions = {
-        renderTreeCollisions: false
+        renderTreeCollisions: true
       };
       function loadPassiveSkillTree(
           layoutData: Editor.EditorState) {
@@ -159,7 +159,7 @@ class PassiveSkillTree {
             layoutData.layerOrderById,
             (layerId) -> {
               return !Lambda.exists(
-                  layersToIgnore, 
+                  layersToIgnore,
                   (l) -> l == layerId);
             });
 
@@ -217,14 +217,14 @@ class PassiveSkillTree {
             final threshold = 2;
             final w = spriteData.sourceSize.w + threshold;
             final h = spriteData.sourceSize.h + threshold;
-           
+
             Grid.setItemRect(
                 treeCollisionGrid,
                 x,
                 y,
                 w,
                 h,
-                itemId);  
+                itemId);
           });
 
           final linksByNodeId = new Map<String, Array<String>>();
@@ -239,7 +239,7 @@ class PassiveSkillTree {
           function gridFilterNode(itemId) {
             final objectType = layoutData.itemTypeById.get(itemId);
 
-            return isSkillNode(objectType) 
+            return isSkillNode(objectType)
               || objectType == 'passive_skill_tree__root';
           }
 
@@ -251,18 +251,18 @@ class PassiveSkillTree {
             final h = (bounds[3] - bounds[2]) * cellSize;
 
             final objectType = layoutData.itemTypeById.get(itemId);
-            
+
             // nodes can touch more than one link
             if (isSkillNode(objectType) ||
                 itemId == 'SKILL_TREE_ROOT') {
               final linksTouching = Grid.getItemsInRect(
                   treeCollisionGrid,
-                  x + w / 2, 
+                  x + w / 2,
                   y + h / 2,
-                  w, 
+                  w,
                   h,
                   gridFilterLink);
-              final list = []; 
+              final list = [];
               for (linkId in linksTouching) {
                 list.push(linkId);
               }
@@ -276,12 +276,12 @@ class PassiveSkillTree {
             if (isLinkType(objectType)) {
               final nodesTouching = Grid.getItemsInRect(
                   treeCollisionGrid,
-                  x + w / 2, 
+                  x + w / 2,
                   y + h / 2,
-                  w, 
+                  w,
                   h,
                   gridFilterNode);
-              final list = []; 
+              final list = [];
               for (nodeId in nodesTouching) {
                 list.push(nodeId);
               }
@@ -307,7 +307,7 @@ class PassiveSkillTree {
         function isHoveredNode(
             x, y, width, height, point) {
           colRect.set(
-              x, y, width, height); 
+              x, y, width, height);
 
           return colRect.contains(point);
         }
@@ -326,7 +326,7 @@ class PassiveSkillTree {
         }
 
         function isSelectableNode(nodeId) {
-          for (linkId in 
+          for (linkId in
               linkNodeTouches.linksByNodeId.get(nodeId)) {
             if (calcNumSelectedNodesAtLink(linkId) > 0) {
               return true;
@@ -337,7 +337,7 @@ class PassiveSkillTree {
         }
 
         function traverseBranch(
-            nodeId: String, 
+            nodeId: String,
             visitedList: Map<String, String>,
             predicate = null) {
           final links = linkNodeTouches.linksByNodeId.get(nodeId);
@@ -356,17 +356,17 @@ class PassiveSkillTree {
                 visitedList.set(nodeId, nodeId);
                 traverseBranch(nodeId, visitedList, predicate);
               }
-            }  
+            }
           }
 
           return visitedList;
         }
 
         function getFirstSelectedSiblingNode(sourceNodeId) {
-          for (linkId in 
+          for (linkId in
               linkNodeTouches.linksByNodeId.get(sourceNodeId)) {
 
-            for (nodeId in 
+            for (nodeId in
                 linkNodeTouches.nodesByLinkId.get(linkId)) {
 
               if (nodeId != sourceNodeId
@@ -380,15 +380,15 @@ class PassiveSkillTree {
         }
 
         // traverse any sibling node's links and verify
-        // that the number of connected nodes is 
-        // the same as the number of selected nodes 
+        // that the number of connected nodes is
+        // the same as the number of selected nodes
         // excluding the one to be deselected
         function isDeselectableNode(nodeIdToDeselect) {
           final selectedSiblingNode = getFirstSelectedSiblingNode(
               nodeIdToDeselect);
 
           final visitedList = traverseBranch(
-              selectedSiblingNode, 
+              selectedSiblingNode,
               new Map(),
               (nodeId) -> {
                 return nodeId != nodeIdToDeselect
@@ -399,8 +399,8 @@ class PassiveSkillTree {
               visitedList);
           // selected count also includes the root node
           final selectedCount = calcNumSelectedNodes(sessionRef);
-          final isOnlySelectedNode = connectedCount == 0 
-            && selectedCount == 2; 
+          final isOnlySelectedNode = connectedCount == 0
+            && selectedCount == 2;
 
           return isOnlySelectedNode
             // subtract 1 because current node is still selected
@@ -443,23 +443,23 @@ class PassiveSkillTree {
 
           function runHoverAnimation(s: SpriteBatchSystem.SpriteRef) {
             final duration = 0.2;
-            final aliveTime = Main.Global.time 
+            final aliveTime = Main.Global.time
               - state.hoveredNode.startedAt;
             final progress = Math.min(1, aliveTime / duration);
             final v = hoverEasing(progress);
            s.scale = Utils.clamp(
-                state.renderScale * v, 
-                state.renderScale * 0.8, 
+                state.renderScale * v,
+                state.renderScale * 0.8,
                 state.renderScale * 1.2);
           }
 
           processTree((
                 x, y, itemId, objectType, objectMeta, layerIndex) -> {
-            final sx = x * state.renderScale 
+            final sx = x * state.renderScale
               + state.translate.x * state.renderScale;
-            final sy = y * state.renderScale 
+            final sy = y * state.renderScale
               + state.translate.y * state.renderScale;
-            final isHoveredNode = 
+            final isHoveredNode =
               state.hoveredNode.nodeId == itemId;
             // render object
             {
@@ -496,7 +496,7 @@ class PassiveSkillTree {
               if (isLinkType(objectType)) {
                 final numSelected = calcNumSelectedNodesAtLink(itemId);
                 final isFullyLinked = numSelected > 1;
-                final isLeadingToNewSelectable = 
+                final isLeadingToNewSelectable =
                   (numSelected == 1 && hasUnusedPoints);
 
                 if (isFullyLinked
@@ -521,19 +521,19 @@ class PassiveSkillTree {
             }
 
             // render node selection state
-            final isSelected = isSkillNode(objectType) 
+            final isSelected = isSkillNode(objectType)
               && Utils.withDefault(
                   sessionRef.passiveSkillTreeState
                   .nodeSelectionStateById.get(itemId),
                   false);
-            final shouldHighlightNode = isSelected || 
-                (isSkillNode(objectType) 
+            final shouldHighlightNode = isSelected ||
+                (isSkillNode(objectType)
                 && isSelectableNode(itemId)
                 && hasUnusedPoints);
 
             if (shouldHighlightNode) {
               final nodeSize = Utils.withDefault(
-                  objectMeta.data.size, 
+                  objectMeta.data.size,
                   1);
               final spriteRef = Main.Global.uiSpriteBatch.emitSprite(
                   sx,
@@ -551,7 +551,7 @@ class PassiveSkillTree {
 
               if (isSelected) {
                 setSelectedColor(spriteRef);
-              } 
+              }
 
               // animation to indicate that node is selectable
               if (!isSelected) {
@@ -585,8 +585,8 @@ class PassiveSkillTree {
             final cursorPoint = new h2d.col.Point(mx, my);
             final isHovered = isSkillNode(objectType)
               ? isHoveredNode(
-                sx - w/2, 
-                sy - h/2, 
+                sx - w/2,
+                sy - h/2,
                 w,
                 h,
                 cursorPoint)
@@ -594,7 +594,7 @@ class PassiveSkillTree {
 
             if (isHovered) {
               final alreadyHovered = state.hoveredNode.nodeId == itemId;
-              final startedAt = alreadyHovered 
+              final startedAt = alreadyHovered
                 ? state.hoveredNode.startedAt
                 : Main.Global.time;
 
@@ -607,9 +607,9 @@ class PassiveSkillTree {
             }
           });
 
-          state.hoveredNode = nextHoveredNode; 
+          state.hoveredNode = nextHoveredNode;
 
-          final isHoveredNodeSelected = 
+          final isHoveredNodeSelected =
             isNodeSelected(sessionRef, state.hoveredNode.nodeId);
           final isSelectionRequest = Main.Global.worldMouse.clicked
             && state.hoveredNode != NULL_HOVERED_NODE;
@@ -681,9 +681,9 @@ class PassiveSkillTree {
                 bounds.width + padding * 2,
                 bounds.height + padding * 2);
             root.x = nextHoveredNode.screenX;
-            root.y = nextHoveredNode.screenY 
+            root.y = nextHoveredNode.screenY
               - bounds.height
-              - padding 
+              - padding
               - 10;
             Main.AutoCleanupGameObjects.add(root);
           }
@@ -746,9 +746,9 @@ class PassiveSkillTree {
               y: Std.int((my - ds.startPos.y) / state.renderScale)
             };
             state.translate = {
-              x: ds.originalTranslate.x 
+              x: ds.originalTranslate.x
                 + ds.delta.x,
-              y: ds.originalTranslate.y 
+              y: ds.originalTranslate.y
                 + ds.delta.y
             };
           }
@@ -782,7 +782,7 @@ class PassiveSkillTree {
             if (isSkillNode(objectType)) {
               b.b = 0;
             }
-          } 
+          }
 
           return !state.shouldCleanup;
         }

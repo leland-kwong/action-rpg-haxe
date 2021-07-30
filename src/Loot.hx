@@ -2,12 +2,14 @@ typedef LootDefType = String;
 
 typedef LootDefCat = String;
 
-enum Rarity {
-  Normal;
-  Magical;
-  Rare;
-  Legendary;
-}
+typedef LootRarity = Int;
+
+// enum Rarity {
+//   Normal;
+//   Magical;
+//   Rare;
+//   Legendary;
+// }
 
 typedef LootDef = {
   name: String,
@@ -19,8 +21,8 @@ typedef LootDef = {
   maxDamage: Int,
   spriteKey: String,
   ?damageMultiplier: Float,
-  ?rarity: Rarity,
-  ?description: () -> String 
+  ?rarity: LootRarity,
+  ?description: () -> String
 };
 
 // loot that was generated via rng
@@ -30,13 +32,17 @@ typedef LootInstance = {
 };
 
 class Loot {
-  // IMPORTANT: 
+  public static final Rarity = {
+    Legendary: 0
+  }
+
+  // IMPORTANT:
   // Once we ship the game, we must be careful about modifying the keys
   // because this lookup table will affect loot from previous versions as well.
   public static final lootDefinitions: Map<LootDefType, LootDef> = [
     /*
        Ability ideas
-       
+
        * teleportation
          Teleports the player to the target location
      */
@@ -62,7 +68,7 @@ class Loot {
       minDamage: 1,
       maxDamage: 1,
       spriteKey: 'ui/loot__ability_basic_blaster_evolved',
-      rarity: Legendary
+      rarity: Rarity.Legendary
     },
     'spiderBots' => {
       name: 'Spider Bots',
@@ -198,7 +204,7 @@ class Loot {
       ?explicitId: String): LootInstance {
 
     final rolledType = Utils.rollValues(typesToRoll);
-    final instanceId = explicitId != null ? 
+    final instanceId = explicitId != null ?
       explicitId : Utils.uid();
 
     return {

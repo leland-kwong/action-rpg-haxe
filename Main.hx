@@ -88,7 +88,7 @@ class Global {
   public static var tickCount = 0.;
   public static var resolutionScale = 4.;
   public static var logData: Dynamic = {};
-  
+
   public static var scene: SceneGroup = null;
   public static var rootScene: h2d.Scene;
 
@@ -142,7 +142,7 @@ class Global {
       getNextScene: () -> VoidFn) {
     if (sceneCleanupFn != null) {
       sceneCleanupFn();
-    } 
+    }
 
     sceneCleanupFn = getNextScene();
   }
@@ -240,7 +240,7 @@ class Main extends hxd.App {
 
     } catch (error: Dynamic) {
       HaxeUtils.handleError(
-          null, 
+          null,
           (_) -> hxd.System.exit())(error);
     }
   }
@@ -267,7 +267,7 @@ class Main extends hxd.App {
           });
         }
 
-        final togglePassiveSkillTree = 
+        final togglePassiveSkillTree =
           Key.isPressed(Key.P);
         if (togglePassiveSkillTree) {
           Hud.UiStateManager.send({
@@ -281,7 +281,7 @@ class Main extends hxd.App {
       final toggleLightingDebug = Key.isDown(Key.CTRL)
           && Key.isPressed(Key.NUMBER_0);
       if (toggleLightingDebug) {
-        Main.lightingSystem.debugShadows = 
+        Main.lightingSystem.debugShadows =
           !Main.lightingSystem.debugShadows;
       }
 
@@ -306,7 +306,7 @@ class Main extends hxd.App {
     }
 #end
 
-    final toggleMainMenu = 
+    final toggleMainMenu =
       Key.isPressed(Key.ESCAPE);
     if (toggleMainMenu) {
       Hud.UiStateManager.send({
@@ -361,7 +361,7 @@ class Main extends hxd.App {
             SpriteBatchSystem.ySort);
       }
 
-      Tests.run();      
+      Tests.run();
 
       final win = hxd.Window.getInstance();
 
@@ -401,14 +401,14 @@ class Main extends hxd.App {
         rootInteract.onRelease = (event : hxd.Event) -> {
           Global.worldMouse.buttonDown = -1;
         };
-        
+
         // setup custom cursor graphic
         {
           final spriteSheetRes = hxd.Res.sprite_sheet_ui_cursor_png;
-          final spriteSheetData: SpriteBatchSystem.SpriteSheetData = 
+          final spriteSheetData: SpriteBatchSystem.SpriteSheetData =
             Utils.loadJsonFile(
               hxd.Res.sprite_sheet_ui_cursor_json);
-          final cursorSpriteData: SpriteBatchSystem.SpriteData = 
+          final cursorSpriteData: SpriteBatchSystem.SpriteData =
             Reflect.field(
                 spriteSheetData.frames, 'default-0--main');
           final f = cursorSpriteData.frame;
@@ -418,7 +418,7 @@ class Main extends hxd.App {
             final bmp = new hxd.BitmapData(f.w, f.h);
             final dst = haxe.io.Bytes.alloc(f.w * f.h * 4);
             final subSpritePixels = new hxd.Pixels(
-                f.w, f.h, dst, RGBA); 
+                f.w, f.h, dst, RGBA);
 
             // draw the pixels from the sprite
             // to generate a custom cursor
@@ -438,9 +438,9 @@ class Main extends hxd.App {
           cursorStyle = {
             target: Cursor.Custom(
               new hxd.Cursor.CustomCursor(
-                targetCursorFrames, 
-                0, 
-                Std.int(f.w / 2), 
+                targetCursorFrames,
+                0,
+                Std.int(f.w / 2),
                 Std.int(f.h / 2))),
             interact: Cursor.Button,
             _default: Cursor.Default,
@@ -469,14 +469,14 @@ class Main extends hxd.App {
       {
         // make fullscreen
         win.resize(
-            nativePixelResolution.x, 
+            nativePixelResolution.x,
             nativePixelResolution.y);
         win.displayMode = hxd.Window.DisplayMode
           .Fullscreen;
       }
 #end
 
-      Global.mainCamera = Camera.create();      
+      Global.mainCamera = Camera.create();
 
 #if debugMode
       setupDebugInfo(Fonts.debug());
@@ -495,7 +495,6 @@ class Main extends hxd.App {
     }
   }
 
-  
   function hasRemainingUpdateFrames(
       acc: Float, frameTime: Float) {
     return acc >= frameTime;
@@ -509,7 +508,7 @@ class Main extends hxd.App {
       acc += dt;
 
       final trueFps = Math.round(1/dt);
-      
+
       // Set to fixed dt otherwise we can get inconsistent
       // results with the game physics.
       // https://gafferongames.com/post/fix_your_timestep/
@@ -531,14 +530,13 @@ class Main extends hxd.App {
           final shouldKeepAlive = update(frameTime);
 
           if (shouldKeepAlive) {
-            nextHooks.push(update); 
+            nextHooks.push(update);
           }
         }
         Global.hooks.input = nextHooks;
-        Global.worldMouse.clicked = false;
       }
 
-      // run while there is remaining frames to simulate
+      // run until there are no remaining frames to simulate
       while (hasRemainingUpdateFrames(acc, frameTime)
           && numUpdates < maxNumUpdatesPerFrame) {
         numUpdates += 1;
@@ -556,7 +554,7 @@ class Main extends hxd.App {
             final shouldKeepAlive = update(frameTime);
 
             if (shouldKeepAlive) {
-              nextHooks.push(update); 
+              nextHooks.push(update);
             }
           }
           Global.hooks.update = nextHooks;
@@ -577,9 +575,9 @@ class Main extends hxd.App {
               Global.resolutionScale);
 
           // update scenes to move relative to camera
-          final cam_center_x = -Global.mainCamera.x 
+          final cam_center_x = -Global.mainCamera.x
             + Math.fround(Global.rootScene.width / 2);
-          final cam_center_y = -Global.mainCamera.y 
+          final cam_center_y = -Global.mainCamera.y
             + Math.fround(Global.rootScene.height / 2);
           for (scene in [
               Global.rootScene,
@@ -595,12 +593,17 @@ class Main extends hxd.App {
               cam_center_y);
         }
 
+        // only trigger click for one frame
+        if (numUpdates == 1) {
+          Global.worldMouse.clicked = false;
+        }
+
         // ints (under 8 bytes in size) can only be a maximum of 10^10 before they wrap over
         // and become negative values. So to get around this, we floor a float value to achieve the same thing.
         Global.tickCount = Math.ffloor(
             Global.time / frameTime);
       }
-      
+
       if (debugText != null) {
         final stats = {
           time: Global.time,
@@ -610,11 +613,11 @@ class Main extends hxd.App {
           drawCalls: engine.drawCalls,
           numEntities: Lambda.count(Entity.ALL_BY_ID),
           numSprites: Lambda.fold(
-              SpriteBatchSystem.instances, 
+              SpriteBatchSystem.instances,
               (ref, count) -> {
                 return count + ref.particles.length;
               }, 0),
-          numActiveEntitiesToRender: 
+          numActiveEntitiesToRender:
             Global.entitiesToRender.length,
           numAnimations: core.Anim.AnimEffect
             .nextAnimations.length,
@@ -625,6 +628,9 @@ class Main extends hxd.App {
         final formattedStats = Json.stringify(stats, null, '  ');
         final text = [
           'stats: ${formattedStats}',
+          // TODO: Add custom replacer function to handle enums.
+          // Current implementation causes errors when an
+          // enum exists.
           'log: ${Json.stringify(Global.logData, null, '  ')}'
         ].join('\n');
         debugText.x = Gui.margin;
@@ -635,7 +641,7 @@ class Main extends hxd.App {
             stats.numSprites);
         Global.logData.totalParticles =
           Utils.withDefault(
-              Global.logData.totalParticles, 0) 
+              Global.logData.totalParticles, 0)
           + stats.numSprites;
         Global.logData.avgParticles = Std.int(
             Global.logData.totalParticles / Global.tickCount);
